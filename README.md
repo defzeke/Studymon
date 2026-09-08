@@ -1,4 +1,3 @@
-```
 # 🎒🤖 Studymon
 
 > A gamified study-review app built in Godot where you raise an AI/robot companion and use it to turn your class notes and reviewers into a Pokémon-style battle campaign.
@@ -49,10 +48,4 @@ res://
 ## 🚀 Core Gameplay Loops
 
 1. **Pre-Campaign Loop (Level 1–5):** Meet your baby AI companion, perform Pou-style care taps (*Feed*, *Pet*, *Play*) that teach beginner AI concepts, earn XP, and unlock the review campaign at Level 5.
-2. **Main Campaign Loop (Level 5+):** Upload study PDFs $
-ightarrow$ AI extracts concepts $
-ightarrow$ Navigate the 2D overworld gym hallways $
-ightarrow$ Clear Essay and Identification encounters $
-ightarrow$ Face the regional Champion!
-```
-
+2. **Main Campaign Loop (Level 5+):** Upload study PDFs → AI extracts concepts → Navigate the 2D overworld gym hallways → Clear Essay and Identification encounters → Face the regional Champion!
