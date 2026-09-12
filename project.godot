@@ -23,6 +23,7 @@ GameState="*res://autoload/game_state.gd"
 Api="*res://autoload/api.gd"
 CompanionState="*res://scripts/autoload/companion_state.gd"
 SessionManager="*res://scripts/autoload/session_manager.gd"
+MusicManager="*res://scripts/autoload/music_manager.gd"
 MCPRuntime="*res://addons/godot_mcp/runtime/mcp_runtime.gd"
 
 [display]
