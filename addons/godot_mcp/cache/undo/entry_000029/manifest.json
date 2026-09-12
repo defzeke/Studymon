@@ -1,0 +1,13 @@
+{
+  "args_summary": "setup_autoload(path=res://scripts/autoload/game_state.gd, name=GameState)",
+  "files": [
+    {
+      "backup": "res://addons/godot_mcp/cache/undo/entry_000029/files/project.godot",
+      "kind": "snapshot",
+      "path": "res://project.godot"
+    }
+  ],
+  "id": "000029",
+  "timestamp": 1788951016.0,
+  "tool": "setup_autoload"
+}

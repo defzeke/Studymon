@@ -1,0 +1,73 @@
+[gd_scene format=3 uid="uid://bhpvca15y6wm6"]
+
+[ext_resource type="Script" uid="uid://dd4qeb554fa5l" path="res://scripts/companion/meet_companion.gd" id="1_jv6rs"]
+
+[node name="MeetCompanion" type="Control" unique_id=576284451]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="MeetCompanion" type="Control" parent="." unique_id=373255474]
+anchors_preset = 0
+script = ExtResource("1_jv6rs")
+
+[node name="Center" type="Control" parent="MeetCompanion" unique_id=1411477347]
+anchors_preset = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="BotSprite" type="TextureRect" parent="MeetCompanion/Center" unique_id=784316685]
+layout_mode = 0
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -128.0
+offset_top = -128.0
+offset_right = 128.0
+offset_bottom = 128.0
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Dialogue" type="Label" parent="MeetCompanion/Center" unique_id=1990825022]
+layout_mode = 0
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -300.0
+offset_top = 520.0
+offset_right = 300.0
+offset_bottom = 600.0
+text = "Welcome!"
+horizontal_alignment = 1
+autowrap_mode = 2
+
+[node name="NextButton" type="Button" parent="MeetCompanion/Center" unique_id=1573916889]
+custom_minimum_size = Vector2(300, 60)
+layout_mode = 0
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -150.0
+offset_top = -180.0
+offset_right = 150.0
+offset_bottom = -120.0
+text = "Next"
+
+[node name="SkipButton" type="Button" parent="MeetCompanion/Center" unique_id=351577423]
+custom_minimum_size = Vector2(300, 48)
+layout_mode = 0
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -150.0
+offset_top = -108.0
+offset_right = 150.0
+offset_bottom = -60.0
+text = "Skip"

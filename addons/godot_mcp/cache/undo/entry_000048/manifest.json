@@ -1,0 +1,13 @@
+{
+  "args_summary": "edit_script",
+  "files": [
+    {
+      "backup": "res://addons/godot_mcp/cache/undo/entry_000048/files/scripts/autoload/companion_state.gd",
+      "kind": "snapshot",
+      "path": "res://scripts/autoload/companion_state.gd"
+    }
+  ],
+  "id": "000048",
+  "timestamp": 1788952277.0,
+  "tool": "edit_script"
+}

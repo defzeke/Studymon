@@ -1,0 +1,12 @@
+{
+  "args_summary": "create_script(path=res://scripts/autoload/companion_state.gd)",
+  "files": [
+    {
+      "kind": "created",
+      "path": "res://scripts/autoload/companion_state.gd"
+    }
+  ],
+  "id": "000027",
+  "timestamp": 1788950938.0,
+  "tool": "create_script"
+}

@@ -1,0 +1,12 @@
+{
+  "args_summary": "create_script(path=res://scripts/companion/meet_companion.gd)",
+  "files": [
+    {
+      "kind": "created",
+      "path": "res://scripts/companion/meet_companion.gd"
+    }
+  ],
+  "id": "000036",
+  "timestamp": 1788951384.0,
+  "tool": "create_script"
+}

@@ -1,0 +1,12 @@
+{
+  "args_summary": "create_scene(scene_path=res://scenes/ui/login.tscn)",
+  "files": [
+    {
+      "kind": "created",
+      "path": "res://scenes/ui/login.tscn"
+    }
+  ],
+  "id": "000035",
+  "timestamp": 1788951318.0,
+  "tool": "create_scene"
+}

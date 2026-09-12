@@ -1,0 +1,12 @@
+{
+  "args_summary": "create_script(path=res://scripts/autoload/save_manager.gd)",
+  "files": [
+    {
+      "kind": "created",
+      "path": "res://scripts/autoload/save_manager.gd"
+    }
+  ],
+  "id": "000002",
+  "timestamp": 1788949768.0,
+  "tool": "create_script"
+}

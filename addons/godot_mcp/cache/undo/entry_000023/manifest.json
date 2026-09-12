@@ -1,0 +1,78 @@
+{
+  "args_summary": "batch_execute",
+  "files": [
+    {
+      "is_dir": true,
+      "kind": "created",
+      "path": "res://scripts/companion"
+    },
+    {
+      "is_dir": true,
+      "kind": "created",
+      "path": "res://scripts/review_session"
+    },
+    {
+      "is_dir": true,
+      "kind": "created",
+      "path": "res://scripts/battle"
+    },
+    {
+      "is_dir": true,
+      "kind": "created",
+      "path": "res://scripts/ui"
+    },
+    {
+      "is_dir": true,
+      "kind": "created",
+      "path": "res://scripts/autoload"
+    },
+    {
+      "is_dir": true,
+      "kind": "created",
+      "path": "res://scripts/backend"
+    },
+    {
+      "is_dir": true,
+      "kind": "created",
+      "path": "res://scenes/companion"
+    },
+    {
+      "is_dir": true,
+      "kind": "created",
+      "path": "res://scenes/review_session"
+    },
+    {
+      "is_dir": true,
+      "kind": "created",
+      "path": "res://scenes/battle"
+    },
+    {
+      "is_dir": true,
+      "kind": "created",
+      "path": "res://scenes/ui"
+    },
+    {
+      "is_dir": true,
+      "kind": "created",
+      "path": "res://resources/themes"
+    },
+    {
+      "is_dir": true,
+      "kind": "created",
+      "path": "res://resources/questions"
+    },
+    {
+      "is_dir": true,
+      "kind": "created",
+      "path": "res://resources/companion_profiles"
+    },
+    {
+      "is_dir": true,
+      "kind": "created",
+      "path": "res://resources/ai_codex"
+    }
+  ],
+  "id": "000023",
+  "timestamp": 1788950588.0,
+  "tool": "batch_execute"
+}

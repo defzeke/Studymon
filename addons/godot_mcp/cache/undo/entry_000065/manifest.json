@@ -1,0 +1,13 @@
+{
+  "args_summary": "set_node_properties(scene_path=res://scenes/companion/meet_companion.tscn, node_path=MeetCompanion)",
+  "files": [
+    {
+      "backup": "res://addons/godot_mcp/cache/undo/entry_000065/files/scenes/companion/meet_companion.tscn",
+      "kind": "snapshot",
+      "path": "res://scenes/companion/meet_companion.tscn"
+    }
+  ],
+  "id": "000065",
+  "timestamp": 1788953788.0,
+  "tool": "set_node_properties"
+}

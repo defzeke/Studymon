@@ -1,0 +1,12 @@
+{
+  "args_summary": "create_script(path=res://autoload/api.gd)",
+  "files": [
+    {
+      "kind": "created",
+      "path": "res://autoload/api.gd"
+    }
+  ],
+  "id": "000044",
+  "timestamp": 1788952061.0,
+  "tool": "create_script"
+}

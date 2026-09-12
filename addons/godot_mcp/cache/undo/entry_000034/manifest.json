@@ -1,0 +1,12 @@
+{
+  "args_summary": "create_script(path=res://scripts/ui/login.gd)",
+  "files": [
+    {
+      "kind": "created",
+      "path": "res://scripts/ui/login.gd"
+    }
+  ],
+  "id": "000034",
+  "timestamp": 1788951244.0,
+  "tool": "create_script"
+}

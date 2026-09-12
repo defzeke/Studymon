@@ -1,0 +1,13 @@
+{
+  "args_summary": "setup_autoload(path=res://addons/godot_mcp/runtime/mcp_runtime.gd, name=MCPRuntime)",
+  "files": [
+    {
+      "backup": "res://addons/godot_mcp/cache/undo/entry_000041/files/project.godot",
+      "kind": "snapshot",
+      "path": "res://project.godot"
+    }
+  ],
+  "id": "000041",
+  "timestamp": 1788951647.0,
+  "tool": "setup_autoload"
+}

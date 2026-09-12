@@ -1,0 +1,13 @@
+{
+  "args_summary": "setup_autoload(path=res://autoload/api.gd, name=Api)",
+  "files": [
+    {
+      "backup": "res://addons/godot_mcp/cache/undo/entry_000046/files/project.godot",
+      "kind": "snapshot",
+      "path": "res://project.godot"
+    }
+  ],
+  "id": "000046",
+  "timestamp": 1788952065.0,
+  "tool": "setup_autoload"
+}

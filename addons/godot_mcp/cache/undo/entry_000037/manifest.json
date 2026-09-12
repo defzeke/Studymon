@@ -1,0 +1,12 @@
+{
+  "args_summary": "create_scene(scene_path=res://scenes/companion/meet_companion.tscn)",
+  "files": [
+    {
+      "kind": "created",
+      "path": "res://scenes/companion/meet_companion.tscn"
+    }
+  ],
+  "id": "000037",
+  "timestamp": 1788951427.0,
+  "tool": "create_scene"
+}

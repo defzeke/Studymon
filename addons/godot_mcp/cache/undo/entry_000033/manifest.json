@@ -1,0 +1,12 @@
+{
+  "args_summary": "write_file(path=res://resources/themes/theme.tres)",
+  "files": [
+    {
+      "kind": "created",
+      "path": "res://resources/themes/theme.tres"
+    }
+  ],
+  "id": "000033",
+  "timestamp": 1788951206.0,
+  "tool": "write_file"
+}

@@ -1,0 +1,13 @@
+{
+  "args_summary": "setup_autoload(path=res://scripts/autoload/companion_state.gd, name=CompanionState)",
+  "files": [
+    {
+      "backup": "res://addons/godot_mcp/cache/undo/entry_000031/files/project.godot",
+      "kind": "snapshot",
+      "path": "res://project.godot"
+    }
+  ],
+  "id": "000031",
+  "timestamp": 1788951125.0,
+  "tool": "setup_autoload"
+}

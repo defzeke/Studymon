@@ -1,0 +1,139 @@
+[gd_scene format=3 uid="uid://dh52i77pfrswh"]
+
+[ext_resource type="Script" uid="uid://brf3oq3rsq5ap" path="res://scripts/ui/main.gd" id="1_2p1s2"]
+[ext_resource type="Script" uid="uid://d2prasu04nenr" path="res://scripts/companion/companion.gd" id="2_02nsg"]
+
+[node name="Main" type="Control" unique_id=727120266]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_2p1s2")
+
+[node name="Room" type="Control" parent="." unique_id=512598199]
+anchors_preset = 0
+script = ExtResource("2_02nsg")
+
+[node name="Background" type="TextureRect" parent="Room" unique_id=488028304]
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+expand_mode = 1
+stretch_mode = 6
+
+[node name="TopBar" type="VBoxContainer" parent="Room" unique_id=120828800]
+layout_mode = 0
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -260.0
+offset_top = 130.0
+offset_right = 260.0
+offset_bottom = 110.0
+
+[node name="LevelLabel" type="Label" parent="Room/TopBar" unique_id=917297647]
+layout_mode = 2
+text = "Lv 1 / 5"
+
+[node name="XPBar" type="ProgressBar" parent="Room/TopBar" unique_id=134250767]
+custom_minimum_size = Vector2(500, 20)
+layout_mode = 2
+max_value = 20.0
+
+[node name="BotSprite" type="TextureRect" parent="Room" unique_id=1208931772]
+layout_mode = 0
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -128.0
+offset_top = -128.0
+offset_right = 128.0
+offset_bottom = 128.0
+expand_mode = 1
+stretch_mode = 5
+
+[node name="TidbitBubble" type="Label" parent="Room" unique_id=45490201]
+layout_mode = 0
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -300.0
+offset_top = 680.0
+offset_right = 300.0
+offset_bottom = 760.0
+text = "Hi! I'm your baby AI!"
+horizontal_alignment = 1
+autowrap_mode = 2
+
+[node name="XPTick" type="Label" parent="Room" unique_id=575915383]
+modulate = Color(1, 1, 1, 0)
+layout_mode = 0
+offset_left = 400.0
+offset_top = 470.0
+offset_right = 550.0
+offset_bottom = 500.0
+
+[node name="Stats" type="VBoxContainer" parent="Room" unique_id=1183135299]
+layout_mode = 0
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -260.0
+offset_top = 800.0
+offset_right = 260.0
+offset_bottom = 920.0
+
+[node name="EnergyBar" type="ProgressBar" parent="Room/Stats" unique_id=37577240]
+custom_minimum_size = Vector2(500, 18)
+layout_mode = 2
+value = 80.0
+
+[node name="FocusBar" type="ProgressBar" parent="Room/Stats" unique_id=1318710848]
+custom_minimum_size = Vector2(500, 18)
+layout_mode = 2
+value = 70.0
+
+[node name="MoodBar" type="ProgressBar" parent="Room/Stats" unique_id=1471380263]
+custom_minimum_size = Vector2(500, 18)
+layout_mode = 2
+value = 75.0
+
+[node name="Buttons" type="HBoxContainer" parent="Room" unique_id=1525440497]
+layout_mode = 0
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -290.0
+offset_top = -260.0
+offset_right = 290.0
+offset_bottom = -180.0
+
+[node name="FeedButton" type="Button" parent="Room/Buttons" unique_id=1360106534]
+custom_minimum_size = Vector2(180, 64)
+layout_mode = 2
+text = "🍼 Feed"
+
+[node name="PetButton" type="Button" parent="Room/Buttons" unique_id=895186431]
+custom_minimum_size = Vector2(180, 64)
+layout_mode = 2
+text = "🤗 Pet"
+
+[node name="PlayButton" type="Button" parent="Room/Buttons" unique_id=463187327]
+custom_minimum_size = Vector2(180, 64)
+layout_mode = 2
+text = "🎮 Play"
+
+[node name="CampaignButton" type="Button" parent="Room" unique_id=2031875804]
+custom_minimum_size = Vector2(560, 64)
+layout_mode = 0
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -280.0
+offset_top = -164.0
+offset_right = 280.0
+offset_bottom = -100.0
+disabled = true
+text = "🔒 Lv 5 unlocks Campaign"

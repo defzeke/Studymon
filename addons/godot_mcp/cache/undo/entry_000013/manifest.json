@@ -1,0 +1,13 @@
+{
+  "args_summary": "setup_autoload(path=res://scripts/autoload/save_manager.gd, name=SaveManager)",
+  "files": [
+    {
+      "backup": "res://addons/godot_mcp/cache/undo/entry_000013/files/project.godot",
+      "kind": "snapshot",
+      "path": "res://project.godot"
+    }
+  ],
+  "id": "000013",
+  "timestamp": 1788949823.0,
+  "tool": "setup_autoload"
+}

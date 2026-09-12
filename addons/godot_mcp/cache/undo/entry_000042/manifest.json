@@ -1,0 +1,38 @@
+{
+  "args_summary": "batch_execute",
+  "files": [
+    {
+      "is_dir": true,
+      "kind": "created",
+      "path": "res://companion"
+    },
+    {
+      "is_dir": true,
+      "kind": "created",
+      "path": "res://review_session"
+    },
+    {
+      "is_dir": true,
+      "kind": "created",
+      "path": "res://battle"
+    },
+    {
+      "is_dir": true,
+      "kind": "created",
+      "path": "res://ui"
+    },
+    {
+      "is_dir": true,
+      "kind": "created",
+      "path": "res://autoload"
+    },
+    {
+      "is_dir": true,
+      "kind": "created",
+      "path": "res://backend"
+    }
+  ],
+  "id": "000042",
+  "timestamp": 1788952013.0,
+  "tool": "batch_execute"
+}

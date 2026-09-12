@@ -1,0 +1,66 @@
+[gd_scene format=3 uid="uid://bse4fjifnvwwo"]
+
+[ext_resource type="Script" uid="uid://dykhlamdi3nwt" path="res://scripts/ui/login.gd" id="1_ec7l3"]
+
+[node name="Login" type="Control" unique_id=845868057]
+layout_mode = 3
+anchors_preset = 0
+
+[node name="Login" type="Control" parent="." unique_id=1016189278]
+anchors_preset = 0
+script = ExtResource("1_ec7l3")
+
+[node name="Center" type="VBoxContainer" parent="Login" unique_id=1366339924]
+layout_mode = 0
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -200.0
+offset_top = -200.0
+offset_right = 200.0
+offset_bottom = 200.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Title" type="Label" parent="Login/Center" unique_id=1167392882]
+layout_mode = 2
+theme_type_variation = &"Header"
+text = "Studymon"
+horizontal_alignment = 1
+
+[node name="Subtitle" type="Label" parent="Login/Center" unique_id=1054308988]
+layout_mode = 2
+theme_type_variation = &"Subtitle"
+text = "Raise your AI. Master your studies."
+horizontal_alignment = 1
+
+[node name="EmailField" type="LineEdit" parent="Login/Center" unique_id=2146040161]
+layout_mode = 2
+theme_type_variation = &"Default"
+placeholder_text = "Email"
+
+[node name="PasswordField" type="LineEdit" parent="Login/Center" unique_id=73769672]
+layout_mode = 2
+theme_type_variation = &"Default"
+placeholder_text = "Password"
+
+[node name="LoginButton" type="Button" parent="Login/Center" unique_id=262466503]
+layout_mode = 2
+theme_type_variation = &"Default"
+text = "Log In"
+
+[node name="SignupButton" type="Button" parent="Login/Center" unique_id=1661471258]
+layout_mode = 2
+theme_type_variation = &"Outline"
+text = "Sign Up"
+
+[node name="StatusLabel" type="Label" parent="Login/Center" unique_id=867684628]
+modulate = Color(1, 0.3, 0.3, 1)
+layout_mode = 2
+horizontal_alignment = 1
+
+[node name="Loading" type="ProgressBar" parent="Login/Center" unique_id=1285521475]
+visible = false
+layout_mode = 2
+theme_type_variation = &"Default"

@@ -1,0 +1,13 @@
+{
+  "args_summary": "set_node_properties(scene_path=res://scenes/ui/login.tscn, node_path=.)",
+  "files": [
+    {
+      "backup": "res://addons/godot_mcp/cache/undo/entry_000063/files/scenes/ui/login.tscn",
+      "kind": "snapshot",
+      "path": "res://scenes/ui/login.tscn"
+    }
+  ],
+  "id": "000063",
+  "timestamp": 1788953767.0,
+  "tool": "set_node_properties"
+}

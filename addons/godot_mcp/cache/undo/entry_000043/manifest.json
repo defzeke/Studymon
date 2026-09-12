@@ -1,0 +1,12 @@
+{
+  "args_summary": "create_script(path=res://autoload/game_state.gd)",
+  "files": [
+    {
+      "kind": "created",
+      "path": "res://autoload/game_state.gd"
+    }
+  ],
+  "id": "000043",
+  "timestamp": 1788952053.0,
+  "tool": "create_script"
+}

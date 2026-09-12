@@ -1,0 +1,13 @@
+{
+  "args_summary": "edit_script",
+  "files": [
+    {
+      "backup": "res://addons/godot_mcp/cache/undo/entry_000058/files/scripts/autoload/session_manager.gd",
+      "kind": "snapshot",
+      "path": "res://scripts/autoload/session_manager.gd"
+    }
+  ],
+  "id": "000058",
+  "timestamp": 1788953285.0,
+  "tool": "edit_script"
+}

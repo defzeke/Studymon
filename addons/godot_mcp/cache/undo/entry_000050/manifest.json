@@ -1,0 +1,13 @@
+{
+  "args_summary": "edit_script",
+  "files": [
+    {
+      "backup": "res://addons/godot_mcp/cache/undo/entry_000050/files/scripts/ui/login.gd",
+      "kind": "snapshot",
+      "path": "res://scripts/ui/login.gd"
+    }
+  ],
+  "id": "000050",
+  "timestamp": 1788952393.0,
+  "tool": "edit_script"
+}
