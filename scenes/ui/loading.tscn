@@ -1,7 +1,26 @@
 [gd_scene format=3 uid="uid://b42m66m6eqdsa"]
 
 [ext_resource type="Script" uid="uid://by0fxc51mkf45" path="res://scripts/ui/loading.gd" id="1_35gka"]
-[ext_resource type="Texture2D" path="res://assets/sprites/loading_screen.png" id="2_bg"]
+[ext_resource type="Texture2D" path="res://assets/sprites/new_loading_screen.png" id="2_bg"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bar_bg"]
+bg_color = Color(0.05, 0.09, 0.16, 0.8)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.4, 0.85, 1, 0.9)
+corner_radius_top_left = 9
+corner_radius_top_right = 9
+corner_radius_bottom_right = 9
+corner_radius_bottom_left = 9
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bar_fill"]
+bg_color = Color(0.25, 0.8, 1, 1)
+corner_radius_top_left = 9
+corner_radius_top_right = 9
+corner_radius_bottom_right = 9
+corner_radius_bottom_left = 9
 
 [node name="Loading" type="Control" unique_id=578712302]
 layout_mode = 3
@@ -28,17 +47,28 @@ anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
 offset_left = 48.0
-offset_top = -220.0
+offset_top = -120.0
 offset_right = -48.0
-offset_bottom = -64.0
+offset_bottom = -24.0
 grow_horizontal = 2
 grow_vertical = 0
-theme_override_constants/separation = 12
+theme_override_constants/separation = 8
 
 [node name="LoadBar" type="ProgressBar" parent="Content" unique_id=991804696]
-custom_minimum_size = Vector2(0, 24)
+custom_minimum_size = Vector2(0, 18)
 layout_mode = 2
+theme_override_styles/background = SubResource("StyleBoxFlat_bar_bg")
+theme_override_styles/fill = SubResource("StyleBoxFlat_bar_fill")
 show_percentage = false
+
+[node name="RunBot" type="TextureRect" parent="Content/LoadBar" unique_id=613884207]
+anchor_bottom = 0.0
+offset_left = -28.0
+offset_top = -104.0
+offset_right = 28.0
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
 
 [node name="TipLabel" type="Label" parent="Content" unique_id=491083994]
 layout_mode = 2
@@ -46,6 +76,7 @@ theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.85)
 theme_override_constants/shadow_offset_x = 2
 theme_override_constants/shadow_offset_y = 2
+theme_override_font_sizes/font_size = 16
 text = "Loading..."
 horizontal_alignment = 1
 autowrap_mode = 2
