@@ -57,7 +57,7 @@ func _on_open_topic(topic: Dictionary) -> void:
 
 func _on_add_new() -> void:
 	SessionManager.pending_questions.clear()
-	SessionManager.editing_topic_id = "topic_%d" % (Time.get_unix_time_from_system() % 100000)
+	SessionManager.editing_topic_id = "topic_%d" % (int(Time.get_unix_time_from_system()) % 100000)
 	get_tree().change_scene_to_file("res://scenes/review_session/categorizer.tscn")
 
 func _on_back() -> void:
