@@ -104,7 +104,14 @@ func _on_study() -> void:
 	var tw := create_tween()
 	tw.tween_property(loading_bar, "value", 85.0, 0.7)
 	if _file_bytes.size() > 0:
-		SessionManager.start_upload(topic_name, _file_bytes)
+		# Binary PDFs show a "[Binary file loaded...]" stub in the paste box —
+		# only forward real reviewer text, else the mock uses placeholders.
+		var hint := ""
+		if not source_text.begins_with("[Binary file loaded:"):
+			var hv := SessionManager.validate_source_text(source_text)
+			if hv.get("ok", false):
+				hint = source_text
+		SessionManager.start_upload(topic_name, _file_bytes, hint)
 	else:
 		SessionManager.start_upload_from_text(topic_name, source_text)
 

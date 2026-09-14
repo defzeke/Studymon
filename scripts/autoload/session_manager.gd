@@ -20,6 +20,11 @@ const MIN_CHARS := 80
 var current_topic_id: String = ""
 var pending_questions: Array[Dictionary] = []
 var editing_topic_id: String = ""
+## Phase 5: raw reviewer text from the last upload (paste or decoded file bytes).
+## Stored so the mock extractor can parse USER material instead of canned defaults.
+## Per-topic copies persist in _source_by_topic after confirm.
+var last_source_text: String = ""
+var _source_by_topic: Dictionary = {}
 var _topics: Array[Dictionary] = []
 var _active_job_id: String = ""
 # Phase 6: per-region clear state (mock-persisted in memory)
@@ -60,20 +65,43 @@ func validate_source_text(text: String) -> Dictionary:
 		return {"ok": false, "error": "Too brief — AI needs ~%d words, you have %d." % [MIN_WORDS, word_count]}
 	return {"ok": true, "words": word_count, "chars": char_count}
 
-func start_upload(topic_name: String, _pdf_bytes: PackedByteArray) -> void:
-	# _pdf_bytes is unused in MOCK — real impl sends base64 to backend
+func start_upload(topic_name: String, pdf_bytes: PackedByteArray, source_hint: String = "") -> void:
+	# Wire reviewer input through to the extractor. Precedence: explicit hint
+	# (paste box) > decodable bytes > previous last_source_text. Binary PDFs
+	# won't decode cleanly — then the mock falls back to editable placeholders.
+	var hint := source_hint.strip_edges()
+	if hint != "":
+		last_source_text = source_hint
+	elif pdf_bytes.size() > 0:
+		var decoded := pdf_bytes.get_string_from_utf8()
+		if decoded.length() > 0 and not decoded.contains("�"):
+			last_source_text = decoded
+		else:
+			last_source_text = ""
 	_active_job_id = "job_001"
 	extraction_started.emit(_active_job_id)
-	Api.mock_upload_pdf(topic_name)
+	Api.mock_upload_pdf(topic_name, last_source_text)
 
 func start_upload_from_text(topic_name: String, source_text: String) -> void:
 	var v := validate_source_text(source_text)
 	if not v.get("ok", false):
 		extraction_failed.emit("", str(v.get("error", "Invalid input")))
 		return
+	last_source_text = source_text
 	start_upload(topic_name, source_text.to_utf8_buffer())
 
+## Raw reviewer text for a topic ("" if none stored).
+func get_source_text(topic_id: String) -> String:
+	if _source_by_topic.has(topic_id):
+		return str(_source_by_topic[topic_id])
+	if topic_id == editing_topic_id or topic_id == current_topic_id:
+		return last_source_text
+	return ""
+
 func _on_job_status(job_id: String, status: String, progress: float, result: Variant) -> void:
+	# Grade jobs belong to the battle scene (Api._mock_grade_done) — not extraction.
+	if job_id == "grade":
+		return
 	# Handle topics listing (Api mocks topics via job_status with job_id "topics")
 	if job_id == "topics" and status == "completed" and typeof(result) == TYPE_DICTIONARY:
 		var topics_arr: Array[Dictionary] = []
@@ -138,6 +166,8 @@ func confirm_topic(topic_name: String = "") -> void:
 		return
 	var name := topic_name if topic_name != "" else editing_topic_id
 	add_topic_to_history(editing_topic_id, name, pending_questions)
+	if last_source_text.strip_edges() != "":
+		_source_by_topic[editing_topic_id] = last_source_text
 	Api.save_topic(editing_topic_id, pending_questions)
 	topic_saved.emit(editing_topic_id)
 	_enter_overworld(editing_topic_id)

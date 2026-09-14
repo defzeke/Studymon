@@ -147,60 +147,174 @@ func _mock_companion_done(data: Dictionary) -> void:
 	if has_node("/root/CompanionState"):
 		get_node("/root/CompanionState").from_dict(data)
 
-func mock_upload_pdf(_topic_name: String) -> void:
+func mock_upload_pdf(topic_name: String, source_text: String = "") -> void:
 	# Simulate short processing beat like GDD §5.2 "AI is studying..."
 	call_deferred("_mock_upload_done", {"job_id": "job_001", "status": "processing"})
-	# Complete after ~0.8s via timer if tree is ready, else immediate
+	# Complete after ~0.8s via timer if tree is ready, else immediate.
+	# Questions are parsed from the USER's reviewer text; canned placeholders
+	# only apply when no usable text survived (e.g. binary PDF bytes).
+	var questions := _build_questions_from_text(topic_name, source_text)
+	var topic_id := _slug_topic_id(topic_name)
+	var payload := {
+		"job_id": "job_001",
+		"status": "completed",
+		"progress": 1.0,
+		"result": {"topic_id": topic_id, "questions": questions},
+	}
 	if is_inside_tree():
 		var t := Timer.new()
 		t.wait_time = 0.8
 		t.one_shot = true
 		add_child(t)
 		t.timeout.connect(func():
-			_mock_poll_done({
-				"job_id": "job_001",
-				"status": "completed",
-				"progress": 1.0,
-				"result": {
-					"topic_id": "topic_001",
-					"questions": [
-						{"id": "q1", "text": "What is training data?", "type": "identification", "answer": "Examples used to teach an AI", "confidence": 0.92, "key_concepts": ["examples", "training"]},
-						{"id": "q2", "text": "Explain how feedback helps an AI improve.", "type": "essay", "answer": "", "confidence": 0.65, "key_concepts": ["feedback", "reward", "iteration"]},
-						{"id": "q3", "text": "Why does an AI need trial-and-error practice?", "type": "essay", "answer": "", "confidence": 0.48, "key_concepts": ["practice", "generalization"]},
-					],
-				},
-			})
+			_mock_poll_done(payload)
 			t.queue_free()
 		)
 		t.start()
 	else:
-		call_deferred("_mock_poll_done", {
-			"job_id": "job_001",
-			"status": "completed",
-			"progress": 1.0,
-			"result": {
-				"topic_id": "topic_001",
-				"questions": [
-					{"id": "q1", "text": "What is training data?", "type": "identification", "answer": "Examples used to teach an AI", "confidence": 0.92, "key_concepts": ["examples", "training"]},
-					{"id": "q2", "text": "Explain how feedback helps an AI improve.", "type": "essay", "answer": "", "confidence": 0.65, "key_concepts": ["feedback", "reward", "iteration"]},
-				],
-			},
-		})
+		call_deferred("_mock_poll_done", payload)
+
+## Deterministic mock extractor: parses reviewer sentences into battle-ready
+## questions (alternating Identification / Essay) so battles use real material.
+## Stand-in for the Claude document-extraction endpoint (build plan Phase 5).
+func _build_questions_from_text(_topic_name: String, source_text: String) -> Array:
+	var sentences := _split_sentences(source_text)
+	# Keep content-bearing sentences only.
+	var usable: Array = []
+	for s in sentences:
+		var sent: String = str(s)
+		var words := sent.split(" ", false)
+		if words.size() >= 6 and sent.length() >= 40:
+			usable.append(sent)
+		if usable.size() >= 8:
+			break
+	if usable.is_empty():
+		return _fallback_questions()
+	var questions: Array = []
+	var idx := 0
+	for s in usable:
+		var terms := _extract_terms(str(s))
+		var excerpt: String = str(s).strip_edges().left(220)
+		if idx % 2 == 0:
+			# Identification: answer = strongest term in the sentence.
+			var answer := str(terms[0]) if not terms.is_empty() else ""
+			if answer == "":
+				continue
+			var concepts: Array = terms.slice(0, mini(3, terms.size()))
+			questions.append({
+				"id": "q%d" % (idx + 1),
+				"text": "What key term is described here? \"%s\"" % excerpt,
+				"type": "identification",
+				"answer": answer,
+				"key_concepts": concepts,
+				"confidence": 0.85,
+				"source": excerpt,
+			})
+		else:
+			var concepts_e: Array = terms.slice(0, mini(3, terms.size()))
+			questions.append({
+				"id": "q%d" % (idx + 1),
+				"text": "Explain in your own words: %s" % excerpt,
+				"type": "essay",
+				"answer": excerpt,
+				"key_concepts": concepts_e,
+				"confidence": 0.7,
+				"source": excerpt,
+			})
+		idx += 1
+	if questions.is_empty():
+		return _fallback_questions()
+	return questions
+
+## Canned trio, used only when no reviewer text survived (binary PDF).
+## Editable in the categorizer; battles stay playable via this fallback.
+func _fallback_questions() -> Array:
+	return [
+		{"id": "q1", "text": "What is training data?", "type": "identification", "answer": "Examples used to teach an AI", "confidence": 0.5, "key_concepts": ["examples", "training"], "source": ""},
+		{"id": "q2", "text": "Explain how feedback helps an AI improve.", "type": "essay", "answer": "", "confidence": 0.45, "key_concepts": ["feedback", "reward", "iteration"], "source": ""},
+		{"id": "q3", "text": "Why does an AI need trial-and-error practice?", "type": "essay", "answer": "", "confidence": 0.4, "key_concepts": ["practice", "generalization"], "source": ""},
+	]
+
+## topic_001 stays the id for the default/empty name so old saves keep working.
+func _slug_topic_id(topic_name: String) -> String:
+	var slug := topic_name.strip_edges().to_lower().replace(" ", "_")
+	var clean := ""
+	for i in slug.length():
+		var ch := slug.substr(i, 1)
+		if (ch >= "a" and ch <= "z") or (ch >= "0" and ch <= "9") or ch == "_":
+			clean += ch
+	while clean.contains("__"):
+		clean = clean.replace("__", "_")
+	clean = clean.trim_prefix("_").trim_suffix("_")
+	return "topic_" + clean if clean != "" else "topic_001"
+
+const _STOPWORDS = ["what", "when", "where", "which", "while", "with", "from",
+	"that", "this", "these", "those", "they", "them", "their", "there", "then",
+	"than", "also", "into", "such", "have", "has", "were", "been", "being",
+	"does", "did", "will", "would", "could", "should", "about", "after",
+	"before", "between", "through", "during", "under", "over", "each",
+	"other", "more", "most", "some", "very", "just", "because", "example",
+	"examples", "used", "using", "often", "process", "system", "called"]
+
+func _split_sentences(text: String) -> Array:
+	var norm := text.strip_edges().replace("\r\n", "\n").replace("\r", "\n")
+	var out: Array = []
+	for line in norm.split("\n"):
+		var frag := line.strip_edges()
+		if frag == "":
+			continue
+		# Split on sentence enders while keeping each chunk intact.
+		var buf := ""
+		for i in frag.length():
+			var ch := frag.substr(i, 1)
+			buf += ch
+			if ch == "." or ch == "!" or ch == "?":
+				var piece := buf.strip_edges().trim_suffix(".").trim_suffix("!").trim_suffix("?").strip_edges()
+				if piece.length() >= 20:
+					out.append(piece)
+				buf = ""
+		var tail := buf.strip_edges()
+		if tail.length() >= 20:
+			out.append(tail)
+	return out
+
+## Keyword-ish terms: lowercase alpha words len>=5, not stopwords, in
+## first-seen order; capitalized mid-sentence words float to the front as
+## likely proper terms. Used for answers + grading key_concepts.
+func _extract_terms(sentence: String) -> Array:
+	var seen: Dictionary = {}
+	var proper: Array = []
+	var common: Array = []
+	var cleaned := sentence.replace(",", " ").replace(";", " ").replace(":", " ")
+	cleaned = cleaned.replace("(", " ").replace(")", " ").replace("\"", " ")
+	var raw_words := cleaned.split(" ", false)
+	for n in raw_words.size():
+		var w := str(raw_words[n]).strip_edges().trim_suffix(".").trim_suffix("!").trim_suffix("?").to_lower()
+		if w.length() < 5 or not w.is_valid_identifier() or _STOPWORDS.has(w) or seen.has(w):
+			continue
+		seen[w] = true
+		var orig := str(raw_words[n]).strip_edges()
+		if n > 0 and orig.length() > 0 and orig.substr(0, 1) == orig.substr(0, 1).to_upper() and orig.substr(0, 1) != orig.substr(0, 1).to_lower():
+			proper.append(w)
+		else:
+			common.append(w)
+		if proper.size() + common.size() >= 6:
+			break
+	proper.append_array(common)
+	return proper
 
 func _mock_upload_done(data: Dictionary) -> void:
 	job_status.emit(str(data["job_id"]), str(data["status"]), 0.0, null)
 
 func mock_poll_extraction(job_id: String) -> void:
+	# Legacy poll path (nothing calls it live); same fallback trio as upload.
 	call_deferred("_mock_poll_done", {
 		"job_id": job_id,
 		"status": "completed",
 		"progress": 1.0,
 		"result": {
 			"topic_id": "topic_001",
-			"questions": [
-				{"id": "q1", "text": "What is the capital of France?", "type": "identification", "answer": "Paris", "confidence": 0.9, "key_concepts": ["capital"]},
-				{"id": "q2", "text": "Explain photosynthesis.", "type": "essay", "answer": "", "confidence": 0.6, "key_concepts": ["chlorophyll", "light", "CO2", "glucose"]},
-			],
+			"questions": _fallback_questions(),
 		},
 	})
 
