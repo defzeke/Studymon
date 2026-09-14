@@ -89,10 +89,12 @@ func _on_study() -> void:
 		status_label.text = "Give your topic a name first."
 		return
 	var source_text := paste_area.text
-	var v := SessionManager.validate_source_text(source_text)
-	if not v.get("ok", false):
-		status_label.text = str(v.get("error", "Too short"))
-		return
+	# Real file loaded: the bytes are what get sent, so the text gate doesn't apply.
+	if _file_bytes.size() == 0:
+		var v := SessionManager.validate_source_text(source_text)
+		if not v.get("ok", false):
+			status_label.text = str(v.get("error", "Too short"))
+			return
 	_studying = true
 	study_btn.disabled = true
 	status_label.text = "AI is studying... analyzing your reviewer"
