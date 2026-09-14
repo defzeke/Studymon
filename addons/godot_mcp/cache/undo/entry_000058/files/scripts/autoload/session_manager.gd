@@ -25,16 +25,16 @@ func start_upload(topic_name: String, pdf_bytes: PackedByteArray) -> void:
 func _on_job_status(job_id: String, status: String, progress: float, result: Variant) -> void:
 	match status:
 		"processing":
-		extraction_progress.emit(job_id, progress)
+			extraction_progress.emit(job_id, progress)
 		"completed":
-		if result and result.get("questions"):
-			var topic_id = result.topic_id
-			pending_questions = result.questions
-			extraction_completed.emit(topic_id, result.questions)
-		else:
-			extraction_failed.emit(job_id, "No questions extracted")
+			if result and result.get("questions"):
+				var topic_id = result.topic_id
+				pending_questions = result.questions
+				extraction_completed.emit(topic_id, result.questions)
+			else:
+				extraction_failed.emit(job_id, "No questions extracted")
 		"failed":
-		extraction_failed.emit(job_id, str(result))
+			extraction_failed.emit(job_id, str(result))
 
 func set_editing_topic(topic_id: String, questions: Array[Dictionary]) -> void:
 	editing_topic_id = topic_id
@@ -50,7 +50,8 @@ func remove_question(index: int) -> void:
 
 func update_question(index: int, data: Dictionary) -> void:
 	if index >= 0 and index < pending_questions.size():
-		pending_questions[index].update(data)
+		for k in data.keys():
+			pending_questions[index][k] = data[k]
 
 func confirm_topic() -> void:
 	if editing_topic_id != "" and pending_questions.size() > 0:

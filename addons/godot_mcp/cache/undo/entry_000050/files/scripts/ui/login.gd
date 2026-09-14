@@ -15,7 +15,7 @@ func _ready() -> void:
 	Api.request_failed.connect(_on_api_error)
 
 func _on_login() -> void:
-	var email = email_field.text.strip()
+	var email = email_field.text.strip_edges()
 	var pwd = password_field.text
 	if email == "" or pwd == "":
 		status_label.text = "Enter email and password"
@@ -32,7 +32,7 @@ func _mock_login_complete() -> void:
 	get_tree().change_scene_to_file("res://scenes/companion/meet_companion.tscn")
 
 func _on_signup() -> void:
-	var email = email_field.text.strip()
+	var email = email_field.text.strip_edges()
 	var pwd = password_field.text
 	if email == "" or pwd == "":
 		status_label.text = "Enter email and password"

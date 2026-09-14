@@ -14,6 +14,10 @@ extends Control
 var bot_textures: Array[Texture2D] = []
 var _tick_tween: Tween
 
+## Undo-cache shim: GameManager predates the Phase 2 migration (deleted since).
+## Dynamic lookup keeps this historical snapshot parseable; the game never loads it.
+var GameManager: Variant = {}
+
 func _ready() -> void:
 	SaveManager.load_game()
 	_load_bot_textures()
@@ -66,7 +70,7 @@ func _on_campaign_pressed() -> void:
 	if GameManager.campaign_unlocked:
 		tidbit_bubble.text = "Campaign unlocks in Phase 3 — your bot is ready! (stub)"
 	else:
-		var need := GameManager.xp_for_next_level()
+		var need = GameManager.xp_for_next_level()
 		tidbit_bubble.text = "Locked! Reach Level 5 first. (%d XP to next level)" % need
 
 func _refresh_all() -> void:
