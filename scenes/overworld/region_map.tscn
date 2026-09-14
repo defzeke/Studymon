@@ -1,4 +1,4 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://scripts/overworld/region_map.gd" id="1"]
 [ext_resource type="Script" path="res://scripts/overworld/player.gd" id="2"]
@@ -6,8 +6,6 @@
 
 [sub_resource type="CircleShape2D" id="player_shape"]
 radius = 24.0
-
-[sub_resource type="Camera2D" id="cam_limit"]
 
 [node name="RegionMap" type="Node2D"]
 script = ExtResource("1")
