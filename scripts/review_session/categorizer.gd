@@ -55,7 +55,7 @@ func _on_file_selected(path: String) -> void:
 	f.close()
 	# Try to read as text for preview/sanity (PDF bytes will look garbled but we still send them)
 	var txt := _file_bytes.get_string_from_utf8()
-	if txt.length() > 0 and txt.is_valid_unicode():
+	if txt.length() > 0 and not txt.contains("�"):
 		paste_area.text = txt.substr(0, 4000)
 	else:
 		paste_area.text = "[Binary file loaded: %d bytes — will send as reviewer]" % _file_bytes.size()
