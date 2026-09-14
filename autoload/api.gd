@@ -75,9 +75,28 @@ func get_topics() -> void:
 func save_topic(topic_id: String, questions: Array[Dictionary]) -> void:
 	_put("/topics/" + topic_id, {"questions": questions})
 
-## Battle grading (Phase 7)
+## Battle grading (Phase 7) — single judging pipeline:
+## POST /grade {type, question, answer, source_context} with type branching server-side.
+## MOCK stays client-side until the backend lands; Api remains the only caller of grading.
 func grade_answer(question_type: String, question: String, answer: String, source_context: String) -> void:
+	if MOCK:
+		mock_grade_question({"type": question_type, "text": question, "answer": "", "key_concepts": []}, answer)
+		return
 	_post("/battle/grade", {"type": question_type, "question": question, "answer": answer, "source": source_context})
+
+## Canonical Phase 7 entry: grade a full question dict (carries expected answer + key_concepts).
+func grade_battle_question(q: Dictionary, answer: String) -> void:
+	if MOCK:
+		mock_grade_question(q, answer)
+		return
+	_post("/battle/grade", {
+		"type": str(q.get("type", "essay")),
+		"question": str(q.get("text", "")),
+		"answer": answer,
+		"source": str(q.get("source", "")),
+		"expected": str(q.get("answer", "")),
+		"key_concepts": q.get("key_concepts", []),
+	})
 
 ## Mastery (Phase 8)
 func get_mastery(topic_id: String) -> void:
@@ -188,17 +207,88 @@ func mock_poll_extraction(job_id: String) -> void:
 func _mock_poll_done(data: Dictionary) -> void:
 	job_status.emit(str(data["job_id"]), str(data["status"]), float(data["progress"]), data["result"])
 
-func mock_grade_answer(question_type: String, _question: String, answer: String, _source_context: String) -> void:
-	var score := 0.5
-	if question_type == "identification":
-		score = 1.0 if answer.to_lower().strip_edges() == "paris" else 0.0
+## Hybrid mock rubric (Phase 7): 50% keyword/concept coverage + 50% holistic
+## judgment proxy (length/effort), so mock grading has a deterministic floor
+## instead of hardcoded answers. Real Claude grading replaces this server-side.
+func mock_grade_question(q: Dictionary, answer: String) -> void:
+	var qtype: String = str(q.get("type", "essay")).to_lower()
+	var score := 0.0
+	var feedback := ""
+	if qtype == "identification" or qtype == "id":
+		var expected: String = str(q.get("answer", "")).strip_edges().to_lower()
+		var given: String = answer.strip_edges().to_lower()
+		if given == "":
+			score = 0.0
+			feedback = "No answer — the enemy shrugs it off."
+		elif expected != "" and given == expected:
+			score = 1.0
+			feedback = "Exact hit — that's the one!"
+		elif expected != "" and (given.contains(expected) or expected.contains(given)):
+			score = 0.8
+			feedback = "Close enough — core term landed."
+		elif expected != "" and _fuzzy_match(given, expected):
+			score = 0.7
+			feedback = "Near miss on spelling, but the idea connected."
+		elif expected == "":
+			score = 0.5 if given.length() >= 2 else 0.0
+			feedback = "No answer key — effort counts for half."
+		else:
+			score = 0.0
+			feedback = "That missed — review the concept and strike again."
 	else:
+		var concepts: Array = q.get("key_concepts", [])
+		var lowered: String = answer.strip_edges().to_lower()
 		var hits := 0
-		for kw in ["chlorophyll", "light", "co2", "glucose"]:
-			if answer.to_lower().contains(kw):
+		var missed: Array = []
+		for c in concepts:
+			var kw: String = str(c).to_lower()
+			if kw != "" and lowered.contains(kw):
 				hits += 1
-		score = hits / 4.0
-	call_deferred("_mock_grade_done", {"score": score, "feedback": "Mock grading — " + str(score * 100) + "%"})
+			elif kw != "":
+				missed.append(str(c))
+		var coverage := 0.0
+		if concepts.size() > 0:
+			coverage = float(hits) / float(concepts.size())
+		else:
+			coverage = 0.5 if lowered.length() >= 10 else 0.0
+		var words := lowered.split(" ", false).size()
+		var holistic: float = clampf(float(words) / 30.0, 0.0, 1.0)
+		score = 0.5 * coverage + 0.5 * holistic
+		if concepts.size() > 0 and hits == concepts.size():
+			feedback = "Full coverage — every key idea landed."
+		elif hits > 0:
+			feedback = "Good — covered %d/%d ideas, missed: %s." % [hits, concepts.size(), ", ".join(missed)]
+		elif words < 4:
+			feedback = "Too thin — explain the mechanism in your own words."
+		else:
+			feedback = "Words, but not the key ideas — aim at: %s." % ", ".join(concepts)
+	var damage := int(round(score * 100.0))
+	call_deferred("_mock_grade_done", {"score": score, "feedback": feedback, "damage": damage, "type": qtype})
+
+## Legacy wrapper (kept for any older callers): grades without an answer key.
+func mock_grade_answer(question_type: String, _question: String, answer: String, _source_context: String) -> void:
+	mock_grade_question({"type": question_type, "text": _question, "answer": "", "key_concepts": []}, answer)
+
+## Token-overlap fuzzy match for identification answers (typo-tolerant).
+func _fuzzy_match(a: String, b: String) -> bool:
+	if a == "" or b == "":
+		return false
+	if abs(a.length() - b.length()) > 3:
+		return false
+	return _edit_distance(a, b) <= 2
+
+func _edit_distance(a: String, b: String) -> int:
+	var prev: Array = []
+	prev.resize(b.length() + 1)
+	for j in b.length() + 1:
+		prev[j] = j
+	for i in a.length():
+		var cur: Array = [i + 1]
+		for j in b.length():
+			var cost := 0 if a[i] == b[j] else 1
+			cur.append(mini(mini(int(cur[j]) + 1, int(prev[j + 1]) + 1), int(prev[j]) + cost))
+		prev = cur
+	return int(prev[b.length()])
 
 func _mock_grade_done(data: Dictionary) -> void:
 	job_status.emit("grade", "completed", 1.0, data)

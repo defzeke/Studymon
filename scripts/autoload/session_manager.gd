@@ -26,6 +26,10 @@ var _active_job_id: String = ""
 var _cleared_trainers: Dictionary = {}  # "topic_id:q_idx" -> true
 var _cleared_gyms: Dictionary = {}  # "topic_id:gym_type" -> true
 var _last_map_data: Dictionary = {}
+# Phase 7: battle context (survives the overworld -> battle scene change)
+var battle_topic_id: String = ""
+var battle_q_index: int = -1
+var battle_is_boss: bool = false
 
 func _ready() -> void:
 	Api.job_status.connect(_on_job_status)
@@ -228,3 +232,26 @@ func reset_progress(topic_id: String) -> void:
 		if str(k).begins_with(topic_id + ":"):
 			_cleared_gyms.erase(k)
 	overworld_progress_changed.emit()
+
+# --- Phase 7: battle handoff ---
+
+## Called by the overworld encounter panel. Boss = final question of a gym.
+func begin_battle(topic_id: String, q_idx: int, is_boss: bool = false) -> void:
+	battle_topic_id = topic_id
+	battle_q_index = q_idx
+	battle_is_boss = is_boss
+
+## The bound question for the active battle ({} if none).
+func get_battle_question() -> Dictionary:
+	if battle_q_index < 0 or battle_q_index >= pending_questions.size():
+		return {}
+	return (pending_questions[battle_q_index] as Dictionary).duplicate(true)
+
+## Called by the battle scene on victory. Marks trainer cleared (+ gym badge for bosses).
+func report_battle_result(won: bool) -> void:
+	if not won or battle_topic_id == "" or battle_q_index < 0:
+		return
+	mark_trainer_cleared(battle_topic_id, battle_q_index)
+	if battle_is_boss and battle_q_index >= 0 and battle_q_index < pending_questions.size():
+		var gym_type: String = str(pending_questions[battle_q_index].get("type", "essay")).to_lower()
+		mark_gym_cleared(battle_topic_id, gym_type)

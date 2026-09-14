@@ -124,7 +124,7 @@ func _on_trainer_touched(_body: Node2D, q_idx: int) -> void:
 	var cleared := SessionManager.is_trainer_cleared(_topic_id, q_idx)
 	encounter_title.text = "Trainer %d %s" % [q_idx + 1, "(cleared)" if cleared else "wants to battle!"]
 	encounter_question.text = "[%s] %s" % [str(q.get("type", "essay")).capitalize(), str(q.get("text", ""))]
-	encounter_clear_btn.text = "Mark Cleared (stub for P7 battle)" if not cleared else "Already Cleared"
+	encounter_clear_btn.text = "⚔ Fight Trainer!" if not cleared else "Already Cleared"
 	encounter_clear_btn.disabled = cleared
 	encounter_panel.visible = true
 
@@ -139,8 +139,8 @@ func _on_gym_touched(_body: Node2D, gym_type: String) -> void:
 	var cleared := SessionManager.is_gym_cleared(_topic_id, gym_type)
 	var count := indices.size()
 	encounter_title.text = "Gym: %s %s" % [gym_type.capitalize(), "(badge earned)" if cleared else "— Boss ahead!"]
-	encounter_question.text = "%d question(s) in this gym. Boss is the final question. (Full battle in Phase 7.)" % count
-	encounter_clear_btn.text = "Claim Badge (stub)" if not cleared else "Badge Earned"
+	encounter_question.text = "%d question(s) in this gym. Boss is the final question." % count
+	encounter_clear_btn.text = "⚔ Fight Boss!" if not cleared else "Badge Earned"
 	encounter_clear_btn.disabled = cleared
 	encounter_panel.visible = true
 
@@ -152,15 +152,16 @@ func _on_encounter_cleared() -> void:
 	if _pending_encounter.is_empty():
 		return
 	if _pending_encounter.get("kind") == "trainer":
-		SessionManager.mark_trainer_cleared(_topic_id, int(_pending_encounter.get("q_index", 0)))
+		SessionManager.begin_battle(_topic_id, int(_pending_encounter.get("q_index", 0)), false)
 	elif _pending_encounter.get("kind") == "gym":
-		var gym_type: String = str(_pending_encounter.get("gym", ""))
-		for qi in _pending_encounter.get("question_indices", []):
-			SessionManager.mark_trainer_cleared(_topic_id, int(qi))
-		SessionManager.mark_gym_cleared(_topic_id, gym_type)
+		var indices: Array = _pending_encounter.get("question_indices", [])
+		if indices.is_empty():
+			return
+		# Boss = final question of the gym.
+		SessionManager.begin_battle(_topic_id, int(indices[indices.size() - 1]), true)
 	encounter_panel.visible = false
 	_pending_encounter = {}
-	_build_route()  # refresh dimmed/badge state
+	get_tree().change_scene_to_file("res://scenes/battle/battle.tscn")
 
 func _refresh_progress() -> void:
 	var p := SessionManager.get_progress(_topic_id)
