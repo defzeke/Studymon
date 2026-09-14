@@ -1,6 +1,6 @@
 extends Node
-## SessionManager — Review Session flow (Phase 5)
-## Client-side: topics → upload → extraction → edit → confirm → region
+## SessionManager — Review Session flow (Phase 5) + Overworld progress (Phase 6)
+## Client-side: topics → upload → extraction → edit → confirm → region → gyms
 
 @warning_ignore("unused_signal")
 signal topics_listed(topics: Array[Dictionary])
@@ -11,6 +11,7 @@ signal extraction_completed(topic_id: String, questions: Array[Dictionary])
 signal extraction_failed(job_id: String, error: String)
 signal topic_saved(topic_id: String)
 signal region_generated(topic_id: String, map_data: Dictionary)
+signal overworld_progress_changed
 
 # Client-side sanity: flag very short/garbled PDFs before sending to backend
 const MIN_WORDS := 20
@@ -21,6 +22,10 @@ var pending_questions: Array[Dictionary] = []
 var editing_topic_id: String = ""
 var _topics: Array[Dictionary] = []
 var _active_job_id: String = ""
+# Phase 6: per-region clear state (mock-persisted in memory)
+var _cleared_trainers: Dictionary = {}  # "topic_id:q_idx" -> true
+var _cleared_gyms: Dictionary = {}  # "topic_id:gym_type" -> true
+var _last_map_data: Dictionary = {}
 
 func _ready() -> void:
 	Api.job_status.connect(_on_job_status)
@@ -134,16 +139,92 @@ func confirm_topic(topic_name: String = "") -> void:
 	_enter_overworld(editing_topic_id)
 
 func _enter_overworld(topic_id: String) -> void:
-	var map_data = {
-		"topic_id": topic_id,
-		"gyms": [],
-		"trainers": [],
-	}
-	for q in pending_questions:
-		var t: String = str(q.get("type", "essay"))
-		if t not in map_data.gyms:
-			map_data.gyms.append(t)
+	var map_data := build_map_data(topic_id, pending_questions)
+	_last_map_data = map_data
 	region_generated.emit(topic_id, map_data)
+
+func build_map_data(topic_id: String, questions: Array[Dictionary]) -> Dictionary:
+	var gyms: Array = []
+	var trainers: Array = []
+	for i in questions.size():
+		var q: Dictionary = questions[i]
+		var t: String = str(q.get("type", "essay")).to_lower()
+		if t not in gyms:
+			gyms.append(t)
+		trainers.append({"q_index": i, "gym": t, "id": str(q.get("id", "q_%d" % i))})
+	return {"topic_id": topic_id, "gyms": gyms, "trainers": trainers}
+
+func get_last_map_data() -> Dictionary:
+	return _last_map_data.duplicate(true)
 
 func get_pending_questions() -> Array[Dictionary]:
 	return pending_questions.duplicate(true)
+
+# --- Phase 6: gym structure + clear-state progress ---
+
+## Groups pending questions by type: [{type, question_indices: [int]}]
+func get_gym_structure() -> Array[Dictionary]:
+	var order: Array = []
+	var buckets: Dictionary = {}
+	for i in pending_questions.size():
+		var t: String = str(pending_questions[i].get("type", "essay")).to_lower()
+		if not buckets.has(t):
+			buckets[t] = []
+			order.append(t)
+		buckets[t].append(i)
+	var out: Array[Dictionary] = []
+	for t in order:
+		out.append({"type": t, "question_indices": buckets[t]})
+	return out
+
+func _trainer_key(topic_id: String, q_idx: int) -> String:
+	return "%s:%d" % [topic_id, q_idx]
+
+func is_trainer_cleared(topic_id: String, q_idx: int) -> bool:
+	return _cleared_trainers.has(_trainer_key(topic_id, q_idx))
+
+func mark_trainer_cleared(topic_id: String, q_idx: int) -> void:
+	_cleared_trainers[_trainer_key(topic_id, q_idx)] = true
+	_recheck_gym_clear(topic_id)
+	overworld_progress_changed.emit()
+
+func is_gym_cleared(topic_id: String, gym_type: String) -> bool:
+	return _cleared_gyms.has("%s:%s" % [topic_id, gym_type])
+
+func mark_gym_cleared(topic_id: String, gym_type: String) -> void:
+	_cleared_gyms["%s:%s" % [topic_id, gym_type]] = true
+	overworld_progress_changed.emit()
+
+func _recheck_gym_clear(topic_id: String) -> void:
+	for gym in get_gym_structure():
+		var t: String = str(gym["type"])
+		var all_done := true
+		for qi in gym["question_indices"]:
+			if not is_trainer_cleared(topic_id, int(qi)):
+				all_done = false
+				break
+		if all_done:
+			_cleared_gyms["%s:%s" % [topic_id, t]] = true
+	overworld_progress_changed.emit()
+
+func get_progress(topic_id: String) -> Dictionary:
+	var total := pending_questions.size()
+	var done := 0
+	for i in pending_questions.size():
+		if is_trainer_cleared(topic_id, i):
+			done += 1
+	var gyms := get_gym_structure()
+	var gyms_done := 0
+	for g in gyms:
+		if is_gym_cleared(topic_id, str(g["type"])):
+			gyms_done += 1
+	return {"cleared": done, "total": total, "gyms_cleared": gyms_done, "gyms_total": gyms.size()}
+
+func reset_progress(topic_id: String) -> void:
+	for k in _cleared_trainers.keys():
+		if str(k).begins_with(topic_id + ":"):
+			_cleared_trainers.erase(k)
+	for k in _cleared_gyms.keys():
+		if str(k).begins_with(topic_id + ":"):
+			_cleared_gyms.erase(k)
+	overworld_progress_changed.emit()

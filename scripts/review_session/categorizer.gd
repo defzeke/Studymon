@@ -263,12 +263,11 @@ func _on_play() -> void:
 
 func _on_region_generated(topic_id: String, map_data: Dictionary) -> void:
 	var gyms: Array = map_data.get("gyms", [])
-	status_label.text = "Region ready! %d gym(s): %s" % [gyms.size(), ", ".join(gyms)]
-	# For now (Phase 5 stub): show summary and allow return to session list
-	play_btn.text = "✓ Region: %s → Session List" % topic_id
-	play_btn.disabled = false
-	play_btn.pressed.disconnect(_on_play)
-	play_btn.pressed.connect(func(): get_tree().change_scene_to_file("res://scenes/ui/session_list.tscn"))
+	status_label.text = "Region ready! %d gym(s): %s — entering overworld..." % [gyms.size(), ", ".join(gyms)]
+	GameState.set_active_region(topic_id)
+	GameState.current_topic_id = topic_id
+	await get_tree().create_timer(0.6).timeout
+	get_tree().change_scene_to_file("res://scenes/overworld/region_map.tscn")
 
 func _on_back() -> void:
 	get_tree().change_scene_to_file("res://scenes/ui/session_list.tscn")

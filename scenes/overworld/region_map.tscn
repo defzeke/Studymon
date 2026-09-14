@@ -1,0 +1,130 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://scripts/overworld/region_map.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/overworld/player.gd" id="2"]
+[ext_resource type="Texture2D" path="res://assets/sprites/bot_lv5.png" id="3"]
+
+[sub_resource type="CircleShape2D" id="player_shape"]
+radius = 24.0
+
+[sub_resource type="Camera2D" id="cam_limit"]
+
+[node name="RegionMap" type="Node2D"]
+script = ExtResource("1")
+
+[node name="Background" type="ColorRect" parent="."]
+offset_left = -1000.0
+offset_top = -2000.0
+offset_right = 1720.0
+offset_bottom = 1400.0
+color = Color(0.13, 0.35, 0.2, 1)
+
+[node name="Route" type="Line2D" parent="."]
+points = PackedVector2Array(360, 1100, 360, 780)
+width = 14.0
+default_color = Color(0.85, 0.75, 0.5, 1)
+
+[node name="Trainers" type="Node2D" parent="."]
+
+[node name="Gyms" type="Node2D" parent="."]
+
+[node name="Player" type="CharacterBody2D" parent="."]
+position = Vector2(360, 1100)
+script = ExtResource("2")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Player"]
+shape = SubResource("player_shape")
+
+[node name="Sprite2D" type="Sprite2D" parent="Player"]
+texture = ExtResource("3")
+scale = Vector2(0.35, 0.35)
+
+[node name="Camera2D" type="Camera2D" parent="Player"]
+position_smoothing_enabled = true
+enabled = true
+
+[node name="HUD" type="CanvasLayer" parent="."]
+
+[node name="TopBar" type="HBoxContainer" parent="HUD"]
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 12.0
+offset_top = 12.0
+offset_right = -12.0
+offset_bottom = 64.0
+grow_horizontal = 2
+theme_override_constants/separation = 12
+
+[node name="BackButton" type="Button" parent="HUD/TopBar"]
+custom_minimum_size = Vector2(90, 44)
+layout_mode = 2
+text = "←"
+
+[node name="ProgressLabel" type="Label" parent="HUD/TopBar"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Trainers 0/0"
+
+[node name="BadgesLabel" type="Label" parent="HUD/TopBar"]
+layout_mode = 2
+size_flags_horizontal = 3
+horizontal_alignment = 2
+text = "Gyms 0/0"
+
+[node name="HintLabel" type="Label" parent="HUD"]
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 12.0
+offset_top = 68.0
+offset_right = -12.0
+offset_bottom = 100.0
+grow_horizontal = 2
+text = "Walk into a trainer or gym (arrows/WASD, touch-drag on mobile later)"
+horizontal_alignment = 1
+
+[node name="EncounterPanel" type="PanelContainer" parent="HUD"]
+visible = false
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -300.0
+offset_top = -220.0
+offset_right = 300.0
+offset_bottom = 220.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Margin" type="MarginContainer" parent="HUD/EncounterPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 20
+
+[node name="List" type="VBoxContainer" parent="HUD/EncounterPanel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="EncounterTitle" type="Label" parent="HUD/EncounterPanel/Margin/List"]
+layout_mode = 2
+text = "Trainer wants to battle!"
+horizontal_alignment = 1
+autowrap_mode = 2
+
+[node name="EncounterQuestion" type="Label" parent="HUD/EncounterPanel/Margin/List"]
+layout_mode = 2
+size_flags_vertical = 3
+text = "Question..."
+autowrap_mode = 2
+
+[node name="EncounterClearButton" type="Button" parent="HUD/EncounterPanel/Margin/List"]
+custom_minimum_size = Vector2(0, 52)
+layout_mode = 2
+text = "Mark Cleared (stub)"
+
+[node name="EncounterCloseButton" type="Button" parent="HUD/EncounterPanel/Margin/List"]
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+text = "Close"
