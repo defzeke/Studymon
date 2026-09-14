@@ -1,8 +1,10 @@
 extends Node2D
 ## Phase 6: 2D Overworld & Gym Structure (GDD §6.1)
 ## Route generator: one gym per question category, hallway trainers before each boss.
-## Trainer/boss triggers hand off to Battle (Phase 7) with the question bound —
-## for now the encounter panel is a stub that previews the question + marks cleared.
+## Trainer/boss triggers hand off to Battle (Phase 7) with the question bound.
+## Phase 8: trainer labels carry mastery badges; a Champion node caps the route —
+## unlocks when all gym badges are earned, moveset = Mastered questions,
+## clearing the gauntlet completes the region.
 
 const PLAYER_SCENE_OFFSET := Vector2(360, 1100)
 
@@ -72,6 +74,11 @@ func _build_route() -> void:
 			var base: Vector2 = prev.lerp(gym_pos, frac)
 			var side := -120.0 if ti % 2 == 0 else 120.0
 			_add_trainer_node(int(indices[ti]), Vector2(360 + side, base.y))
+	# Champion caps the route above the final gym.
+	y -= 320.0
+	var champ_pos := Vector2(360, y)
+	points.append(champ_pos)
+	_add_champion_node(champ_pos)
 	route_line.points = points
 
 func _add_trainer_node(q_idx: int, pos: Vector2) -> void:
@@ -86,8 +93,9 @@ func _add_trainer_node(q_idx: int, pos: Vector2) -> void:
 	circle.radius = 36.0
 	shape.shape = circle
 	area.add_child(shape)
+	var badge: Dictionary = SessionManager.mastery_badge(SessionManager.get_mastery_state(_topic_id, q_idx))
 	var label := Label.new()
-	label.text = "🧑\nT%d" % (q_idx + 1)
+	label.text = "T%d %s" % [q_idx + 1, str(badge["emoji"])]
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.position = Vector2(-24, -28)
 	area.add_child(label)
@@ -107,12 +115,33 @@ func _add_gym_node(gym: Dictionary, pos: Vector2, gym_idx: int) -> void:
 	shape.shape = circle
 	area.add_child(shape)
 	var label := Label.new()
-	var badge := "🏆" if SessionManager.is_gym_cleared(_topic_id, gym_type) else "🏟️"
+	var badge := "GYM-CLEAR" if SessionManager.is_gym_cleared(_topic_id, gym_type) else "GYM"
 	label.text = "%s\n%s G%d" % [badge, gym_type.capitalize(), gym_idx + 1]
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.position = Vector2(-48, -32)
 	area.add_child(label)
 	area.body_entered.connect(_on_gym_touched.bind(gym_type))
+	gyms_root.add_child(area)
+
+func _add_champion_node(pos: Vector2) -> void:
+	var area := Area2D.new()
+	area.position = pos
+	var shape := CollisionShape2D.new()
+	var circle := CircleShape2D.new()
+	circle.radius = 64.0
+	shape.shape = circle
+	area.add_child(shape)
+	var label := Label.new()
+	if SessionManager.is_champion_defeated(_topic_id):
+		label.text = "CHAMPION\nDOWN"
+	elif SessionManager.is_champion_available(_topic_id):
+		label.text = "CHAMPION\nFIGHT!"
+	else:
+		label.text = "CHAMPION\nLOCKED"
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.position = Vector2(-56, -32)
+	area.add_child(label)
+	area.body_entered.connect(_on_champion_touched)
 	gyms_root.add_child(area)
 
 func _on_trainer_touched(_body: Node2D, q_idx: int) -> void:
@@ -122,9 +151,10 @@ func _on_trainer_touched(_body: Node2D, q_idx: int) -> void:
 	var q: Dictionary = questions[q_idx]
 	_pending_encounter = {"kind": "trainer", "q_index": q_idx, "gym": str(q.get("type", "essay"))}
 	var cleared := SessionManager.is_trainer_cleared(_topic_id, q_idx)
+	var badge: Dictionary = SessionManager.mastery_badge(SessionManager.get_mastery_state(_topic_id, q_idx))
 	encounter_title.text = "Trainer %d %s" % [q_idx + 1, "(cleared)" if cleared else "wants to battle!"]
-	encounter_question.text = "[%s] %s" % [str(q.get("type", "essay")).capitalize(), str(q.get("text", ""))]
-	encounter_clear_btn.text = "⚔ Fight Trainer!" if not cleared else "Already Cleared"
+	encounter_question.text = "[%s] %s %s" % [str(badge["name"]), str(q.get("type", "essay")).capitalize(), str(q.get("text", ""))]
+	encounter_clear_btn.text = "Fight Trainer!" if not cleared else "Already Cleared"
 	encounter_clear_btn.disabled = cleared
 	encounter_panel.visible = true
 
@@ -140,8 +170,43 @@ func _on_gym_touched(_body: Node2D, gym_type: String) -> void:
 	var count := indices.size()
 	encounter_title.text = "Gym: %s %s" % [gym_type.capitalize(), "(badge earned)" if cleared else "— Boss ahead!"]
 	encounter_question.text = "%d question(s) in this gym. Boss is the final question." % count
-	encounter_clear_btn.text = "⚔ Fight Boss!" if not cleared else "Badge Earned"
+	encounter_clear_btn.text = "Fight Boss!" if not cleared else "Badge Earned"
 	encounter_clear_btn.disabled = cleared
+	encounter_panel.visible = true
+
+func _on_champion_touched(_body: Node2D) -> void:
+	# Pre-Champion summary screen: moveset preview with mastery badges.
+	if SessionManager.is_champion_defeated(_topic_id):
+		_pending_encounter = {}
+		encounter_title.text = "Region Complete!"
+		encounter_question.text = "You cleared every gym and dethroned the Champion. This region is yours."
+		encounter_clear_btn.text = "Crowned"
+		encounter_clear_btn.disabled = true
+		encounter_panel.visible = true
+		return
+	if not SessionManager.is_champion_available(_topic_id):
+		_pending_encounter = {}
+		encounter_title.text = "Champion (locked)"
+		encounter_question.text = "Earn every gym badge first — the Champion only faces proven trainers."
+		encounter_clear_btn.text = "Locked"
+		encounter_clear_btn.disabled = true
+		encounter_panel.visible = true
+		return
+	var moveset := SessionManager.champion_moveset(_topic_id)
+	var questions := SessionManager.get_pending_questions()
+	var lines: Array[String] = []
+	for n in mini(moveset.size(), 6):
+		var qi := int(moveset[n])
+		if qi >= 0 and qi < questions.size():
+			var badge: Dictionary = SessionManager.mastery_badge(SessionManager.get_mastery_state(_topic_id, qi))
+			lines.append("%s Q%d: %s" % [str(badge["emoji"]), qi + 1, str((questions[qi] as Dictionary).get("text", "")).left(50)])
+	if moveset.size() > 6:
+		lines.append("...and %d more." % (moveset.size() - 6))
+	_pending_encounter = {"kind": "champion"}
+	encounter_title.text = "CHAMPION — %d challenger(s)" % moveset.size()
+	encounter_question.text = "The Champion fields your Mastered questions:\n" + "\n".join(lines) + "\nWin them all back-to-back to complete the region!"
+	encounter_clear_btn.text = "Challenge Champion!"
+	encounter_clear_btn.disabled = false
 	encounter_panel.visible = true
 
 func _on_encounter_close() -> void:
@@ -159,17 +224,23 @@ func _on_encounter_cleared() -> void:
 			return
 		# Boss = final question of the gym.
 		SessionManager.begin_battle(_topic_id, int(indices[indices.size() - 1]), true)
+	elif _pending_encounter.get("kind") == "champion":
+		if not SessionManager.begin_champion_battle(_topic_id):
+			return
+	else:
+		return
 	encounter_panel.visible = false
 	_pending_encounter = {}
 	get_tree().change_scene_to_file("res://scenes/battle/battle.tscn")
 
 func _refresh_progress() -> void:
 	var p := SessionManager.get_progress(_topic_id)
-	progress_label.text = "Trainers %d/%d" % [int(p["cleared"]), int(p["total"])]
+	var crown := "CROWNED" if SessionManager.is_champion_defeated(_topic_id) else ("CHAMP-READY" if SessionManager.is_champion_available(_topic_id) else "CHAMP-LOCKED")
+	progress_label.text = "Trainers %d/%d  %s" % [int(p["cleared"]), int(p["total"]), crown]
 	var gyms := SessionManager.get_gym_structure()
 	var badges := ""
 	for g in gyms:
-		badges += "🏆" if SessionManager.is_gym_cleared(_topic_id, str(g["type"])) else "▫️"
+		badges += "[X]" if SessionManager.is_gym_cleared(_topic_id, str(g["type"])) else "[ ]"
 	badges_label.text = "Gyms %d/%d %s" % [int(p["gyms_cleared"]), int(p["gyms_total"]), badges]
 
 func _on_back() -> void:

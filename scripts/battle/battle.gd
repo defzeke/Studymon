@@ -2,6 +2,8 @@ extends Control
 ## Phase 7: Battle scene (GDD §6.2) — Identification + Essay via one judging pipeline.
 ## Flow: bound question from SessionManager -> answer input -> "judging..." beat
 ## -> damage + one-line AI feedback -> enemy counter -> win/lose -> overworld.
+## Phase 8: Champion gauntlet — back-to-back battles over the moveset, final
+## step at boss HP; clearing the last one completes the region.
 
 const PLAYER_MAX_HP := 100
 const ENEMY_HP := 100
@@ -9,6 +11,7 @@ const BOSS_HP := 150
 const ID_COUNTER := 30
 const XP_REWARD := 5
 const BOSS_XP_REWARD := 10
+const CHAMPION_XP_REWARD := 15
 
 @onready var flee_btn: Button = $Margin/List/TopBar/FleeButton
 @onready var title_label: Label = $Margin/List/TopBar/TitleLabel
@@ -30,6 +33,7 @@ const BOSS_XP_REWARD := 10
 var _q: Dictionary = {}
 var _qtype: String = "essay"
 var _is_boss: bool = false
+var _is_champion: bool = false
 var _enemy_hp: int = ENEMY_HP
 var _enemy_max: int = ENEMY_HP
 var _player_hp: int = PLAYER_MAX_HP
@@ -42,6 +46,7 @@ func _ready() -> void:
 		# Direct scene run fallback: easy ID question so the arena is testable solo.
 		_q = {"id": "q_preview", "text": "Preview: What is the capital of France?", "type": "identification", "answer": "Paris", "confidence": 0.9, "key_concepts": []}
 	_is_boss = bool(SessionManager.battle_is_boss)
+	_is_champion = bool(SessionManager.battle_is_champion)
 	_qtype = str(_q.get("type", "essay")).to_lower()
 	_enemy_max = BOSS_HP if _is_boss else ENEMY_HP
 	_enemy_hp = _enemy_max
@@ -49,8 +54,17 @@ func _ready() -> void:
 	enemy_hp_bar.value = _enemy_hp
 	player_hp_bar.max_value = PLAYER_MAX_HP
 	player_hp_bar.value = _player_hp
-	enemy_name.text = ("👹 Gym Boss" if _is_boss else "👾 Trainer") + "  HP %d/%d" % [_enemy_hp, _enemy_max]
-	title_label.text = "⚔ Boss Battle" if _is_boss else "⚔ Battle"
+	var foe := "Trainer"
+	if _is_champion:
+		foe = "Champion"
+	elif _is_boss:
+		foe = "Gym Boss"
+	enemy_name.text = "%s  HP %d/%d" % [foe, _enemy_hp, _enemy_max]
+	if _is_champion:
+		var cp := SessionManager.champion_progress()
+		title_label.text = "CHAMPION %d/%d" % [int(cp["done"]) + 1, int(cp["total"])]
+	else:
+		title_label.text = "Boss Battle" if _is_boss else "Battle"
 	qtype_label.text = _qtype.capitalize()
 	question_label.text = str(_q.get("text", ""))
 	answer_input.placeholder_text = "Type the exact term..." if _qtype == "identification" else "Explain in your own words..."
@@ -90,22 +104,21 @@ func _on_job_status(job_id: String, status: String, _progress: float, result: Va
 	if _qtype == "identification":
 		if score >= 0.7:
 			_enemy_hp = 0
-			result_label.text = "💥 ONE-HIT KO! %s" % feedback
+			result_label.text = "ONE-HIT KO! %s" % feedback
 		else:
 			_player_hp = maxi(0, _player_hp - ID_COUNTER)
-			result_label.text = "🛡 Blocked! Enemy counters for %d. %s" % [ID_COUNTER, feedback]
+			result_label.text = "Blocked! Enemy counters for %d. %s" % [ID_COUNTER, feedback]
 	else:
 		var damage: int = int(data.get("damage", int(round(score * 100.0))))
 		_enemy_hp = maxi(0, _enemy_hp - damage)
 		if _enemy_hp > 0:
 			var counter: int = 10 + int((1.0 - score) * 20.0)
 			_player_hp = maxi(0, _player_hp - counter)
-			result_label.text = "💥 %d dmg — %s\n🛡 Enemy hits back for %d." % [damage, feedback, counter]
+			result_label.text = "%d dmg — %s\nEnemy hits back for %d." % [damage, feedback, counter]
 		else:
-			result_label.text = "💥 %d dmg — %s" % [damage, feedback]
+			result_label.text = "%d dmg — %s" % [damage, feedback]
 	enemy_hp_bar.value = _enemy_hp
 	player_hp_bar.value = _player_hp
-	enemy_name.text = ("👹 Gym Boss" if _is_boss else "👾 Trainer") + "  HP %d/%d" % [_enemy_hp, _enemy_max]
 	if _enemy_hp <= 0:
 		_win()
 	elif _player_hp <= 0:
@@ -117,20 +130,33 @@ func _win() -> void:
 	_over = true
 	SessionManager.report_battle_result(true)
 	var reward: int = BOSS_XP_REWARD if _is_boss else XP_REWARD
+	var more := false
+	if _is_champion:
+		more = SessionManager.advance_champion()
+		if not more:
+			reward += CHAMPION_XP_REWARD
 	CompanionState.add_xp(reward)
-	result_title.text = "🏆 Victory!"
-	xp_label.text = "+%d XP  •  %s" % [reward, str(_q.get("text", "")).left(60)]
+	if _is_champion and not more:
+		result_title.text = "CHAMPION DEFEATED — Region Complete!"
+		xp_label.text = "+%d XP (incl. champion bonus)  •  %s" % [reward, str(_q.get("text", "")).left(60)]
+	elif _is_champion:
+		var cp := SessionManager.champion_progress()
+		result_title.text = "Opponent down! (%d/%d)" % [int(cp["done"]), int(cp["total"])]
+		xp_label.text = "+%d XP — next challenger awaits." % reward
+	else:
+		result_title.text = "Victory!"
+		xp_label.text = "+%d XP  •  %s" % [reward, str(_q.get("text", "")).left(60)]
 	retry_btn.visible = false
-	continue_btn.text = "Overworld →"
+	continue_btn.text = "Next" if more else "Overworld"
 	result_panel.visible = true
 
 func _lose() -> void:
 	_over = true
 	SessionManager.report_battle_result(false)
-	result_title.text = "💀 Defeated — review and retry!"
+	result_title.text = "Defeated — review and retry!"
 	xp_label.text = "Tip: check the Codex, then strike again."
 	retry_btn.visible = true
-	continue_btn.text = "Flee →"
+	continue_btn.text = "Flee"
 	result_panel.visible = true
 
 func _on_retry() -> void:
@@ -145,7 +171,13 @@ func _on_retry() -> void:
 	submit_btn.disabled = false
 
 func _on_continue() -> void:
+	# Champion gauntlet: next fight reloads the arena with the queued question.
+	if _is_champion and SessionManager.battle_is_champion:
+		get_tree().change_scene_to_file("res://scenes/battle/battle.tscn")
+		return
 	get_tree().change_scene_to_file("res://scenes/overworld/region_map.tscn")
 
 func _on_flee() -> void:
+	# Abandoning the gauntlet forfeits the run (progress per-question stays).
+	SessionManager.battle_is_champion = false
 	get_tree().change_scene_to_file("res://scenes/overworld/region_map.tscn")

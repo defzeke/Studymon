@@ -6,9 +6,10 @@ const SAVE_PATH := "user://studymon_save.json"
 
 func save_game() -> bool:
 	var data := CompanionState.to_dict()
-	data["v"] = 2
+	data["v"] = 3
 	data["campaign_unlocked_flag"] = GameState.campaign_unlocked_flag
 	data["active_region_id"] = GameState.active_region_id
+	data["session"] = SessionManager.to_dict()
 	var f := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
 	if f == null:
 		push_error("SaveManager: cannot write " + SAVE_PATH)
@@ -31,6 +32,7 @@ func load_game() -> bool:
 	if CompanionState.campaign_ready:
 		GameState.set_campaign_unlocked(true)
 	GameState.active_region_id = str(parsed.get("active_region_id", ""))
+	SessionManager.from_dict(parsed.get("session", {}))
 	return true
 
 func reset_save() -> void:

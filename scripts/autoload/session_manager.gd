@@ -231,7 +231,12 @@ func reset_progress(topic_id: String) -> void:
 	for k in _cleared_gyms.keys():
 		if str(k).begins_with(topic_id + ":"):
 			_cleared_gyms.erase(k)
+	for k in _mastery.keys():
+		if str(k).begins_with(topic_id + ":"):
+			_mastery.erase(k)
+	_champion_defeated.erase(topic_id)
 	overworld_progress_changed.emit()
+	mastery_changed.emit()
 
 # --- Phase 7: battle handoff ---
 
@@ -248,10 +253,193 @@ func get_battle_question() -> Dictionary:
 	return (pending_questions[battle_q_index] as Dictionary).duplicate(true)
 
 ## Called by the battle scene on victory. Marks trainer cleared (+ gym badge for bosses).
+## Phase 8: every result (win AND loss) also feeds the mastery tracker.
 func report_battle_result(won: bool) -> void:
-	if not won or battle_topic_id == "" or battle_q_index < 0:
+	if battle_topic_id == "" or battle_q_index < 0:
+		return
+	record_battle_outcome(battle_topic_id, battle_q_index, won)
+	if not won:
 		return
 	mark_trainer_cleared(battle_topic_id, battle_q_index)
 	if battle_is_boss and battle_q_index >= 0 and battle_q_index < pending_questions.size():
 		var gym_type: String = str(pending_questions[battle_q_index].get("type", "essay")).to_lower()
 		mark_gym_cleared(battle_topic_id, gym_type)
+
+# --- Phase 8: mastery states ---
+# Per-question mastery: New -> Learning -> Remaster -> Mastered.
+# Updated after EVERY battle result; Mastered decays to Remaster after
+# MASTERY_DECAY_DAYS without a correct re-encounter (spaced repetition).
+
+enum Mastery { NEW, LEARNING, REMASTER, MASTERED }
+const MASTERY_DECAY_DAYS := 7
+const MASTERY_NAMES: Array[String] = ["new", "learning", "remaster", "mastered"]
+
+signal mastery_changed
+signal champion_defeated(topic_id: String)
+
+var _mastery: Dictionary = {}
+var _champion_defeated: Dictionary = {}
+
+func _mastery_key(topic_id: String, q_idx: int) -> String:
+	return "%s:%d" % [topic_id, q_idx]
+
+func get_mastery_state(topic_id: String, q_idx: int) -> int:
+	var k := _mastery_key(topic_id, q_idx)
+	if not _mastery.has(k):
+		return Mastery.NEW
+	var rec: Dictionary = _mastery[k]
+	var st: int = int(rec.get("state", Mastery.NEW))
+	if st == Mastery.MASTERED:
+		var age := int(Time.get_unix_time_from_system()) - int(rec.get("last_correct", 0))
+		if age > MASTERY_DECAY_DAYS * 86400:
+			st = Mastery.REMASTER
+			rec["state"] = st
+			_mastery[k] = rec
+			mastery_changed.emit()
+	return st
+
+func mastery_badge(state: int) -> Dictionary:
+	match state:
+		Mastery.LEARNING:
+			return {"emoji": "🟡", "color": Color(1.0, 0.85, 0.3), "name": "Learning"}
+		Mastery.REMASTER:
+			return {"emoji": "🟠", "color": Color(1.0, 0.6, 0.25), "name": "Remaster"}
+		Mastery.MASTERED:
+			return {"emoji": "🟢", "color": Color(0.45, 0.95, 0.5), "name": "Mastered"}
+	return {"emoji": "⚪", "color": Color(0.75, 0.75, 0.8), "name": "New"}
+
+func record_battle_outcome(topic_id: String, q_idx: int, won: bool) -> void:
+	var k := _mastery_key(topic_id, q_idx)
+	var rec: Dictionary = _mastery.get(k, {"state": Mastery.NEW, "attempts": 0, "correct": 0, "last_correct": 0})
+	var st: int = int(rec.get("state", Mastery.NEW))
+	rec["attempts"] = int(rec.get("attempts", 0)) + 1
+	if won:
+		rec["correct"] = int(rec.get("correct", 0)) + 1
+		rec["last_correct"] = int(Time.get_unix_time_from_system())
+		match st:
+			Mastery.NEW:
+				st = Mastery.LEARNING
+			Mastery.LEARNING, Mastery.REMASTER:
+				st = Mastery.MASTERED
+	else:
+		match st:
+			Mastery.MASTERED:
+				st = Mastery.REMASTER
+			Mastery.REMASTER:
+				st = Mastery.LEARNING
+	rec["state"] = st
+	_mastery[k] = rec
+	if not Api.MOCK:
+		var qs := _questions_for(topic_id)
+		var qid := "q_%d" % q_idx
+		if q_idx >= 0 and q_idx < qs.size():
+			qid = str((qs[q_idx] as Dictionary).get("id", qid))
+		Api.update_mastery(topic_id, qid, MASTERY_NAMES[st])
+	mastery_changed.emit()
+
+func _questions_for(topic_id: String) -> Array:
+	if topic_id == editing_topic_id or topic_id == current_topic_id:
+		return pending_questions
+	for t in _topics:
+		if str(t.get("id", "")) == topic_id:
+			return t.get("questions", [])
+	return []
+
+# --- Phase 8: Champion battle ---
+# Moveset = all current Mastered questions; falls back to every question
+# so the fight stays playable even with zero mastered.
+
+var battle_is_champion: bool = false
+var battle_champion_queue: Array = []
+var battle_champion_index: int = 0
+
+func champion_moveset(topic_id: String) -> Array:
+	var mastered: Array = []
+	var all: Array = []
+	for i in pending_questions.size():
+		all.append(i)
+		if get_mastery_state(topic_id, i) == Mastery.MASTERED:
+			mastered.append(i)
+	return mastered if not mastered.is_empty() else all
+
+func is_champion_available(topic_id: String) -> bool:
+	var gyms := get_gym_structure()
+	if gyms.is_empty():
+		return false
+	for g in gyms:
+		if not is_gym_cleared(topic_id, str(g["type"])):
+			return false
+	return true
+
+func is_champion_defeated(topic_id: String) -> bool:
+	return _champion_defeated.has(topic_id)
+
+func is_region_complete(topic_id: String) -> bool:
+	return is_champion_defeated(topic_id)
+
+func begin_champion_battle(topic_id: String) -> bool:
+	if not is_champion_available(topic_id):
+		return false
+	var moveset := champion_moveset(topic_id)
+	if moveset.is_empty():
+		return false
+	battle_is_champion = true
+	battle_champion_queue = []
+	for n in moveset.size():
+		battle_champion_queue.append({
+			"topic_id": topic_id,
+			"q_idx": int(moveset[n]),
+			"boss": n == moveset.size() - 1,
+		})
+	battle_champion_index = 0
+	_apply_champion_active()
+	return true
+
+func _apply_champion_active() -> void:
+	var step: Dictionary = battle_champion_queue[battle_champion_index]
+	battle_topic_id = str(step["topic_id"])
+	battle_q_index = int(step["q_idx"])
+	battle_is_boss = bool(step["boss"])
+
+func advance_champion() -> bool:
+	if not battle_is_champion:
+		return false
+	battle_champion_index += 1
+	if battle_champion_index < battle_champion_queue.size():
+		_apply_champion_active()
+		return true
+	battle_is_champion = false
+	_champion_defeated[battle_topic_id] = true
+	champion_defeated.emit(battle_topic_id)
+	overworld_progress_changed.emit()
+	return false
+
+func champion_progress() -> Dictionary:
+	return {"done": battle_champion_index, "total": battle_champion_queue.size()}
+
+func to_dict() -> Dictionary:
+	return {
+		"mastery": _mastery.duplicate(true),
+		"cleared_trainers": _cleared_trainers.keys(),
+		"cleared_gyms": _cleared_gyms.keys(),
+		"champion_defeated": _champion_defeated.keys(),
+		"topics": _topics.duplicate(true),
+	}
+
+func from_dict(data: Dictionary) -> void:
+	_mastery = (data.get("mastery", {}) as Dictionary).duplicate(true)
+	_cleared_trainers = {}
+	for k in data.get("cleared_trainers", []):
+		_cleared_trainers[str(k)] = true
+	_cleared_gyms = {}
+	for k in data.get("cleared_gyms", []):
+		_cleared_gyms[str(k)] = true
+	_champion_defeated = {}
+	for k in data.get("champion_defeated", []):
+		_champion_defeated[str(k)] = true
+	_topics = []
+	for t in data.get("topics", []):
+		if t is Dictionary:
+			_topics.append((t as Dictionary).duplicate(true))
+	overworld_progress_changed.emit()
+	mastery_changed.emit()
