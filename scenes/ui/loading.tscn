@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://b42m66m6eqdsa"]
 
 [ext_resource type="Script" uid="uid://by0fxc51mkf45" path="res://scripts/ui/loading.gd" id="1_35gka"]
-[ext_resource type="Texture2D" path="res://assets/sprites/loading_screen.png" id="2_bg"]
+[ext_resource type="Texture2D" uid="uid://dtyoh01ljv4i5" path="res://assets/sprites/loading_screen.png" id="2_bg"]
 
 [node name="Loading" type="Control" unique_id=578712302]
 layout_mode = 3
@@ -13,12 +13,12 @@ grow_vertical = 2
 script = ExtResource("1_35gka")
 
 [node name="Background" type="TextureRect" parent="." unique_id=1456949058]
-texture = ExtResource("2_bg")
 layout_mode = 0
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+texture = ExtResource("2_bg")
 expand_mode = 1
 stretch_mode = 6
 

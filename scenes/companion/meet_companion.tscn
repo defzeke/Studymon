@@ -1,6 +1,7 @@
 [gd_scene format=3 uid="uid://bhpvca15y6wm6"]
 
 [ext_resource type="Script" uid="uid://dd4qeb554fa5l" path="res://scripts/companion/meet_companion.gd" id="1_jv6rs"]
+[ext_resource type="PackedScene" path="res://ui/hud_strip.tscn" id="2_hud"]
 
 [node name="MeetCompanion" type="Control" unique_id=576284451]
 layout_mode = 3
@@ -24,6 +25,9 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+
+[node name="HudStrip" parent="MeetCompanion/Center" instance=ExtResource("2_hud")]
+layout_mode = 1
 
 [node name="BotSprite" type="TextureRect" parent="MeetCompanion/Center" unique_id=784316685]
 layout_mode = 0

@@ -1,7 +1,9 @@
 extends Node
 ## SessionManager — Review Session flow (Phase 5+)
 
+@warning_ignore("unused_signal")
 signal topics_listed(topics: Array[Dictionary])
+@warning_ignore("unused_signal")
 signal extraction_started(job_id: String)
 signal extraction_progress(job_id: String, progress: float)
 signal extraction_completed(topic_id: String, questions: Array[Dictionary])
@@ -19,7 +21,7 @@ func _ready() -> void:
 func list_topics() -> void:
 	Api.mock_get_topics()
 
-func start_upload(topic_name: String, pdf_bytes: PackedByteArray) -> void:
+func start_upload(topic_name: String, _pdf_bytes: PackedByteArray) -> void:
 	Api.mock_upload_pdf(topic_name)
 
 func _on_job_status(job_id: String, status: String, progress: float, result: Variant) -> void:
