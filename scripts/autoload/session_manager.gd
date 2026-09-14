@@ -384,13 +384,12 @@ var battle_champion_queue: Array = []
 var battle_champion_index: int = 0
 
 func champion_moveset(topic_id: String) -> Array:
+	var qs: Array = _questions_for(topic_id)
 	var mastered: Array = []
-	var all: Array = []
-	for i in pending_questions.size():
-		all.append(i)
+	for i in qs.size():
 		if get_mastery_state(topic_id, i) == Mastery.MASTERED:
 			mastered.append(i)
-	return mastered if not mastered.is_empty() else all
+	return mastered
 
 func is_champion_available(topic_id: String) -> bool:
 	var gyms := get_gym_structure()

@@ -193,6 +193,14 @@ func _on_champion_touched(_body: Node2D) -> void:
 		encounter_panel.visible = true
 		return
 	var moveset := SessionManager.champion_moveset(_topic_id)
+	if moveset.is_empty():
+		_pending_encounter = {}
+		encounter_title.text = "CHAMPION — not ready"
+		encounter_question.text = "No Mastered questions yet. Win rematches to master questions, then face the Champion."
+		encounter_clear_btn.text = "Locked"
+		encounter_clear_btn.disabled = true
+		encounter_panel.visible = true
+		return
 	var questions := SessionManager.get_pending_questions()
 	var lines: Array[String] = []
 	for n in mini(moveset.size(), 6):
