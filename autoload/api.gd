@@ -44,8 +44,8 @@ func _mock_post(path: String) -> Dictionary:
 	match path:
 		"/extract":
 			return {"ok": true, "job": "mock-job-1", "questions": [
-				{"prompt": "Mock: what is training data?", "type": "Identification"},
-				{"prompt": "Mock: explain feedback in your own words.", "type": "Essay"},
+				{"prompt": "Mock: what is training data?", "type": "Identification", "confidence": 0.92},
+				{"prompt": "Mock: explain feedback in your own words.", "type": "Essay", "confidence": 0.68},
 			]}
 		"/grade":
 			return {"ok": true, "score_0_1": 0.7, "feedback": "Mock grade: decent coverage."}
@@ -129,7 +129,44 @@ func _mock_companion_done(data: Dictionary) -> void:
 		get_node("/root/CompanionState").from_dict(data)
 
 func mock_upload_pdf(_topic_name: String) -> void:
+	# Simulate short processing beat like GDD §5.2 "AI is studying..."
 	call_deferred("_mock_upload_done", {"job_id": "job_001", "status": "processing"})
+	# Complete after ~0.8s via timer if tree is ready, else immediate
+	if is_inside_tree():
+		var t := Timer.new()
+		t.wait_time = 0.8
+		t.one_shot = true
+		add_child(t)
+		t.timeout.connect(func():
+			_mock_poll_done({
+				"job_id": "job_001",
+				"status": "completed",
+				"progress": 1.0,
+				"result": {
+					"topic_id": "topic_001",
+					"questions": [
+						{"id": "q1", "text": "What is training data?", "type": "identification", "answer": "Examples used to teach an AI", "confidence": 0.92, "key_concepts": ["examples", "training"]},
+						{"id": "q2", "text": "Explain how feedback helps an AI improve.", "type": "essay", "answer": "", "confidence": 0.65, "key_concepts": ["feedback", "reward", "iteration"]},
+						{"id": "q3", "text": "Why does an AI need trial-and-error practice?", "type": "essay", "answer": "", "confidence": 0.48, "key_concepts": ["practice", "generalization"]},
+					],
+				},
+			})
+			t.queue_free()
+		)
+		t.start()
+	else:
+		call_deferred("_mock_poll_done", {
+			"job_id": "job_001",
+			"status": "completed",
+			"progress": 1.0,
+			"result": {
+				"topic_id": "topic_001",
+				"questions": [
+					{"id": "q1", "text": "What is training data?", "type": "identification", "answer": "Examples used to teach an AI", "confidence": 0.92, "key_concepts": ["examples", "training"]},
+					{"id": "q2", "text": "Explain how feedback helps an AI improve.", "type": "essay", "answer": "", "confidence": 0.65, "key_concepts": ["feedback", "reward", "iteration"]},
+				],
+			},
+		})
 
 func _mock_upload_done(data: Dictionary) -> void:
 	job_status.emit(str(data["job_id"]), str(data["status"]), 0.0, null)
@@ -142,8 +179,8 @@ func mock_poll_extraction(job_id: String) -> void:
 		"result": {
 			"topic_id": "topic_001",
 			"questions": [
-				{"id": "q1", "text": "What is the capital of France?", "type": "identification", "answer": "Paris"},
-				{"id": "q2", "text": "Explain photosynthesis.", "type": "essay", "key_concepts": ["chlorophyll", "light", "CO2", "glucose"]},
+				{"id": "q1", "text": "What is the capital of France?", "type": "identification", "answer": "Paris", "confidence": 0.9, "key_concepts": ["capital"]},
+				{"id": "q2", "text": "Explain photosynthesis.", "type": "essay", "answer": "", "confidence": 0.6, "key_concepts": ["chlorophyll", "light", "CO2", "glucose"]},
 			],
 		},
 	})

@@ -102,7 +102,7 @@ func _on_codex_pressed() -> void:
 
 func _on_campaign_pressed() -> void:
 	if GameState.campaign_unlocked_flag:
-		tidbit_bubble.text = "Campaign unlocks in Phase 5 — your bot is ready! (stub)"
+		get_tree().change_scene_to_file("res://scenes/ui/session_list.tscn")
 	else:
 		var need := CompanionState.xp_for_next_level()
 		tidbit_bubble.text = "Locked! Reach Level 5 first. (%d XP to next level)" % need
