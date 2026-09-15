@@ -1,6 +1,7 @@
 extends Control
 ## Phase 5: Categorizer — Upload → AI is studying... → editable question list → Confirm → Play
 ## Implements build-plan P5: word-count sanity, confidence badges, CRUD list, region generation.
+## Phase 10: Quota label + paywall dialog via MonetizationState / Api.quota_exceeded.
 
 @onready var topic_name_field: LineEdit = $Content/TopicRow/TopicName
 @onready var file_btn: Button = $Content/UploadRow/FileButton
@@ -14,6 +15,8 @@ extends Control
 @onready var play_btn: Button = $Content/PlayButton
 @onready var back_btn: Button = $Content/BackButton
 @onready var file_dialog: FileDialog = $FileDialog
+@onready var quota_label: Label = $Content/QuotaLabel
+@onready var quota_dialog: ConfirmationDialog = $QuotaDialog
 
 var _studying: bool = false
 var _file_bytes: PackedByteArray = PackedByteArray()
@@ -35,6 +38,12 @@ func _ready() -> void:
 	SessionManager.extraction_completed.connect(_on_extraction_completed)
 	SessionManager.extraction_failed.connect(_on_extraction_failed)
 	SessionManager.region_generated.connect(_on_region_generated)
+	# Phase 10: quota UI + paywall
+	_update_quota_label()
+	if has_node("/root/MonetizationState"):
+		MonetizationState.quota_changed.connect(_update_quota_label)
+		MonetizationState.premium_changed.connect(_on_premium_changed)
+	Api.quota_exceeded.connect(_on_quota_exceeded)
 	loading_bar.visible = false
 	_update_sanity()
 	# If we arrived with pending questions (resume or after extraction), render them
@@ -42,6 +51,27 @@ func _ready() -> void:
 		_render_questions()
 		status_label.text = "Loaded %d question(s) — edit before you Play." % SessionManager.pending_questions.size()
 	_update_play_enabled()
+
+func _update_quota_label() -> void:
+	if quota_label == null:
+		return
+	if MonetizationState.is_premium:
+		quota_label.text = "Premium: Unlimited"
+	else:
+		var pdf_rem: int = MonetizationState.get_remaining("pdf")
+		var grade_rem: int = MonetizationState.get_remaining("grade")
+		quota_label.text = "Free AI Uses: PDFs %d/%d | Grades %d/%d" % [pdf_rem, MonetizationState.FREE_PDF_LIMIT, grade_rem, MonetizationState.FREE_GRADE_LIMIT]
+
+func _on_premium_changed(_is_premium: bool) -> void:
+	_update_quota_label()
+
+func _on_quota_exceeded(type: String) -> void:
+	# Only handle pdf quota here; grade quota also triggers dialog but label already covers it.
+	_update_quota_label()
+	quota_dialog.dialog_text = "Weekly AI limit reached. Upgrade to Premium to continue."
+	if type == "grade":
+		quota_dialog.dialog_text = "Weekly AI limit reached. Upgrade to Premium to continue."
+	quota_dialog.popup_centered()
 
 func _on_pick_file() -> void:
 	file_dialog.visible = true
@@ -114,6 +144,7 @@ func _on_study() -> void:
 		SessionManager.start_upload(topic_name, _file_bytes, hint)
 	else:
 		SessionManager.start_upload_from_text(topic_name, source_text)
+	_update_quota_label()
 
 func _on_extraction_started(_job_id: String) -> void:
 	status_label.text = "AI is studying... extracting concepts"
@@ -129,6 +160,7 @@ func _on_extraction_completed(_topic_id: String, questions: Array[Dictionary]) -
 	status_label.text = "AI found %d question(s) — review and edit, then Play!" % questions.size()
 	_render_questions()
 	_update_play_enabled()
+	_update_quota_label()
 	# Hide bar after a beat
 	await get_tree().create_timer(0.6).timeout
 	loading_bar.visible = false
@@ -138,6 +170,7 @@ func _on_extraction_failed(_job_id: String, error: String) -> void:
 	study_btn.disabled = false
 	loading_bar.visible = false
 	status_label.text = "Extraction failed: " + error
+	_update_quota_label()
 
 func _render_questions() -> void:
 	for c in questions_box.get_children():

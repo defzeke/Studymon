@@ -5,11 +5,12 @@ extends Node
 const SAVE_PATH := "user://studymon_save.json"
 func save_game() -> bool:
 	var data := CompanionState.to_dict()
-	data["v"] = 3
+	data["v"] = 4
 	data["campaign_unlocked_flag"] = GameState.campaign_unlocked_flag
 	data["active_region_id"] = GameState.active_region_id
 	data["large_text_enabled"] = GameState.large_text_enabled
 	data["session"] = SessionManager.to_dict()
+	data["monetization"] = MonetizationState.to_dict()
 	var f := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
 	if f == null:
 		push_error("SaveManager: cannot write " + SAVE_PATH)
@@ -36,6 +37,8 @@ func load_game() -> bool:
 		GameState.large_text_enabled = bool(parsed["large_text_enabled"])
 		GameState._apply_theme_font_size()
 	SessionManager.from_dict(parsed.get("session", {}))
+	if parsed.has("monetization"):
+		MonetizationState.from_dict(parsed["monetization"] as Dictionary)
 	return true
 
 func reset_save() -> void:

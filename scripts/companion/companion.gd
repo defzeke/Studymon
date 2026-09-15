@@ -2,6 +2,7 @@ extends Control
 ## Phase 2: Pou-style care room on CompanionState (GDD §4.3).
 ## Three taps -> CompanionState.care() -> stats/XP -> animation -> tidbit.
 ## Phase 9: CPUParticles2D burst on level-up + font-scale hook + data-driven insights.
+## Phase 10: Settings navigation (Toggle Premium / Reset Quota lives in settings.tscn).
 
 @onready var bot_sprite: TextureRect = $BotSprite
 @onready var level_label: Label = $HudStrip/StatusRow/LevelLabel
@@ -13,6 +14,7 @@ extends Control
 @onready var xp_tick: Label = $XPTick
 @onready var campaign_btn: Button = $CampaignButton
 @onready var codex_btn: Button = $CodexButton
+@onready var settings_btn: Button = $SettingsButton
 
 var bot_textures: Array[Texture2D] = []
 var _tick_tween: Tween
@@ -38,6 +40,8 @@ func _ready() -> void:
 	$Buttons/PlayButton.pressed.connect(_on_care.bind("play"))
 	campaign_btn.pressed.connect(_on_campaign_pressed)
 	codex_btn.pressed.connect(_on_codex_pressed)
+	if settings_btn:
+		settings_btn.pressed.connect(_on_settings_pressed)
 	# Sync gate for saves already max-level at load time.
 	if CompanionState.campaign_ready:
 		GameState.set_campaign_unlocked(true)
@@ -175,6 +179,9 @@ func _on_campaign_ready() -> void:
 
 func _on_codex_pressed() -> void:
 	get_tree().change_scene_to_file("res://scenes/ui/codex.tscn")
+
+func _on_settings_pressed() -> void:
+	get_tree().change_scene_to_file("res://scenes/ui/settings.tscn")
 
 func _on_campaign_pressed() -> void:
 	if GameState.campaign_unlocked_flag:

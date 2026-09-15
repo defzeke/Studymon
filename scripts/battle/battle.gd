@@ -5,6 +5,7 @@ extends Control
 ## Phase 8: Champion gauntlet — back-to-back battles over the moveset, final
 ## step at boss HP; clearing the last one completes the region.
 ## Phase 9: Juice — Camera2D screen-shake + hit-stop (brief time_scale pause) on strong essay hits.
+## Phase 10: Quota label + paywall dialog via MonetizationState / Api.quota_exceeded.
 
 const PLAYER_MAX_HP := 100
 const ENEMY_HP := 100
@@ -20,6 +21,7 @@ const HIT_STOP_BASE := 0.06
 
 @onready var flee_btn: Button = $Margin/List/TopBar/FleeButton
 @onready var title_label: Label = $Margin/List/TopBar/TitleLabel
+@onready var quota_label: Label = $Margin/List/QuotaLabel
 @onready var enemy_name: Label = $Margin/List/EnemyCard/Row/EnemyInfo/EnemyName
 @onready var enemy_hp_bar: ProgressBar = $Margin/List/EnemyCard/Row/EnemyInfo/EnemyHP
 @onready var player_hp_bar: ProgressBar = $Margin/List/PlayerCard/Row/PlayerInfo/PlayerHP
@@ -34,6 +36,7 @@ const HIT_STOP_BASE := 0.06
 @onready var xp_label: Label = $Margin/List/ResultPanel/RBox/XPLabel
 @onready var retry_btn: Button = $Margin/List/ResultPanel/RBox/RButtons/RetryButton
 @onready var continue_btn: Button = $Margin/List/ResultPanel/RBox/RButtons/ContinueButton
+@onready var quota_dialog: ConfirmationDialog = $QuotaDialog
 
 var _q: Dictionary = {}
 var _qtype: String = "essay"
@@ -88,6 +91,32 @@ func _ready() -> void:
 	retry_btn.pressed.connect(_on_retry)
 	continue_btn.pressed.connect(_on_continue)
 	Api.job_status.connect(_on_job_status)
+	# Phase 10: quota display + paywall
+	_update_quota_label()
+	if has_node("/root/MonetizationState"):
+		MonetizationState.quota_changed.connect(_update_quota_label)
+		MonetizationState.premium_changed.connect(_on_premium_changed)
+	Api.quota_exceeded.connect(_on_quota_exceeded)
+
+func _update_quota_label() -> void:
+	if quota_label == null:
+		return
+	if MonetizationState.is_premium:
+		quota_label.text = "Premium: Unlimited"
+	else:
+		var rem: int = MonetizationState.get_remaining("grade")
+		quota_label.text = "Free AI Uses: %d/%d" % [rem, MonetizationState.FREE_GRADE_LIMIT]
+
+func _on_premium_changed(_is_premium: bool) -> void:
+	_update_quota_label()
+
+func _on_quota_exceeded(_type: String) -> void:
+	_update_quota_label()
+	_awaiting = false
+	judging_label.visible = false
+	submit_btn.disabled = false
+	quota_dialog.dialog_text = "Weekly AI limit reached. Upgrade to Premium to continue."
+	quota_dialog.popup_centered()
 
 func _on_submit() -> void:
 	if _awaiting or _over:
@@ -137,6 +166,7 @@ func _on_job_status(job_id: String, status: String, _progress: float, result: Va
 			result_label.text = "%d dmg — %s" % [damage, feedback]
 	enemy_hp_bar.value = _enemy_hp
 	player_hp_bar.value = _player_hp
+	_update_quota_label()
 	if _enemy_hp <= 0:
 		_win()
 	elif _player_hp <= 0:

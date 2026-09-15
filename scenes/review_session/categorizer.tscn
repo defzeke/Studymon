@@ -42,6 +42,12 @@ layout_mode = 2
 text = "Study Prep — Upload & Edit"
 horizontal_alignment = 1
 
+[node name="QuotaLabel" type="Label" parent="Content"]
+layout_mode = 2
+horizontal_alignment = 1
+text = "Free AI Uses: PDFs 3/3 | Grades 10/10"
+autowrap_mode = 2
+
 [node name="TopicRow" type="HBoxContainer" parent="Content"]
 layout_mode = 2
 theme_override_constants/separation = 12
@@ -142,4 +148,9 @@ title = "Open a File"
 ok_button_text = "Open"
 file_mode = 0
 access = 2
+visible = false
+
+[node name="QuotaDialog" type="ConfirmationDialog" parent="."]
+title = "Quota Reached"
+dialog_text = "Weekly AI limit reached. Upgrade to Premium to continue."
 visible = false

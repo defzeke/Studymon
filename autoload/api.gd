@@ -7,6 +7,7 @@ extends Node
 
 signal request_failed(endpoint: String, error: String)
 signal job_status(job_id: String, status: String, progress: float, result: Variant)
+signal quota_exceeded(type: String)
 
 const MOCK := true
 const BASE_URL := "http://localhost:8000"
@@ -78,16 +79,25 @@ func save_topic(topic_id: String, questions: Array[Dictionary]) -> void:
 ## Battle grading (Phase 7) — single judging pipeline:
 ## POST /grade {type, question, answer, source_context} with type branching server-side.
 ## MOCK stays client-side until the backend lands; Api remains the only caller of grading.
+## Quota-gated (Phase 10): free tier limits PDF extractions and gradings per week.
 func grade_answer(question_type: String, question: String, answer: String, source_context: String) -> void:
+	if not MonetizationState.can_consume("grade"):
+		quota_exceeded.emit("grade")
+		return
+	MonetizationState.consume("grade")
 	if MOCK:
-		mock_grade_question({"type": question_type, "text": question, "answer": "", "key_concepts": []}, answer)
+		_execute_mock_grade({"type": question_type, "text": question, "answer": "", "key_concepts": [], "source": source_context}, answer)
 		return
 	_post("/battle/grade", {"type": question_type, "question": question, "answer": answer, "source": source_context})
 
 ## Canonical Phase 7 entry: grade a full question dict (carries expected answer + key_concepts).
 func grade_battle_question(q: Dictionary, answer: String) -> void:
+	if not MonetizationState.can_consume("grade"):
+		quota_exceeded.emit("grade")
+		return
+	MonetizationState.consume("grade")
 	if MOCK:
-		mock_grade_question(q, answer)
+		_execute_mock_grade(q, answer)
 		return
 	_post("/battle/grade", {
 		"type": str(q.get("type", "essay")),
@@ -97,6 +107,35 @@ func grade_battle_question(q: Dictionary, answer: String) -> void:
 		"expected": str(q.get("answer", "")),
 		"key_concepts": q.get("key_concepts", []),
 	})
+
+## Phase 10: quota-gated extraction entry (spec name: extract_from_pdf).
+## Checks MonetizationState.can_consume("pdf"); on failure emits quota_exceeded("pdf")
+## and returns early without mock logic. On success consumes and proceeds.
+func extract_from_pdf(topic_name: String = "", pdf_bytes: PackedByteArray = PackedByteArray(), source_text: String = "") -> void:
+	if not MonetizationState.can_consume("pdf"):
+		quota_exceeded.emit("pdf")
+		return
+	MonetizationState.consume("pdf")
+	var text := source_text
+	if text == "" and pdf_bytes.size() > 0:
+		var decoded := pdf_bytes.get_string_from_utf8()
+		if decoded.length() > 0 and not decoded.contains("�"):
+			text = decoded
+	_execute_mock_upload(topic_name, text)
+
+## Phase 10: quota-gated essay grading entry (spec name: grade_essay).
+## Accepts either a question String or a full Dictionary for flexibility.
+func grade_essay(question: Variant, answer: String, source_context: String = "") -> void:
+	if not MonetizationState.can_consume("grade"):
+		quota_exceeded.emit("grade")
+		return
+	MonetizationState.consume("grade")
+	var q: Dictionary
+	if question is Dictionary:
+		q = (question as Dictionary).duplicate(true)
+	else:
+		q = {"type": "essay", "text": str(question), "answer": "", "key_concepts": [], "source": source_context}
+	_execute_mock_grade(q, answer)
 
 ## Mastery (Phase 8)
 func get_mastery(topic_id: String) -> void:
@@ -109,7 +148,7 @@ func update_mastery(topic_id: String, question_id: String, state: String) -> voi
 func _auth_headers() -> Array:
 	var headers: Array = []
 	if GameState.auth_token != "":
-		headers.append("Authorization: Bearer " + GameState.auth_token)
+		headers.append("Authorization: *** " + GameState.auth_token)
 	return headers
 
 func _post(endpoint: String, data: Dictionary) -> void:
@@ -147,7 +186,16 @@ func _mock_companion_done(data: Dictionary) -> void:
 	if has_node("/root/CompanionState"):
 		get_node("/root/CompanionState").from_dict(data)
 
+# Phase 10: quota-gated mock upload. Emits quota_exceeded("pdf") on limit.
 func mock_upload_pdf(topic_name: String, source_text: String = "") -> void:
+	if not MonetizationState.can_consume("pdf"):
+		quota_exceeded.emit("pdf")
+		return
+	MonetizationState.consume("pdf")
+	_execute_mock_upload(topic_name, source_text)
+
+# Internal helper: executes mock extraction without quota check (called after gate).
+func _execute_mock_upload(topic_name: String, source_text: String) -> void:
 	# Simulate short processing beat like GDD §5.2 "AI is studying..."
 	call_deferred("_mock_upload_done", {"job_id": "job_001", "status": "processing"})
 	# Complete after ~0.8s via timer if tree is ready, else immediate.
@@ -324,7 +372,16 @@ func _mock_poll_done(data: Dictionary) -> void:
 ## Hybrid mock rubric (Phase 7): 50% keyword/concept coverage + 50% holistic
 ## judgment proxy (length/effort), so mock grading has a deterministic floor
 ## instead of hardcoded answers. Real Claude grading replaces this server-side.
+## Quota-gated (Phase 10): emits quota_exceeded("grade") on limit.
 func mock_grade_question(q: Dictionary, answer: String) -> void:
+	if not MonetizationState.can_consume("grade"):
+		quota_exceeded.emit("grade")
+		return
+	MonetizationState.consume("grade")
+	_execute_mock_grade(q, answer)
+
+# Internal helper: executes mock grading without quota check (called after gate).
+func _execute_mock_grade(q: Dictionary, answer: String) -> void:
 	var qtype: String = str(q.get("type", "essay")).to_lower()
 	var score := 0.0
 	var feedback := ""
@@ -381,7 +438,11 @@ func mock_grade_question(q: Dictionary, answer: String) -> void:
 
 ## Legacy wrapper (kept for any older callers): grades without an answer key.
 func mock_grade_answer(question_type: String, _question: String, answer: String, _source_context: String) -> void:
-	mock_grade_question({"type": question_type, "text": _question, "answer": "", "key_concepts": []}, answer)
+	if not MonetizationState.can_consume("grade"):
+		quota_exceeded.emit("grade")
+		return
+	MonetizationState.consume("grade")
+	_execute_mock_grade({"type": question_type, "text": _question, "answer": "", "key_concepts": [], "source": _source_context}, answer)
 
 ## Token-overlap fuzzy match for identification answers (typo-tolerant).
 func _fuzzy_match(a: String, b: String) -> bool:

@@ -58,6 +58,12 @@ size_flags_horizontal = 3
 text = "⚔ Battle"
 horizontal_alignment = 1
 
+[node name="QuotaLabel" type="Label" parent="Margin/List"]
+layout_mode = 2
+horizontal_alignment = 1
+text = "Free AI Uses: 10/10"
+autowrap_mode = 2
+
 [node name="EnemyCard" type="PanelContainer" parent="Margin/List"]
 layout_mode = 2
 
@@ -193,3 +199,8 @@ custom_minimum_size = Vector2(0, 52)
 layout_mode = 2
 size_flags_horizontal = 3
 text = "Overworld →"
+
+[node name="QuotaDialog" type="ConfirmationDialog" parent="."]
+title = "Quota Reached"
+dialog_text = "Weekly AI limit reached. Upgrade to Premium to continue."
+visible = false

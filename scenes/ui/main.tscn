@@ -212,3 +212,14 @@ offset_right = -16.0
 offset_bottom = 72.0
 grow_horizontal = 0
 text = "Codex"
+
+[node name="SettingsButton" type="Button" parent="Room"]
+layout_mode = 0
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -180.0
+offset_top = 80.0
+offset_right = -16.0
+offset_bottom = 136.0
+grow_horizontal = 0
+text = "Settings"
