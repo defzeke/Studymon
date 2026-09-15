@@ -4,6 +4,7 @@ extends Control
 ## -> damage + one-line AI feedback -> enemy counter -> win/lose -> overworld.
 ## Phase 8: Champion gauntlet — back-to-back battles over the moveset, final
 ## step at boss HP; clearing the last one completes the region.
+## Phase 9: Juice — Camera2D screen-shake + hit-stop (brief time_scale pause) on strong essay hits.
 
 const PLAYER_MAX_HP := 100
 const ENEMY_HP := 100
@@ -12,6 +13,10 @@ const ID_COUNTER := 30
 const XP_REWARD := 5
 const BOSS_XP_REWARD := 10
 const CHAMPION_XP_REWARD := 15
+# Phase 9 juice thresholds
+const STRONG_ESSAY_SCORE := 0.7
+const SHAKE_BASE_INTENSITY := 8.0
+const HIT_STOP_BASE := 0.06
 
 @onready var flee_btn: Button = $Margin/List/TopBar/FleeButton
 @onready var title_label: Label = $Margin/List/TopBar/TitleLabel
@@ -39,6 +44,7 @@ var _enemy_max: int = ENEMY_HP
 var _player_hp: int = PLAYER_MAX_HP
 var _awaiting: bool = false
 var _over: bool = false
+var _shake_tween: Tween
 
 func _ready() -> void:
 	_q = SessionManager.get_battle_question()
@@ -105,12 +111,17 @@ func _on_job_status(job_id: String, status: String, _progress: float, result: Va
 		if score >= 0.7:
 			_enemy_hp = 0
 			result_label.text = "ONE-HIT KO! %s" % feedback
+			# Identification KO also gets light juice — but essay strong hits are heavier.
+			_screen_shake(6.0, 0.18)
 		else:
 			_player_hp = maxi(0, _player_hp - ID_COUNTER)
 			result_label.text = "Blocked! Enemy counters for %d. %s" % [ID_COUNTER, feedback]
 	else:
 		var damage: int = int(data.get("damage", int(round(score * 100.0))))
 		_enemy_hp = maxi(0, _enemy_hp - damage)
+		# Phase 9: strong essay answers trigger hit-stop + Camera2D/Control shake.
+		if score >= STRONG_ESSAY_SCORE and damage > 0:
+			_trigger_strong_hit_juice(score)
 		if _enemy_hp > 0:
 			var counter: int = 10 + int((1.0 - score) * 20.0)
 			_player_hp = maxi(0, _player_hp - counter)
@@ -125,6 +136,44 @@ func _on_job_status(job_id: String, status: String, _progress: float, result: Va
 		_lose()
 	else:
 		submit_btn.disabled = false
+
+# --- Phase 9: juice ---
+func _trigger_strong_hit_juice(score: float) -> void:
+	var intensity := SHAKE_BASE_INTENSITY + score * 10.0
+	var duration := 0.22 + score * 0.08
+	_screen_shake(intensity, duration)
+	var stop_dur := HIT_STOP_BASE + score * 0.04
+	_hit_stop(stop_dur)
+
+func _screen_shake(intensity: float, duration: float) -> void:
+	# Prefer Camera2D offset if present (spec requirement), fallback to Control position.
+	var cam := get_node_or_null("Camera2D") as Camera2D
+	if cam:
+		var orig: Vector2 = cam.offset
+		var t := create_tween()
+		var steps := 5
+		for i in steps:
+			var off := Vector2(randf_range(-intensity, intensity), randf_range(-intensity * 0.7, intensity * 0.7))
+			t.tween_property(cam, "offset", off, duration / float(steps * 2))
+			t.tween_property(cam, "offset", orig, duration / float(steps * 2))
+		t.tween_property(cam, "offset", orig, 0.02)
+		return
+	if _shake_tween and _shake_tween.is_valid():
+		_shake_tween.kill()
+	var base: Vector2 = position
+	_shake_tween = create_tween()
+	for i in 4:
+		var off := Vector2(randf_range(-intensity, intensity), randf_range(-intensity * 0.6, intensity * 0.6))
+		_shake_tween.tween_property(self, "position", base + off, duration / 8.0)
+		_shake_tween.tween_property(self, "position", base, duration / 8.0)
+	_shake_tween.tween_property(self, "position", base, 0.01)
+
+func _hit_stop(duration: float) -> void:
+	# Brief time_scale dip — timer ignores time_scale so it always recovers.
+	var prev: float = Engine.time_scale
+	Engine.time_scale = 0.08
+	await get_tree().create_timer(duration, true, false, true).timeout
+	Engine.time_scale = prev
 
 func _win() -> void:
 	_over = true

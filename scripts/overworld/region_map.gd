@@ -5,6 +5,7 @@ extends Node2D
 ## Phase 8: trainer labels carry mastery badges; a Champion node caps the route —
 ## unlocks when all gym badges are earned, moveset = Mastered questions,
 ## clearing the gauntlet completes the region.
+## Phase 9: CPUParticles2D burst on gym clear.
 
 const PLAYER_SCENE_OFFSET := Vector2(360, 1100)
 
@@ -23,6 +24,8 @@ const PLAYER_SCENE_OFFSET := Vector2(360, 1100)
 
 var _topic_id: String = ""
 var _pending_encounter: Dictionary = {}
+var _gym_positions: Dictionary = {}
+var _prev_cleared_gyms: Dictionary = {}
 
 func _ready() -> void:
 	_topic_id = SessionManager.current_topic_id
@@ -53,6 +56,7 @@ func _build_route() -> void:
 		c.queue_free()
 	for c in gyms_root.get_children():
 		c.queue_free()
+	_gym_positions.clear()
 	var gyms := SessionManager.get_gym_structure()
 	if gyms.is_empty():
 		return
@@ -80,6 +84,12 @@ func _build_route() -> void:
 	points.append(champ_pos)
 	_add_champion_node(champ_pos)
 	route_line.points = points
+	# Snapshot cleared state on build so we don't burst for saves that already cleared.
+	_prev_cleared_gyms.clear()
+	for g in gyms:
+		var t: String = str(g["type"])
+		if SessionManager.is_gym_cleared(_topic_id, t):
+			_prev_cleared_gyms[t] = true
 
 func _add_trainer_node(q_idx: int, pos: Vector2) -> void:
 	var questions := SessionManager.get_pending_questions()
@@ -107,6 +117,7 @@ func _add_trainer_node(q_idx: int, pos: Vector2) -> void:
 
 func _add_gym_node(gym: Dictionary, pos: Vector2, gym_idx: int) -> void:
 	var gym_type: String = str(gym["type"])
+	_gym_positions[gym_type] = pos
 	var area := Area2D.new()
 	area.position = pos
 	var shape := CollisionShape2D.new()
@@ -143,6 +154,40 @@ func _add_champion_node(pos: Vector2) -> void:
 	area.add_child(label)
 	area.body_entered.connect(_on_champion_touched)
 	gyms_root.add_child(area)
+
+# --- Phase 9: gym-clear burst (CPUParticles2D, one-shot, auto-freed) ---
+func _spawn_gym_burst(pos: Vector2) -> void:
+	var p := CPUParticles2D.new()
+	p.position = pos
+	p.amount = 26
+	p.lifetime = 0.7
+	p.one_shot = true
+	p.explosiveness = 1.0
+	p.emission_shape = CPUParticles2D.EMISSION_SHAPE_SPHERE
+	p.emission_sphere_radius = 8.0
+	p.direction = Vector2(0, -1)
+	p.spread = 60.0
+	p.gravity = Vector2(0, 140)
+	p.initial_velocity_min = 80.0
+	p.initial_velocity_max = 160.0
+	p.angular_velocity_min = -120.0
+	p.angular_velocity_max = 120.0
+	p.scale_amount_min = 3.0
+	p.scale_amount_max = 5.5
+	p.color = Color(0.35, 0.95, 0.55)
+	p.emitting = true
+	add_child(p)
+	p.restart()
+	var t := Timer.new()
+	t.wait_time = 1.2
+	t.one_shot = true
+	t.timeout.connect(func() -> void:
+		if is_instance_valid(p):
+			p.queue_free()
+		t.queue_free()
+	)
+	add_child(t)
+	t.start()
 
 func _on_trainer_touched(_body: Node2D, q_idx: int) -> void:
 	var questions := SessionManager.get_pending_questions()
@@ -248,7 +293,16 @@ func _refresh_progress() -> void:
 	var gyms := SessionManager.get_gym_structure()
 	var badges := ""
 	for g in gyms:
-		badges += "[X]" if SessionManager.is_gym_cleared(_topic_id, str(g["type"])) else "[ ]"
+		var t: String = str(g["type"])
+		var now_cleared := SessionManager.is_gym_cleared(_topic_id, t)
+		if now_cleared and not _prev_cleared_gyms.has(t):
+			# Fresh clear → burst at gym position.
+			var pos: Vector2 = _gym_positions.get(t, Vector2(360, 600))
+			_spawn_gym_burst(pos)
+			_prev_cleared_gyms[t] = true
+		elif now_cleared:
+			_prev_cleared_gyms[t] = true
+		badges += "[X]" if now_cleared else "[ ]"
 	badges_label.text = "Gyms %d/%d %s" % [int(p["gyms_cleared"]), int(p["gyms_total"]), badges]
 
 func _on_back() -> void:

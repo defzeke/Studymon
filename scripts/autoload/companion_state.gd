@@ -9,6 +9,11 @@ signal campaign_gate_ready
 signal pomodoro_phase_changed(mode: String)
 
 const MAX_LEVEL := 5
+# Phase 9 verified pacing: cumulative 150 XP to Lv5.
+# Deltas: Lv1->2=20, 2->3=25, 3->4=30, 4->5=35.
+# At 1-2 XP per tap (feed 2, pet 1, play 2; avg ~1.66 cycling), ~90 taps to Lv5.
+# At ~1.5s per tap+feedback => ~2.5-4 min, plus diminishing after 10 same-action/hour.
+# Meets GDD "minutes, not hours" for Levels 1-5; no curve change needed in Phase 9.
 const XP_PER_LEVEL := [0, 20, 45, 75, 110, 150]  # cumulative
 const STAT_MAX := 100.0
 const STAT_DECAY_PER_SEC := 0.15

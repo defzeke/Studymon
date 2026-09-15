@@ -3,12 +3,12 @@ extends Node
 ## (Cloud save arrives with backend/auth; format is versioned via "v".)
 
 const SAVE_PATH := "user://studymon_save.json"
-
 func save_game() -> bool:
 	var data := CompanionState.to_dict()
 	data["v"] = 3
 	data["campaign_unlocked_flag"] = GameState.campaign_unlocked_flag
 	data["active_region_id"] = GameState.active_region_id
+	data["large_text_enabled"] = GameState.large_text_enabled
 	data["session"] = SessionManager.to_dict()
 	var f := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
 	if f == null:
@@ -32,6 +32,9 @@ func load_game() -> bool:
 	if CompanionState.campaign_ready:
 		GameState.set_campaign_unlocked(true)
 	GameState.active_region_id = str(parsed.get("active_region_id", ""))
+	if parsed.has("large_text_enabled"):
+		GameState.large_text_enabled = bool(parsed["large_text_enabled"])
+		GameState._apply_theme_font_size()
 	SessionManager.from_dict(parsed.get("session", {}))
 	return true
 
