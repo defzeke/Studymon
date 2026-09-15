@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bcltj13vt8y4e"
-path="res://.godot/imported/mainroom.png-ed7083c22c3bffb786cf3b4a5fb7cd37.ctex"
+uid="uid://cg7rvcsefivls"
+path="res://.godot/imported/companion_svg.png-59cbf9ac4199417ed56d6f2b89ceac4a.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/sprites/mainroom.png"
-dest_files=["res://.godot/imported/mainroom.png-ed7083c22c3bffb786cf3b4a5fb7cd37.ctex"]
+source_file="res://addons/godot_mcp/cache/undo/entry_000071/files/assets/sprites/companion/companion_svg.png"
+dest_files=["res://.godot/imported/companion_svg.png-59cbf9ac4199417ed56d6f2b89ceac4a.ctex"]
 
 [params]
 

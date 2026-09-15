@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bk46d1er6jqc4"
-path="res://.godot/imported/mainroom_dark.png-4bfeaf40fbcc6386c88fffca0c7e2b3b.ctex"
+uid="uid://cufk3qxjphcg1"
+path="res://.godot/imported/complete_companion.svg-a97e8f6d05508d5f5f9e6014ee6e483f.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/sprites/mainroom_dark.png"
-dest_files=["res://.godot/imported/mainroom_dark.png-4bfeaf40fbcc6386c88fffca0c7e2b3b.ctex"]
+source_file="res://assets/sprites/companion/complete_companion.svg"
+dest_files=["res://.godot/imported/complete_companion.svg-a97e8f6d05508d5f5f9e6014ee6e483f.ctex"]
 
 [params]
 
@@ -38,3 +38,6 @@ process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
 detect_3d/compress_to=1
+svg/scale=1.0
+editor/scale_with_editor_scale=false
+editor/convert_colors_with_editor_theme=false

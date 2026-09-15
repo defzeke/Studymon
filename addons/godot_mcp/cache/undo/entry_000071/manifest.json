@@ -1,0 +1,13 @@
+{
+  "args_summary": "delete_file(path=res://assets/sprites/companion/companion_svg.png)",
+  "files": [
+    {
+      "backup": "res://addons/godot_mcp/cache/undo/entry_000071/files/assets/sprites/companion/companion_svg.png",
+      "kind": "deleted",
+      "path": "res://assets/sprites/companion/companion_svg.png"
+    }
+  ],
+  "id": "000071",
+  "timestamp": 1789418275.0,
+  "tool": "delete_file"
+}

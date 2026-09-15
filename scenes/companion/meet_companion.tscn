@@ -1,6 +1,7 @@
 [gd_scene format=3 uid="uid://bhpvca15y6wm6"]
 
 [ext_resource type="Script" uid="uid://dd4qeb554fa5l" path="res://scripts/companion/meet_companion.gd" id="1_jv6rs"]
+[ext_resource type="PackedScene" path="res://scenes/companion/companion_rig.tscn" id="2_rig"]
 
 [node name="MeetCompanion" type="Control" unique_id=576284451]
 layout_mode = 3
@@ -25,18 +26,10 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="BotSprite" type="TextureRect" parent="MeetCompanion/Center" unique_id=784316685]
-layout_mode = 0
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -128.0
-offset_top = -128.0
-offset_right = 128.0
-offset_bottom = 128.0
-expand_mode = 1
-stretch_mode = 5
+[node name="CompanionRig" parent="MeetCompanion/Center" instance=ExtResource("2_rig") unique_id=784316685]
+visible = false
+position = Vector2(360, 500)
+scale = Vector2(0.78, 0.78)
 
 [node name="Dialogue" type="Label" parent="MeetCompanion/Center" unique_id=1990825022]
 layout_mode = 0
