@@ -46,7 +46,7 @@ func set_active_region(region_id: String) -> void:
 	active_region_id = region_id
 	active_region_changed.emit(region_id)
 
-# --- Phase 9: large-text toggle — mutates ui/app_theme.tres at runtime ---
+# --- Phase 9: large-text toggle — mutates loaded Theme instance in memory ---
 func set_large_text(enabled: bool) -> void:
 	if large_text_enabled == enabled:
 		return

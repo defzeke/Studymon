@@ -1,8 +1,5 @@
 [gd_resource type="Theme" load_steps=3 format=3]
 
-# Phase 9 accessibility: default 28 / Button 32 = Standard; Large scales to 36 / 40 via GameState.set_large_text().
-# GameState._apply_theme_font_size() mutates default_font_size + Button/font_size at runtime and reassigns root.theme.
-
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn"]
 bg_color = Color(0.11, 0.15, 0.31, 1)
 corner_radius_top_left = 16
