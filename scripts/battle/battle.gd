@@ -47,6 +47,13 @@ var _over: bool = false
 var _shake_tween: Tween
 
 func _ready() -> void:
+	# Phase 9 fix: Camera2D was breaking top-left anchored Control layout via Drag Center.
+	# Force FIXED_TOP_LEFT so shaking the camera offset never shifts the UI canvas origin.
+	var _cam := get_node_or_null("Camera2D") as Camera2D
+	if _cam:
+		_cam.anchor_mode = Camera2D.ANCHOR_MODE_FIXED_TOP_LEFT
+		_cam.position = Vector2.ZERO
+		_cam.offset = Vector2.ZERO
 	_q = SessionManager.get_battle_question()
 	if _q.is_empty():
 		# Direct scene run fallback: easy ID question so the arena is testable solo.
