@@ -2,9 +2,7 @@ extends Node
 ## SessionManager — Review Session flow (Phase 5) + Overworld progress (Phase 6)
 ## Client-side: topics → upload → extraction → edit → confirm → region → gyms
 
-@warning_ignore("unused_signal")
 signal topics_listed(topics: Array[Dictionary])
-@warning_ignore("unused_signal")
 signal extraction_started(job_id: String)
 signal extraction_progress(job_id: String, progress: float)
 signal extraction_completed(topic_id: String, questions: Array[Dictionary])
