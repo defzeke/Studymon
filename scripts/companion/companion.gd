@@ -229,7 +229,7 @@ func _pop_bot_big() -> void:
 func _show_xp_tick(text: String) -> void:
 	xp_tick.text = text
 	xp_tick.modulate.a = 1.0
-	xp_tick.position = bot_sprite.position + Vector2(60, -20)
+	xp_tick.position = rig.position + Vector2(150, -160)
 	var t := create_tween()
 	t.set_parallel(true)
 	t.tween_property(xp_tick, "position:y", xp_tick.position.y - 40.0, 0.6)

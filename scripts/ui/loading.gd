@@ -6,6 +6,15 @@ extends Control
 
 @onready var load_bar: ProgressBar = $Content/LoadBar
 @onready var tip_label: Label = $Content/TipLabel
+@onready var run_bot: TextureRect = $Content/LoadBar/RunBot
+
+const RUN_FRAMES: Array[Texture2D] = [
+	preload("res://assets/sprites/1run_loading.png"),
+	preload("res://assets/sprites/2run_loading.png"),
+	preload("res://assets/sprites/3run_loading.png"),
+]
+const RUN_FRAME_TIME: float = 0.15
+const RUN_BOT_HALF_WIDTH: float = 28.0
 
 const TIPS: Array[String] = [
 	"Your AI starts out knowing nothing — you train it!",
@@ -23,6 +32,8 @@ const CRAWL_TIME: float = 2.0
 var _tip_index: int = 0
 var _tip_timer: Timer
 var _done: bool = false
+var _run_time: float = 0.0
+var _run_frame: int = 0
 
 func _ready() -> void:
 	theme = load("res://ui/app_theme.tres") as Theme
@@ -31,10 +42,29 @@ func _ready() -> void:
 	load_bar.value = 0.0
 	_tip_index = randi() % TIPS.size()
 	tip_label.text = TIPS[_tip_index]
+	run_bot.texture = RUN_FRAMES[0]
 	if has_node("/root/MusicManager"):
 		(get_node("/root/MusicManager") as Node).call("ensure_playing")
 	_start_tip_cycle()
 	_start_load_sequence()
+
+func _process(delta: float) -> void:
+	if _done:
+		return
+	# Cycle run frames.
+	_run_time += delta
+	if _run_time >= RUN_FRAME_TIME:
+		_run_time = 0.0
+		_run_frame = (_run_frame + 1) % RUN_FRAMES.size()
+		run_bot.texture = RUN_FRAMES[_run_frame]
+	# Run the bot along the bar with progress.
+	var bar_w := load_bar.size.x
+	if bar_w > RUN_BOT_HALF_WIDTH * 2.0:
+		var half := RUN_BOT_HALF_WIDTH / bar_w
+		var f := clampf(load_bar.value / 100.0, 0.0, 1.0)
+		var a := lerpf(half, 1.0 - half, f)
+		run_bot.anchor_left = a
+		run_bot.anchor_right = a
 
 func _start_tip_cycle() -> void:
 	_tip_timer = Timer.new()

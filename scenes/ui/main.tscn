@@ -33,6 +33,8 @@ corner_radius_top_left = 9
 corner_radius_top_right = 9
 corner_radius_bottom_right = 9
 corner_radius_bottom_left = 9
+[ext_resource type="Texture2D" path="res://assets/sprites/rooms/main.svg" id="3_room"]
+[ext_resource type="PackedScene" path="res://scenes/companion/companion_rig.tscn" id="4_rig"]
 
 [node name="Main" type="Control" unique_id=727120266]
 layout_mode = 3
@@ -51,7 +53,16 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("2_02nsg")
 
+[node name="BgFill" type="ColorRect" parent="Room"]
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.142, 0.534, 0.789, 1)
+
 [node name="Background" type="TextureRect" parent="Room" unique_id=488028304]
+texture = ExtResource("3_room")
 layout_mode = 0
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -59,20 +70,30 @@ texture = ExtResource("4_bg")
 grow_horizontal = 2
 grow_vertical = 2
 expand_mode = 1
-stretch_mode = 6
+stretch_mode = 5
 
-[node name="BotSprite" type="TextureRect" parent="Room" unique_id=1208931772]
+[node name="TopBar" type="VBoxContainer" parent="Room" unique_id=120828800]
 layout_mode = 0
 anchor_left = 0.5
-anchor_top = 0.5
 anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -128.0
-offset_top = -128.0
-offset_right = 128.0
-offset_bottom = 128.0
-expand_mode = 1
-stretch_mode = 5
+offset_left = -260.0
+offset_top = 130.0
+offset_right = 260.0
+offset_bottom = 230.0
+
+[node name="LevelLabel" type="Label" parent="Room/TopBar" unique_id=917297647]
+layout_mode = 2
+text = "Lv 1 / 5"
+
+[node name="XPBar" type="ProgressBar" parent="Room/TopBar" unique_id=134250767]
+custom_minimum_size = Vector2(500, 20)
+layout_mode = 2
+max_value = 20.0
+
+[node name="CompanionRig" parent="Room" instance=ExtResource("4_rig") unique_id=1208931772]
+visible = false
+position = Vector2(360, 500)
+scale = Vector2(0.78, 0.78)
 
 [node name="TidbitBubble" type="Label" parent="Room" unique_id=45490201]
 layout_mode = 0

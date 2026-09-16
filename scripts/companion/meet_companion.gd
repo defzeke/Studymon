@@ -4,7 +4,6 @@ extends Control
 @onready var dialogue: Label = $Center/Dialogue
 @onready var next_btn: Button = $Center/NextButton
 @onready var skip_btn: Button = $Center/SkipButton
-@onready var bot_sprite: TextureRect = $Center/BotSprite
 
 var dialogue_lines: Array[String] = [
 	"Welcome! I'm your new AI companion.",
@@ -18,17 +17,11 @@ var current_line: int = 0
 
 func _ready() -> void:
 	theme = load("res://ui/app_theme.tres") as Theme
-	_load_bot_texture()
 	# First login: create the companion record (mocked until Supabase lands).
 	Api.mock_get_companion()
 	next_btn.pressed.connect(_on_next)
 	skip_btn.pressed.connect(_on_skip)
 	_show_line()
-	_start_idle_bob()
-
-func _load_bot_texture() -> void:
-	if ResourceLoader.exists("res://assets/sprites/bot_lv1.png"):
-		bot_sprite.texture = load("res://assets/sprites/bot_lv1.png") as Texture2D
 
 func _show_line() -> void:
 	if current_line < dialogue_lines.size():
@@ -43,10 +36,3 @@ func _on_next() -> void:
 
 func _on_skip() -> void:
 	get_tree().change_scene_to_file("res://scenes/ui/main.tscn")
-
-func _start_idle_bob() -> void:
-	# Gentle hover loop so the baby AI feels alive during dialogue.
-	var base_y := bot_sprite.position.y
-	var t := create_tween().set_loops()
-	t.tween_property(bot_sprite, "position:y", base_y - 12.0, 0.8).set_trans(Tween.TRANS_SINE)
-	t.tween_property(bot_sprite, "position:y", base_y, 0.8).set_trans(Tween.TRANS_SINE)
