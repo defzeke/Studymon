@@ -43,3 +43,7 @@ func _on_next() -> void:
 
 func _on_skip() -> void:
 	get_tree().change_scene_to_file("res://scenes/ui/main.tscn")
+
+## Undo-cache stub: this snapshot called _start_idle_bob() without defining it.
+func _start_idle_bob() -> void:
+	pass

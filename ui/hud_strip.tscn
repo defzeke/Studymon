@@ -1,0 +1,116 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/hud_strip.gd" id="1"]
+
+[sub_resource type="StyleBoxFlat" id="strip_bg"]
+bg_color = Color(0.043, 0.075, 0.169, 1)
+corner_radius_top_left = 7
+corner_radius_top_right = 7
+corner_radius_bottom_right = 7
+corner_radius_bottom_left = 7
+
+[sub_resource type="StyleBoxFlat" id="fill_energy"]
+bg_color = Color(0.024, 0.839, 0.627, 1)
+corner_radius_top_left = 7
+corner_radius_top_right = 7
+corner_radius_bottom_right = 7
+corner_radius_bottom_left = 7
+
+[sub_resource type="StyleBoxFlat" id="fill_focus"]
+bg_color = Color(1, 0.82, 0.4, 1)
+corner_radius_top_left = 7
+corner_radius_top_right = 7
+corner_radius_bottom_right = 7
+corner_radius_bottom_left = 7
+
+[sub_resource type="StyleBoxFlat" id="fill_mood"]
+bg_color = Color(0.937, 0.278, 0.435, 1)
+corner_radius_top_left = 7
+corner_radius_top_right = 7
+corner_radius_bottom_right = 7
+corner_radius_bottom_left = 7
+
+[sub_resource type="StyleBoxFlat" id="fill_xp"]
+bg_color = Color(0.3, 0.79, 0.94, 1)
+corner_radius_top_left = 9
+corner_radius_top_right = 9
+corner_radius_bottom_right = 9
+corner_radius_bottom_left = 9
+
+[node name="HudStrip" type="VBoxContainer"]
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 16.0
+offset_top = 90.0
+offset_right = -16.0
+offset_bottom = 180.0
+grow_horizontal = 2
+theme_override_constants/separation = 10
+script = ExtResource("1")
+
+[node name="StatusRow" type="HBoxContainer" parent="."]
+layout_mode = 2
+alignment = 1
+theme_override_constants/separation = 16
+
+[node name="LevelLabel" type="Label" parent="StatusRow"]
+layout_mode = 2
+size_flags_vertical = 4
+text = "Lv 1"
+
+[node name="EnergyBar" type="ProgressBar" parent="StatusRow"]
+custom_minimum_size = Vector2(140, 18)
+layout_mode = 2
+size_flags_vertical = 4
+max_value = 100.0
+value = 80.0
+show_percentage = false
+tooltip_text = "Energy"
+theme_override_styles/background = SubResource("strip_bg")
+theme_override_styles/fill = SubResource("fill_energy")
+
+[node name="FocusBar" type="ProgressBar" parent="StatusRow"]
+custom_minimum_size = Vector2(140, 18)
+layout_mode = 2
+size_flags_vertical = 4
+max_value = 100.0
+value = 70.0
+show_percentage = false
+tooltip_text = "Focus"
+theme_override_styles/background = SubResource("strip_bg")
+theme_override_styles/fill = SubResource("fill_focus")
+
+[node name="MoodBar" type="ProgressBar" parent="StatusRow"]
+custom_minimum_size = Vector2(140, 18)
+layout_mode = 2
+size_flags_vertical = 4
+max_value = 100.0
+value = 75.0
+show_percentage = false
+tooltip_text = "Mood"
+theme_override_styles/background = SubResource("strip_bg")
+theme_override_styles/fill = SubResource("fill_mood")
+
+[node name="PomoBadge" type="Label" parent="StatusRow"]
+visible = false
+layout_mode = 2
+size_flags_vertical = 4
+text = ""
+
+[node name="XPRow" type="HBoxContainer" parent="."]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="XPLabel" type="Label" parent="XPRow"]
+custom_minimum_size = Vector2(60, 0)
+layout_mode = 2
+text = "XP"
+
+[node name="XPBar" type="ProgressBar" parent="XPRow"]
+custom_minimum_size = Vector2(0, 22)
+layout_mode = 2
+size_flags_horizontal = 3
+max_value = 20.0
+value = 0.0
+theme_override_styles/background = SubResource("strip_bg")
+theme_override_styles/fill = SubResource("fill_xp")

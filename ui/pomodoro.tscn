@@ -1,0 +1,35 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/pomodoro.gd" id="1"]
+
+[node name="Pomodoro" type="VBoxContainer"]
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 16.0
+offset_top = 190.0
+offset_right = -16.0
+offset_bottom = 260.0
+grow_horizontal = 2
+theme_override_constants/separation = 8
+script = ExtResource("1")
+
+[node name="ModeLabel" type="Label" parent="."]
+layout_mode = 2
+horizontal_alignment = 1
+text = "Pomodoro"
+
+[node name="TimerLabel" type="Label" parent="."]
+layout_mode = 2
+horizontal_alignment = 1
+text = "25:00"
+
+[node name="StartButton" type="Button" parent="."]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+text = "Start Focus"
+
+[node name="SkipButton" type="Button" parent="."]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+text = "Skip"
+visible = false

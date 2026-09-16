@@ -17,12 +17,12 @@ config/icon="res://icon.svg"
 
 [autoload]
 
-GameManager="*res://scripts/autoload/game_manager.gd"
 SaveManager="*res://scripts/autoload/save_manager.gd"
 GameState="*res://autoload/game_state.gd"
 Api="*res://autoload/api.gd"
 CompanionState="*res://scripts/autoload/companion_state.gd"
 SessionManager="*res://scripts/autoload/session_manager.gd"
+MonetizationState="*res://scripts/autoload/monetization_state.gd"
 MusicManager="*res://scripts/autoload/music_manager.gd"
 MCPRuntime="*res://addons/godot_mcp/runtime/mcp_runtime.gd"
 
@@ -36,6 +36,10 @@ window/stretch/aspect="expand"
 [editor_plugins]
 
 enabled=PackedStringArray("res://addons/godot_mcp/plugin.cfg")
+
+[gui]
+
+theme/custom="res://ui/app_theme.tres"
 
 [physics]
 

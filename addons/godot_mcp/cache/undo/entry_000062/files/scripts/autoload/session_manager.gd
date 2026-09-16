@@ -53,7 +53,8 @@ func remove_question(index: int) -> void:
 
 func update_question(index: int, data: Dictionary) -> void:
 	if index >= 0 and index < pending_questions.size():
-		pending_questions[index].update(data)
+		for k in data.keys():
+			pending_questions[index][k] = data[k]
 
 func confirm_topic() -> void:
 	if editing_topic_id != "" and pending_questions.size() > 0:

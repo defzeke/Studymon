@@ -64,7 +64,7 @@ func get_companion() -> void:
 
 ## Topics / PDF ingestion (Phase 5)
 func upload_pdf(topic_name: String, pdf_bytes: PackedByteArray) -> void:
-	_post("/topics/upload", {"topic_name": topic_name, "pdf_base64": pdf_bytes.encode_base64()})
+	_post("/topics/upload", {"topic_name": topic_name, "pdf_base64": Marshalls.raw_to_base64(pdf_bytes)})
 
 func poll_extraction(job_id: String) -> void:
 	_http_get("/topics/extract/" + job_id)
