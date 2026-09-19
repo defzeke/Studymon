@@ -31,6 +31,7 @@ const CRAWL_TIME: float = 2.0
 
 var _tip_index: int = 0
 var _tip_timer: Timer
+var _tip_fade: Tween
 var _done: bool = false
 var _run_time: float = 0.0
 var _run_frame: int = 0
@@ -78,10 +79,12 @@ func _next_tip() -> void:
 	if _done:
 		return
 	_tip_index = (_tip_index + 1) % TIPS.size()
-	var fade := create_tween()
-	fade.tween_property(tip_label, "modulate:a", 0.0, 0.25)
-	fade.tween_callback(func() -> void: tip_label.text = TIPS[_tip_index])
-	fade.tween_property(tip_label, "modulate:a", 1.0, 0.25)
+	if is_instance_valid(_tip_fade):
+		_tip_fade.kill()
+	_tip_fade = create_tween()
+	_tip_fade.tween_property(tip_label, "modulate:a", 0.0, 0.25)
+	_tip_fade.tween_callback(func() -> void: tip_label.text = TIPS[_tip_index])
+	_tip_fade.tween_property(tip_label, "modulate:a", 1.0, 0.25)
 
 func _start_load_sequence() -> void:
 	var t := create_tween()
