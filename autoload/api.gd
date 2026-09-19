@@ -37,10 +37,12 @@ func save_topic(topic_id: String, questions: Array[Dictionary]) -> void:
 ## Canonical Phase 7 entry: grade a full question dict (carries expected answer + key_concepts).
 ## Quota-gated (Phase 10): free tier limits gradings per week.
 func grade_battle_question(q: Dictionary, answer: String) -> void:
-	if not MonetizationState.can_consume("grade"):
+	var _ms := get_node_or_null("/root/MonetizationState")
+	if _ms != null and not _ms.can_consume("grade"):
 		quota_exceeded.emit("grade")
 		return
-	MonetizationState.consume("grade")
+	if _ms != null:
+		_ms.consume("grade")
 	if MOCK:
 		_execute_mock_grade(q, answer)
 		return
@@ -94,10 +96,12 @@ func _mock_companion_done(data: Dictionary) -> void:
 
 # Phase 10: quota-gated mock upload. Emits quota_exceeded("pdf") on limit.
 func mock_upload_pdf(topic_name: String, source_text: String = "") -> void:
-	if not MonetizationState.can_consume("pdf"):
+	var _ms := get_node_or_null("/root/MonetizationState")
+	if _ms != null and not _ms.can_consume("pdf"):
 		quota_exceeded.emit("pdf")
 		return
-	MonetizationState.consume("pdf")
+	if _ms != null:
+		_ms.consume("pdf")
 	_execute_mock_upload(topic_name, source_text)
 
 # Internal helper: executes mock extraction without quota check (called after gate).

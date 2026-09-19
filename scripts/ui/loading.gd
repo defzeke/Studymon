@@ -94,7 +94,10 @@ func _advance() -> void:
 	_done = true
 	if is_instance_valid(_tip_timer):
 		_tip_timer.stop()
-	if FileAccess.file_exists("user://studymon_save.json"):
-		get_tree().change_scene_to_file("res://scenes/ui/main.tscn")
-	else:
-		get_tree().change_scene_to_file("res://scenes/companion/meet_companion.tscn")
+	var target := "res://scenes/ui/main.tscn"
+	if not FileAccess.file_exists("user://studymon_save.json"):
+		target = "res://scenes/companion/meet_companion.tscn"
+	if not ResourceLoader.exists(target):
+		tip_label.text = "Couldn't load next scene: missing " + target
+		return
+	get_tree().change_scene_to_file(target)

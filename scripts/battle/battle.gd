@@ -93,19 +93,24 @@ func _ready() -> void:
 	Api.job_status.connect(_on_job_status)
 	# Phase 10: quota display + paywall
 	_update_quota_label()
-	if has_node("/root/MonetizationState"):
-		MonetizationState.quota_changed.connect(_update_quota_label)
-		MonetizationState.premium_changed.connect(_on_premium_changed)
+	var _ms := get_node_or_null("/root/MonetizationState")
+	if _ms != null:
+		_ms.quota_changed.connect(_update_quota_label)
+		_ms.premium_changed.connect(_on_premium_changed)
 	Api.quota_exceeded.connect(_on_quota_exceeded)
 
 func _update_quota_label() -> void:
 	if quota_label == null:
 		return
-	if MonetizationState.is_premium:
+	var _ms := get_node_or_null("/root/MonetizationState")
+	# ponytail: null-guard lets arena run standalone without autoloads
+	if _ms == null:
+		return
+	if _ms.is_premium:
 		quota_label.text = "Premium: Unlimited"
 	else:
-		var rem: int = MonetizationState.get_remaining("grade")
-		quota_label.text = "Free AI Uses: %d/%d" % [rem, MonetizationState.FREE_GRADE_LIMIT]
+		var rem: int = _ms.get_remaining("grade")
+		quota_label.text = "Free AI Uses: %d/%d" % [rem, _ms.FREE_GRADE_LIMIT]
 
 func _on_premium_changed(_is_premium: bool) -> void:
 	_update_quota_label()
