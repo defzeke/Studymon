@@ -4,7 +4,8 @@ extends Control
 ## Phase 9: CPUParticles2D burst on level-up + font-scale hook + data-driven insights.
 ## Phase 10: Settings navigation (Toggle Premium / Reset Quota lives in settings.tscn).
 
-@onready var bot_sprite: TextureRect = $BotSprite
+@onready var bot_sprite: TextureRect = get_node_or_null("BotSprite") as TextureRect
+@onready var rig: Node2D = get_node_or_null("CompanionRig") as Node2D
 @onready var level_label: Label = $HudStrip/StatusRow/LevelLabel
 @onready var xp_bar: ProgressBar = $HudStrip/XPRow/XPBar
 @onready var energy_bar: ProgressBar = $Stats/EnergyRow/EnergyBar
@@ -22,6 +23,9 @@ var _levelup_particles: CPUParticles2D
 
 func _ready() -> void:
 	SaveManager.load_game()
+	# ponytail: companion stays hidden for now (scene already visible=false; enforce here too)
+	if rig != null:
+		rig.visible = false
 	_load_bot_textures()
 	_ensure_levelup_particles()
 	CompanionState.stats_changed.connect(_refresh_stats)
@@ -73,6 +77,8 @@ func _load_bot_textures() -> void:
 
 # --- Phase 9: level-up particle burst (CPUParticles2D) ---
 func _ensure_levelup_particles() -> void:
+	if rig != null and not rig.visible:
+		return
 	if _levelup_particles and is_instance_valid(_levelup_particles):
 		return
 	_levelup_particles = CPUParticles2D.new()
@@ -100,6 +106,8 @@ func _ensure_levelup_particles() -> void:
 		_levelup_particles.position = Vector2(360, 540)
 
 func _burst_levelup() -> void:
+	if rig != null and not rig.visible:
+		return
 	_ensure_levelup_particles()
 	if bot_sprite:
 		_levelup_particles.position = bot_sprite.position + bot_sprite.size * 0.5 + Vector2(0, -10)
@@ -207,10 +215,19 @@ func _refresh_stats() -> void:
 	mood_bar.value = CompanionState.mood
 
 func _show_level(lv: int) -> void:
+	# ponytail: skeletal rig has no level textures; no-op while hidden
+	if rig != null and not rig.visible:
+		return
+	if bot_sprite == null:
+		return
 	if lv >= 1 and lv <= bot_textures.size():
 		bot_sprite.texture = bot_textures[lv - 1]
 
 func _pop_bot() -> void:
+	if rig != null and not rig.visible:
+		return
+	if bot_sprite == null:
+		return
 	if _tick_tween and _tick_tween.is_valid():
 		_tick_tween.kill()
 	bot_sprite.pivot_offset = bot_sprite.size / 2.0
@@ -219,6 +236,10 @@ func _pop_bot() -> void:
 	_tick_tween.tween_property(bot_sprite, "scale", Vector2.ONE, 0.12)
 
 func _pop_bot_big() -> void:
+	if rig != null and not rig.visible:
+		return
+	if bot_sprite == null:
+		return
 	if _tick_tween and _tick_tween.is_valid():
 		_tick_tween.kill()
 	bot_sprite.pivot_offset = bot_sprite.size / 2.0
@@ -229,7 +250,10 @@ func _pop_bot_big() -> void:
 func _show_xp_tick(text: String) -> void:
 	xp_tick.text = text
 	xp_tick.modulate.a = 1.0
-	xp_tick.position = rig.position + Vector2(150, -160)
+	if rig != null:
+		xp_tick.position = rig.position + Vector2(150, -160)
+	else:
+		xp_tick.position = Vector2(400, 470)
 	var t := create_tween()
 	t.set_parallel(true)
 	t.tween_property(xp_tick, "position:y", xp_tick.position.y - 40.0, 0.6)

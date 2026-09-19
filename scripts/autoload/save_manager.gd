@@ -10,7 +10,9 @@ func save_game() -> bool:
 	data["active_region_id"] = GameState.active_region_id
 	data["large_text_enabled"] = GameState.large_text_enabled
 	data["session"] = SessionManager.to_dict()
-	data["monetization"] = MonetizationState.to_dict()
+	var _ms := get_node_or_null("/root/MonetizationState")
+	if _ms != null:
+		data["monetization"] = _ms.to_dict()
 	var f := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
 	if f == null:
 		push_error("SaveManager: cannot write " + SAVE_PATH)
@@ -38,7 +40,9 @@ func load_game() -> bool:
 		GameState._apply_theme_font_size()
 	SessionManager.from_dict(parsed.get("session", {}))
 	if parsed.has("monetization"):
-		MonetizationState.from_dict(parsed["monetization"] as Dictionary)
+		var _ms := get_node_or_null("/root/MonetizationState")
+		if _ms != null:
+			_ms.from_dict(parsed["monetization"] as Dictionary)
 	return true
 
 func reset_save() -> void:

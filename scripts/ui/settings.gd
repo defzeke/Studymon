@@ -16,13 +16,19 @@ func _ready() -> void:
 	premium_check.toggled.connect(_on_premium_toggled)
 	reset_btn.pressed.connect(_on_reset_pressed)
 	back_btn.pressed.connect(_on_back)
-	MonetizationState.quota_changed.connect(_refresh)
-	MonetizationState.premium_changed.connect(_on_premium_changed)
+	var _ms := get_node_or_null("/root/MonetizationState")
+	if _ms != null:
+		_ms.quota_changed.connect(_refresh)
+		_ms.premium_changed.connect(_on_premium_changed)
 	_refresh()
 
 func _refresh() -> void:
+	var _ms := get_node_or_null("/root/MonetizationState")
+	# ponytail: null-guard lets scene run standalone without autoloads
+	if _ms == null:
+		return
 	# Prevent signal loop when setting checked state
-	var is_p := MonetizationState.is_premium
+	var is_p: bool = _ms.is_premium
 	if premium_check.button_pressed != is_p:
 		premium_check.set_pressed_no_signal(is_p)
 	if is_p:
@@ -30,11 +36,11 @@ func _refresh() -> void:
 		pdf_label.text = "PDFs: Unlimited (Premium)"
 		grade_label.text = "Grades: Unlimited (Premium)"
 	else:
-		var pdf_rem: int = MonetizationState.get_remaining("pdf")
-		var grade_rem: int = MonetizationState.get_remaining("grade")
-		quota_label.text = "Free AI Uses: PDFs %d/%d | Grades %d/%d" % [pdf_rem, MonetizationState.FREE_PDF_LIMIT, grade_rem, MonetizationState.FREE_GRADE_LIMIT]
-		pdf_label.text = "Free AI Uses: %d/%d PDFs remaining" % [pdf_rem, MonetizationState.FREE_PDF_LIMIT]
-		grade_label.text = "Free AI Uses: %d/%d Grades remaining" % [grade_rem, MonetizationState.FREE_GRADE_LIMIT]
+		var pdf_rem: int = _ms.get_remaining("pdf")
+		var grade_rem: int = _ms.get_remaining("grade")
+		quota_label.text = "Free AI Uses: PDFs %d/%d | Grades %d/%d" % [pdf_rem, _ms.FREE_PDF_LIMIT, grade_rem, _ms.FREE_GRADE_LIMIT]
+		pdf_label.text = "Free AI Uses: %d/%d PDFs remaining" % [pdf_rem, _ms.FREE_PDF_LIMIT]
+		grade_label.text = "Free AI Uses: %d/%d Grades remaining" % [grade_rem, _ms.FREE_GRADE_LIMIT]
 	premium_check.text = "Premium" if is_p else "Free Tier"
 	status_label.text = "Premium enabled — no limits." if is_p else "Free tier — weekly limits active."
 
@@ -43,11 +49,17 @@ func _on_premium_changed(is_premium: bool) -> void:
 	SaveManager.save_game()
 
 func _on_premium_toggled(toggled_on: bool) -> void:
-	MonetizationState.set_premium(toggled_on)
+	var _ms := get_node_or_null("/root/MonetizationState")
+	if _ms == null:
+		return
+	_ms.set_premium(toggled_on)
 	SaveManager.save_game()
 
 func _on_reset_pressed() -> void:
-	MonetizationState.reset_quota()
+	var _ms := get_node_or_null("/root/MonetizationState")
+	if _ms == null:
+		return
+	_ms.reset_quota()
 	SaveManager.save_game()
 	status_label.text = "Quota reset — weekly rollover simulated."
 	_refresh()

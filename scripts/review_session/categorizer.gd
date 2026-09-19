@@ -40,9 +40,10 @@ func _ready() -> void:
 	SessionManager.region_generated.connect(_on_region_generated)
 	# Phase 10: quota UI + paywall
 	_update_quota_label()
-	if has_node("/root/MonetizationState"):
-		MonetizationState.quota_changed.connect(_update_quota_label)
-		MonetizationState.premium_changed.connect(_on_premium_changed)
+	var _ms0 := get_node_or_null("/root/MonetizationState")
+	if _ms0 != null:
+		_ms0.quota_changed.connect(_update_quota_label)
+		_ms0.premium_changed.connect(_on_premium_changed)
 	Api.quota_exceeded.connect(_on_quota_exceeded)
 	loading_bar.visible = false
 	_update_sanity()
@@ -55,12 +56,16 @@ func _ready() -> void:
 func _update_quota_label() -> void:
 	if quota_label == null:
 		return
-	if MonetizationState.is_premium:
+	var _ms := get_node_or_null("/root/MonetizationState")
+	# ponytail: null-guard lets scene run standalone without autoloads
+	if _ms == null:
+		return
+	if _ms.is_premium:
 		quota_label.text = "Premium: Unlimited"
 	else:
-		var pdf_rem: int = MonetizationState.get_remaining("pdf")
-		var grade_rem: int = MonetizationState.get_remaining("grade")
-		quota_label.text = "Free AI Uses: PDFs %d/%d | Grades %d/%d" % [pdf_rem, MonetizationState.FREE_PDF_LIMIT, grade_rem, MonetizationState.FREE_GRADE_LIMIT]
+		var pdf_rem: int = _ms.get_remaining("pdf")
+		var grade_rem: int = _ms.get_remaining("grade")
+		quota_label.text = "Free AI Uses: PDFs %d/%d | Grades %d/%d" % [pdf_rem, _ms.FREE_PDF_LIMIT, grade_rem, _ms.FREE_GRADE_LIMIT]
 
 func _on_premium_changed(_is_premium: bool) -> void:
 	_update_quota_label()
