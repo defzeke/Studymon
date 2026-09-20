@@ -85,7 +85,6 @@ func mock_get_companion() -> void:
 		"xp": 0,
 		"energy": 80.0,
 		"focus": 70.0,
-		"mood": 75.0,
 		"bond": 0,
 		"codex": ["I start out knowing NOTHING — like a baby! I need training to learn. (AI starts blank)"],
 	})

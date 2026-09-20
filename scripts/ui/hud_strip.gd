@@ -3,26 +3,39 @@ extends VBoxContainer
 ## CompanionState emits stats_changed every frame, so this stays live.
 
 @onready var level_label: Label = $StatusRow/LevelLabel
-@onready var energy_bar: ProgressBar = $StatusRow/EnergyCell/EnergyBar
-@onready var focus_bar: ProgressBar = $StatusRow/FocusCell/FocusBar
-@onready var mood_bar: ProgressBar = $StatusRow/MoodCell/MoodBar
 @onready var pomo_badge: Label = $StatusRow/PomoBadge
+@onready var xp_row: HBoxContainer = $XPRow
+@onready var xp_bar: ProgressBar = $XPRow/XPBar
+
+var _xp_tween: Tween
+var _xp_open := false
 
 func _ready() -> void:
 	CompanionState.stats_changed.connect(_refresh)
 	CompanionState.xp_changed.connect(_on_xp)
+	if level_label:
+		level_label.gui_input.connect(_on_level_input)
 	_refresh()
 
 func _on_xp(_xp: int, _level: int) -> void:
 	_refresh()
 
+func _on_level_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton:
+		var mb := event as InputEventMouseButton
+		if mb.button_index == MOUSE_BUTTON_LEFT and mb.pressed and xp_row:
+			_xp_open = not _xp_open
+			if xp_bar:
+				xp_bar.mouse_filter = 0 if _xp_open else 2
+			if _xp_tween and _xp_tween.is_valid():
+				_xp_tween.kill()
+			_xp_tween = create_tween()
+			_xp_tween.tween_property(xp_row, "modulate:a", 1.0 if _xp_open else 0.0, 0.2)
+
 func _refresh() -> void:
-	if level_label == null or energy_bar == null or focus_bar == null or mood_bar == null or pomo_badge == null:
+	if level_label == null or pomo_badge == null:
 		return
 	level_label.text = "Lv %d" % CompanionState.level
-	energy_bar.value = CompanionState.energy
-	focus_bar.value = CompanionState.focus
-	mood_bar.value = CompanionState.mood
 	_refresh_pomo_badge()
 
 func _refresh_pomo_badge() -> void:

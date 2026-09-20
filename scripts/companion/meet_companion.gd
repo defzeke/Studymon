@@ -9,7 +9,7 @@ var dialogue_lines: Array[String] = [
 	"Welcome! I'm your new AI companion.",
 	"Right now I'm just a baby — I don't know anything yet.",
 	"But with your help, I'll learn from your study materials.",
-	"Feed me, pet me, play with me — that's how I grow!",
+	"Feed me, keep me clean and repaired — that's how I grow!",
 	"At Level 5, I'll be ready to turn your PDFs into gym battles.",
 	"Let's start! Tap the buttons below to care for me."
 ]

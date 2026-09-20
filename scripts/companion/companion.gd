@@ -1,6 +1,6 @@
 extends Control
 ## Phase 2: Pou-style care room on CompanionState (GDD §4.3).
-## Three taps -> CompanionState.care() -> stats/XP -> animation -> tidbit.
+## Care taps -> CompanionState.care() -> stats/XP -> animation -> tidbit.
 ## Phase 9: CPUParticles2D burst on level-up + font-scale hook + data-driven insights.
 ## Phase 10: Settings navigation (Toggle Premium / Reset Quota lives in settings.tscn).
 
@@ -17,6 +17,9 @@ extends Control
 @onready var room_bg: TextureRect = $Background
 @onready var charge_btn: Button = $ChargeButton
 @onready var night_veil: ColorRect = $NightVeil
+@onready var batt_energy: ProgressBar = $BatteryRow/EnergyCell/EnergyBar
+@onready var batt_focus: ProgressBar = $BatteryRow/FocusCell/FocusBar
+@onready var batt_integrity: ProgressBar = $BatteryRow/IntegrityCell/IntegrityBar
 
 const ROOM_DAY: Texture2D = preload("res://assets/sprites/rooms/main.svg")
 const ROOM_NIGHT: Texture2D = preload("res://assets/sprites/rooms/dark_main.svg")
@@ -39,6 +42,7 @@ func _ready() -> void:
 	_ensure_levelup_particles()
 	_snap_modulates()
 	CompanionState.xp_changed.connect(_on_xp_changed)
+	CompanionState.stats_changed.connect(_refresh_batteries)
 	CompanionState.leveled_up.connect(_on_leveled_up)
 	CompanionState.codex_entry_added.connect(_on_tidbit)
 	CompanionState.campaign_gate_ready.connect(_on_campaign_ready)
@@ -210,6 +214,7 @@ func _on_charge_pressed() -> void:
 			mm.call("play_sfx_chain", [CHARGE_SFX, CHARGED_SFX])
 		else:
 			mm.call("play_sfx", CHARGE_SFX)
+	CompanionState.care("charge")
 	_dark_room = not _dark_room
 	if room_bg:
 		room_bg.texture = ROOM_NIGHT if _dark_room else ROOM_DAY
@@ -238,9 +243,9 @@ func _on_campaign_pressed() -> void:
 
 func _refresh_all() -> void:
 	if level_label != null:
-		level_label.text = "Lv %d / 5" % CompanionState.level
-	var lo: int = int(CompanionState.XP_PER_LEVEL[CompanionState.level - 1])
-	var hi: int = int(CompanionState.XP_PER_LEVEL[CompanionState.level]) if CompanionState.level < 5 else lo + 1
+		level_label.text = "Lv %d" % CompanionState.level
+	var lo: int = CompanionState.xp_threshold(CompanionState.level - 1)
+	var hi: int = CompanionState.xp_threshold(CompanionState.level)
 	if xp_bar != null:
 		xp_bar.min_value = lo
 		xp_bar.max_value = hi
@@ -248,6 +253,13 @@ func _refresh_all() -> void:
 	campaign_btn.disabled = not GameState.campaign_unlocked_flag
 	campaign_btn.tooltip_text = "Review Campaign" if GameState.campaign_unlocked_flag else "Locked — reach Lv 5"
 	campaign_btn.modulate = Color(1, 1, 1, 1) if GameState.campaign_unlocked_flag else Color(1, 1, 1, 0.75)
+
+func _refresh_batteries() -> void:
+	if batt_energy == null or batt_focus == null or batt_integrity == null:
+		return
+	batt_energy.value = CompanionState.energy
+	batt_focus.value = CompanionState.focus
+	batt_integrity.value = CompanionState.integrity
 
 func _show_level(lv: int) -> void:
 	# ponytail: skeletal rig has no level textures; no-op while hidden

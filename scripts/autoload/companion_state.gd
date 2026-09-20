@@ -8,13 +8,11 @@ signal codex_entry_added(text: String)
 signal campaign_gate_ready
 signal pomodoro_phase_changed(mode: String)
 
-const MAX_LEVEL := 5
-# Phase 9 verified pacing: cumulative 150 XP to Lv5.
-# Deltas: Lv1->2=20, 2->3=25, 3->4=30, 4->5=35.
-# At 1-2 XP per tap (feed 2, pet 1, play 2; avg ~1.66 cycling), ~90 taps to Lv5.
-# At ~1.5s per tap+feedback => ~2.5-4 min, plus diminishing after 10 same-action/hour.
-# Meets GDD "minutes, not hours" for Levels 1-5; no curve change needed in Phase 9.
-const XP_PER_LEVEL := [0, 20, 45, 75, 110, 150]  # cumulative
+const CAMPAIGN_UNLOCK_LEVEL := 5  # campaign gate stays here; levels themselves are unbounded.
+# Cumulative XP to advance past `lvl` (threshold for level lvl+1).
+# Matches verified pacing to Lv5 (deltas 20/25/30/35/40), then +5 XP/level forever.
+static func xp_threshold(lvl: int) -> int:
+	return 15 * lvl + 5 * lvl * (lvl + 1) / 2
 const STAT_MAX := 100.0
 const STAT_DECAY_PER_SEC := 0.15
 const DAILY_CAP_BASE_XP := 10  # per action per hour before diminishing returns
@@ -23,21 +21,19 @@ const DAILY_CAP_BASE_XP := 10  # per action per hour before diminishing returns
 const POMODORO_FOCUS_SEC := 25 * 60
 const POMODORO_REST_SEC := 5 * 60
 const MISSED_REST_ENERGY_PENALTY := 5.0
-const MISSED_REST_MOOD_PENALTY := 3.0
 const REST_COMPLETE_ENERGY_BONUS := 6.0
-const REST_COMPLETE_MOOD_BONUS := 6.0
 
 var level: int = 1
 var xp: int = 0
-var energy: float = 80.0
-var focus: float = 70.0
-var mood: float = 75.0
+var energy: float = 80.0  # Battery: drains over time, refilled by charging.
+var focus: float = 70.0  # Cleanliness: gets dusty, cleaned with wipe/spray.
+var integrity: float = 75.0  # Health: slow wear, fixed with repair tool.
 var bond: int = 0
 var campaign_ready: bool = false
 var codex: Array[String] = []
 
 # XP diminishing returns tracking
-var _action_tap_counts: Dictionary = {"feed": 0, "pet": 0, "play": 0}
+var _action_tap_counts: Dictionary = {"charge": 0, "wipe": 0, "spray": 0, "repair": 0}
 var _last_hour_reset: int = 0
 
 # Pomodoro state (Phase 4)
@@ -50,8 +46,8 @@ var _rest_missed: bool = false
 const CURRICULUM := {
 	1: "I start out knowing NOTHING — like a baby! I need training to learn. (AI starts blank)",
 	2: "Feed me examples! That's called TRAINING DATA — I learn from examples, not instinct.",
-	3: "When you Pet me for a good answer, that's FEEDBACK — I repeat what gets rewarded.",
-	4: "Playing is PRACTICE — I get smarter by trying, failing, and trying again! I can use it on new stuff soon...",
+	3: "Good care is FEEDBACK — keep my batteries up and I repeat what works.",
+	4: "Training is PRACTICE — I get smarter by trying, failing, and trying again! I can use it on new stuff soon...",
 	5: "I can GENERALIZE now! Show me your PDF reviewer and I'll turn it into gym battles!",
 }
 
@@ -63,29 +59,27 @@ func _process(delta: float) -> void:
 	var drain := STAT_DECAY_PER_SEC * delta
 	energy = maxf(0.0, energy - drain)
 	focus = maxf(0.0, focus - drain * 0.8)
-	mood = maxf(0.0, mood - drain * 0.6)
+	integrity = maxf(0.0, integrity - drain * 0.3)
 	stats_changed.emit()
 	_maybe_reset_hourly_cap()
 
 func _maybe_reset_hourly_cap() -> void:
 	var now := int(Time.get_unix_time_from_system())
 	if now - _last_hour_reset >= 3600:
-		_action_tap_counts = {"feed": 0, "pet": 0, "play": 0}
+		_action_tap_counts = {"charge": 0, "wipe": 0, "spray": 0, "repair": 0}
 		_last_hour_reset = now
 
 func add_xp(amount: int) -> void:
-	if campaign_ready and level >= MAX_LEVEL:
-		return
 	xp += amount
 	_check_level_up()
 	xp_changed.emit(xp, level)
 
 func _check_level_up() -> void:
-	while level < MAX_LEVEL and xp >= XP_PER_LEVEL[level]:
+	while xp >= xp_threshold(level):
 		level += 1
 		_unlock_tidbit(level)
 		leveled_up.emit(level)
-		if level >= MAX_LEVEL:
+		if level >= CAMPAIGN_UNLOCK_LEVEL and not campaign_ready:
 			campaign_ready = true
 			campaign_gate_ready.emit()
 
@@ -109,18 +103,21 @@ func care(action: String) -> Dictionary:
 		xp_mult = 0.3  # 30% XP after cap
 
 	match action:
-		"feed":
-			energy = minf(STAT_MAX, energy + 8.0)
-			deltas = {"energy": 8.0}
+		"charge":
+			energy = minf(STAT_MAX, energy + 12.0)
+			deltas = {"energy": 12.0}
 			gained = int(2 * xp_mult)
-		"pet":
-			mood = minf(STAT_MAX, mood + 8.0)
-			deltas = {"mood": 8.0}
-			gained = int(1 * xp_mult)
-		"play":
+		"wipe":
 			focus = minf(STAT_MAX, focus + 8.0)
-			energy = maxf(0.0, energy - 2.0)
-			deltas = {"focus": 8.0, "energy": -2.0}
+			deltas = {"focus": 8.0}
+			gained = int(1 * xp_mult)
+		"spray":
+			focus = minf(STAT_MAX, focus + 14.0)
+			deltas = {"focus": 14.0}
+			gained = int(2 * xp_mult)
+		"repair":
+			integrity = minf(STAT_MAX, integrity + 12.0)
+			deltas = {"integrity": 12.0}
 			gained = int(2 * xp_mult)
 
 	add_xp(gained)
@@ -129,9 +126,7 @@ func care(action: String) -> Dictionary:
 	return {"xp": gained, "deltas": deltas, "action": action, "tap_count": count + 1}
 
 func xp_for_next_level() -> int:
-	if level >= MAX_LEVEL:
-		return -1
-	return XP_PER_LEVEL[level] - xp
+	return xp_threshold(level) - xp
 
 func to_dict() -> Dictionary:
 	return {
@@ -139,7 +134,7 @@ func to_dict() -> Dictionary:
 		"xp": xp,
 		"energy": energy,
 		"focus": focus,
-		"mood": mood,
+		"integrity": integrity,
 		"bond": bond,
 		"campaign_ready": campaign_ready,
 		"codex": codex,
@@ -150,7 +145,7 @@ func from_dict(data: Dictionary) -> void:
 	xp = int(data.get("xp", 0))
 	energy = float(data.get("energy", 80.0))
 	focus = float(data.get("focus", 70.0))
-	mood = float(data.get("mood", 75.0))
+	integrity = float(data.get("integrity", 75.0))
 	bond = int(data.get("bond", 0))
 	campaign_ready = bool(data.get("campaign_ready", false))
 	codex.clear()
@@ -160,7 +155,7 @@ func from_dict(data: Dictionary) -> void:
 	for lv in range(1, level + 1):
 		_unlock_tidbit(lv)
 	# Reconcile: saves written at max level (or by older versions) may lack the flag.
-	if level >= MAX_LEVEL and not campaign_ready:
+	if level >= CAMPAIGN_UNLOCK_LEVEL and not campaign_ready:
 		campaign_ready = true
 	stats_changed.emit()
 	xp_changed.emit(xp, level)
@@ -195,7 +190,6 @@ func _on_pomodoro_tick() -> void:
 		else:
 			# Rest ended naturally -> cycle complete, companion feels rested
 			energy = minf(STAT_MAX, energy + REST_COMPLETE_ENERGY_BONUS)
-			mood = minf(STAT_MAX, mood + REST_COMPLETE_MOOD_BONUS)
 			_stop_pomodoro()
 			stats_changed.emit()
 			pomodoro_phase_changed.emit("done")
@@ -215,7 +209,6 @@ func skip_pomodoro() -> void:
 		_pomodoro_mode = "rest"
 		_pomodoro_remaining = POMODORO_REST_SEC
 		energy = maxf(0.0, energy - 3.0)
-		mood = maxf(0.0, mood - 2.0)
 		stats_changed.emit()
 		pomodoro_phase_changed.emit("rest")
 	elif _pomodoro_mode == "rest":
@@ -226,7 +219,6 @@ func skip_pomodoro() -> void:
 
 func _apply_missed_rest_penalty() -> void:
 	energy = maxf(0.0, energy - MISSED_REST_ENERGY_PENALTY)
-	mood = maxf(0.0, mood - MISSED_REST_MOOD_PENALTY)
 	_rest_missed = true
 
 func get_pomodoro_state() -> Dictionary:

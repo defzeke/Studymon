@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bsrt0omkxuxvu"
-path="res://.godot/imported/settings.svg-d5227a0ca4f4fc0d7d6f8fd8cb20fc9b.ctex"
+uid="uid://dkjlw7wo1mefi"
+path="res://.godot/imported/wrench.png-7652a996a8035c4a169906df6c4f619f.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/sprites/ui/settings.svg"
-dest_files=["res://.godot/imported/settings.svg-d5227a0ca4f4fc0d7d6f8fd8cb20fc9b.ctex"]
+source_file="res://assets/sprites/ui/wrench.png"
+dest_files=["res://.godot/imported/wrench.png-7652a996a8035c4a169906df6c4f619f.ctex"]
 
 [params]
 
@@ -23,7 +23,7 @@ compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
 compress/normal_map=0
 compress/channel_pack=0
-mipmaps/generate=true
+mipmaps/generate=false
 mipmaps/limit=-1
 roughness/mode=0
 roughness/src_normal=""
@@ -38,6 +38,3 @@ process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
 detect_3d/compress_to=1
-svg/scale=1.0
-editor/scale_with_editor_scale=false
-editor/convert_colors_with_editor_theme=false

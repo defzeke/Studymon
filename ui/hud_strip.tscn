@@ -1,4 +1,4 @@
-[gd_scene load_steps=8 format=3]
+[gd_scene load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://scripts/ui/hud_strip.gd" id="1"]
 
@@ -14,49 +14,6 @@ corner_radius_top_right = 7
 corner_radius_bottom_right = 7
 corner_radius_bottom_left = 7
 
-[sub_resource type="StyleBoxFlat" id="nub_cap"]
-bg_color = Color(0.7, 0.88, 1, 1)
-corner_radius_top_left = 3
-corner_radius_top_right = 3
-corner_radius_bottom_right = 3
-corner_radius_bottom_left = 3
-
-[sub_resource type="StyleBoxFlat" id="fill_energy"]
-bg_color = Color(0.024, 0.839, 0.627, 1)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0.01, 0.5, 0.38, 1)
-corner_radius_top_left = 3
-corner_radius_top_right = 3
-corner_radius_bottom_right = 3
-corner_radius_bottom_left = 3
-
-[sub_resource type="StyleBoxFlat" id="fill_focus"]
-bg_color = Color(1, 0.82, 0.4, 1)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0.6, 0.48, 0.2, 1)
-corner_radius_top_left = 3
-corner_radius_top_right = 3
-corner_radius_bottom_right = 3
-corner_radius_bottom_left = 3
-
-[sub_resource type="StyleBoxFlat" id="fill_mood"]
-bg_color = Color(0.937, 0.278, 0.435, 1)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0.55, 0.15, 0.26, 1)
-corner_radius_top_left = 3
-corner_radius_top_right = 3
-corner_radius_bottom_right = 3
-corner_radius_bottom_left = 3
-
 [sub_resource type="StyleBoxFlat" id="fill_xp"]
 bg_color = Color(0.3, 0.79, 0.94, 1)
 corner_radius_top_left = 9
@@ -70,8 +27,9 @@ anchor_right = 1.0
 offset_left = 16.0
 offset_top = 119.0
 offset_right = -16.0
-offset_bottom = 229.0
+offset_bottom = 189.0
 grow_horizontal = 2
+alignment = 1
 theme_override_constants/separation = 10
 script = ExtResource("1")
 
@@ -83,151 +41,9 @@ theme_override_constants/separation = 16
 [node name="LevelLabel" type="Label" parent="StatusRow"]
 layout_mode = 2
 size_flags_vertical = 4
+mouse_filter = 0
+mouse_default_cursor_shape = 2
 text = "Lv 1 •"
-
-[node name="EnergyCell" type="VBoxContainer" parent="StatusRow"]
-layout_mode = 2
-alignment = 1
-theme_override_constants/separation = 2
-
-[node name="EnergyNub" type="Panel" parent="StatusRow/EnergyCell"]
-custom_minimum_size = Vector2(16, 6)
-layout_mode = 2
-size_flags_horizontal = 4
-theme_override_styles/panel = SubResource("nub_cap")
-
-[node name="EnergyBar" type="ProgressBar" parent="StatusRow/EnergyCell"]
-custom_minimum_size = Vector2(24, 44)
-layout_mode = 2
-max_value = 100.0
-value = 80.0
-show_percentage = false
-fill_mode = 3
-tooltip_text = "Energy"
-theme_override_styles/background = SubResource("strip_bg")
-theme_override_styles/fill = SubResource("fill_energy")
-
-[node name="EnergySegA" type="ColorRect" parent="StatusRow/EnergyCell/EnergyBar"]
-layout_mode = 1
-anchor_top = 0.3333
-anchor_right = 1.0
-anchor_bottom = 0.3333
-offset_top = -1.5
-offset_bottom = 1.5
-mouse_filter = 2
-color = Color(0.01, 0.5, 0.38, 1)
-
-[node name="EnergySegB" type="ColorRect" parent="StatusRow/EnergyCell/EnergyBar"]
-layout_mode = 1
-anchor_top = 0.6667
-anchor_right = 1.0
-anchor_bottom = 0.6667
-offset_top = -1.5
-offset_bottom = 1.5
-mouse_filter = 2
-color = Color(0.01, 0.5, 0.38, 1)
-
-[node name="EnergyTag" type="Label" parent="StatusRow/EnergyCell"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 18
-text = "E"
-horizontal_alignment = 1
-
-[node name="FocusCell" type="VBoxContainer" parent="StatusRow"]
-layout_mode = 2
-alignment = 1
-theme_override_constants/separation = 2
-
-[node name="FocusNub" type="Panel" parent="StatusRow/FocusCell"]
-custom_minimum_size = Vector2(16, 6)
-layout_mode = 2
-size_flags_horizontal = 4
-theme_override_styles/panel = SubResource("nub_cap")
-
-[node name="FocusBar" type="ProgressBar" parent="StatusRow/FocusCell"]
-custom_minimum_size = Vector2(24, 44)
-layout_mode = 2
-max_value = 100.0
-value = 70.0
-show_percentage = false
-fill_mode = 3
-tooltip_text = "Focus"
-theme_override_styles/background = SubResource("strip_bg")
-theme_override_styles/fill = SubResource("fill_focus")
-
-[node name="FocusSegA" type="ColorRect" parent="StatusRow/FocusCell/FocusBar"]
-layout_mode = 1
-anchor_top = 0.3333
-anchor_right = 1.0
-anchor_bottom = 0.3333
-offset_top = -1.5
-offset_bottom = 1.5
-mouse_filter = 2
-color = Color(0.6, 0.48, 0.2, 1)
-
-[node name="FocusSegB" type="ColorRect" parent="StatusRow/FocusCell/FocusBar"]
-layout_mode = 1
-anchor_top = 0.6667
-anchor_right = 1.0
-anchor_bottom = 0.6667
-offset_top = -1.5
-offset_bottom = 1.5
-mouse_filter = 2
-color = Color(0.6, 0.48, 0.2, 1)
-
-[node name="FocusTag" type="Label" parent="StatusRow/FocusCell"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 18
-text = "F"
-horizontal_alignment = 1
-
-[node name="MoodCell" type="VBoxContainer" parent="StatusRow"]
-layout_mode = 2
-alignment = 1
-theme_override_constants/separation = 2
-
-[node name="MoodNub" type="Panel" parent="StatusRow/MoodCell"]
-custom_minimum_size = Vector2(16, 6)
-layout_mode = 2
-size_flags_horizontal = 4
-theme_override_styles/panel = SubResource("nub_cap")
-
-[node name="MoodBar" type="ProgressBar" parent="StatusRow/MoodCell"]
-custom_minimum_size = Vector2(24, 44)
-layout_mode = 2
-max_value = 100.0
-value = 75.0
-show_percentage = false
-fill_mode = 3
-tooltip_text = "Mood"
-theme_override_styles/background = SubResource("strip_bg")
-theme_override_styles/fill = SubResource("fill_mood")
-
-[node name="MoodSegA" type="ColorRect" parent="StatusRow/MoodCell/MoodBar"]
-layout_mode = 1
-anchor_top = 0.3333
-anchor_right = 1.0
-anchor_bottom = 0.3333
-offset_top = -1.5
-offset_bottom = 1.5
-mouse_filter = 2
-color = Color(0.55, 0.15, 0.26, 1)
-
-[node name="MoodSegB" type="ColorRect" parent="StatusRow/MoodCell/MoodBar"]
-layout_mode = 1
-anchor_top = 0.6667
-anchor_right = 1.0
-anchor_bottom = 0.6667
-offset_top = -1.5
-offset_bottom = 1.5
-mouse_filter = 2
-color = Color(0.55, 0.15, 0.26, 1)
-
-[node name="MoodTag" type="Label" parent="StatusRow/MoodCell"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 18
-text = "M"
-horizontal_alignment = 1
 
 [node name="PomoBadge" type="Label" parent="StatusRow"]
 visible = false
@@ -237,18 +53,17 @@ text = ""
 
 [node name="XPRow" type="HBoxContainer" parent="."]
 layout_mode = 2
+mouse_filter = 2
+modulate = Color(1, 1, 1, 0)
+alignment = 1
 theme_override_constants/separation = 12
 
-[node name="XPLabel" type="Label" parent="XPRow"]
-custom_minimum_size = Vector2(60, 0)
-layout_mode = 2
-text = "XP"
-
 [node name="XPBar" type="ProgressBar" parent="XPRow"]
-custom_minimum_size = Vector2(0, 22)
+custom_minimum_size = Vector2(160, 14)
 layout_mode = 2
-size_flags_horizontal = 3
+mouse_filter = 2
 max_value = 20.0
 value = 0.0
+tooltip_text = "XP"
 theme_override_styles/background = SubResource("strip_bg")
 theme_override_styles/fill = SubResource("fill_xp")
