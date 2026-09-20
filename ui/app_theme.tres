@@ -1,7 +1,7 @@
-[gd_resource type="Theme" load_steps=5 format=3]
+[gd_resource type="Theme" format=3 uid="uid://bfdi3khb4eixe"]
 
-[ext_resource type="FontFile" path="res://assets/fonts/JosefinSans-Regular.ttf" id="1"]
-[ext_resource type="FontFile" path="res://assets/fonts/JosefinSans-Bold.ttf" id="2"]
+[ext_resource type="FontFile" uid="uid://cakwwxr6spq6v" path="res://assets/fonts/JosefinSans-Regular.ttf" id="1"]
+[ext_resource type="FontFile" uid="uid://rrcw5ky5bnsk" path="res://assets/fonts/JosefinSans-Bold.ttf" id="2"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn"]
 bg_color = Color(0.11, 0.15, 0.31, 1)

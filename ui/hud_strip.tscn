@@ -68,9 +68,9 @@ corner_radius_bottom_left = 9
 anchors_preset = 10
 anchor_right = 1.0
 offset_left = 16.0
-offset_top = 260.0
+offset_top = 119.0
 offset_right = -16.0
-offset_bottom = 370.0
+offset_bottom = 229.0
 grow_horizontal = 2
 theme_override_constants/separation = 10
 script = ExtResource("1")
@@ -102,10 +102,30 @@ layout_mode = 2
 max_value = 100.0
 value = 80.0
 show_percentage = false
-fill_mode = 2
+fill_mode = 3
 tooltip_text = "Energy"
 theme_override_styles/background = SubResource("strip_bg")
 theme_override_styles/fill = SubResource("fill_energy")
+
+[node name="EnergySegA" type="ColorRect" parent="StatusRow/EnergyCell/EnergyBar"]
+layout_mode = 1
+anchor_top = 0.3333
+anchor_right = 1.0
+anchor_bottom = 0.3333
+offset_top = -1.5
+offset_bottom = 1.5
+mouse_filter = 2
+color = Color(0.01, 0.5, 0.38, 1)
+
+[node name="EnergySegB" type="ColorRect" parent="StatusRow/EnergyCell/EnergyBar"]
+layout_mode = 1
+anchor_top = 0.6667
+anchor_right = 1.0
+anchor_bottom = 0.6667
+offset_top = -1.5
+offset_bottom = 1.5
+mouse_filter = 2
+color = Color(0.01, 0.5, 0.38, 1)
 
 [node name="EnergyTag" type="Label" parent="StatusRow/EnergyCell"]
 layout_mode = 2
@@ -130,10 +150,30 @@ layout_mode = 2
 max_value = 100.0
 value = 70.0
 show_percentage = false
-fill_mode = 2
+fill_mode = 3
 tooltip_text = "Focus"
 theme_override_styles/background = SubResource("strip_bg")
 theme_override_styles/fill = SubResource("fill_focus")
+
+[node name="FocusSegA" type="ColorRect" parent="StatusRow/FocusCell/FocusBar"]
+layout_mode = 1
+anchor_top = 0.3333
+anchor_right = 1.0
+anchor_bottom = 0.3333
+offset_top = -1.5
+offset_bottom = 1.5
+mouse_filter = 2
+color = Color(0.6, 0.48, 0.2, 1)
+
+[node name="FocusSegB" type="ColorRect" parent="StatusRow/FocusCell/FocusBar"]
+layout_mode = 1
+anchor_top = 0.6667
+anchor_right = 1.0
+anchor_bottom = 0.6667
+offset_top = -1.5
+offset_bottom = 1.5
+mouse_filter = 2
+color = Color(0.6, 0.48, 0.2, 1)
 
 [node name="FocusTag" type="Label" parent="StatusRow/FocusCell"]
 layout_mode = 2
@@ -158,10 +198,30 @@ layout_mode = 2
 max_value = 100.0
 value = 75.0
 show_percentage = false
-fill_mode = 2
+fill_mode = 3
 tooltip_text = "Mood"
 theme_override_styles/background = SubResource("strip_bg")
 theme_override_styles/fill = SubResource("fill_mood")
+
+[node name="MoodSegA" type="ColorRect" parent="StatusRow/MoodCell/MoodBar"]
+layout_mode = 1
+anchor_top = 0.3333
+anchor_right = 1.0
+anchor_bottom = 0.3333
+offset_top = -1.5
+offset_bottom = 1.5
+mouse_filter = 2
+color = Color(0.55, 0.15, 0.26, 1)
+
+[node name="MoodSegB" type="ColorRect" parent="StatusRow/MoodCell/MoodBar"]
+layout_mode = 1
+anchor_top = 0.6667
+anchor_right = 1.0
+anchor_bottom = 0.6667
+offset_top = -1.5
+offset_bottom = 1.5
+mouse_filter = 2
+color = Color(0.55, 0.15, 0.26, 1)
 
 [node name="MoodTag" type="Label" parent="StatusRow/MoodCell"]
 layout_mode = 2
