@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://c0udocdec3gfe"
-path="res://.godot/imported/dark_main.svg-3236c0af58a55809044afd3d2b8cc27d.ctex"
+uid="uid://dallki6wuwaxd"
+path="res://.godot/imported/table.svg-d4f8823b09bd23f9e242b2bed5e05c65.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/sprites/rooms/dark_main.svg"
-dest_files=["res://.godot/imported/dark_main.svg-3236c0af58a55809044afd3d2b8cc27d.ctex"]
+source_file="res://assets/sprites/ui/table.svg"
+dest_files=["res://.godot/imported/table.svg-d4f8823b09bd23f9e242b2bed5e05c65.ctex"]
 
 [params]
 

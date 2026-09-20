@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://c0udocdec3gfe"
-path="res://.godot/imported/dark_main.svg-3236c0af58a55809044afd3d2b8cc27d.ctex"
+uid="uid://dydlp172mmkf4"
+path="res://.godot/imported/charge.png-0f8b4de040af9cfa4c2255741622cd48.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/sprites/rooms/dark_main.svg"
-dest_files=["res://.godot/imported/dark_main.svg-3236c0af58a55809044afd3d2b8cc27d.ctex"]
+source_file="res://assets/sprites/ui/charge.png"
+dest_files=["res://.godot/imported/charge.png-0f8b4de040af9cfa4c2255741622cd48.ctex"]
 
 [params]
 
@@ -38,6 +38,3 @@ process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
 detect_3d/compress_to=1
-svg/scale=1.0
-editor/scale_with_editor_scale=false
-editor/convert_colors_with_editor_theme=false

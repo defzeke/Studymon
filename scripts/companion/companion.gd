@@ -11,10 +11,20 @@ extends Control
 @onready var tidbit_bubble: Label = $TidbitBubble
 @onready var xp_tick: Label = $XPTick
 @onready var campaign_btn: Button = $CampaignButton
-@onready var codex_btn: Button = $CodexButton
 @onready var settings_btn: Button = $SettingsButton
 @onready var pomodoro_btn: Button = $PomodoroButton
 @onready var pomodoro_panel: Control = $Pomodoro
+@onready var room_bg: TextureRect = $Background
+@onready var charge_btn: Button = $ChargeButton
+@onready var night_veil: ColorRect = $NightVeil
+
+const ROOM_DAY: Texture2D = preload("res://assets/sprites/rooms/main.svg")
+const ROOM_NIGHT: Texture2D = preload("res://assets/sprites/rooms/dark_main.svg")
+const CHARGE_SFX: AudioStream = preload("res://assets/audio/charge.mp3")
+const CHARGED_SFX: AudioStream = preload("res://assets/audio/charged.mp3")
+const NIGHT_DIM := Color(0.7, 0.7, 0.75)
+var _dark_room := false
+var _base_modulate := {}
 
 var bot_textures: Array[Texture2D] = []
 var _tick_tween: Tween
@@ -27,6 +37,7 @@ func _ready() -> void:
 		rig.visible = false
 	_load_bot_textures()
 	_ensure_levelup_particles()
+	_snap_modulates()
 	CompanionState.xp_changed.connect(_on_xp_changed)
 	CompanionState.leveled_up.connect(_on_leveled_up)
 	CompanionState.codex_entry_added.connect(_on_tidbit)
@@ -37,15 +48,17 @@ func _ready() -> void:
 	# Phase 9: accessibility — apply saved large-text scale and listen for changes.
 	if GameState.has_signal("large_text_changed"):
 		GameState.large_text_changed.connect(_on_large_text_changed)
-	$Buttons/FeedButton.pressed.connect(_on_care.bind("feed"))
-	$Buttons/PetButton.pressed.connect(_on_care.bind("pet"))
-	$Buttons/PlayButton.pressed.connect(_on_care.bind("play"))
 	campaign_btn.pressed.connect(_on_campaign_pressed)
-	codex_btn.pressed.connect(_on_codex_pressed)
 	if settings_btn:
 		settings_btn.pressed.connect(_on_settings_pressed)
 	if pomodoro_btn:
 		pomodoro_btn.pressed.connect(_on_pomodoro_pressed)
+	if charge_btn:
+		charge_btn.pressed.connect(_on_charge_pressed)
+	# ponytail: subtle hover-big / press-small on the room icon buttons
+	for icon_btn in [campaign_btn, charge_btn, settings_btn, pomodoro_btn]:
+		if icon_btn:
+			ButtonJuice.wire(icon_btn)
 	# Sync gate for saves already max-level at load time.
 	if CompanionState.campaign_ready:
 		GameState.set_campaign_unlocked(true)
@@ -182,15 +195,39 @@ func _on_campaign_ready() -> void:
 	_refresh_all()
 	SaveManager.save_game()
 
-func _on_codex_pressed() -> void:
-	get_tree().change_scene_to_file("res://scenes/ui/codex.tscn")
-
 func _on_settings_pressed() -> void:
 	get_tree().change_scene_to_file("res://scenes/ui/settings.tscn")
 
 func _on_pomodoro_pressed() -> void:
 	if pomodoro_panel:
 		pomodoro_panel.visible = not pomodoro_panel.visible
+
+func _on_charge_pressed() -> void:
+	var was_dark := _dark_room
+	if has_node("/root/MusicManager"):
+		var mm := get_node("/root/MusicManager")
+		if was_dark:
+			mm.call("play_sfx_chain", [CHARGE_SFX, CHARGED_SFX])
+		else:
+			mm.call("play_sfx", CHARGE_SFX)
+	_dark_room = not _dark_room
+	if room_bg:
+		room_bg.texture = ROOM_NIGHT if _dark_room else ROOM_DAY
+	if night_veil:
+		night_veil.visible = _dark_room
+	for child in get_children():
+		if child == room_bg or child == night_veil:
+			continue
+		var ci := child as CanvasItem
+		if ci == null:
+			continue
+		var base: Color = _base_modulate.get(child, Color.WHITE)
+		ci.modulate = base * NIGHT_DIM if _dark_room else base
+
+func _snap_modulates() -> void:
+	_base_modulate.clear()
+	for child in get_children():
+		_base_modulate[child] = (child as CanvasItem).modulate
 
 func _on_campaign_pressed() -> void:
 	if GameState.campaign_unlocked_flag:

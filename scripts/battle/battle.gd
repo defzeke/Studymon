@@ -245,7 +245,7 @@ func _lose() -> void:
 	_over = true
 	SessionManager.report_battle_result(false)
 	result_title.text = "Defeated — review and retry!"
-	xp_label.text = "Tip: check the Codex, then strike again."
+	xp_label.text = "Tip: train up, then strike again."
 	retry_btn.visible = true
 	continue_btn.text = "Flee"
 	result_panel.visible = true
