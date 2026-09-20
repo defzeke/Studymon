@@ -3,9 +3,9 @@ extends VBoxContainer
 ## CompanionState emits stats_changed every frame, so this stays live.
 
 @onready var level_label: Label = $StatusRow/LevelLabel
-@onready var energy_bar: ProgressBar = $StatusRow/EnergyBar
-@onready var focus_bar: ProgressBar = $StatusRow/FocusBar
-@onready var mood_bar: ProgressBar = $StatusRow/MoodBar
+@onready var energy_bar: ProgressBar = $StatusRow/EnergyCell/EnergyBar
+@onready var focus_bar: ProgressBar = $StatusRow/FocusCell/FocusBar
+@onready var mood_bar: ProgressBar = $StatusRow/MoodCell/MoodBar
 @onready var pomo_badge: Label = $StatusRow/PomoBadge
 
 func _ready() -> void:
@@ -17,6 +17,8 @@ func _on_xp(_xp: int, _level: int) -> void:
 	_refresh()
 
 func _refresh() -> void:
+	if level_label == null or energy_bar == null or focus_bar == null or mood_bar == null or pomo_badge == null:
+		return
 	level_label.text = "Lv %d" % CompanionState.level
 	energy_bar.value = CompanionState.energy
 	focus_bar.value = CompanionState.focus

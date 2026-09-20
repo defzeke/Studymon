@@ -1,4 +1,7 @@
-[gd_resource type="Theme" load_steps=3 format=3]
+[gd_resource type="Theme" load_steps=5 format=3]
+
+[ext_resource type="FontFile" path="res://assets/fonts/JosefinSans-Regular.ttf" id="1"]
+[ext_resource type="FontFile" path="res://assets/fonts/JosefinSans-Bold.ttf" id="2"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn"]
 bg_color = Color(0.11, 0.15, 0.31, 1)
@@ -15,8 +18,10 @@ corner_radius_bottom_right = 24
 corner_radius_bottom_left = 24
 
 [resource]
+default_font = ExtResource("1")
 default_font_size = 28
 Button/colors/font_color = Color(0.93, 0.96, 1, 1)
 Button/font_sizes/font_size = 32
+Button/fonts/font = ExtResource("2")
 Button/styles/normal = SubResource("StyleBoxFlat_btn")
 PanelContainer/styles/panel = SubResource("StyleBoxFlat_panel")

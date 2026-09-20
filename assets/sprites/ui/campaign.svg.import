@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dmjk8utq35spd"
-path="res://.godot/imported/loading_screen.png-0bc2ca25bb9d87999285f03eb8917358.ctex"
+uid="uid://de1m4q585vuc8"
+path="res://.godot/imported/campaign.svg-bba7b5f6b0581157dae9fdd2a2cb0e45.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/sprites/loading_screen.png"
-dest_files=["res://.godot/imported/loading_screen.png-0bc2ca25bb9d87999285f03eb8917358.ctex"]
+source_file="res://assets/sprites/ui/campaign.svg"
+dest_files=["res://.godot/imported/campaign.svg-bba7b5f6b0581157dae9fdd2a2cb0e45.ctex"]
 
 [params]
 
@@ -23,7 +23,7 @@ compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
 compress/normal_map=0
 compress/channel_pack=0
-mipmaps/generate=false
+mipmaps/generate=true
 mipmaps/limit=-1
 roughness/mode=0
 roughness/src_normal=""
@@ -38,3 +38,6 @@ process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
 detect_3d/compress_to=1
+svg/scale=1.0
+editor/scale_with_editor_scale=false
+editor/convert_colors_with_editor_theme=false

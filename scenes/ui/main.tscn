@@ -6,34 +6,10 @@
 [ext_resource type="PackedScene" path="res://ui/pomodoro.tscn" id="5_pom"]
 [ext_resource type="Texture2D" path="res://assets/sprites/rooms/main.svg" id="4_bg"]
 [ext_resource type="PackedScene" path="res://scenes/companion/companion_rig.tscn" id="4_rig"]
-
-[sub_resource type="StyleBoxFlat" id="stat_bg"]
-bg_color = Color(0.043, 0.075, 0.169, 1)
-corner_radius_top_left = 9
-corner_radius_top_right = 9
-corner_radius_bottom_right = 9
-corner_radius_bottom_left = 9
-
-[sub_resource type="StyleBoxFlat" id="fill_energy"]
-bg_color = Color(0.024, 0.839, 0.627, 1)
-corner_radius_top_left = 9
-corner_radius_top_right = 9
-corner_radius_bottom_right = 9
-corner_radius_bottom_left = 9
-
-[sub_resource type="StyleBoxFlat" id="fill_focus"]
-bg_color = Color(1, 0.82, 0.4, 1)
-corner_radius_top_left = 9
-corner_radius_top_right = 9
-corner_radius_bottom_right = 9
-corner_radius_bottom_left = 9
-
-[sub_resource type="StyleBoxFlat" id="fill_mood"]
-bg_color = Color(0.937, 0.278, 0.435, 1)
-corner_radius_top_left = 9
-corner_radius_top_right = 9
-corner_radius_bottom_right = 9
-corner_radius_bottom_left = 9
+[ext_resource type="Texture2D" path="res://assets/sprites/ui/campaign.svg" id="6_camp"]
+[ext_resource type="Texture2D" path="res://assets/sprites/ui/settings.svg" id="7_set"]
+[ext_resource type="Texture2D" path="res://assets/sprites/ui/pomodoro.svg" id="8_pom"]
+[ext_resource type="Texture2D" path="res://assets/sprites/ui/top_bar.svg" id="9_top"]
 
 [node name="Main" type="Control" unique_id=727120266]
 layout_mode = 3
@@ -70,14 +46,27 @@ grow_vertical = 2
 expand_mode = 1
 stretch_mode = 5
 
+[node name="TopBanner" type="TextureRect" parent="Room"]
+layout_mode = 0
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 16.0
+offset_right = -16.0
+offset_bottom = 245.0
+grow_horizontal = 2
+mouse_filter = 2
+texture = ExtResource("9_top")
+expand_mode = 1
+stretch_mode = 5
+
 [node name="TopBar" type="VBoxContainer" parent="Room" unique_id=120828800]
 layout_mode = 0
 anchor_left = 0.5
 anchor_right = 0.5
 offset_left = -260.0
-offset_top = 130.0
+offset_top = 470.0
 offset_right = 260.0
-offset_bottom = 230.0
+offset_bottom = 570.0
 
 [node name="LevelLabel" type="Label" parent="Room/TopBar" unique_id=917297647]
 layout_mode = 2
@@ -98,9 +87,9 @@ layout_mode = 0
 anchor_left = 0.5
 anchor_right = 0.5
 offset_left = -300.0
-offset_top = 380.0
+offset_top = 770.0
 offset_right = 300.0
-offset_bottom = 470.0
+offset_bottom = 860.0
 text = "Hi! I'm your baby AI!"
 horizontal_alignment = 1
 autowrap_mode = 2
@@ -109,72 +98,9 @@ autowrap_mode = 2
 modulate = Color(1, 1, 1, 0)
 layout_mode = 0
 offset_left = 400.0
-offset_top = 470.0
+offset_top = 870.0
 offset_right = 550.0
-offset_bottom = 500.0
-
-[node name="Stats" type="VBoxContainer" parent="Room" unique_id=1183135299]
-layout_mode = 0
-anchor_left = 0.5
-anchor_right = 0.5
-offset_left = -260.0
-offset_top = 800.0
-offset_right = 260.0
-offset_bottom = 920.0
-
-[node name="EnergyRow" type="HBoxContainer" parent="Room/Stats"]
-layout_mode = 2
-theme_override_constants/separation = 12
-
-[node name="EnergyLabel" type="Label" parent="Room/Stats/EnergyRow"]
-custom_minimum_size = Vector2(110, 0)
-layout_mode = 2
-text = "Energy"
-
-[node name="EnergyBar" type="ProgressBar" parent="Room/Stats/EnergyRow" unique_id=37577240]
-custom_minimum_size = Vector2(0, 24)
-layout_mode = 2
-size_flags_horizontal = 3
-max_value = 100.0
-value = 80.0
-theme_override_styles/background = SubResource("stat_bg")
-theme_override_styles/fill = SubResource("fill_energy")
-
-[node name="FocusRow" type="HBoxContainer" parent="Room/Stats"]
-layout_mode = 2
-theme_override_constants/separation = 12
-
-[node name="FocusLabel" type="Label" parent="Room/Stats/FocusRow"]
-custom_minimum_size = Vector2(110, 0)
-layout_mode = 2
-text = "Focus"
-
-[node name="FocusBar" type="ProgressBar" parent="Room/Stats/FocusRow" unique_id=1318710848]
-custom_minimum_size = Vector2(0, 24)
-layout_mode = 2
-size_flags_horizontal = 3
-max_value = 100.0
-value = 70.0
-theme_override_styles/background = SubResource("stat_bg")
-theme_override_styles/fill = SubResource("fill_focus")
-
-[node name="MoodRow" type="HBoxContainer" parent="Room/Stats"]
-layout_mode = 2
-theme_override_constants/separation = 12
-
-[node name="MoodLabel" type="Label" parent="Room/Stats/MoodRow"]
-custom_minimum_size = Vector2(110, 0)
-layout_mode = 2
-text = "Mood"
-
-[node name="MoodBar" type="ProgressBar" parent="Room/Stats/MoodRow" unique_id=1471380263]
-custom_minimum_size = Vector2(0, 24)
-layout_mode = 2
-size_flags_horizontal = 3
-max_value = 100.0
-value = 75.0
-theme_override_styles/background = SubResource("stat_bg")
-theme_override_styles/fill = SubResource("fill_mood")
+offset_bottom = 900.0
 
 [node name="Buttons" type="HBoxContainer" parent="Room" unique_id=1525440497]
 layout_mode = 0
@@ -203,42 +129,73 @@ layout_mode = 2
 text = "🎮 Play"
 
 [node name="CampaignButton" type="Button" parent="Room" unique_id=2031875804]
-custom_minimum_size = Vector2(560, 64)
+custom_minimum_size = Vector2(160, 160)
 layout_mode = 0
-anchor_left = 0.5
+anchor_left = 1.0
 anchor_top = 1.0
-anchor_right = 0.5
+anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = -280.0
-offset_top = -164.0
-offset_right = 280.0
-offset_bottom = -100.0
+offset_left = -184.0
+offset_top = -184.0
+offset_right = -24.0
+offset_bottom = -24.0
+grow_horizontal = 0
+grow_vertical = 0
 disabled = true
-text = "🔒 Lv 5 unlocks Campaign"
+icon = ExtResource("6_camp")
+expand_icon = true
+icon_alignment = 1
+flat = true
 
 [node name="HudStrip" parent="Room" instance=ExtResource("3_hud")]
 layout_mode = 1
 
 [node name="Pomodoro" parent="Room" instance=ExtResource("5_pom")]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 16.0
+offset_top = 580.0
+offset_right = -16.0
+offset_bottom = 750.0
+grow_horizontal = 2
+visible = false
 
 [node name="CodexButton" type="Button" parent="Room"]
 layout_mode = 0
 anchor_left = 1.0
 anchor_right = 1.0
 offset_left = -180.0
-offset_top = 16.0
+offset_top = 386.0
 offset_right = -16.0
-offset_bottom = 72.0
+offset_bottom = 442.0
 grow_horizontal = 0
 text = "Codex"
 
 [node name="SettingsButton" type="Button" parent="Room"]
+custom_minimum_size = Vector2(64, 64)
 layout_mode = 0
-anchor_left = 1.0
-anchor_right = 1.0
-offset_left = -180.0
-offset_top = 80.0
-offset_right = -16.0
-offset_bottom = 136.0
+offset_left = 16.0
+offset_top = 386.0
+offset_right = 80.0
+offset_bottom = 450.0
 grow_horizontal = 0
-text = "Settings"
+tooltip_text = "Settings"
+icon = ExtResource("7_set")
+expand_icon = true
+icon_alignment = 1
+flat = true
+
+[node name="PomodoroButton" type="Button" parent="Room"]
+custom_minimum_size = Vector2(64, 64)
+layout_mode = 0
+offset_left = 16.0
+offset_top = 458.0
+offset_right = 80.0
+offset_bottom = 522.0
+grow_horizontal = 0
+tooltip_text = "Pomodoro"
+icon = ExtResource("8_pom")
+expand_icon = true
+icon_alignment = 1
+flat = true
