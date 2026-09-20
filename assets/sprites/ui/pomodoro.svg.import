@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://de1m4q585vuc8"
-path="res://.godot/imported/campaign.svg-bba7b5f6b0581157dae9fdd2a2cb0e45.ctex"
+uid="uid://8ovghiao1p5w"
+path="res://.godot/imported/pomodoro.svg-749a8b77a0afc77c49455bd8831bf3de.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/sprites/ui/campaign.svg"
-dest_files=["res://.godot/imported/campaign.svg-bba7b5f6b0581157dae9fdd2a2cb0e45.ctex"]
+source_file="res://assets/sprites/ui/pomodoro.svg"
+dest_files=["res://.godot/imported/pomodoro.svg-749a8b77a0afc77c49455bd8831bf3de.ctex"]
 
 [params]
 

@@ -8,14 +8,13 @@ extends Control
 @onready var rig: Node2D = get_node_or_null("CompanionRig") as Node2D
 @onready var level_label: Label = $HudStrip/StatusRow/LevelLabel
 @onready var xp_bar: ProgressBar = $HudStrip/XPRow/XPBar
-@onready var energy_bar: ProgressBar = $Stats/EnergyRow/EnergyBar
-@onready var focus_bar: ProgressBar = $Stats/FocusRow/FocusBar
-@onready var mood_bar: ProgressBar = $Stats/MoodRow/MoodBar
 @onready var tidbit_bubble: Label = $TidbitBubble
 @onready var xp_tick: Label = $XPTick
 @onready var campaign_btn: Button = $CampaignButton
 @onready var codex_btn: Button = $CodexButton
 @onready var settings_btn: Button = $SettingsButton
+@onready var pomodoro_btn: Button = $PomodoroButton
+@onready var pomodoro_panel: Control = $Pomodoro
 
 var bot_textures: Array[Texture2D] = []
 var _tick_tween: Tween
@@ -28,7 +27,6 @@ func _ready() -> void:
 		rig.visible = false
 	_load_bot_textures()
 	_ensure_levelup_particles()
-	CompanionState.stats_changed.connect(_refresh_stats)
 	CompanionState.xp_changed.connect(_on_xp_changed)
 	CompanionState.leveled_up.connect(_on_leveled_up)
 	CompanionState.codex_entry_added.connect(_on_tidbit)
@@ -46,6 +44,8 @@ func _ready() -> void:
 	codex_btn.pressed.connect(_on_codex_pressed)
 	if settings_btn:
 		settings_btn.pressed.connect(_on_settings_pressed)
+	if pomodoro_btn:
+		pomodoro_btn.pressed.connect(_on_pomodoro_pressed)
 	# Sync gate for saves already max-level at load time.
 	if CompanionState.campaign_ready:
 		GameState.set_campaign_unlocked(true)
@@ -60,9 +60,6 @@ func _ready() -> void:
 		_pop_bot()
 	else:
 		_show_retention_insight_if_any()
-
-func _process(_delta: float) -> void:
-	_refresh_stats()
 
 func _load_bot_textures() -> void:
 	bot_textures.clear()
@@ -191,6 +188,10 @@ func _on_codex_pressed() -> void:
 func _on_settings_pressed() -> void:
 	get_tree().change_scene_to_file("res://scenes/ui/settings.tscn")
 
+func _on_pomodoro_pressed() -> void:
+	if pomodoro_panel:
+		pomodoro_panel.visible = not pomodoro_panel.visible
+
 func _on_campaign_pressed() -> void:
 	if GameState.campaign_unlocked_flag:
 		get_tree().change_scene_to_file("res://scenes/ui/session_list.tscn")
@@ -199,20 +200,17 @@ func _on_campaign_pressed() -> void:
 		tidbit_bubble.text = "Locked! Reach Level 5 first. (%d XP to next level)" % need
 
 func _refresh_all() -> void:
-	_refresh_stats()
-	level_label.text = "Lv %d / 5" % CompanionState.level
+	if level_label != null:
+		level_label.text = "Lv %d / 5" % CompanionState.level
 	var lo: int = int(CompanionState.XP_PER_LEVEL[CompanionState.level - 1])
 	var hi: int = int(CompanionState.XP_PER_LEVEL[CompanionState.level]) if CompanionState.level < 5 else lo + 1
-	xp_bar.min_value = lo
-	xp_bar.max_value = hi
-	xp_bar.value = CompanionState.xp
+	if xp_bar != null:
+		xp_bar.min_value = lo
+		xp_bar.max_value = hi
+		xp_bar.value = CompanionState.xp
 	campaign_btn.disabled = not GameState.campaign_unlocked_flag
-	campaign_btn.text = "Review Campaign" if GameState.campaign_unlocked_flag else "Lv 5 unlocks Campaign"
-
-func _refresh_stats() -> void:
-	energy_bar.value = CompanionState.energy
-	focus_bar.value = CompanionState.focus
-	mood_bar.value = CompanionState.mood
+	campaign_btn.tooltip_text = "Review Campaign" if GameState.campaign_unlocked_flag else "Locked — reach Lv 5"
+	campaign_btn.modulate = Color(1, 1, 1, 1) if GameState.campaign_unlocked_flag else Color(1, 1, 1, 0.75)
 
 func _show_level(lv: int) -> void:
 	# ponytail: skeletal rig has no level textures; no-op while hidden
