@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cpdao4tvoodak"
-path="res://.godot/imported/quizmon_logo.png-77431d0cb63a5647bf1b211696f4fb0b.ctex"
+uid="uid://bqror4uc1xhv7"
+path="res://.godot/imported/kuizmon_splash.png-173732028abac3124fe8829e744a3845.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/sprites/quizmon_logo.png"
-dest_files=["res://.godot/imported/quizmon_logo.png-77431d0cb63a5647bf1b211696f4fb0b.ctex"]
+source_file="res://assets/sprites/kuizmon_splash.png"
+dest_files=["res://.godot/imported/kuizmon_splash.png-173732028abac3124fe8829e744a3845.ctex"]
 
 [params]
 
