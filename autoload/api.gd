@@ -79,21 +79,6 @@ func _put(endpoint: String, data: Dictionary) -> void:
 
 ## MOCKS — replaced by real calls when backend lands (Phase 5+)
 
-func mock_get_companion() -> void:
-	call_deferred("_mock_companion_done", {
-		"level": 1,
-		"xp": 0,
-		"energy": 80.0,
-		"focus": 70.0,
-		"mood": 75.0,
-		"bond": 0,
-		"codex": ["I start out knowing NOTHING — like a baby! I need training to learn. (AI starts blank)"],
-	})
-
-func _mock_companion_done(data: Dictionary) -> void:
-	if has_node("/root/CompanionState"):
-		get_node("/root/CompanionState").from_dict(data)
-
 # Phase 10: quota-gated mock upload. Emits quota_exceeded("pdf") on limit.
 func mock_upload_pdf(topic_name: String, source_text: String = "") -> void:
 	var _ms := get_node_or_null("/root/MonetizationState")

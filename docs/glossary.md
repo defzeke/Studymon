@@ -65,7 +65,9 @@ Terms used throughout this repo, in the sense this repo means them.
 |---|---|
 | **Autoload** | A singleton registered in `[autoload]` in `project.godot`. Seven exist: `SaveManager`, `GameState`, `Api`, `CompanionState`, `SessionManager`, `MonetizationState`, `MusicManager`. |
 | **Splash** | The white intro screen (`splash.tscn`) that plays the 60-frame Kuizmon animation, then loads the loading screen. |
-| **Main scene** | `res://scenes/ui/splash.tscn`. It hands off to `loading.tscn`, which loads the save and routes to the care room or intro. |
+| **Main scene** | `res://scenes/ui/splash.tscn`. It hands off to `loading.tscn`, then `peek.tscn`, where boot currently ends. |
+| **Peek** | `peek.tscn`: the 3D Kuiz head (`assets/models/kuiz.glb`) peeking up, greeting and idling on white after the loading screen. The future home of the tutorial, in which Kuiz introduces the game and guides the player to the room. |
+| **Ink outline** | The dark silhouette around Kuiz: an inverted hull (the mesh grown along its normals, front faces culled) in Deep Slate, sized by each node's `extras.outline`. |
 | **`.tscn` / `.tres`** | Godot scene and resource text files. Both are source here, not build output. |
 | **`ext_resource`** | A `.tscn` reference to an external file. If the target is missing, the scene fails to **parse** — no runtime fallback (issue #1). |
 | **`.import` / `.uid`** | Generated metadata for assets. Never hand-edit; let the editor regenerate them. |

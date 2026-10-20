@@ -8,6 +8,7 @@ const FRAME_COUNT: int = 60
 const FRAME_TIME: float = 0.03
 const HOLD_TIME: float = 0.5
 const FADE_TIME: float = 0.25
+const NEXT_SCENE := "res://scenes/ui/loading.tscn"
 
 @onready var logo: TextureRect = $Logo
 
@@ -17,6 +18,7 @@ var _frame: int = 0
 var _done: bool = false
 
 func _ready() -> void:
+	ResourceLoader.load_threaded_request(NEXT_SCENE)
 	for i in FRAME_COUNT:
 		var frame := AtlasTexture.new()
 		frame.atlas = SHEET
@@ -44,6 +46,8 @@ func _process(delta: float) -> void:
 func _finish() -> void:
 	_done = true
 	var tween := create_tween()
-	tween.tween_property(logo, "modulate:a", 0.0, FADE_TIME)
+	tween.tween_property(logo, "modulate:a", 0.0, FADE_TIME).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
 	await tween.finished
-	get_tree().change_scene_to_file("res://scenes/ui/loading.tscn")
+	# Holding the threaded result keeps it in the resource cache, so the change below doesn't block.
+	var _next := ResourceLoader.load_threaded_get(NEXT_SCENE)
+	get_tree().change_scene_to_file(NEXT_SCENE)

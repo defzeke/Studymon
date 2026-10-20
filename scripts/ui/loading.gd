@@ -1,20 +1,12 @@
 extends Control
 ## Boot loading screen (replaces login now that backend/auth is skipped).
-## Slow fill to 96%, pause, then a slow crawl to 100 before routing:
-## save file -> care room, first launch -> meet-your-companion cutscene.
-## Tips rotate every few seconds while loading.
+## Slow fill to 96%, pause, then a slow crawl to 100, fade to white and hand off to the peek scene,
+## which routes. Tips rotate every few seconds while loading.
 
-@onready var load_bar: ProgressBar = $Content/LoadBar
-@onready var tip_label: Label = $Content/TipLabel
-@onready var run_bot: TextureRect = $Content/LoadBar/RunBot
-
-const RUN_FRAMES: Array[Texture2D] = [
-	preload("res://assets/sprites/1run_loading.png"),
-	preload("res://assets/sprites/2run_loading.png"),
-	preload("res://assets/sprites/3run_loading.png"),
-]
-const RUN_FRAME_TIME: float = 0.15
-const RUN_BOT_HALF_WIDTH: float = 28.0
+@onready var load_bar: ProgressBar = $Content/BarTrack/LoadBar
+@onready var tip_label: Label = $Content/TipRow/TipLabel
+@onready var fade: ColorRect = $Fade
+@onready var logo: TextureRect = $Logo
 
 const TIPS: Array[String] = [
 	"Your AI starts out knowing nothing — you train it!",
@@ -28,44 +20,43 @@ const FILL_TO_HOLD: float = 96.0
 const FILL_TIME: float = 5.0
 const HOLD_TIME: float = 0.6
 const CRAWL_TIME: float = 2.0
+const FADE_IN_TIME: float = 0.4
+const FADE_OUT_TIME: float = 0.4
+const LOGO_BOB: float = 12.0
+const LOGO_BOB_TIME: float = 1.6
+const NEXT_SCENE := "res://scenes/ui/peek.tscn"
 
 var _tip_index: int = 0
 var _tip_timer: Timer
 var _tip_fade: Tween
 var _done: bool = false
-var _run_time: float = 0.0
-var _run_frame: int = 0
 
 func _ready() -> void:
 	theme = load("res://ui/app_theme.tres") as Theme
+	ResourceLoader.load_threaded_request(NEXT_SCENE)
 	load_bar.min_value = 0.0
 	load_bar.max_value = 100.0
 	load_bar.value = 0.0
 	_tip_index = randi() % TIPS.size()
 	tip_label.text = TIPS[_tip_index]
-	run_bot.texture = RUN_FRAMES[0]
 	if has_node("/root/MusicManager"):
 		(get_node("/root/MusicManager") as Node).call("ensure_playing")
+	_fade_in()
+	_bob_logo()
 	_start_tip_cycle()
 	_start_load_sequence()
 
-func _process(delta: float) -> void:
-	if _done:
-		return
-	# Cycle run frames.
-	_run_time += delta
-	if _run_time >= RUN_FRAME_TIME:
-		_run_time = 0.0
-		_run_frame = (_run_frame + 1) % RUN_FRAMES.size()
-		run_bot.texture = RUN_FRAMES[_run_frame]
-	# Run the bot along the bar with progress.
-	var bar_w := load_bar.size.x
-	if bar_w > RUN_BOT_HALF_WIDTH * 2.0:
-		var half := RUN_BOT_HALF_WIDTH / bar_w
-		var f := clampf(load_bar.value / 100.0, 0.0, 1.0)
-		var a := lerpf(half, 1.0 - half, f)
-		run_bot.anchor_left = a
-		run_bot.anchor_right = a
+func _bob_logo() -> void:
+	var rest := logo.position.y
+	var t := create_tween().set_loops().set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	t.tween_property(logo, "position:y", rest - LOGO_BOB, LOGO_BOB_TIME)
+	t.tween_property(logo, "position:y", rest, LOGO_BOB_TIME)
+
+# Fade is white on both ends to match the splash before and the peek scene after, so neither cut shows.
+func _fade_in() -> void:
+	var t := create_tween()
+	t.tween_property(fade, "modulate:a", 0.0, FADE_IN_TIME).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	t.tween_callback(fade.hide)
 
 func _start_tip_cycle() -> void:
 	_tip_timer = Timer.new()
@@ -97,10 +88,10 @@ func _advance() -> void:
 	_done = true
 	if is_instance_valid(_tip_timer):
 		_tip_timer.stop()
-	var target := "res://scenes/ui/main.tscn"
-	if not FileAccess.file_exists("user://studymon_save.json"):
-		target = "res://scenes/companion/meet_companion.tscn"
-	if not ResourceLoader.exists(target):
-		tip_label.text = "Couldn't load next scene: missing " + target
-		return
-	get_tree().change_scene_to_file(target)
+	fade.show()
+	var t := create_tween()
+	t.tween_property(fade, "modulate:a", 1.0, FADE_OUT_TIME).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
+	await t.finished
+	# Holding the threaded result keeps it in the resource cache, so the change below doesn't block.
+	var _next := ResourceLoader.load_threaded_get(NEXT_SCENE)
+	get_tree().change_scene_to_file(NEXT_SCENE)

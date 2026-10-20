@@ -3,8 +3,10 @@
 Phase-by-phase comparison of [`../quizmon-build-plan.md`](../quizmon-build-plan.md) against the
 current code. Statuses follow the vocabulary in [`README.md`](README.md#status-vocabulary).
 
-**Headline:** every phase has client-side code, and the whole loop runs on mocks — but the campaign
-currently stops at the first scene change after "Confirm & Play" because two scenes reference
+**Headline:** every phase has client-side code, and the whole loop runs on mocks — but boot now
+ends on the peek scene (Kuiz greets and idles; the tutorial that leads on is not written), so the
+care room and everything after it are reached only by opening those scenes directly. Beyond that,
+the campaign stops at the first scene change after "Confirm & Play" because two scenes reference
 missing textures (`known-issues.md` #1), and the pet loop has no input (`#8`).
 
 ---
@@ -14,7 +16,7 @@ missing textures (`known-issues.md` #1), and the pet loop has no input (`#8`).
 | Phase | Plan scope | Status | Where |
 |---|---|---|---|
 | **0** | Project skeleton, folder structure, autoloads, theme, backend health | **Implemented** (layout differs) | `project.godot`, 7 autoloads, `ui/app_theme.tres`, `backend/main.py` |
-| **1** | Accounts, first login, meet-your-companion cutscene | **Partial** — cutscene only | `scenes/companion/meet_companion.tscn`; no auth, `GameState.set_user()` unused |
+| **1** | Accounts, first login, meet-your-companion cutscene | **Partial** — 3D greeting only | `scenes/ui/peek.tscn`; tutorial unwritten, no auth, `GameState.set_user()` unused |
 | **2** | Pet-care loop: Pet/Feed/Play, stats, XP, decay, level gate, HUD strip | **Partial** — logic yes, input/art no | `companion_state.gd`, `companion.gd`, `hud_strip.tscn`; see #3, #5, #8 |
 | **3** | AI Codex + optional pop-quiz reuse | **Partial** — data only | `CURRICULUM` + `codex` array; no screen, bubble hidden (#4) |
 | **4** | Scheduler / Pomodoro with missed-rest penalty, HUD badge | **Implemented** | `companion_state.gd:168-241`, `pomodoro.tscn`, `PomoBadge` |
@@ -45,15 +47,15 @@ Deviations:
 
 ### Phase 1 — Accounts & first meeting ⚠️
 
-Done: a skippable 6-line intro (`meet_companion.gd`) that seeds companion state through
-`Api.mock_get_companion()`. Loading routes there only when no save file exists.
+Done: the first meeting is `peek.tscn`. After the loading screen, the 3D Kuiz peeks up, greets and
+idles on white, every launch. The old text cutscene (`meet_companion.tscn`) and its starter-stats
+mock were removed; `CompanionState`'s defaults are the same starter stats.
 
-Missing: Supabase auth entirely. No login/signup scene, no token, no user record, no session
-restore. `GameState.user_id` / `auth_token` are declared and never written. `loading.gd:2` states
-this explicitly ("replaces login now that backend/auth is skipped").
-
-> Re-entering `meet_companion.tscn` at any point resets the companion to starter stats — see
-> `known-issues.md` (behaviour noted in `ui-and-assets.md` §2).
+Missing: the tutorial itself (Kuiz introducing the game and guiding the player to the room; no
+script yet), and so any path from boot into the care room. Supabase auth entirely: no login/signup
+scene, no token, no user record, no session restore. `GameState.user_id` / `auth_token` are
+declared and never written. `loading.gd:2` states this explicitly ("replaces login now that
+backend/auth is skipped").
 
 ### Phase 2 — Pet-care loop ⚠️
 

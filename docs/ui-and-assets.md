@@ -64,8 +64,8 @@ in the UI ever calls `set_large_text()`**. `settings.tscn` has no accessibility 
 | Scene | Root type | Script | Purpose |
 |---|---|---|---|
 | `scenes/ui/splash.tscn` | `Control` | `scripts/ui/splash.gd` | white intro, then loading |
-| `scenes/ui/loading.tscn` | `Control` | `scripts/ui/loading.gd` | boot + routing |
-| `scenes/companion/meet_companion.tscn` | `Control` | `scripts/companion/meet_companion.gd` | 6-line intro cutscene |
+| `scenes/ui/loading.tscn` | `Control` | `scripts/ui/loading.gd` | boot loading bar |
+| `scenes/ui/peek.tscn` | `Node3D` | `scripts/ui/peek.gd` | 3D Kuiz peeks, greets and idles; the end of the boot flow and future tutorial host |
 | `scenes/ui/main.tscn` | `Control` | `scripts/ui/main.gd` (+ `companion.gd` on child) | care room |
 | `scenes/ui/session_list.tscn` | `Control` | `scripts/ui/session_list.gd` | topic history |
 | `scenes/review_session/categorizer.tscn` | `Control` | `scripts/review_session/categorizer.gd` | upload + question editor |
@@ -105,18 +105,88 @@ Note there is **no Feed / Pet / Play button** — the care loop has no trigger i
 slices the 6 × 10 `kuizmon_splash.png` sheet into 60 `AtlasTexture` frames, advances one every 30 ms,
 holds the last frame for 0.5 s, fades the logo to white over 0.25 s, then changes to `loading.tscn`.
 
+`loading.tscn` is requested with `ResourceLoader.load_threaded_request()` in `_ready()`, so it loads
+on a worker thread while the animation plays. `_finish()` holds the result of
+`load_threaded_get()` and then calls `change_scene_to_file()`, which hits the resource cache instead
+of blocking on disk.
+
 ### `loading.tscn`
 
-`Loading` → `Background` (`loading.png`), `Logo` (`logo.png`, top-centre), `Content` → `LoadBar`
-(`ProgressBar`; its `RunBot` TextureRect is hidden) + `TipLabel`. Sequence: 0 → 96 % in 5 s,
-0.6 s hold, → 100 % in 2 s, then route. Tips rotate every 2.5 s with a 0.25 s fade out/in.
+```text
+Loading
+├── Background      TextureRect, loading.png
+├── Leaves          CPUParticles2D, leaf.svg tinted Soft Green / Muted Amber
+├── Logo            TextureRect, logo.png, 800 × 418 from y = −91 (wordmark ≈ 530 px wide), floats
+├── Content         VBoxContainer pinned to the bottom
+│   ├── Title       HBox: SparkL, LoadingLabel ("Loading...", bold 40), SparkR (flip_h)
+│   ├── BarTrack    PanelContainer, 520 px wide, centred: Deep Slate fill, Warm Off-White border, radius 28
+│   │   └── LoadBar ProgressBar, 36 px tall: Muted Teal fill, empty background, stripe shader
+│   └── TipRow      HBox: TipIcon (tip_bulb.svg), TipLabel (bold 22, Soft Sage)
+└── Fade            ColorRect, pure white: 0.4 s fade out on entry, 0.4 s fade in on exit
+```
 
-### `meet_companion.tscn`
+Sequence: 0 → 96 % in 5 s, 0.6 s hold, → 100 % in 2 s, fade to white, then `peek.tscn` (thread-loaded
+from `_ready()`). Tips rotate every 2.5 s with a 0.25 s fade out/in.
 
-Outer `MeetCompanion` → inner `MeetCompanion` (holds the script) → `Center` → `Dialogue`,
-`NextButton`, `SkipButton`. The last line's button becomes "Enter Care Room"; skipping jumps straight
-to `main.tscn`. `_ready()` also calls `Api.mock_get_companion()`, which overwrites companion stats
-with the starter set — **entering this scene any time after starting resets the companion**.
+`logo.png` carries transparent padding (its opaque area is 373 × 114 of 561 × 293), so the
+`TextureRect` is wider than the screen and starts above it to put the wordmark at y ≈ 80–243.
+`_bob_logo()` floats it up 12 px and back on a looping sine tween (`LOGO_BOB_TIME` = 1.6 s each way).
+
+`TipLabel` is a single line; the longest tip measures 562 of the 624 px available, so a longer tip
+needs a smaller font or `autowrap_mode`.
+
+- **Fade** is `#FFFFFF`, not a palette colour, on purpose: it must match the white baked into
+  `kuizmon_splash.png` and the peek scene's background, so both scene changes happen on identical
+  white frames.
+- **Stripes** are an inline `canvas_item` shader on `LoadBar`. It tints the fill with Soft Sage at
+  40 % in 26 px diagonal bands that scroll right, and keeps the fill's alpha so the rounded corners
+  survive. The background stylebox is empty, so the shader only ever touches the fill.
+- **Leaves**: 16 particles, 10 s lifetime, prewarmed (`preprocess = 10`) so they are already falling
+  when `Fade` clears. A constant-interpolation `Gradient` picks exactly Soft Green or Muted Amber
+  (70 / 30), never a blend.
+
+### `peek.tscn`
+
+```text
+Peek                Node3D (peek.gd)
+├── WorldEnvironment  background #FFFFFF; ambient + reflections from a ProceduralSky "studio"
+├── Camera3D          (0, 0.25, 16.5), fov 13.6, keep_aspect = width (near-orthographic front view)
+├── Key / Fill / Rim  DirectionalLight3D 0.7 / 0.36 / 0.4, the artifact's three lights × 0.8
+├── Shadow            PlaneMesh 2.9 × 2.1 at y −0.935, radial Deep Slate GradientTexture2D
+└── Kuiz              instance of assets/models/kuiz.glb
+```
+
+`peek.gd` plays `Peek_Surprise` (5.7 s): Kuiz rises from the bottom edge, the eyes widen with an
+"!", then a happy face with sparkles. It queues `Greetings` (2.9 s), then `Idle` (4 s, set to loop
+at runtime), with a 0.18 s blend between clips as in the artifact. **Kuiz then stays: nothing leads
+out of this scene.** It is where the tutorial will start, with Kuiz introducing the game and then
+guiding the player to the room; neither the tutorial script nor the rooms exist yet.
+
+**Why it needs code.** The model was authored in the "KUIZMON Pet Bot 3D – Rigged" artifact, whose
+three.js page renders it with its own code. The `.glb` carries only geometry, rig, animations,
+colours and `extras` hints, which Godot imports as `get_meta("extras")` on nodes and materials.
+`peek.gd` ports the page's look from those hints:
+
+| Artifact | Godot |
+|---|---|
+| Vertex colours on (`COLOR_0` holds the face, bezel and glow colours; `baseColorFactor` is white) | `vertex_color_use_as_albedo = true` on every surface; the importer leaves it off, and without it the face renders white |
+| Inked silhouette: an inverted hull grown by node `extras.outline` (shell 0.024, ears 0.017, cups 0.018), `#29383A` | `material_overlay` per mesh: unshaded, `CULL_FRONT`, `grow_amount` = the outline width |
+| `selfLit` mixes the lit colour toward the base colour (screen 0.86, gold 0.88, gem 0.9, panels 0.97, props 0.9) | `selfLit ≥ 0.85` → `SHADING_MODE_UNSHADED`; the cups (0.45) stay lit |
+| `blend: additive` on halos and the visor glint | `BLEND_MODE_ADD` |
+| Studio environment: gradient sphere + soft boxes, hemisphere light 0.62 | `ProceduralSkyMaterial` gradient as ambient (0.9) and reflection source; no soft boxes |
+| Key 0.85, fill 0.45, rim 0.5, ACES tonemap, exposure 0.8 | Same directions and colours at × 0.8 energy, **linear** tonemap |
+| Peek re-anchored to the visible bottom edge, only while the peek clip plays | `_process` moves `Kuiz` by `(1.828 − half_height) × peek`, where `peek = clamp(0.9 − Head.y, 0, 1)` while `Peek_Surprise` is current, else 0 |
+| Contact shadow shrinks as the head lifts, hidden while peeking | Same formula on `Shadow` scale and alpha |
+
+Not ported: the `rim` edge/underside tint and the `env` per-material reflection strength (both
+subtle), the soft-box reflections, and the page's off-white radial background.
+
+- The background must stay `#FFFFFF`, so the tonemap stays linear (ACES would grey it) and the cut
+  from the loading screen's `Fade` is invisible. Light energies are scaled × 0.8 to stand in for the
+  artifact's exposure.
+- The handoff into this scene measured 9–33 ms on desktop while materials compile; it lands on white.
+- `kuiz.glb` also carries `Blink`, `Happy`, `Sad`, `Angry`, `Surprised`, `Look_Around`, `Confused`,
+  `Charging`, `Wake_Up` and `Pet`, unused for now.
 
 ### `session_list.tscn`
 
@@ -207,10 +277,13 @@ level-ups, taps and gym clears are silent.
 | `audio/main room.mp3` | `music_manager.gd` (looping BGM) |
 | `audio/charge.mp3`, `audio/charged.mp3` | `companion.gd` day/night toggle |
 | `fonts/JosefinSans-Regular.ttf` | theme default font |
-| `fonts/JosefinSans-Bold.ttf` | theme button font |
-| `sprites/1run_loading.png`, `2run_loading.png`, `3run_loading.png` | `loading.gd` run-cycle (RunBot hidden in the scene) |
+| `fonts/JosefinSans-Bold.ttf` | theme button font; `loading.tscn` title and tip labels |
 | `sprites/loading.png` | `loading.tscn` background |
 | `sprites/logo.png` | `loading.tscn` top-centre wordmark |
+| `sprites/leaf.svg` | `loading.tscn` falling leaves (white so particle colour tints it) |
+| `sprites/ui/loading_spark.svg` | `loading.tscn` sparks either side of "Loading..." |
+| `sprites/ui/tip_bulb.svg` | `loading.tscn` tip icon |
+| `models/kuiz.glb` | `peek.tscn` 3D Kuiz head, 13 animations (`Peek_Surprise`, `Greetings`, `Idle` used) |
 | `sprites/kuizmon_splash.png` | `splash.gd` 60-frame intro sheet (6 × 10 cells, 480 × 264) |
 | `sprites/rooms/main.svg` | care-room background (day) |
 | `sprites/rooms/dark_main.svg` | care-room background (night) |
@@ -236,6 +309,8 @@ level-ups, taps and gym clears are silent.
 | Asset | Note |
 |---|---|
 | `audio/hmm.mp3` | no call site |
+| `sprites/1run_loading.png`, `2run_loading.png`, `3run_loading.png` | old loading-bar run cycle; its hidden `RunBot` node was removed |
+| `models/boy_explorer.glb`, `boy_explorer_basecolor_v2.jpg`, `boy_explorer_normal_v2.jpg` | no scene references them |
 | `sprites/loading_logo.png` | full cat logo; the loading screen uses the `logo.png` wordmark |
 | `sprites/companion/happy_companion.svg` | rig only uses idle/blink/sad |
 | `sprites/companion/charge_companion.svg` | unused |

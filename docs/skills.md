@@ -28,6 +28,7 @@ $GODOT = "C:\Users\user\Downloads\Godot_v4.7.2-stable_win64.exe\Godot_v4.7.2-sta
    & $GODOT --headless --path . res://scenes/ui/main.tscn          --quit-after 20
    & $GODOT --headless --path . res://scenes/ui/splash.tscn        --quit-after 10
    & $GODOT --headless --path . res://scenes/ui/loading.tscn       --quit-after 10
+   & $GODOT --headless --path . res://scenes/ui/peek.tscn          --quit-after 30
    & $GODOT --headless --path . res://scenes/battle/battle.tscn    --quit-after 20
    & $GODOT --headless --path . res://scenes/overworld/region_map.tscn --quit-after 30
    ```
@@ -76,7 +77,7 @@ uvicorn main:app --port 8000    # GET /health
 3. Node paths are a contract with the script. `$Node` / `%UniqueName` / `get_node()` paths in the
    attached script must match the scene after the edit. Search the script for `@onready` and the node
    name before renaming.
-4. A scene opened directly (not through the `splash.tscn` → `loading.tscn` boot path) gets no
+4. A scene opened directly (not through the `splash.tscn` → `loading.tscn` → `peek.tscn` boot path) gets no
    autoload guarantees beyond `project.godot`. Keep the `get_node_or_null("/root/...")` guards where
    they already exist.
 5. Update [`ui-and-assets.md`](ui-and-assets.md) if the node tree, screen or referenced asset
@@ -213,7 +214,8 @@ The save is `user://studymon_save.json`, which on Windows is:
 %APPDATA%\Godot\app_userdata\Studymon\studymon_save.json
 ```
 
-Delete it (or call `SaveManager.reset_save()`) to replay the intro at Level 1. To test the campaign
+Delete it (or call `SaveManager.reset_save()`) to start again at Level 1. Boot ends on `peek.tscn`
+and never reads the save, so open `res://scenes/ui/main.tscn` directly to work on the care room. To test the campaign
 without earning 150 XP, set `"level": 5`, `"xp": 150`, `"campaign_ready": true` in the JSON, or call
 `CompanionState.add_xp(150)` from a temporary debug line. Do not commit debug lines or edited saves.
 

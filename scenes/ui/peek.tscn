@@ -1,0 +1,73 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/peek.gd" id="1_peek"]
+[ext_resource type="PackedScene" uid="uid://bie3cdc7b2aon" path="res://assets/models/kuiz.glb" id="2_kuiz"]
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_studio"]
+sky_top_color = Color(0.99, 1, 0.995, 1)
+sky_horizon_color = Color(0.85, 0.87, 0.86, 1)
+ground_bottom_color = Color(0.85, 0.87, 0.86, 1)
+ground_horizon_color = Color(0.85, 0.87, 0.86, 1)
+
+[sub_resource type="Sky" id="Sky_studio"]
+sky_material = SubResource("ProceduralSkyMaterial_studio")
+
+[sub_resource type="Environment" id="Environment_white"]
+background_mode = 1
+background_color = Color(1, 1, 1, 1)
+sky = SubResource("Sky_studio")
+ambient_light_source = 3
+ambient_light_energy = 0.9
+reflected_light_source = 2
+
+[sub_resource type="Gradient" id="Gradient_shadow"]
+offsets = PackedFloat32Array(0, 0.55, 1)
+colors = PackedColorArray(0.1608, 0.2196, 0.2275, 0.38, 0.1608, 0.2196, 0.2275, 0.14, 0.1608, 0.2196, 0.2275, 0)
+
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_shadow"]
+gradient = SubResource("Gradient_shadow")
+fill = 1
+fill_from = Vector2(0.5, 0.5)
+fill_to = Vector2(0.5, 0)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_shadow"]
+transparency = 1
+depth_draw_mode = 2
+shading_mode = 0
+albedo_texture = SubResource("GradientTexture2D_shadow")
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_shadow"]
+material = SubResource("StandardMaterial3D_shadow")
+size = Vector2(2.9, 2.1)
+
+[node name="Peek" type="Node3D"]
+script = ExtResource("1_peek")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_white")
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.25, 16.5)
+keep_aspect = 0
+fov = 13.6
+
+[node name="Key" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.7649, 0, -0.6441, -0.378, 0.8098, -0.4488, 0.5216, 0.5868, 0.6194, 0, 0, 0)
+light_energy = 0.7
+
+[node name="Fill" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.5767, 0, 0.817, 0.1542, 0.9821, -0.1089, -0.8023, 0.1888, 0.5663, 0, 0, 0)
+light_color = Color(0.933, 0.957, 0.949, 1)
+light_energy = 0.36
+
+[node name="Rim" type="DirectionalLight3D" parent="."]
+transform = Transform3D(-0.9191, 0, 0.3939, 0.1684, 0.9041, 0.3928, -0.3561, 0.4274, -0.831, 0, 0, 0)
+light_color = Color(0.831, 0.902, 0.886, 1)
+light_energy = 0.4
+
+[node name="Shadow" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.935, 0)
+cast_shadow = 0
+mesh = SubResource("PlaneMesh_shadow")
+
+[node name="Kuiz" parent="." instance=ExtResource("2_kuiz")]

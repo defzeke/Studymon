@@ -10,29 +10,21 @@ Last updated: 2026-10-20.
 
 ## In flight
 
-**The documentation pass — uncommitted.** The full `docs/` set, this register, `AGENTS.md`, and the
-project-scoped Ponytail skill at [`.opencode/skills/ponytail/SKILL.md`](../.opencode/skills/ponytail/SKILL.md).
-Root `README.md` was corrected in the same pass (real folder tree, no `GameManager`/`AIService`/
-`SoundManager`). Working tree: `docs/`, `AGENTS.md` and `.opencode/` untracked, `README.md` modified,
-nothing staged.
-
-**Godot MCP addon removed.** `addons/godot_mcp/` and its `MCPRuntime` autoload are gone, and the
-addon is gitignored (`0806d87`).
-
-**Loading-screen art — uncommitted.** `loading.tscn` now uses `loading.png` (background) and
-`logo.png` (top-centre), with the `RunBot` sprite hidden. The old `new_loading_screen.png` and
-`quizmon_logo.png` have been deleted.
-
-**Splash intro — uncommitted.** `splash.tscn` now boots before `loading.tscn`: white background,
-60-frame Kuizmon animation baked from `kuizmon_loading.gif` into `kuizmon_splash.png`, centre logo,
-~2.55 s total. `loading.png`, `logo.png`, `kuizmon_splash.png` and their `.import` files, plus the
-`kuizmon_loading.gif` source, must be committed with the scenes.
+**Boot flow polish — uncommitted.** Splash → loading → peek, each handoff on white with the next
+scene thread-loaded. The loading screen gains falling leaves, a larger floating logo and a
+palette-coloured striped bar with a title and a tip row, and drops the hidden `RunBot`. The new
+`peek.tscn` renders the 3D `kuiz.glb` with the artifact's look and plays `Peek_Surprise` →
+`Greetings` → `Idle`, then stays. The text intro (`meet_companion.tscn`/`.gd`/`.gd.uid`) and
+`Api.mock_get_companion()` were deleted. New files to commit with their `.import`/`.uid` files:
+`leaf.svg`, `ui/loading_spark.svg`, `ui/tip_bulb.svg`, `assets/models/kuiz.glb`,
+`scenes/ui/peek.tscn`, `scripts/ui/peek.gd`. Details in [`ui-and-assets.md`](ui-and-assets.md) §2.
 
 ## Blocked
 
 | Work | Blocked by |
 |---|---|
-| Playing the core loop end to end | Issue #1 (two scenes fail to parse on missing `bot_lv*.png`) and issue #8 (no care input, so Level 5 is unreachable without editing the save) |
+| Reaching the care room from boot | The tutorial in `peek.tscn` (Kuiz introduces the game, then guides the player to the room): no script yet, and the rooms are not built |
+| Playing the core loop end to end | The row above, issue #1 (two scenes fail to parse on missing `bot_lv*.png`) and issue #8 (no care input, so Level 5 is unreachable without editing the save) |
 | Any real backend call | Issue #7 (endpoints disagree) and issue #2 (auth header is a redaction placeholder) |
 | Claiming the Champion | Issue #6 (soft-lock when no question is `MASTERED`) |
 
@@ -81,7 +73,8 @@ Hygiene, after the slice plays:
 ## Done
 
 - **2026-10-20** — docs set written; root README corrected; `AGENTS.md`, `rules.md`, `skills.md`,
-  `tasks.md`, `glossary.md`, and the Ponytail skill added (uncommitted).
+  `tasks.md`, `glossary.md`, and the Ponytail skill added; splash intro and loading-screen art
+  (`fb90236`).
 - **2026-10-20** — `godot_mcp` addon and its stale autoload removed (`0806d87`).
 - **Phases 8–10** — per-question mastery with 7-day decay, gym/champion progression, battle juice,
   Rooms/night mode/table icons, Josefin Sans theme, the free-tier quota gate, and the reviewer

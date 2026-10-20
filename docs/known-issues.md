@@ -330,8 +330,9 @@ when opened, drops the player into the categorizer with whatever `pending_questi
   and singletons that were never written (`GameManager`, `AIService`, `SoundManager`).
 - `autoload/README.md` says `SaveManager` will be deleted; it is now load-bearing.
 - `quizmon-build-plan.md` says "Godot 4.6, avoid 4.7"; the project is 4.7.2.
-- Unused assets: `hmm.mp3`, `loading_logo.png`, `happy_companion.svg`, `charge_companion.svg`,
-  `complete_companion.svg`.
+- Unused assets: `hmm.mp3`, `loading_logo.png`, `1run_loading.png`, `2run_loading.png`,
+  `3run_loading.png`, `happy_companion.svg`, `charge_companion.svg`, `complete_companion.svg`,
+  `models/boy_explorer.glb` and its two `.jpg` textures.
 - No automated tests, no CI workflow, no formatting/lint config beyond `.editorconfig`.
 - `categorizer.gd:73-79` contains a redundant `if type == "grade"` branch that repeats the
   assignment above it.
@@ -349,9 +350,8 @@ caught).
 
 - `ui/app_theme.tres:7,14,23` uses navy button/panel fills (`#1C264F`, `#0A122B`) and `#EDF5FF`
   button text; none are in the palette in [`ui-and-assets.md`](ui-and-assets.md#color-palette) §1.
-- `ui/hud_strip.tscn:6-61`, `scenes/ui/loading.tscn:8-20`, `scenes/ui/session_list.tscn:21`,
-  `scenes/battle/battle.tscn:28`, and `scenes/ui/main.tscn:43` hard-code other navy/cyan/blue
-  values.
+- `ui/hud_strip.tscn:6-61`, `scenes/ui/session_list.tscn:21`, `scenes/battle/battle.tscn:28`, and
+  `scenes/ui/main.tscn:43` hard-code other navy/cyan/blue values. (`loading.tscn` has been migrated.)
 - The palette was documented after those files were written.
 
 **Impact:** New screens that follow the palette will visibly clash with the existing theme; the

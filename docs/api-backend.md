@@ -24,7 +24,6 @@ signal quota_exceeded(type: String)
 
 | Method | MOCK behaviour | Real behaviour |
 |---|---|---|
-| `mock_get_companion()` | deferred `CompanionState.from_dict(starter)` | — (no real counterpart yet) |
 | `mock_upload_pdf(topic, source_text)` | quota gate → 0.8 s timer → `job_status("job_001", "completed", …)` | **no HTTP call is made even when `MOCK = false`** |
 | `mock_get_topics()` | `job_status("topics", "completed", …, {topics: [...]})` with one fake "Biology 101" | — |
 | `grade_battle_question(q, answer)` | quota gate → local rubric → `job_status("grade", "completed", …, {score, feedback, damage, type})` | `POST /battle/grade` |

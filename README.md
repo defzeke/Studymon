@@ -39,7 +39,7 @@ res://
 │   ├── autoload/              # SaveManager, CompanionState, SessionManager,
 │   │                          # MonetizationState, MusicManager
 │   ├── battle/                # battle.gd — turn resolution, damage, juice
-│   ├── companion/             # care room, skeletal rig, intro cutscene
+│   ├── companion/             # care room, skeletal rig
 │   ├── overworld/             # region map generation, player movement
 │   ├── review_session/        # upload + editable question list
 │   └── ui/                    # splash, loading, care room root, session list,
@@ -97,7 +97,7 @@ pip install -r requirements.txt
 uvicorn main:app --reload --port 8000   # GET /health -> {"ok": true}
 ```
 
-Saves live at `user://kuizmon_save.json`; delete that file to replay the intro and reset progress.
+Saves live at `user://studymon_save.json`; delete that file to reset progress.
 
 ---
 
