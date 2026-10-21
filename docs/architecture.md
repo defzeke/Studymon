@@ -11,7 +11,7 @@ From `project.godot` (`config_version=5`):
 ```ini
 [application]
 config/name="Studymon"
-run/main_scene="res://scenes/ui/splash.tscn"
+run/main_scene="res://scenes/ui/boot/splash.tscn"
 config/features=PackedStringArray("4.7", "Mobile")
 config/icon="res://icon.svg"
 
@@ -22,7 +22,7 @@ window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
 
 [gui]
-theme/custom="res://ui/app_theme.tres"
+theme/custom="res://assets/theme/app_theme.tres"
 
 [physics]
 3d/physics_engine="Jolt Physics"      # region_map.tscn: trimesh map collision, explorer body
@@ -38,7 +38,7 @@ Notes:
 - Portrait-first mobile target; `canvas_items` + `expand` means UI scales with window and gains
   extra space on non-9:16 aspect ratios.
 - One shared `Theme` is set project-wide **and** re-assigned per screen in `_ready()`
-  (`theme = load("res://ui/app_theme.tres")`). The per-screen assignment is redundant but harmless.
+  (`theme = load("res://assets/theme/app_theme.tres")`). The per-screen assignment is redundant but harmless.
 - The editor plugin `[editor_plugins]` section was intentionally removed and `addons/godot_mcp` is
   gitignored — see the commit `chore: remove godot_mcp addon and stale autoload/plugin references`.
 
@@ -46,61 +46,58 @@ Notes:
 
 ## 2. Real folder layout
 
-The repo uses **two parallel conventions**: gameplay code is grouped by feature under `scripts/`,
-while the Phase-0 architecture docs also created top-level feature folders that now hold only
-planning READMEs.
+Gameplay code is grouped by feature: `scripts/<feature>/` holds the scripts and `scenes/<feature>/`
+the matching scenes. The boot flow and the reusable HUD widgets are sub-folders of `ui/`.
 
 ```text
 res://
 ├── project.godot
 ├── icon.svg
 ├── assets/
-│   ├── audio/            charge.mp3, charged.mp3, hmm.mp3, main room.mp3
+│   ├── audio/            charge.mp3, charged.mp3, main room.mp3
 │   ├── fonts/            JosefinSans-Regular.ttf, JosefinSans-Bold.ttf
 │   ├── models/           kuiz.glb (peek scene); map.glb + map_0.png, boy_explorer.glb + 2 .jpg
 │   │                     textures (overworld)
+│   ├── theme/            app_theme.tres (the one shared Theme)
 │   └── sprites/
-│       ├── leaf.svg                                               # loading falling leaves
-│       ├── loading.png                                            # loading background
-│       ├── logo.png                                               # loading wordmark
-│       ├── kuizmon_loading.gif                                    # splash source (not imported)
-│       ├── kuizmon_splash.png                                     # 60-frame splash sheet
-│       ├── companion/    idle, blink, sad, happy, charge, complete (.svg)
+│       ├── boot/         kuizmon_splash.png (60-frame splash sheet), kuizmon_loading.gif (its
+│       │                 source, not imported), loading.png (background), logo.png (wordmark)
+│       ├── effects/      leaf.svg (loading leaves, autumn weather)
+│       ├── companion/    idle, blink, sad (.svg)
 │       ├── props/        foods, fridge, ball, screwdriver (temporary placeholders)
 │       ├── rooms/        temporary placeholders: study_room.svg (+ _night), maintenance_bay.svg,
 │       │                 data_kitchen.svg, playroom.svg
 │       └── ui/           campaign.png, charge.png, loading_spark.svg, pomodoro.svg,
 │                         settings.svg, table.svg, tip_bulb.svg, top_bar.svg
-├── autoload/             api.gd, game_state.gd          ← 2 autoloads live here
 ├── scripts/
-│   ├── autoload/         save_manager.gd, companion_state.gd,
-│   │                     session_manager.gd, monetization_state.gd, music_manager.gd
+│   ├── autoload/         the 7 autoloads: save_manager.gd, game_state.gd, api.gd,
+│   │                     companion_state.gd, session_manager.gd, monetization_state.gd,
+│   │                     music_manager.gd
 │   ├── battle/           battle.gd
 │   ├── companion/        companion.gd, companion_rig.gd
 │   ├── overworld/        region_map.gd, player.gd, joystick.gd, season.gd
 │   ├── review_session/   categorizer.gd
-│   └── ui/               splash.gd, loading.gd, peek.gd, tutorial.gd, home.gd, main.gd, session_list.gd,
-│                         settings.gd, pomodoro.gd, hud_strip.gd, button_juice.gd
-├── scenes/               splash, loading, peek, main, session_list, settings (ui/)
-│                         companion_rig (companion/)
-│                         region_map (overworld/), categorizer (review_session/)
-│                         battle (battle/)
-├── ui/                   app_theme.tres, hud_strip.tscn, pomodoro.tscn, README.md
+│   └── ui/               home.gd, main.gd, session_list.gd, settings.gd
+│       ├── boot/         splash.gd, loading.gd, peek.gd, tutorial.gd
+│       └── widgets/      hud_strip.gd, pomodoro.gd, button_juice.gd
+├── scenes/               main, session_list, settings (ui/)
+│   │                     companion_rig (companion/)
+│   │                     region_map (overworld/), categorizer (review_session/)
+│   │                     battle (battle/)
+│   └── ui/
+│       ├── boot/         splash, loading, peek
+│       └── widgets/      hud_strip, pomodoro
 ├── backend/              main.py (FastAPI stub), requirements.txt, README.md
-├── companion/, battle/, review_session/   ← planning READMEs only, no code
-├── docs/                 ← this folder
-├── README.md
-└── quizmon-build-plan.md
+├── docs/                 ← this folder (includes quizmon-build-plan.md)
+└── README.md
 ```
 
 **Not present** despite being described in `README.md` / the build plan: `resources/`,
 `assets/themes/`, `tests/`, `upload_dialog.tscn`, `main_menu.tscn`, `companion_room.tscn`,
 `battle_arena.tscn`, and the `GameManager` / `AIService` / `SoundManager` singletons.
 
-The `scripts/autoload/` vs `autoload/` split is historical: `autoload/` holds the Phase-0
-singletons (`Api`, `GameState`), `scripts/autoload/` holds everything added afterwards. New
-autoloads should go in `scripts/autoload/`; do not move the existing two without updating
-`project.godot` and every `get_node("/root/...")` string.
+All autoload scripts live in `scripts/autoload/`. Moving one means updating `project.godot` and
+every `get_node("/root/...")` string.
 
 ---
 
@@ -111,8 +108,8 @@ Declared in this order (Godot instantiates top-down, so earlier autoloads are `_
 | # | Name | File | Owns |
 |---|---|---|---|
 | 1 | `SaveManager` | `scripts/autoload/save_manager.gd` | JSON persistence of every other state |
-| 2 | `GameState` | `autoload/game_state.gd` | account ids, auth token, campaign unlock flag, active region, large-text |
-| 3 | `Api` | `autoload/api.gd` | HTTP wrapper **and** the whole mock backend |
+| 2 | `GameState` | `scripts/autoload/game_state.gd` | account ids, auth token, campaign unlock flag, active region, large-text |
+| 3 | `Api` | `scripts/autoload/api.gd` | HTTP wrapper **and** the whole mock backend |
 | 4 | `CompanionState` | `scripts/autoload/companion_state.gd` | stats, XP/level, codex, pomodoro |
 | 5 | `SessionManager` | `scripts/autoload/session_manager.gd` | topics, extraction, gyms, mastery, champion, battle handoff |
 | 6 | `MonetizationState` | `scripts/autoload/monetization_state.gd` | weekly quotas, premium flag |
@@ -143,9 +140,7 @@ Dependency notes:
   `get_node_or_null("/root/MonetizationState")`, so scenes can run standalone in the editor.
 - `CompanionState`, `GameState`, `SessionManager` are used as bare globals everywhere else —
   adding a new autoload with the same name as a `class_name` will break that.
-- `GameState.current_topic_id` duplicates `SessionManager.current_topic_id`. Both are written in
-  different places (`categorizer.gd:315`, `region_map.gd:45`); nothing reads the `GameState` copy.
-  Treat `SessionManager`'s field as the source of truth.
+- `SessionManager.current_topic_id` is the only current-topic field.
 
 ---
 
@@ -168,7 +163,7 @@ peek.tscn  (3D Kuiz over 2D rooms; the hub)
 
 main.tscn  (old 2D care room — nothing routes here any more; open the scene directly)
    ├── CampaignButton (enabled only when campaign_unlocked) ─► session_list.tscn
-   ├── PomodoroButton ─► toggles in-scene ui/pomodoro.tscn
+   ├── PomodoroButton ─► toggles in-scene scenes/ui/widgets/pomodoro.tscn
    ├── ChargeButton   ─► toggles day/night room art + SFX
    └── SettingsButton ─► settings.tscn
 
@@ -233,7 +228,6 @@ which exist precisely so the overworld can pass a question to the battle scene a
 | `codex_entry_added(text)` | `CompanionState` | `companion.gd` |
 | `campaign_gate_ready` | `CompanionState` | `companion.gd` |
 | `pomodoro_phase_changed(mode)` | `CompanionState` | `companion.gd` |
-| `campaign_unlocked` | `GameState` | *(none)* |
 | `large_text_changed(enabled)` | `GameState` | `companion.gd` (no UI emits it) |
 | `job_status(job_id, status, progress, result)` | `Api` | `SessionManager`, `battle.gd` |
 | `quota_exceeded(type)` | `Api` | `battle.gd`, `categorizer.gd` |

@@ -24,7 +24,7 @@ const FADE_IN_TIME: float = 0.4
 const FADE_OUT_TIME: float = 0.4
 const LOGO_BOB: float = 12.0
 const LOGO_BOB_TIME: float = 1.6
-const NEXT_SCENE := "res://scenes/ui/peek.tscn"
+const NEXT_SCENE := "res://scenes/ui/boot/peek.tscn"
 
 var _tip_index: int = 0
 var _tip_timer: Timer
@@ -32,7 +32,7 @@ var _tip_fade: Tween
 var _done: bool = false
 
 func _ready() -> void:
-	theme = load("res://ui/app_theme.tres") as Theme
+	theme = load("res://assets/theme/app_theme.tres") as Theme
 	ResourceLoader.load_threaded_request(NEXT_SCENE)
 	load_bar.min_value = 0.0
 	load_bar.max_value = 100.0

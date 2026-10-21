@@ -27,9 +27,8 @@ Severity: **P0** blocks the core loop · **P1** blocks a feature or silently cor
 | 15 | Identification answers consume grading quota | **P2** |
 | 16 | Save file loaded twice at boot | **P3** |
 | 17 | Duplicate `overworld_progress_changed` emissions | **P3** |
-| 18 | Two different `current_topic_id` fields | **P3** |
 | 19 | Fake "Biology 101" topic seeded on every boot | **P3** |
-| 20 | Stale docs, unused assets, no tests/CI | **P3** |
+| 20 | Stale docs, no tests/CI | **P3** |
 | 21 | Theme and scene colours predate the canonical palette | **P3** |
 
 ---
@@ -68,7 +67,7 @@ cannot be caught at runtime.
 
 ## 2. Auth header uses `***` (P1)
 
-`autoload/api.gd:65`
+`scripts/autoload/api.gd:65`
 
 ```gdscript
 headers.append("Authorization: *** " + GameState.auth_token)
@@ -301,16 +300,6 @@ it, so a single trainer win can fire the signal N+1 times and rebuild the HUD ea
 
 ---
 
-## 18. Two different `current_topic_id` fields (P3)
-
-`GameState.current_topic_id` and `SessionManager.current_topic_id` both exist. Writers:
-`categorizer.gd:315` and `region_map.gd:45` set both; readers use `SessionManager` only.
-
-**Fix:** delete the `GameState` field (it isn't saved either) and keep `SessionManager` as the single
-source of truth.
-
----
-
 ## 19. Fake "Biology 101" topic seeded on every boot (P3)
 
 `Api.mock_get_topics()` returns `Biology 101` with `question_count: 2` but no `questions` array.
@@ -321,17 +310,12 @@ when opened, drops the player into the categorizer with whatever `pending_questi
 
 ---
 
-## 20. Stale docs, unused assets, no tests/CI (P3)
+## 20. Stale docs, no tests/CI (P3)
 
 - Root `README.md` describes folders that do not exist (`resources/`, `tests/`, `assets/themes/`)
   and singletons that were never written (`GameManager`, `AIService`, `SoundManager`).
-- `autoload/README.md` says `SaveManager` will be deleted; it is now load-bearing.
 - `quizmon-build-plan.md` says "Godot 4.6, avoid 4.7"; the project is 4.7.2.
-- Unused assets: `hmm.mp3`, `loading_logo.png`, `happy_companion.svg`, `charge_companion.svg`,
-  `complete_companion.svg`.
 - No automated tests, no CI workflow, no formatting/lint config beyond `.editorconfig`.
-- `categorizer.gd:73-79` contains a redundant `if type == "grade"` branch that repeats the
-  assignment above it.
 - `session_manager.gd:465-467` documents a fallback that was never implemented (see #6).
 
 **Fix:** the root README is corrected in this docs pass; consider a `tests/` folder with a headless
@@ -344,16 +328,16 @@ caught).
 
 **Evidence**
 
-- `ui/app_theme.tres:7,14,23` uses navy button/panel fills (`#1C264F`, `#0A122B`) and `#EDF5FF`
+- `assets/theme/app_theme.tres:7,14,23` uses navy button/panel fills (`#1C264F`, `#0A122B`) and `#EDF5FF`
   button text; none are in the palette in [`ui-and-assets.md`](ui-and-assets.md#color-palette) §1.
-- `ui/hud_strip.tscn:6-61`, `scenes/ui/session_list.tscn:21`, `scenes/battle/battle.tscn:28`, and
+- `scenes/ui/widgets/hud_strip.tscn:6-61`, `scenes/ui/session_list.tscn:21`, `scenes/battle/battle.tscn:28`, and
   `scenes/ui/main.tscn:43` hard-code other navy/cyan/blue values. (`loading.tscn` has been migrated.)
 - The palette was documented after those files were written.
 
 **Impact:** New screens that follow the palette will visibly clash with the existing theme; the
 shared theme does not represent the intended art direction.
 
-**Fix:** migrate `ui/app_theme.tres` first (button, panel, font colour), then replace the inline
+**Fix:** migrate `assets/theme/app_theme.tres` first (button, panel, font colour), then replace the inline
 `Color(...)` overrides in the scenes above with palette roles. Update the token table in
 [`ui-and-assets.md`](ui-and-assets.md) §1 in the same change; leave the art assets alone.
 

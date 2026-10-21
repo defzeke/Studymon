@@ -1,6 +1,6 @@
 [gd_scene format=3]
 
-[ext_resource type="Script" path="res://scripts/ui/pomodoro.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/ui/widgets/pomodoro.gd" id="1"]
 
 [node name="Pomodoro" type="VBoxContainer"]
 anchors_preset = 10

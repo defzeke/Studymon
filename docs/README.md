@@ -24,6 +24,7 @@ Where the two disagree, the docs say so explicitly.
 | Work on upload → questions | [`systems/review-session.md`](systems/review-session.md) |
 | Work on the map, gyms, mastery, Champion | [`systems/overworld.md`](systems/overworld.md) |
 | Work on battles and answer grading | [`systems/battle.md`](systems/battle.md) |
+| See the target gyms / difficulty / flashcard design | [`systems/gameplay-structure.md`](systems/gameplay-structure.md) |
 | Work on free-tier limits / paywall | [`systems/monetization.md`](systems/monetization.md) |
 | Change a screen or add art | [`ui-and-assets.md`](ui-and-assets.md) |
 | Wire the real backend | [`api-backend.md`](api-backend.md) |
@@ -37,14 +38,14 @@ Where the two disagree, the docs say so explicitly.
 | Item | Value |
 |---|---|
 | Engine | Godot **4.7.2** stable (`config/features = ("4.7", "Mobile")`) |
-| Main scene | `res://scenes/ui/splash.tscn` |
+| Main scene | `res://scenes/ui/boot/splash.tscn` |
 | Viewport | 720 × 1280, stretch `canvas_items`, aspect `expand` |
 | Renderer | `mobile`, D3D12 on Windows |
 | Language | GDScript only (26 files, ~164 KB) |
 | Scenes | 12 (`.tscn`) |
 | Autoloads | 7 |
 | Backend | FastAPI stub, `/health` only — client runs on `Api.MOCK = true` |
-| Persistence | Single JSON file `user://studymon_save.json`, schema `"v": 4` |
+| Persistence | Single JSON file `user://studymon_save.json`, schema `"v": 5` |
 | Tests / CI | None |
 
 ---
@@ -65,13 +66,10 @@ Used consistently across these docs:
 
 ## Relationship to the other docs in the repo
 
-- [`../quizmon-build-plan.md`](../quizmon-build-plan.md) — the original 10-phase plan. Still the design
+- [`quizmon-build-plan.md`](quizmon-build-plan.md) — the original 10-phase plan. Still the design
   intent, but its stack notes are stale (it says "Godot 4.6, avoid 4.7"; the project is on 4.7.2).
 - [`../README.md`](../README.md) — player-facing overview.
 - [`../AGENTS.md`](../AGENTS.md) — the agent entry point; it links to `rules.md`, this index and `tasks.md`.
-- `autoload/README.md`, `ui/README.md`, `companion/README.md`, `battle/README.md`,
-  `review_session/README.md` — per-folder contract stubs written during planning. **These are
-  partially out of date**; this folder supersedes them where they conflict.
 
 ---
 

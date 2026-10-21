@@ -10,7 +10,7 @@ Last updated: 2026-10-21.
 
 ## In flight
 
-**Home loop — uncommitted.** After the tutorial's last line a tap starts `home.gd` (in
+**Home loop — committed (`8c11f6e`).** After the tutorial's last line a tap starts `home.gd` (in
 `peek.tscn`): a bottom bar walks Kuiz between the four rooms. Study Room: Charge (lights off,
 `State_Charging`, `Wake_Up` on lights on), Play (new topic → upload screen), Settings (now with
 music/sound volume and large text, save v5). Maintenance Bay: hold the screwdriver over Kuiz.
@@ -52,10 +52,9 @@ Hygiene, after the slice plays:
 | #13 | Emit `stats_changed` at ~5 Hz or only on change |
 | #14 | Debounce the save instead of one full write per tap |
 | #12 | Give leaf bones non-zero rest length, or skip degenerate weights |
-| #16, #17, #18, #19 | Double save load, duplicate signal, duplicate `current_topic_id`, phantom "Biology 101" |
-| #20 | Add a headless smoke-test script / CI, and remove the redundant branch in `categorizer.gd:73-79` |
+| #16, #17, #19 | Double save load, duplicate signal, phantom "Biology 101" |
+| #20 | Add a headless smoke-test script / CI |
 | #21 | Migrate the shared theme and inline scene colours to the canonical palette |
-| — | Remove the seven `# ponytail:` marker comments (rules §3) |
 
 ## Needs a decision
 
@@ -71,6 +70,12 @@ Hygiene, after the slice plays:
 
 ## Done
 
+- **2026-10-21** — repository layout, no behaviour change: all autoloads in `scripts/autoload/`,
+  the theme in `assets/theme/`, boot flow and HUD widgets in `ui/boot/` and `ui/widgets/`, boot art
+  in `assets/sprites/boot/`, `leaf.svg` in `assets/sprites/effects/`, `quizmon-build-plan.md` in `docs/`.
+- **2026-10-21** — cleanup, no behaviour change: removed unused assets (`hmm.mp3`, the run-cycle and
+  `loading_logo` PNGs, three companion SVGs), the five planning-stub READMEs, never-called helpers,
+  `GameState.current_topic_id` (#18), the `campaign_unlocked` signal and the `# ponytail:` tags.
 - **2026-10-21** — first-run tutorial and temporary rooms, the new `kuiz.glb` clips and prop
   hiding, the temporary Study Room art, the 3D island overworld with joystick explorer and random
   seasons (`5b3c22a`).

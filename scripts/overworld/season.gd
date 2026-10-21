@@ -8,7 +8,7 @@ enum Season { SUNNY, RAINY, AUTUMN, SNOWY }
 const AMBER := Color("D6A85F")
 const CORAL := Color("C97970")
 const SNOW := Color(0.93, 0.96, 0.98)
-const LEAF: Texture2D = preload("res://assets/sprites/leaf.svg")
+const LEAF: Texture2D = preload("res://assets/sprites/effects/leaf.svg")
 # Per season: sun colour/energy, sky, ambient colour/energy, fog density (0 = off), and how far the
 # foliage and grass are pulled toward a colour (autumn cycles its canopies through `canopies`).
 const LOOKS := {

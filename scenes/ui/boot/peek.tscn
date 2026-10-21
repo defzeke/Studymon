@@ -1,8 +1,8 @@
 [gd_scene format=3]
 
-[ext_resource type="Script" path="res://scripts/ui/peek.gd" id="1_peek"]
+[ext_resource type="Script" path="res://scripts/ui/boot/peek.gd" id="1_peek"]
 [ext_resource type="PackedScene" uid="uid://bie3cdc7b2aon" path="res://assets/models/kuiz.glb" id="2_kuiz"]
-[ext_resource type="Script" path="res://scripts/ui/tutorial.gd" id="3_tutorial"]
+[ext_resource type="Script" path="res://scripts/ui/boot/tutorial.gd" id="3_tutorial"]
 [ext_resource type="Texture2D" path="res://assets/sprites/rooms/study_room.svg" id="4_study"]
 [ext_resource type="Texture2D" uid="uid://dxbbrf6lojd38" path="res://assets/sprites/rooms/maintenance_bay.svg" id="6_bay"]
 [ext_resource type="Texture2D" uid="uid://dxlttenkjoxk3" path="res://assets/sprites/rooms/data_kitchen.svg" id="7_kitchen"]

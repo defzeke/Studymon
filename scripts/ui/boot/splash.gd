@@ -1,14 +1,14 @@
 extends Control
 ## White splash intro before the loading screen.
 
-const SHEET: Texture2D = preload("res://assets/sprites/kuizmon_splash.png")
+const SHEET: Texture2D = preload("res://assets/sprites/boot/kuizmon_splash.png")
 const FRAME_SIZE := Vector2i(480, 264)
 const COLUMNS: int = 6
 const FRAME_COUNT: int = 60
 const FRAME_TIME: float = 0.03
 const HOLD_TIME: float = 0.5
 const FADE_TIME: float = 0.25
-const NEXT_SCENE := "res://scenes/ui/loading.tscn"
+const NEXT_SCENE := "res://scenes/ui/boot/loading.tscn"
 
 @onready var logo: TextureRect = $Logo
 

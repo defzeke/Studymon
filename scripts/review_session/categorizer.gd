@@ -22,7 +22,7 @@ var _studying: bool = false
 var _file_bytes: PackedByteArray = PackedByteArray()
 
 func _ready() -> void:
-	theme = load("res://ui/app_theme.tres") as Theme
+	theme = load("res://assets/theme/app_theme.tres") as Theme
 	topic_name_field.placeholder_text = "Topic name (e.g. Biology 101)"
 	topic_name_field.text = "My Review Topic"
 	paste_area.placeholder_text = "Paste reviewer text here — or pick a PDF/notes file..."
@@ -57,7 +57,7 @@ func _update_quota_label() -> void:
 	if quota_label == null:
 		return
 	var _ms := get_node_or_null("/root/MonetizationState")
-	# ponytail: null-guard lets scene run standalone without autoloads
+	# Null-guard: the scene also runs standalone, without autoloads.
 	if _ms == null:
 		return
 	if _ms.is_premium:
@@ -70,12 +70,9 @@ func _update_quota_label() -> void:
 func _on_premium_changed(_is_premium: bool) -> void:
 	_update_quota_label()
 
-func _on_quota_exceeded(type: String) -> void:
-	# Only handle pdf quota here; grade quota also triggers dialog but label already covers it.
+func _on_quota_exceeded(_type: String) -> void:
 	_update_quota_label()
 	quota_dialog.dialog_text = "Weekly AI limit reached. Upgrade to Premium to continue."
-	if type == "grade":
-		quota_dialog.dialog_text = "Weekly AI limit reached. Upgrade to Premium to continue."
 	quota_dialog.popup_centered()
 
 func _on_pick_file() -> void:
@@ -312,7 +309,6 @@ func _on_region_generated(topic_id: String, map_data: Dictionary) -> void:
 	var gyms: Array = map_data.get("gyms", [])
 	status_label.text = "Region ready! %d gym(s): %s — entering overworld..." % [gyms.size(), ", ".join(gyms)]
 	GameState.set_active_region(topic_id)
-	GameState.current_topic_id = topic_id
 	await get_tree().create_timer(0.6).timeout
 	get_tree().change_scene_to_file("res://scenes/overworld/region_map.tscn")
 

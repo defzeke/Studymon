@@ -59,7 +59,6 @@ func _ready() -> void:
 			{"id": "q2", "text": "Preview: explain feedback in your own words.", "type": "essay", "answer": "", "confidence": 0.6},
 		]
 	GameState.set_active_region(_topic_id)
-	GameState.current_topic_id = _topic_id
 	back_btn.pressed.connect(_on_back)
 	encounter_close_btn.pressed.connect(_on_encounter_close)
 	encounter_clear_btn.pressed.connect(_on_encounter_cleared)

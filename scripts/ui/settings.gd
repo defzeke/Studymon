@@ -2,7 +2,6 @@ extends Control
 ## Settings, opened from the Study Room: music and sound volume, large text, then the Phase 10
 ## mock monetization controls + debug quota reset. Every change is saved.
 
-@onready var title_label: Label = $Content/Title
 @onready var premium_check: CheckBox = $Content/PremiumRow/PremiumCheck
 @onready var quota_label: Label = $Content/QuotaLabel
 @onready var pdf_label: Label = $Content/PdfQuotaLabel
@@ -15,7 +14,7 @@ extends Control
 @onready var large_text_check: CheckBox = $Content/LargeTextCheck
 
 func _ready() -> void:
-	theme = load("res://ui/app_theme.tres") as Theme
+	theme = load("res://assets/theme/app_theme.tres") as Theme
 	premium_check.toggled.connect(_on_premium_toggled)
 	reset_btn.pressed.connect(_on_reset_pressed)
 	back_btn.pressed.connect(_on_back)
@@ -37,7 +36,7 @@ func _ready() -> void:
 
 func _refresh() -> void:
 	var _ms := get_node_or_null("/root/MonetizationState")
-	# ponytail: null-guard lets scene run standalone without autoloads
+	# Null-guard: the scene also runs standalone, without autoloads.
 	if _ms == null:
 		return
 	# Prevent signal loop when setting checked state
@@ -78,4 +77,4 @@ func _on_reset_pressed() -> void:
 	_refresh()
 
 func _on_back() -> void:
-	get_tree().change_scene_to_file("res://scenes/ui/peek.tscn")
+	get_tree().change_scene_to_file("res://scenes/ui/boot/peek.tscn")

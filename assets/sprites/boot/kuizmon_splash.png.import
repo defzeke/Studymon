@@ -3,15 +3,15 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://bqror4uc1xhv7"
-path="res://.godot/imported/kuizmon_splash.png-173732028abac3124fe8829e744a3845.ctex"
+path="res://.godot/imported/kuizmon_splash.png-8d2b4ddd08fe333e4d8f43b2d5c1b5e6.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/sprites/kuizmon_splash.png"
-dest_files=["res://.godot/imported/kuizmon_splash.png-173732028abac3124fe8829e744a3845.ctex"]
+source_file="res://assets/sprites/boot/kuizmon_splash.png"
+dest_files=["res://.godot/imported/kuizmon_splash.png-8d2b4ddd08fe333e4d8f43b2d5c1b5e6.ctex"]
 
 [params]
 

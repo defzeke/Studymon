@@ -6,7 +6,7 @@ Screen inventory, shared styling, controls, and a full asset audit.
 
 ## 1. Theme
 
-Single resource: `ui/app_theme.tres`, referenced by `project.godot` (`gui/theme/custom`) and re-assigned
+Single resource: `assets/theme/app_theme.tres`, referenced by `project.godot` (`gui/theme/custom`) and re-assigned
 per screen in every `_ready()`.
 
 | Token | Value |
@@ -62,17 +62,17 @@ text** checkbox in `settings.tscn` calls `set_large_text()` and saves.
 
 | Scene | Root type | Script | Purpose |
 |---|---|---|---|
-| `scenes/ui/splash.tscn` | `Control` | `scripts/ui/splash.gd` | white intro, then loading |
-| `scenes/ui/loading.tscn` | `Control` | `scripts/ui/loading.gd` | boot loading bar |
-| `scenes/ui/peek.tscn` | `Node3D` | `scripts/ui/peek.gd`, `tutorial.gd`, `home.gd` | 3D Kuiz peeks, runs the tutorial, then the home loop across four rooms; the hub every other screen returns to |
+| `scenes/ui/boot/splash.tscn` | `Control` | `scripts/ui/boot/splash.gd` | white intro, then loading |
+| `scenes/ui/boot/loading.tscn` | `Control` | `scripts/ui/boot/loading.gd` | boot loading bar |
+| `scenes/ui/boot/peek.tscn` | `Node3D` | `scripts/ui/boot/peek.gd`, `scripts/ui/boot/tutorial.gd`, `scripts/ui/home.gd` | 3D Kuiz peeks, runs the tutorial, then the home loop across four rooms; the hub every other screen returns to |
 | `scenes/ui/main.tscn` | `Control` | `scripts/ui/main.gd` (+ `companion.gd` on child) | care room |
 | `scenes/ui/session_list.tscn` | `Control` | `scripts/ui/session_list.gd` | topic history |
 | `scenes/review_session/categorizer.tscn` | `Control` | `scripts/review_session/categorizer.gd` | upload + question editor |
 | `scenes/overworld/region_map.tscn` | `Node3D` | `scripts/overworld/region_map.gd` (+ `player.gd`, `joystick.gd`) | 3D island: explorer, trainers, gyms, champion |
 | `scenes/battle/battle.tscn` | `Control` | `scripts/battle/battle.gd` | arena |
 | `scenes/ui/settings.tscn` | `Control` | `scripts/ui/settings.gd` | music and sound volume, large text, premium + quota debug; Back returns home |
-| `ui/hud_strip.tscn` | `VBoxContainer` | `scripts/ui/hud_strip.gd` | status strip (instanced) |
-| `ui/pomodoro.tscn` | `VBoxContainer` | `scripts/ui/pomodoro.gd` | timer panel (instanced) |
+| `scenes/ui/widgets/hud_strip.tscn` | `VBoxContainer` | `scripts/ui/widgets/hud_strip.gd` | status strip (instanced) |
+| `scenes/ui/widgets/pomodoro.tscn` | `VBoxContainer` | `scripts/ui/widgets/pomodoro.gd` | timer panel (instanced) |
 | `scenes/companion/companion_rig.tscn` | `Node2D` | `scripts/companion/companion_rig.gd` | skeletal pet (hidden) |
 
 ### `main.tscn` — care room
@@ -89,8 +89,8 @@ Main                      (main.gd)  — only calls SaveManager.load_game()
     ├── XPTick            floating "+N XP" label, alpha 0
     ├── CampaignButton    90×90 flat icon, bottom-right, disabled until campaign unlock
     ├── ChargeButton      160×160 flat icon, bottom-centre — day/night toggle
-    ├── HudStrip          instance of ui/hud_strip.tscn
-    ├── Pomodoro          instance of ui/pomodoro.tscn — visible = false
+    ├── HudStrip          instance of scenes/ui/widgets/hud_strip.tscn
+    ├── Pomodoro          instance of scenes/ui/widgets/pomodoro.tscn — visible = false
     ├── SettingsButton    64×64 flat icon, top-left
     ├── PomodoroButton    64×64 flat icon, under settings
     └── NightVeil         ColorRect, rgba(0,0,0,0.35), visible = false
@@ -330,7 +330,7 @@ painted at runtime; see `systems/companion-care.md` §7.
 
 - **Buttons:** flat icon buttons (`flat = true`, `icon_alignment = CENTER`, `expand_icon = true`)
   for room actions, full-width text buttons for flow actions.
-- **`ButtonJuice.wire(button)`** (`scripts/ui/button_juice.gd`) adds hover 1.06× / press 0.96× scale
+- **`ButtonJuice.wire(button)`** (`scripts/ui/widgets/button_juice.gd`) adds hover 1.06× / press 0.96× scale
   via a tween stored in the button's metadata; disabled buttons never pop. Currently wired only to
   the four care-room icon buttons.
 - **Input:** movement uses the built-in `ui_left` / `ui_right` / `ui_up` / `ui_down` actions, so
@@ -364,15 +364,15 @@ level-ups, taps and gym clears are silent.
 | `audio/charge.mp3`, `audio/charged.mp3` | `companion.gd` day/night toggle; home's Charge button |
 | `fonts/JosefinSans-Regular.ttf` | theme default font |
 | `fonts/JosefinSans-Bold.ttf` | theme button font; `loading.tscn` title and tip labels |
-| `sprites/loading.png` | `loading.tscn` background |
-| `sprites/logo.png` | `loading.tscn` top-centre wordmark |
-| `sprites/leaf.svg` | `loading.tscn` falling leaves, overworld autumn leaves (white so particle colour tints it) |
+| `sprites/boot/loading.png` | `loading.tscn` background |
+| `sprites/boot/logo.png` | `loading.tscn` top-centre wordmark |
+| `sprites/effects/leaf.svg` | `loading.tscn` falling leaves, overworld autumn leaves (white so particle colour tints it) |
 | `sprites/ui/loading_spark.svg` | `loading.tscn` sparks either side of "Loading..." |
 | `sprites/ui/tip_bulb.svg` | `loading.tscn` tip icon |
 | `models/map.glb`, `models/map_0.png` | `region_map.tscn` island (the PNG is its road texture) |
 | `models/boy_explorer.glb`, `boy_explorer_basecolor_v2.jpg`, `boy_explorer_normal_v2.jpg` | `region_map.tscn` explorer (`Idle`, `Walk`, `Run` used) |
 | `models/kuiz.glb` | `peek.tscn` 3D Kuiz head; 21 clips (13 one-shots, `Celebrate`, `Learn_Something_New`, six `State_*` moods), face and props on blend shapes |
-| `sprites/kuizmon_splash.png` | `splash.gd` 60-frame intro sheet (6 × 10 cells, 480 × 264) |
+| `sprites/boot/kuizmon_splash.png` | `splash.gd` 60-frame intro sheet (6 × 10 cells, 480 × 264) |
 | `sprites/rooms/study_room.svg` | care-room, settings and categorizer background (day); the tutorial's Study Room (temporary placeholder) |
 | `sprites/rooms/study_room_night.svg` | care-room background at night; home's lights-off Study Room (temporary placeholder) |
 | `sprites/rooms/maintenance_bay.svg` | tutorial Maintenance Bay (temporary placeholder) |
@@ -398,17 +398,7 @@ level-ups, taps and gym clears are silent.
 
 | Asset | Note |
 |---|---|
-| `sprites/kuizmon_loading.gif` | source for `kuizmon_splash.png`; Godot has no GIF importer |
-
-### Present but unused
-
-| Asset | Note |
-|---|---|
-| `audio/hmm.mp3` | no call site |
-| `sprites/loading_logo.png` | full cat logo; the loading screen uses the `logo.png` wordmark |
-| `sprites/companion/happy_companion.svg` | rig only uses idle/blink/sad |
-| `sprites/companion/charge_companion.svg` | unused |
-| `sprites/companion/complete_companion.svg` | unused |
+| `sprites/boot/kuizmon_loading.gif` | source for `kuizmon_splash.png`; Godot has no GIF importer |
 
 ### Referenced but **missing** (breaks scenes)
 

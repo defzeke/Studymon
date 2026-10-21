@@ -92,7 +92,7 @@ and [`data-model.md`](data-model.md) in the same change.
 build paths by string concatenation.
 
 **Save changes are versioned.** Additive fields get a default in the loader; a semantic change bumps
-the version literal (`data["v"] = 4` at `save_manager.gd:8`) and documents the migration in
+the version literal (`data["v"] = 5` in `save_manager.gd`) and documents the migration in
 [`data-model.md`](data-model.md). Never silently reinterpret an existing field.
 
 **Mock mode stays working.** `Api.MOCK = true` is the only path the game actually runs today. When
@@ -103,7 +103,7 @@ you add a real request, keep the mock branch functional and keep the response sh
 matches on `"grade"` instead of a per-request id will consume another screen's result (issue #9).
 
 **UI is one portrait screen at a time.** 720 × 1280, stretch `canvas_items`, aspect `expand`. Use
-`ui/app_theme.tres` for type and colour; do not hard-code a second font or palette in a screen. Every
+`assets/theme/app_theme.tres` for type and colour; do not hard-code a second font or palette in a screen. Every
 interactive control needs a visible focus/pressed state and a touch target of at least 44 × 44 px.
 
 **Use the canonical palette.** New UI takes its colours from
@@ -125,7 +125,7 @@ Godot runs. `$GODOT` is the 4.7.2 **console** binary — its path on the current
 & $GODOT --headless --path . --import
 
 # every scene you touched (and the main scene)
-& $GODOT --headless --path . res://scenes/ui/splash.tscn --quit-after 10
+& $GODOT --headless --path . res://scenes/ui/boot/splash.tscn --quit-after 10
 & $GODOT --headless --path . res://scenes/ui/main.tscn --quit-after 20
 & $GODOT --headless --path . res://scenes/battle/battle.tscn --quit-after 20
 & $GODOT --headless --path . res://scenes/overworld/region_map.tscn --quit-after 30

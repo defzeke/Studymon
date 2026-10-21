@@ -4,7 +4,7 @@ The rule the whole project is built around: **the Godot client never talks to an
 It talks only to our own API, which holds the keys. Today the client doesn't talk to anything at
 all — every call is mocked.
 
-- **Client wrapper:** `autoload/api.gd` (autoload `Api`)
+- **Client wrapper:** `scripts/autoload/api.gd` (autoload `Api`)
 - **Backend skeleton:** `backend/main.py`, `backend/requirements.txt`, `backend/README.md`
 - **Consumers:** `SessionManager` (extraction), `battle.gd` (grading), `companion` (starter data)
 

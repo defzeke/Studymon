@@ -69,12 +69,6 @@ func get_remaining(type: String) -> int:
 		_:
 			return 0
 
-## Formatted helper for UI quota labels (premium-aware).
-func get_quota_label() -> String:
-	if is_premium:
-		return "Premium: Unlimited"
-	return "Free AI Uses: PDFs %d/%d | Grades %d/%d" % [get_remaining("pdf"), FREE_PDF_LIMIT, get_remaining("grade"), FREE_GRADE_LIMIT]
-
 ## Mock premium toggle (Settings UI).
 func set_premium(val: bool) -> void:
 	if is_premium == val:

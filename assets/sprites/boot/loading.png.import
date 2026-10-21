@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://d0lh7r81g1imo"
-path="res://.godot/imported/charge_companion.svg-a3374da42d3a92d53e9500911b986b05.ctex"
+uid="uid://ci3lmmluud8ob"
+path="res://.godot/imported/loading.png-f42ace14f23bc77c48029d22c508ec52.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/sprites/companion/charge_companion.svg"
-dest_files=["res://.godot/imported/charge_companion.svg-a3374da42d3a92d53e9500911b986b05.ctex"]
+source_file="res://assets/sprites/boot/loading.png"
+dest_files=["res://.godot/imported/loading.png-f42ace14f23bc77c48029d22c508ec52.ctex"]
 
 [params]
 
@@ -38,6 +38,3 @@ process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
 detect_3d/compress_to=1
-svg/scale=1.0
-editor/scale_with_editor_scale=false
-editor/convert_colors_with_editor_theme=false

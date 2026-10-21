@@ -152,9 +152,8 @@ These live only in memory and are lost on quit or scene change:
 | State | Lives in | Consequence |
 |---|---|---|
 | `pending_questions`, `editing_topic_id` | `SessionManager` | Reopening a topic reloads from `session.topics`; unsaved edits are lost on app exit |
-| `current_topic_id` | `SessionManager` / `GameState` | After a restart, the overworld falls back to its preview questions unless a topic is re-opened |
-| `last_source_text`, `_source_by_topic` | `SessionManager` | Reviewer text is not persisted with the topic |
-| `_last_map_data` | `SessionManager` | Regenerated on demand |
+| `current_topic_id` | `SessionManager` | After a restart, the overworld falls back to its preview questions unless a topic is re-opened |
+| `last_source_text` | `SessionManager` | Reviewer text is not persisted with the topic |
 | Battle handoff (`battle_topic_id`, `battle_q_index`, `battle_is_boss`, `battle_is_champion`) | `SessionManager` | Correct by design — a battle doesn't survive a restart |
 | Pomodoro (`_pomodoro_mode`, `_pomodoro_remaining`) | `CompanionState` | A running 25-minute focus timer is lost on quit |
 | Tap-cap counters (`_action_tap_counts`, `_last_hour_reset`) | `CompanionState` | Relaunching clears the hourly diminishing-returns counter — an easy exploit |

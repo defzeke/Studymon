@@ -22,48 +22,37 @@ res://
 ├── assets/
 │   ├── audio/                 # BGM + SFX (main room loop, charge/charged)
 │   ├── fonts/                 # Josefin Sans (Regular + Bold) — the project theme font
+│   ├── models/                # Kuiz, island map and explorer (.glb + extracted textures)
+│   ├── theme/                 # app_theme.tres — the single shared Theme (all screens use it)
 │   └── sprites/
-│       ├── kuizmon_loading.gif # splash source (not imported by Godot)
-│       ├── kuizmon_splash.png  # 60-frame splash sheet
-│       ├── loading.png         # loading background
-│       ├── logo.png            # loading wordmark
-│       ├── companion/          # idle / blink / sad / happy / charge / complete (SVG)
-│       ├── props/              # temporary foods, fridge, ball, screwdriver
-│       ├── rooms/              # temporary rooms: study_room (+ night), maintenance_bay, data_kitchen, playroom
-│       └── ui/                 # campaign, charge, pomodoro, settings, table, top bar
-│
-├── autoload/                  # Phase-0 global singletons
-│   ├── api.gd                 # Api — HTTP wrapper + the entire mock backend
-│   └── game_state.gd          # GameState — campaign unlock, region, large-text
+│       ├── boot/              # splash sheet (+ its .gif source), loading background, wordmark
+│       ├── effects/           # leaf.svg (loading and autumn weather)
+│       ├── companion/         # idle / blink / sad (SVG)
+│       ├── props/             # temporary foods, fridge, ball, screwdriver
+│       ├── rooms/             # temporary rooms: study_room (+ night), maintenance_bay, data_kitchen, playroom
+│       └── ui/                # campaign, charge, pomodoro, settings, table, top bar, arrow
 │
 ├── scripts/
-│   ├── autoload/              # SaveManager, CompanionState, SessionManager,
-│   │                          # MonetizationState, MusicManager
+│   ├── autoload/              # the 7 autoloads: SaveManager, GameState, Api, CompanionState,
+│   │                          # SessionManager, MonetizationState, MusicManager
 │   ├── battle/                # battle.gd — turn resolution, damage, juice
 │   ├── companion/             # care room, skeletal rig
 │   ├── overworld/             # region map generation, player movement
 │   ├── review_session/        # upload + editable question list
-│   └── ui/                    # splash, loading, peek + tutorial + home, old care room root, session list,
-│                              # settings, pomodoro, HUD strip, button feedback
+│   └── ui/                    # home (the hub), old care room root, session list, settings
+│       ├── boot/              # splash, loading, peek + tutorial
+│       └── widgets/           # pomodoro, HUD strip, button feedback
 │
 ├── scenes/                    # .tscn files mirroring scripts/<feature>/
 │   ├── battle/                ├── companion/      ├── overworld/
-│   ├── review_session/        └── ui/
-│
-├── ui/                        # Shared theme + reusable HUD widgets
-│   ├── app_theme.tres         # single shared Theme (all screens use it)
-│   ├── hud_strip.tscn         # Energy / Focus / Mood + Level, instanced per screen
-│   └── pomodoro.tscn          # focus/rest timer panel
+│   ├── review_session/        └── ui/  (boot/, widgets/)
 │
 ├── backend/                   # FastAPI skeleton (health check only, for now)
 │
 ├── docs/                      # 📖 technical documentation — start at docs/README.md
-├── README.md
-└── quizmon-build-plan.md      # original phase plan (historical; see docs/build-plan-status.md)
+│                              # (quizmon-build-plan.md: original phase plan, historical)
+└── README.md
 ```
-
-`companion/`, `battle/`, and `review_session/` at the repository root hold planning contracts only;
-their implementation lives under `scripts/` and `scenes/`.
 
 ---
 

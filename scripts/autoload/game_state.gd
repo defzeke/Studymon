@@ -2,7 +2,6 @@ extends Node
 ## GameState — global run-time state (canonical; superset of Phase 0 + Phase 1 needs).
 ## Companion stats live in CompanionState; topics in SessionManager.
 
-signal campaign_unlocked
 signal large_text_changed(enabled: bool)
 
 var user_id: String = ""
@@ -15,7 +14,6 @@ var tutorial_done: bool = false
 var food_stock: Dictionary = {}
 var campaign_unlocked_flag: bool = false
 var active_region_id: String = ""
-var current_topic_id: String = ""
 
 # --- Phase 9: Accessibility — font-size scaling hooked into app_theme.tres ---
 # Standard = theme default (28 / 32), Large = scaled for readability.
@@ -33,8 +31,6 @@ func set_campaign_unlocked(value: bool) -> void:
 	if campaign_unlocked_flag == value:
 		return
 	campaign_unlocked_flag = value
-	if value:
-		campaign_unlocked.emit()
 
 func set_active_region(region_id: String) -> void:
 	active_region_id = region_id
@@ -48,7 +44,7 @@ func set_large_text(enabled: bool) -> void:
 	large_text_changed.emit(enabled)
 
 func _apply_theme_font_size() -> void:
-	var theme_path := "res://ui/app_theme.tres"
+	var theme_path := "res://assets/theme/app_theme.tres"
 	if not ResourceLoader.exists(theme_path):
 		return
 	var theme: Theme = load(theme_path) as Theme

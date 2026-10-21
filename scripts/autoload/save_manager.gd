@@ -57,7 +57,3 @@ func load_game() -> bool:
 		if _ms != null:
 			_ms.from_dict(parsed["monetization"] as Dictionary)
 	return true
-
-func reset_save() -> void:
-	if FileAccess.file_exists(SAVE_PATH):
-		DirAccess.remove_absolute(SAVE_PATH)

@@ -31,14 +31,6 @@ func ensure_playing() -> void:
 	if is_instance_valid(_player) and not _player.playing:
 		_player.play()
 
-func stop_music() -> void:
-	if is_instance_valid(_player):
-		_player.stop()
-
-func set_volume_db(value: float) -> void:
-	if is_instance_valid(_player):
-		_player.volume_db = value
-
 func set_music_volume(value: float) -> void:
 	music_volume = clampf(value, 0.0, 1.0)
 	if is_instance_valid(_player):

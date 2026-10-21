@@ -1,9 +1,9 @@
 [gd_scene format=3 uid="uid://b42m66m6eqdsa"]
 
-[ext_resource type="Script" uid="uid://by0fxc51mkf45" path="res://scripts/ui/loading.gd" id="1_35gka"]
-[ext_resource type="Texture2D" path="res://assets/sprites/loading.png" id="2_bg"]
-[ext_resource type="Texture2D" path="res://assets/sprites/logo.png" id="3_logo"]
-[ext_resource type="Texture2D" path="res://assets/sprites/leaf.svg" id="4_leaf"]
+[ext_resource type="Script" uid="uid://by0fxc51mkf45" path="res://scripts/ui/boot/loading.gd" id="1_35gka"]
+[ext_resource type="Texture2D" path="res://assets/sprites/boot/loading.png" id="2_bg"]
+[ext_resource type="Texture2D" path="res://assets/sprites/boot/logo.png" id="3_logo"]
+[ext_resource type="Texture2D" path="res://assets/sprites/effects/leaf.svg" id="4_leaf"]
 [ext_resource type="Texture2D" path="res://assets/sprites/ui/loading_spark.svg" id="5_spark"]
 [ext_resource type="Texture2D" path="res://assets/sprites/ui/tip_bulb.svg" id="6_bulb"]
 [ext_resource type="FontFile" uid="uid://rrcw5ky5bnsk" path="res://assets/fonts/JosefinSans-Bold.ttf" id="7_bold"]

@@ -1,6 +1,6 @@
 # Build plan status
 
-Phase-by-phase comparison of [`../quizmon-build-plan.md`](../quizmon-build-plan.md) against the
+Phase-by-phase comparison of [`quizmon-build-plan.md`](quizmon-build-plan.md) against the
 current code. Statuses follow the vocabulary in [`README.md`](README.md#status-vocabulary).
 
 **Headline:** every phase has client-side code, and the whole loop runs on mocks — but boot now
@@ -15,8 +15,8 @@ the campaign stops at the first battle because `battle.tscn` references missing 
 
 | Phase | Plan scope | Status | Where |
 |---|---|---|---|
-| **0** | Project skeleton, folder structure, autoloads, theme, backend health | **Implemented** (layout differs) | `project.godot`, 7 autoloads, `ui/app_theme.tres`, `backend/main.py` |
-| **1** | Accounts, first login, meet-your-companion cutscene | **Partial** — 3D peek + tutorial on mocks | `scenes/ui/peek.tscn`, `tutorial.gd`; no auth, name not saved, `GameState.set_user()` unused |
+| **0** | Project skeleton, folder structure, autoloads, theme, backend health | **Implemented** (layout differs) | `project.godot`, 7 autoloads, `assets/theme/app_theme.tres`, `backend/main.py` |
+| **1** | Accounts, first login, meet-your-companion cutscene | **Partial** — 3D peek + tutorial on mocks | `scenes/ui/boot/peek.tscn`, `tutorial.gd`; no auth, name not saved, `GameState.set_user()` unused |
 | **2** | Pet-care loop: Pet/Feed/Play, stats, XP, decay, level gate, HUD strip | **Partial** — logic yes, input/art no | `companion_state.gd`, `companion.gd`, `hud_strip.tscn`; see #3, #5, #8 |
 | **3** | AI Codex + optional pop-quiz reuse | **Partial** — data only | `CURRICULUM` + `codex` array; no screen, bubble hidden (#4) |
 | **4** | Scheduler / Pomodoro with missed-rest penalty, HUD badge | **Implemented** | `companion_state.gd:168-241`, `pomodoro.tscn`, `PomoBadge` |
@@ -185,7 +185,7 @@ Champion — is playable end-to-end on mocks.
 | Plan says | Reality | Note |
 |---|---|---|
 | Godot 4.6.x, "avoid 4.7" | 4.7.2 stable | 4.7 is the shipping line now; keep it |
-| `Resource`-based saves | JSON file, `"v": 4` | simpler diffs, no type safety |
+| `Resource`-based saves | JSON file, `"v": 5` | simpler diffs, no type safety |
 | FastAPI **or** Node backend with Claude + Supabase | FastAPI health check only | no Claude, no Supabase, no DB |
 | Supabase Auth / DB / Storage | none | auth skipped by design for now |
 | Job polling for long tasks | `job_status` signal + mock timer | no polling loop, single shared `HTTPRequest` |

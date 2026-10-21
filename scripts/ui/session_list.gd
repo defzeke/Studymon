@@ -8,7 +8,7 @@ extends Control
 @onready var empty_label: Label = $Content/EmptyLabel
 
 func _ready() -> void:
-	theme = load("res://ui/app_theme.tres") as Theme
+	theme = load("res://assets/theme/app_theme.tres") as Theme
 	add_btn.pressed.connect(_on_add_new)
 	back_btn.pressed.connect(_on_back)
 	SessionManager.topics_listed.connect(_on_topics_listed)
@@ -61,4 +61,4 @@ func _on_add_new() -> void:
 	get_tree().change_scene_to_file("res://scenes/review_session/categorizer.tscn")
 
 func _on_back() -> void:
-	get_tree().change_scene_to_file("res://scenes/ui/peek.tscn")
+	get_tree().change_scene_to_file("res://scenes/ui/boot/peek.tscn")
