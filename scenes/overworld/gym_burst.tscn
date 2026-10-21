@@ -1,0 +1,24 @@
+[gd_scene format=3]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_bit"]
+shading_mode = 0
+albedo_color = Color(0.35, 0.95, 0.55, 1)
+
+[sub_resource type="SphereMesh" id="SphereMesh_bit"]
+material = SubResource("StandardMaterial3D_bit")
+radius = 0.06
+height = 0.12
+
+[node name="GymBurst" type="CPUParticles3D"]
+amount = 26
+lifetime = 0.7
+one_shot = true
+explosiveness = 1.0
+mesh = SubResource("SphereMesh_bit")
+emission_shape = 1
+emission_sphere_radius = 0.1
+direction = Vector3(0, 1, 0)
+spread = 60.0
+gravity = Vector3(0, -6, 0)
+initial_velocity_min = 2.0
+initial_velocity_max = 4.0
