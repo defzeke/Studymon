@@ -24,6 +24,16 @@ expand_mode = 1
 stretch_mode = 6
 modulate = Color(0.92, 0.92, 0.92, 1)
 
+[node name="Veil" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.1608, 0.2196, 0.2275, 0.8)
+
 [node name="Content" type="VBoxContainer" parent="."]
 layout_mode = 1
 anchors_preset = 15
@@ -41,6 +51,47 @@ theme_override_constants/separation = 16
 layout_mode = 2
 text = "Settings"
 horizontal_alignment = 1
+
+[node name="MusicRow" type="HBoxContainer" parent="Content"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="MusicLabel" type="Label" parent="Content/MusicRow"]
+custom_minimum_size = Vector2(140, 0)
+layout_mode = 2
+text = "Music"
+
+[node name="MusicSlider" type="HSlider" parent="Content/MusicRow"]
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+max_value = 1.0
+step = 0.05
+value = 1.0
+
+[node name="SoundsRow" type="HBoxContainer" parent="Content"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="SoundsLabel" type="Label" parent="Content/SoundsRow"]
+custom_minimum_size = Vector2(140, 0)
+layout_mode = 2
+text = "Sounds"
+
+[node name="SoundsSlider" type="HSlider" parent="Content/SoundsRow"]
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+max_value = 1.0
+step = 0.05
+value = 1.0
+
+[node name="LargeTextCheck" type="CheckBox" parent="Content"]
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+text = "Large text"
 
 [node name="QuotaLabel" type="Label" parent="Content"]
 layout_mode = 2

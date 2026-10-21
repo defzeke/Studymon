@@ -66,8 +66,9 @@ Terms used throughout this repo, in the sense this repo means them.
 |---|---|
 | **Autoload** | A singleton registered in `[autoload]` in `project.godot`. Seven exist: `SaveManager`, `GameState`, `Api`, `CompanionState`, `SessionManager`, `MonetizationState`, `MusicManager`. |
 | **Splash** | The white intro screen (`splash.tscn`) that plays the 60-frame Kuizmon animation, then loads the loading screen. |
-| **Main scene** | `res://scenes/ui/splash.tscn`. It hands off to `loading.tscn`, then `peek.tscn`, where boot currently ends after the tutorial. |
+| **Main scene** | `res://scenes/ui/splash.tscn`. It hands off to `loading.tscn`, then `peek.tscn` (tutorial, then home). |
 | **Peek** | `peek.tscn`: the 3D Kuiz head (`assets/models/kuiz.glb`) peeking up on white after the loading screen. The tutorial then runs in the same scene. |
+| **Home** | `home.gd` in `peek.tscn`: the game loop after the tutorial. A bottom bar walks Kuiz between the four rooms, each with its own action (charge, play, settings; screwdriver; food and fridge; ball). |
 | **Tutorial** | `tutorial.gd` in `peek.tscn`: Kuiz's first-run lines, the profile and name prompts, and the tour of the Study Room, Maintenance Bay, Data Kitchen and Playroom. The last three rooms are temporary art. |
 | **Ink outline** | The dark silhouette around Kuiz: an inverted hull (the mesh grown along its normals, front faces culled) in Deep Slate, sized by each node's `extras.outline`. |
 | **`.tscn` / `.tres`** | Godot scene and resource text files. Both are source here, not build output. |

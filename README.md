@@ -28,6 +28,7 @@ res://
 │       ├── loading.png         # loading background
 │       ├── logo.png            # loading wordmark
 │       ├── companion/          # idle / blink / sad / happy / charge / complete (SVG)
+│       ├── props/              # temporary foods, fridge, ball, screwdriver
 │       ├── rooms/              # temporary rooms: study_room (+ night), maintenance_bay, data_kitchen, playroom
 │       └── ui/                 # campaign, charge, pomodoro, settings, table, top bar
 │
@@ -42,7 +43,7 @@ res://
 │   ├── companion/             # care room, skeletal rig
 │   ├── overworld/             # region map generation, player movement
 │   ├── review_session/        # upload + editable question list
-│   └── ui/                    # splash, loading, peek + tutorial, care room root, session list,
+│   └── ui/                    # splash, loading, peek + tutorial + home, old care room root, session list,
 │                              # settings, pomodoro, HUD strip, button feedback
 │
 ├── scenes/                    # .tscn files mirroring scripts/<feature>/

@@ -61,4 +61,4 @@ func _on_add_new() -> void:
 	get_tree().change_scene_to_file("res://scenes/review_session/categorizer.tscn")
 
 func _on_back() -> void:
-	get_tree().change_scene_to_file("res://scenes/ui/main.tscn")
+	get_tree().change_scene_to_file("res://scenes/ui/peek.tscn")

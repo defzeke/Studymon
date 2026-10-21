@@ -3,6 +3,12 @@ extends Node
 ## loading screen keeps playing across scene changes (loading -> gameplay).
 
 const MAIN_ROOM_TRACK: AudioStream = preload("res://assets/audio/main room.mp3")
+# The track's mix level at full music volume (-6 dB).
+const MUSIC_LEVEL := 0.5
+
+## Settings sliders, 0..1; saved by SaveManager.
+var music_volume := 1.0
+var sfx_volume := 1.0
 
 var _player: AudioStreamPlayer
 var _sfx: AudioStreamPlayer
@@ -15,7 +21,7 @@ func _ready() -> void:
 	_player.stream = MAIN_ROOM_TRACK
 	if _player.stream is AudioStreamMP3:
 		(_player.stream as AudioStreamMP3).loop = true
-	_player.volume_db = -6.0
+	_player.volume_linear = MUSIC_LEVEL * music_volume
 	_player.play()
 	_sfx = AudioStreamPlayer.new()
 	_sfx.name = "SfxPlayer"
@@ -32,6 +38,16 @@ func stop_music() -> void:
 func set_volume_db(value: float) -> void:
 	if is_instance_valid(_player):
 		_player.volume_db = value
+
+func set_music_volume(value: float) -> void:
+	music_volume = clampf(value, 0.0, 1.0)
+	if is_instance_valid(_player):
+		_player.volume_linear = MUSIC_LEVEL * music_volume
+
+func set_sfx_volume(value: float) -> void:
+	sfx_volume = clampf(value, 0.0, 1.0)
+	if is_instance_valid(_sfx):
+		_sfx.volume_linear = sfx_volume
 
 func play_sfx(stream: AudioStream) -> void:
 	_sfx_chain_id += 1

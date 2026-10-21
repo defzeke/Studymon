@@ -10,29 +10,20 @@ Last updated: 2026-10-21.
 
 ## In flight
 
-**3D overworld — uncommitted.** `region_map.tscn` is now the 3D island (`map.glb`) under an angled
-top-down camera, dressed in a random season each load (`season.gd`: sunny, rainy, autumn, snowy), with the explorer (`boy_explorer.glb`) walking on a left-hand joystick
-(`joystick.gd`), collision built from the map's meshes, and the existing encounter logic re-homed:
-gyms in the map's gym buildings (animated doors), trainers on the roads to them, the Champion in the
-big gym. Details in [`systems/overworld.md`](systems/overworld.md) §3.
-
-**Study Room art — uncommitted.** The old room art (`rooms/main.svg`, `dark_main.svg`) was deleted;
-`study_room.svg` and `study_room_night.svg` (temporary placeholders) replace it in the tutorial, the
-care room and its night toggle, settings and the categorizer.
-
-**Tutorial — uncommitted.** After the peek, `tutorial.gd` (in `peek.tscn`) plays Kuiz's first-run
-lines with a fitting clip each, a Continue stand-in for sign-in, a name prompt
-(`GameState.player_name`, memory only), and a tour through the four temporary rooms. It also
-uses the new `kuiz.glb` clips (`State_Charging`, `State_Sick`, `State_Hungry`, `Celebrate`,
-`Learn_Something_New`), loops `State_*` moods, and hides props a clip does not key. It also carries
-the earlier peek polish: `Greetings` dropped after the peek, and 4× 3D MSAA for the ink
-outline. Details in [`ui-and-assets.md`](ui-and-assets.md) §2.
+**Home loop — uncommitted.** After the tutorial's last line a tap starts `home.gd` (in
+`peek.tscn`): a bottom bar walks Kuiz between the four rooms. Study Room: Charge (lights off,
+`State_Charging`, `Wake_Up` on lights on), Play (new topic → upload screen), Settings (now with
+music/sound volume and large text, save v5). Maintenance Bay: hold the screwdriver over Kuiz.
+Data Kitchen: drag six foods to Kuiz, buy more at the fridge (free; no currency yet). Playroom:
+fling the ball, Kuiz watches. Settings and the topic list now return home. New temporary art in
+`assets/sprites/props/` and `ui/arrow.svg`. Details in [`ui-and-assets.md`](ui-and-assets.md) §2
+Home.
 
 ## Blocked
 
 | Work | Blocked by |
 |---|---|
-| Reaching the care room from boot | What follows the tutorial's last line ("Ready to jump into our very first review session?") is not decided; all four rooms are temporary art |
+| Kuiz's stats and the top bar | Waiting on the design: what goes at the top (including the currency), and what feeding, fixing, playing and charging should change |
 | Playing the core loop end to end | The row above, issue #1 (`battle.tscn` fails to parse on missing `bot_lv*.png`) and issue #8 (no care input, so Level 5 is unreachable without editing the save) |
 | Any real backend call | Issue #7 (endpoints disagree) and issue #2 (auth header is a redaction placeholder) |
 | Claiming the Champion | Issue #6 (soft-lock when no question is `MASTERED`) |
@@ -60,7 +51,6 @@ Hygiene, after the slice plays:
 |---|---|
 | #13 | Emit `stats_changed` at ~5 Hz or only on change |
 | #14 | Debounce the save instead of one full write per tap |
-| #11 | Add the large-text toggle to Settings |
 | #12 | Give leaf bones non-zero rest length, or skip degenerate weights |
 | #16, #17, #18, #19 | Double save load, duplicate signal, duplicate `current_topic_id`, phantom "Biology 101" |
 | #20 | Add a headless smoke-test script / CI, and remove the redundant branch in `categorizer.gd:73-79` |
@@ -81,6 +71,9 @@ Hygiene, after the slice plays:
 
 ## Done
 
+- **2026-10-21** — first-run tutorial and temporary rooms, the new `kuiz.glb` clips and prop
+  hiding, the temporary Study Room art, the 3D island overworld with joystick explorer and random
+  seasons (`5b3c22a`).
 - **2026-10-21** — boot flow polish: splash → loading → peek handoffs on white with threaded
   loads, the loading screen's leaves, floating logo, striped bar and tips, the 3D `peek.tscn` with
   the artifact's look, and the text intro removed (`8db69c9`).

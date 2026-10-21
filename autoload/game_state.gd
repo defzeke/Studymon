@@ -9,6 +9,10 @@ var user_id: String = ""
 var auth_token: String = ""
 # shortcut: memory only while there is no backend; save it with the profile once accounts exist.
 var player_name: String = ""
+# shortcut: memory only like the name; the tutorial replays each launch until it is saved with the profile.
+var tutorial_done: bool = false
+# shortcut: memory only until Kuiz's stats and the shop's currency exist; food id -> count.
+var food_stock: Dictionary = {}
 var campaign_unlocked_flag: bool = false
 var active_region_id: String = ""
 var current_topic_id: String = ""

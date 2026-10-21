@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://l6mmq5roae8o"
-path="res://.godot/imported/3run_loading.png-0c10a7bcb5810c46d0e6baace7ccd8b5.ctex"
+uid="uid://dtrm4u4fckxr8"
+path="res://.godot/imported/byte_burger.svg-98d707a3d5151106dba23ebca29702bf.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/sprites/3run_loading.png"
-dest_files=["res://.godot/imported/3run_loading.png-0c10a7bcb5810c46d0e6baace7ccd8b5.ctex"]
+source_file="res://assets/sprites/props/byte_burger.svg"
+dest_files=["res://.godot/imported/byte_burger.svg-98d707a3d5151106dba23ebca29702bf.ctex"]
 
 [params]
 
@@ -38,3 +38,6 @@ process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
 detect_3d/compress_to=1
+svg/scale=1.0
+editor/scale_with_editor_scale=false
+editor/convert_colors_with_editor_theme=false

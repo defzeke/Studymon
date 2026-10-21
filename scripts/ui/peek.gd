@@ -1,6 +1,8 @@
 extends Node3D
-## Kuiz peeks in on white after the loading screen, then the tutorial (tutorial.gd) runs on top.
-## This node owns Kuiz: the artifact look, the clips, and the stage moves the tutorial asks for.
+## Kuiz peeks in on white after the loading screen, then the tutorial (tutorial.gd) runs on top,
+## then the home loop (home.gd). Once the tutorial is done this session, the scene opens straight
+## into the Study Room. This node owns Kuiz (the artifact look, clips, stage moves, where it looks)
+## and the rooms behind it.
 ## Rendering mirrors the KUIZMON Pet Bot artifact: docs/ui-and-assets.md §2 peek.tscn.
 
 signal peeked
@@ -26,6 +28,23 @@ const WALK_TIME := 0.55
 const LEAN := 0.12
 const HOP := 0.18
 const HOVER := 0.06
+const FADE_TIME := 0.35
+const ROOM_NAMES := {
+	"StudyRoom": "The Study Room",
+	"MaintenanceBay": "The Maintenance Bay",
+	"DataKitchen": "The Data Kitchen",
+	"Playroom": "The Playroom",
+}
+# Lights off in the Study Room: light and ambient energy scale, and the night art's fade time.
+const DARK := 0.3
+const LIGHTS_TIME := 0.6
+# Looking at a screen point: the most Kuiz turns (radians), and how fast it follows.
+const LOOK_YAW := 0.55
+const LOOK_PITCH := 0.3
+const LOOK_SPEED := 8.0
+# Kuiz's head centre sits this far above the stage origin, and fills this radius (model units).
+const HEAD_CENTRE := 0.22
+const HEAD_RADIUS := 1.15
 
 @onready var anim: AnimationPlayer = $Stage/Kuiz/AnimationPlayer
 @onready var skeleton: Skeleton3D = $Stage/Kuiz/Skeleton3D
@@ -34,12 +53,24 @@ const HOVER := 0.06
 @onready var kuiz: Node3D = $Stage/Kuiz
 @onready var shadow: MeshInstance3D = $Stage/Shadow
 @onready var shadow_mat: StandardMaterial3D = shadow.mesh.material
+@onready var rooms: CanvasLayer = $Rooms
+@onready var room_sign: Control = $Top/RoomSign
+@onready var room_label: Label = $Top/RoomSign/Label
+@onready var night: Array[CanvasItem] = [$Rooms/StudyRoom/Night, $Rooms/StudyRoom/Veil]
+@onready var lights: Array[DirectionalLight3D] = [$Key, $Fill, $Rim]
+@onready var env: Environment = $WorldEnvironment.environment
+
+var room := "White"
 
 var _head := -1
 # Prop blend shapes (hearts, confetti, screws, bubbles…) not keyed by the current clip.
 var _props: Array = []
 var _props_clip := ""
 var _blend_shapes: Array = []
+var _hover: Tween
+var _look := Vector2.INF
+var _energy: Array[float] = []
+var _ambient := 0.0
 
 func _ready() -> void:
 	for mesh_instance: MeshInstance3D in kuiz.find_children("*", "MeshInstance3D", true, false):
@@ -59,6 +90,15 @@ func _ready() -> void:
 		if clip.begins_with(STATE_PREFIX):
 			anim.get_animation(clip).loop_mode = Animation.LOOP_LINEAR
 	anim.playback_default_blend_time = BLEND_TIME
+	for light in lights:
+		_energy.append(light.light_energy)
+	_ambient = env.ambient_light_energy
+	if GameState.tutorial_done:
+		anim.play(IDLE)
+		stage.scale = Vector3.ONE * ROOM_SCALE
+		stage.position.y = ROOM_Y
+		show_room("StudyRoom", true)
+		return
 	anim.play(PEEK)
 	await anim.animation_finished
 	kuiz.position.y = 0.0
@@ -67,7 +107,7 @@ func _ready() -> void:
 
 # The peek clip is authored for a wider framing; re-anchor it to this screen's bottom edge so Kuiz
 # rises from it, and fade the contact shadow while the head is low.
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
 	var head_y := skeleton.get_bone_pose_position(_head).y
 	var peek := 0.0
 	if anim.current_animation == PEEK:
@@ -79,6 +119,15 @@ func _process(_delta: float) -> void:
 	shadow.scale = Vector3(spread, 1.0, spread)
 	shadow_mat.albedo_color.a = (0.45 + 0.55 * spread) * (1.0 - minf(1.0, peek * 1.5))
 	_hide_props()
+	var yaw := 0.0
+	var pitch := 0.0
+	if _look != Vector2.INF:
+		var centre := head_point()
+		yaw = clampf((_look.x - centre.x) / 300.0, -1.0, 1.0) * LOOK_YAW
+		pitch = clampf((_look.y - centre.y) / 400.0, -1.0, 1.0) * LOOK_PITCH
+	var follow := minf(1.0, LOOK_SPEED * delta)
+	stage.rotation.y = lerp_angle(stage.rotation.y, yaw, follow)
+	stage.rotation.x = lerpf(stage.rotation.x, pitch, follow)
 
 # A clip only keys its own props, so a prop shown by an earlier clip would otherwise freeze on
 # screen. This runs before the AnimationPlayer (a child) each frame: an outgoing clip still fades
@@ -94,7 +143,7 @@ func _hide_props() -> void:
 	for shape: Array in _props:
 		(shape[0] as MeshInstance3D).set_blend_shape_value(shape[1], 0.0)
 
-## Plays a clip for a tutorial line: a one-shot falls back into Idle, a State_* mood keeps looping.
+## Plays a clip: a one-shot falls back into Idle, a State_* mood keeps looping.
 func act(clip: String) -> void:
 	anim.clear_queue()
 	anim.play(clip)
@@ -111,16 +160,17 @@ func jump(at_top: Callable) -> void:
 	t.parallel().tween_property(stage, "position:y", ROOM_Y, 0.4).set_trans(Tween.TRANS_SINE)
 	await t.finished
 
-## "Follow me": hops off to the right, `midway` swaps the room, and Kuiz hops in from the left.
-func walk(midway: Callable) -> void:
+## "Follow me": hops off to one side (`dir` 1 = right), `midway` swaps the room, and Kuiz hops in
+## from the other.
+func walk(midway: Callable, dir := 1) -> void:
 	var hops := create_tween().set_loops(4)
 	hops.tween_property(kuiz, "position:y", HOP, WALK_TIME / 4.0).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 	hops.tween_property(kuiz, "position:y", 0.0, WALK_TIME / 4.0).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
 	var t := create_tween()
-	t.tween_property(stage, "rotation:z", -LEAN, 0.15)
-	t.parallel().tween_property(stage, "position:x", WALK_OFF_X, WALK_TIME).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
+	t.tween_property(stage, "rotation:z", -LEAN * dir, 0.15)
+	t.parallel().tween_property(stage, "position:x", WALK_OFF_X * dir, WALK_TIME).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
 	t.tween_callback(midway)
-	t.tween_callback(func() -> void: stage.position.x = -WALK_OFF_X)
+	t.tween_callback(func() -> void: stage.position.x = -WALK_OFF_X * dir)
 	t.tween_property(stage, "position:x", 0.0, WALK_TIME).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 	t.tween_property(stage, "rotation:z", 0.0, 0.2)
 	await t.finished
@@ -131,9 +181,75 @@ func come_close() -> void:
 	t.tween_property(stage, "scale", Vector3.ONE * CLOSE_SCALE, 0.6).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	t.tween_property(stage, "position:y", CLOSE_Y, 0.6).set_trans(Tween.TRANS_SINE)
 	await t.finished
-	var hover := create_tween().set_loops()
-	hover.tween_property(kuiz, "position:y", HOVER, 1.2).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-	hover.tween_property(kuiz, "position:y", 0.0, 1.2).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	_hover = create_tween().set_loops()
+	_hover.tween_property(kuiz, "position:y", HOVER, 1.2).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	_hover.tween_property(kuiz, "position:y", 0.0, 1.2).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+
+## Stops hovering and settles back to room size, standing in the room.
+func to_room_pose() -> void:
+	if _hover:
+		_hover.kill()
+		_hover = null
+	var t := create_tween().set_parallel().set_trans(Tween.TRANS_SINE)
+	t.tween_property(stage, "scale", Vector3.ONE * ROOM_SCALE, 0.5)
+	t.tween_property(stage, "position:y", ROOM_Y, 0.5)
+	t.tween_property(kuiz, "position:y", 0.0, 0.5)
+	await t.finished
+
+## Cross-fades to a room and names it on the sign.
+func show_room(room_name: String, instant := false) -> void:
+	var next: CanvasItem = rooms.get_node(room_name)
+	var old: CanvasItem = rooms.get_node(room)
+	room = room_name
+	rooms.move_child(next, -1)
+	if instant:
+		next.modulate.a = 1.0
+		if old != next:
+			old.modulate.a = 0.0
+		room_label.text = ROOM_NAMES[room_name]
+		room_sign.modulate.a = 1.0
+		return
+	_fade(next, 1.0).finished.connect(func() -> void:
+		if old != next:
+			old.modulate.a = 0.0)
+	var t := create_tween()
+	t.tween_property(room_sign, "modulate:a", 0.0, FADE_TIME * room_sign.modulate.a)
+	t.tween_callback(func() -> void: room_label.text = ROOM_NAMES[room_name])
+	t.tween_property(room_sign, "modulate:a", 1.0, FADE_TIME)
+
+## Study Room lights: off dims the 3D lights and fades in the night art, so only Kuiz's self-lit
+## face (and its charging bolt) glows.
+func set_lights(on: bool) -> void:
+	var k := 1.0 if on else DARK
+	var t := create_tween().set_parallel()
+	for i in lights.size():
+		t.tween_property(lights[i], "light_energy", _energy[i] * k, LIGHTS_TIME)
+	t.tween_property(env, "ambient_light_energy", _ambient * k, LIGHTS_TIME)
+	for item in night:
+		t.tween_property(item, "modulate:a", 0.0 if on else 1.0, LIGHTS_TIME)
+
+## Turns Kuiz's head toward a screen point; look_ahead() turns it back.
+func look_at_point(point: Vector2) -> void:
+	_look = point
+
+func look_ahead() -> void:
+	_look = Vector2.INF
+
+## Screen-space centre and radius of Kuiz's head, for drops and hits.
+func head_point() -> Vector2:
+	return camera.unproject_position(kuiz.global_position + Vector3.UP * HEAD_CENTRE * stage.scale.y)
+
+func head_radius() -> float:
+	var top := camera.unproject_position(kuiz.global_position + Vector3.UP * (HEAD_CENTRE + HEAD_RADIUS) * stage.scale.y)
+	return head_point().distance_to(top)
+
+func hits(point: Vector2) -> bool:
+	return point.distance_to(head_point()) < head_radius()
+
+func _fade(item: CanvasItem, alpha: float) -> Tween:
+	var t := create_tween()
+	t.tween_property(item, "modulate:a", alpha, FADE_TIME)
+	return t
 
 # glTF vertex colours are imported but left off; extras carry the artifact's shading hints.
 func _apply_extras(mat: BaseMaterial3D) -> void:

@@ -64,6 +64,4 @@
 <rect x="560" y="860" width="70" height="70" rx="8" fill="#D6A85F" stroke="#29383A" stroke-width="4" />
 <rect x="630" y="860" width="70" height="70" rx="8" fill="#4F8F89" stroke="#29383A" stroke-width="4" />
 <rect x="596" y="790" width="70" height="70" rx="8" fill="#C97970" stroke="#29383A" stroke-width="4" />
-<ellipse cx="110" cy="942" rx="66" ry="11.9" fill="#29383A" fill-opacity="0.22"/>
-<circle cx="110" cy="880" r="58" fill="#F7F5EF" stroke="#29383A" stroke-width="4"/><path d="M52 880 a58 58 0 0 1 116 0 z" fill="#C97970" stroke="#29383A" stroke-width="4"/><path d="M58 856 q52 26 104 0" fill="none" stroke="#D6A85F" stroke-width="10"/>
 </svg>

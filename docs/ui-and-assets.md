@@ -43,7 +43,7 @@ The shared theme and several inline scene overrides were written before this pal
 the older navy/cyan values. New UI uses the palette above; migrating the existing screens is tracked
 in [`known-issues.md`](known-issues.md) #21.
 
-### Large text (partial)
+### Large text
 
 `GameState` can scale the theme at runtime:
 
@@ -53,9 +53,8 @@ const BUTTON_FONT_STANDARD := 32   const BUTTON_FONT_LARGE := 40
 func set_large_text(enabled)        # mutates the loaded Theme + assigns it to root
 ```
 
-It is saved, applied on load, and `companion.gd` listens for `large_text_changed` — but **nothing
-in the UI ever calls `set_large_text()`**. `settings.tscn` has no accessibility control
-(`known-issues.md` #11).
+It is saved, applied on load, and `companion.gd` listens for `large_text_changed`. The **Large
+text** checkbox in `settings.tscn` calls `set_large_text()` and saves.
 
 ---
 
@@ -65,13 +64,13 @@ in the UI ever calls `set_large_text()`**. `settings.tscn` has no accessibility 
 |---|---|---|---|
 | `scenes/ui/splash.tscn` | `Control` | `scripts/ui/splash.gd` | white intro, then loading |
 | `scenes/ui/loading.tscn` | `Control` | `scripts/ui/loading.gd` | boot loading bar |
-| `scenes/ui/peek.tscn` | `Node3D` | `scripts/ui/peek.gd`, `scripts/ui/tutorial.gd` | 3D Kuiz peeks, then runs the tutorial and room tour; the end of the boot flow |
+| `scenes/ui/peek.tscn` | `Node3D` | `scripts/ui/peek.gd`, `tutorial.gd`, `home.gd` | 3D Kuiz peeks, runs the tutorial, then the home loop across four rooms; the hub every other screen returns to |
 | `scenes/ui/main.tscn` | `Control` | `scripts/ui/main.gd` (+ `companion.gd` on child) | care room |
 | `scenes/ui/session_list.tscn` | `Control` | `scripts/ui/session_list.gd` | topic history |
 | `scenes/review_session/categorizer.tscn` | `Control` | `scripts/review_session/categorizer.gd` | upload + question editor |
 | `scenes/overworld/region_map.tscn` | `Node3D` | `scripts/overworld/region_map.gd` (+ `player.gd`, `joystick.gd`) | 3D island: explorer, trainers, gyms, champion |
 | `scenes/battle/battle.tscn` | `Control` | `scripts/battle/battle.gd` | arena |
-| `scenes/ui/settings.tscn` | `Control` | `scripts/ui/settings.gd` | premium + quota debug |
+| `scenes/ui/settings.tscn` | `Control` | `scripts/ui/settings.gd` | music and sound volume, large text, premium + quota debug; Back returns home |
 | `ui/hud_strip.tscn` | `VBoxContainer` | `scripts/ui/hud_strip.gd` | status strip (instanced) |
 | `ui/pomodoro.tscn` | `VBoxContainer` | `scripts/ui/pomodoro.gd` | timer panel (instanced) |
 | `scenes/companion/companion_rig.tscn` | `Node2D` | `scripts/companion/companion_rig.gd` | skeletal pet (hidden) |
@@ -157,12 +156,22 @@ Peek                Node3D (peek.gd)
 │   ├── Shadow        PlaneMesh 2.9 × 2.1 at y −0.935, radial Deep Slate GradientTexture2D
 │   └── Kuiz          instance of assets/models/kuiz.glb
 ├── Rooms             CanvasLayer −1, drawn behind the 3D: White (#FFFFFF), StudyRoom
-│                     (rooms/study_room.svg), MaintenanceBay, DataKitchen, Playroom, each covering
-└── Tutorial          CanvasLayer (tutorial.gd)
-    ├── RoomSign      top-centre Deep Slate pill naming the current room
-    └── Speech        bottom: "Kuiz" name tag over the Dialogue box (Text, Continue, NameRow with
-                      NameInput + NameOk, and a bobbing ▼ Hint)
+│                     (rooms/study_room.svg, with Night art and a Deep Slate Veil faded in when the
+│                     lights are off), MaintenanceBay, DataKitchen, Playroom, each covering
+├── Tutorial          CanvasLayer (tutorial.gd)
+│   └── Speech        bottom: "Kuiz" name tag over the Dialogue box (Text, Continue, NameRow with
+│                     NameInput + NameOk, and a bobbing ▼ Hint)
+├── Top               CanvasLayer: RoomSign, the top-centre pill naming the current room
+└── Home              CanvasLayer (home.gd), hidden until the tutorial ends
+    ├── Fridge        TextureButton (props/fridge.svg), Data Kitchen only; opens Shop
+    ├── Bar           bottom Deep Slate bar: Prev / Next arrows and one action group per room
+    ├── Ball          props/ball.svg, Playroom only
+    ├── Held          the food or screwdriver being dragged
+    └── Shop          the fridge: one row per food with a Buy button, and Close
 ```
+
+`peek.gd` owns Kuiz and the rooms for both scripts on top: `act()`, the stage moves, `show_room()`,
+`set_lights()`, `look_at_point()` / `look_ahead()`, and `head_point()` / `hits()` for drops.
 
 `peek.gd` plays `Peek_Surprise` (5.7 s): Kuiz rises from the bottom edge, the eyes widen with an
 "!", then a happy face with sparkles. `Idle` (4 s, set to loop at runtime) follows with a 0.18 s
@@ -211,8 +220,33 @@ player's name.
   backdrops only: nothing in them is interactive.
 - **Known limit:** on a phone the on-screen keyboard can cover the name field, since the dialogue
   box sits at the bottom and nothing moves it up yet.
-- **Nothing leads out of the scene yet.** After the last line Kuiz keeps hovering in the Study
-  Room; where "our very first review session" goes is still to be decided.
+- **The end.** The last line waits for a tap like the others; then the dialogue fades,
+  `GameState.tutorial_done` is set, Kuiz settles back to room size in the Study Room and the home
+  bar fades in.
+
+### Home (`home.gd`, inside `peek.tscn`)
+
+The game loop after the tutorial. The bottom bar has a ◀ and ▶ arrow at its ends that walk Kuiz
+to the previous or next room (Study Room → Maintenance Bay → Data Kitchen → Playroom, wrapping),
+and the middle shows the current room's action:
+
+| Room | Action | Kuiz |
+|---|---|---|
+| Study Room | **Charge** (`ui/charge.png`, a toggle) turns the lights off: the 3D lights and ambient drop to 30 %, the night art and a dark veil fade in, and the charge sounds play. Arrows, Play and Settings are disabled until it is pressed again | `State_Charging` (loops; its bolt and gem glow in the dark), then `Wake_Up` when the lights come back on |
+| Study Room | **Play** (`ui/campaign.png`) starts a new topic (`topic_<unix%100000>`, like the topic list's Add) and opens the upload screen, `categorizer.tscn` | — |
+| Study Room | **Settings** (`ui/settings.svg`) opens `settings.tscn` | — |
+| Maintenance Bay | Drag the **screwdriver** from the bar and hold it over Kuiz: it twists, and after 2 s the tune-up is done and it returns to the bar | `State_Sick` (screws working loose) while it is held there, `Celebrate` when done, `Idle` if it is taken away early |
+| Data Kitchen | **Food**: ‹ › pick one of six foods, then drag it onto Kuiz to eat it (one from stock); dropped anywhere else it goes back. An empty food is greyed out and cannot be picked up | `Surprised` (mouth open) when the food reaches it, then `Happy`, or `Pet` (hearts) for Spicy Memory Chips, its favourite |
+| Data Kitchen | **Fridge** (in the room, left): a list of the six foods with how many you have and a **Buy** button each (+1, free until there is a currency) | — |
+| Playroom | **Ball**: it rests on the floor above the bar; drag and fling it. It falls, bounces off the screen edges, the floor and Kuiz's head, and settles | Turns its head to follow the ball (and anything being dragged), `Happy` on a throw, `Surprised` when hit |
+
+- Foods (`props/*.svg`): Data Chips (3 to start), Spicy Memory Chips (1), Cache Cookie (2), Pi Pie
+  (1), Byte Burger (1), Java Juice (2). Stock is kept in `GameState.food_stock`, in memory only.
+- There are no stats, rewards or currency yet, and nothing on the top of the screen except the
+  room sign: those come later.
+- Every screen that used to return to the old care room (`settings.tscn`, the topic list) now
+  returns here, and with `GameState.tutorial_done` set the scene opens straight into the Study
+  Room. The save is read the first time home opens in a session (`SaveManager.load_once()`).
 
 **Why it needs code.** The model was authored in the "KUIZMON Pet Bot 3D – Rigged" artifact, whose
 three.js page renders it with its own code. The `.glb` carries only geometry, rig, animations,
@@ -327,7 +361,7 @@ level-ups, taps and gym clears are silent.
 | Asset | Used by |
 |---|---|
 | `audio/main room.mp3` | `music_manager.gd` (looping BGM) |
-| `audio/charge.mp3`, `audio/charged.mp3` | `companion.gd` day/night toggle |
+| `audio/charge.mp3`, `audio/charged.mp3` | `companion.gd` day/night toggle; home's Charge button |
 | `fonts/JosefinSans-Regular.ttf` | theme default font |
 | `fonts/JosefinSans-Bold.ttf` | theme button font; `loading.tscn` title and tip labels |
 | `sprites/loading.png` | `loading.tscn` background |
@@ -340,14 +374,19 @@ level-ups, taps and gym clears are silent.
 | `models/kuiz.glb` | `peek.tscn` 3D Kuiz head; 21 clips (13 one-shots, `Celebrate`, `Learn_Something_New`, six `State_*` moods), face and props on blend shapes |
 | `sprites/kuizmon_splash.png` | `splash.gd` 60-frame intro sheet (6 × 10 cells, 480 × 264) |
 | `sprites/rooms/study_room.svg` | care-room, settings and categorizer background (day); the tutorial's Study Room (temporary placeholder) |
-| `sprites/rooms/study_room_night.svg` | care-room background at night (temporary placeholder) |
+| `sprites/rooms/study_room_night.svg` | care-room background at night; home's lights-off Study Room (temporary placeholder) |
 | `sprites/rooms/maintenance_bay.svg` | tutorial Maintenance Bay (temporary placeholder) |
-| `sprites/rooms/data_kitchen.svg` | tutorial Data Kitchen (temporary placeholder) |
-| `sprites/rooms/playroom.svg` | tutorial Playroom (temporary placeholder) |
-| `sprites/ui/campaign.png` | CampaignButton icon |
-| `sprites/ui/charge.png` | ChargeButton icon |
+| `sprites/rooms/data_kitchen.svg` | tutorial and home Data Kitchen; left floor kept clear for the fridge (temporary placeholder) |
+| `sprites/rooms/playroom.svg` | tutorial and home Playroom; no painted ball, the real one is flung (temporary placeholder) |
+| `sprites/ui/campaign.png` | CampaignButton icon; home's Play button |
+| `sprites/ui/charge.png` | ChargeButton icon; home's Charge button |
 | `sprites/ui/pomodoro.svg` | PomodoroButton icon |
-| `sprites/ui/settings.svg` | SettingsButton icon |
+| `sprites/ui/settings.svg` | SettingsButton icon; home's Settings button |
+| `sprites/ui/arrow.svg` | home bar's room and food arrows (flipped for ◀) |
+| `sprites/props/data_chips.svg`, `spicy_chips.svg`, `cache_cookie.svg`, `pi_pie.svg`, `byte_burger.svg`, `java_juice.svg` | home's six foods (temporary placeholders) |
+| `sprites/props/fridge.svg` | home's Data Kitchen fridge (temporary placeholder) |
+| `sprites/props/ball.svg` | home's Playroom ball (temporary placeholder) |
+| `sprites/props/screwdriver.svg` | home's Maintenance Bay screwdriver (temporary placeholder) |
 | `sprites/ui/table.svg` | care-room table |
 | `sprites/ui/top_bar.svg` | HUD banner (atlas slice) |
 | `sprites/companion/idle_companion.svg` | rig body + blink idle frames |
@@ -366,7 +405,6 @@ level-ups, taps and gym clears are silent.
 | Asset | Note |
 |---|---|
 | `audio/hmm.mp3` | no call site |
-| `sprites/1run_loading.png`, `2run_loading.png`, `3run_loading.png` | old loading-bar run cycle; its hidden `RunBot` node was removed |
 | `sprites/loading_logo.png` | full cat logo; the loading screen uses the `logo.png` wordmark |
 | `sprites/companion/happy_companion.svg` | rig only uses idle/blink/sad |
 | `sprites/companion/charge_companion.svg` | unused |
