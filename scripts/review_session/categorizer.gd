@@ -22,13 +22,12 @@ const QUESTION_TYPES: Array[String] = ["essay", "identification", "multiple_choi
 @onready var quota_dialog: ConfirmationDialog = $QuotaDialog
 
 var _studying: bool = false
-var _file_bytes: PackedByteArray = PackedByteArray()
 
 func _ready() -> void:
 	theme = load("res://assets/theme/app_theme.tres") as Theme
 	topic_name_field.placeholder_text = "Topic name (e.g. Biology 101)"
 	topic_name_field.text = "My Review Topic"
-	paste_area.placeholder_text = "Paste reviewer text here — or pick a PDF/notes file..."
+	paste_area.placeholder_text = "Paste reviewer text here — or pick a .txt/notes file..."
 	file_btn.pressed.connect(_on_pick_file)
 	file_dialog.file_selected.connect(_on_file_selected)
 	study_btn.pressed.connect(_on_study)
@@ -75,6 +74,10 @@ func _on_premium_changed(_is_premium: bool) -> void:
 
 func _on_quota_exceeded(_type: String) -> void:
 	_update_quota_label()
+	_studying = false
+	study_btn.disabled = false
+	loading_bar.visible = false
+	status_label.text = "Weekly limit reached."
 	quota_dialog.dialog_text = "Weekly AI limit reached. Upgrade to Premium to continue."
 	quota_dialog.popup_centered()
 
@@ -86,15 +89,14 @@ func _on_file_selected(path: String) -> void:
 	if f == null:
 		status_label.text = "Can't open file: " + path
 		return
-	_file_bytes = f.get_buffer(f.get_length())
+	var bytes := f.get_buffer(f.get_length())
 	f.close()
-	# Try to read as text for preview/sanity (PDF bytes will look garbled but we still send them)
-	var txt := _file_bytes.get_string_from_utf8()
-	if txt.length() > 0 and not txt.contains("�"):
-		paste_area.text = txt.substr(0, 4000)
-	else:
-		paste_area.text = "[Binary file loaded: %d bytes — will send as reviewer]" % _file_bytes.size()
-	status_label.text = "File loaded: %s (%d bytes)" % [path.get_file(), _file_bytes.size()]
+	var txt := bytes.get_string_from_utf8()
+	if txt.length() == 0 or txt.contains("�"):
+		status_label.text = "Can't read this file as text. PDFs aren't supported yet. Paste the text instead."
+		return
+	paste_area.text = txt
+	status_label.text = "File loaded: %s (%d bytes)" % [path.get_file(), bytes.size()]
 	_update_sanity()
 
 func _on_paste_changed() -> void:
@@ -124,12 +126,10 @@ func _on_study() -> void:
 		status_label.text = "Give your topic a name first."
 		return
 	var source_text := paste_area.text
-	# Real file loaded: the bytes are what get sent, so the text gate doesn't apply.
-	if _file_bytes.size() == 0:
-		var v := SessionManager.validate_source_text(source_text)
-		if not v.get("ok", false):
-			status_label.text = str(v.get("error", "Too short"))
-			return
+	var v := SessionManager.validate_source_text(source_text)
+	if not v.get("ok", false):
+		status_label.text = str(v.get("error", "Too short"))
+		return
 	_studying = true
 	study_btn.disabled = true
 	status_label.text = "AI is studying... analyzing your reviewer"
@@ -138,17 +138,7 @@ func _on_study() -> void:
 	# Animate loading bar while we wait for mock 0.8s
 	var tw := create_tween()
 	tw.tween_property(loading_bar, "value", 85.0, 0.7)
-	if _file_bytes.size() > 0:
-		# Binary PDFs show a "[Binary file loaded...]" stub in the paste box —
-		# only forward real reviewer text, else the mock uses placeholders.
-		var hint := ""
-		if not source_text.begins_with("[Binary file loaded:"):
-			var hv := SessionManager.validate_source_text(source_text)
-			if hv.get("ok", false):
-				hint = source_text
-		SessionManager.start_upload(topic_name, _file_bytes, hint)
-	else:
-		SessionManager.start_upload_from_text(topic_name, source_text)
+	SessionManager.start_upload_from_text(topic_name, source_text)
 	_update_quota_label()
 
 func _on_extraction_started(_job_id: String) -> void:

@@ -46,27 +46,20 @@ SessionManager.confirm_topic(name)
 Returns `{ok, words, chars}` or `{ok: false, error}`. The categorizer renders this live under the
 paste box as a green ✓ or a red warning (`categorizer.gd:103-117`).
 
-The gate is **bypassed when a real file was picked** (`categorizer.gd:127-132`): the bytes are what
-get sent, so the text check would be meaningless for a binary PDF. Consequence: any file, including
-a 12-byte empty one, is allowed through the file path.
+The gate always runs. A picked file is decoded as UTF-8 in `_on_file_selected` and its full text goes
+into the paste box, so it is validated like pasted text. A file that does not decode as text (a PDF)
+is refused with a status message and the box is left untouched.
 
 ---
 
 ## 3. Upload precedence
 
-`start_upload(topic_name, pdf_bytes, source_hint)` (`session_manager.gd:66-81`) picks the source
-text in this order:
+The categorizer always calls `start_upload_from_text()`, which validates, sets `last_source_text`,
+and delegates to `start_upload()`. That emits `extraction_started`, then hands off to
+`Api.mock_upload_pdf()`.
 
-1. `source_hint` — the paste box contents when it passes validation
-2. `pdf_bytes.get_string_from_utf8()` — only if it decodes **and** contains no `�`
-3. `""` — binary/unreadable input, which makes the extractor fall back to canned questions
-
-`start_upload_from_text()` validates first, then delegates. Both paths emit
-`extraction_started`, then hand off to `Api.mock_upload_pdf()`.
-
-Binary detection is literally `decoded.contains("�")` — the U+FFFD replacement character. A real
-PDF will almost always trip this, so **file uploads currently always produce fallback questions**
-unless the file happens to be plain text.
+Binary detection is literally `decoded.contains("�")` — the U+FFFD replacement character
+(`categorizer.gd`, `_on_file_selected`). A real PDF will almost always trip it and is refused.
 
 ---
 
@@ -222,9 +215,8 @@ categorizer with the previous `pending_questions` still loaded.
 
 | Gap | Detail |
 |---|---|
-| No real PDF parsing | Binary bytes are discarded; extraction falls back to canned questions |
+| No real PDF parsing | Files that do not decode as UTF-8 text are refused with a status message |
 | No real extraction | `Api.MOCK = true`; `/extract` is not called |
 | Fake topic injection | `mock_get_topics()` seeds "Biology 101" every boot |
 | Source text not persisted | Re-opening a topic later cannot re-run extraction on the original reviewer |
 | Topic id collisions | `topic_<unix%100000>` repeats every ~27.8 hours |
-| No quota feedback on file path | PDF quota is consumed inside `Api`, after the UI already started the "studying" state |
