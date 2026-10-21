@@ -2,10 +2,10 @@ extends Control
 ## Phase 5: Session List — history of review topics (GDD §5.1)
 ## Combat-icon entry point: shows past topics, resume or Add New Topic.
 
-@onready var list_box: VBoxContainer = $Content/Scroll/ListBox
-@onready var add_btn: Button = $Content/AddButton
-@onready var back_btn: Button = $Content/BackButton
-@onready var empty_label: Label = $Content/EmptyLabel
+@onready var list_box: VBoxContainer = %ListBox
+@onready var add_btn: Button = %AddButton
+@onready var back_btn: Button = %BackButton
+@onready var empty_label: Label = %EmptyLabel
 
 func _ready() -> void:
 	theme = load("res://assets/theme/app_theme.tres") as Theme
@@ -32,7 +32,7 @@ func _on_topics_listed(topics: Array[Dictionary]) -> void:
 
 func _make_row(topic: Dictionary) -> Control:
 	var id: String = str(topic.get("id", ""))
-	var name: String = str(topic.get("name", id))
+	var topic_label: String = str(topic.get("name", id))
 	var count: int = int(topic.get("question_count", 0))
 	# Fallback: derive count from stored questions
 	if count == 0 and topic.has("questions"):
@@ -45,7 +45,7 @@ func _make_row(topic: Dictionary) -> Control:
 	open_btn.custom_minimum_size = Vector2(0, 72)
 	open_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	open_btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
-	open_btn.text = "  %s  ·  %d Qs" % [name, count]
+	open_btn.text = "  %s  ·  %d Qs" % [topic_label, count]
 	open_btn.pressed.connect(_on_open_topic.bind(topic))
 	row.add_child(open_btn)
 	var cards_btn := Button.new()

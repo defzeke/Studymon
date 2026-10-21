@@ -65,11 +65,12 @@ RegionMap            Node3D (region_map.gd)
 ├── Sun               DirectionalLight3D with shadows (30 units)
 ├── Map               instance of assets/models/map.glb
 ├── Season            Node3D (season.gd): the real-world season, its weather particles
+├── MapCollision      Node (map_collision.gd): builds the island's collision; keyword lists and layers are exports
 ├── Spawn             Marker3D (−2, 0, 9), on the south road
-├── Trainers1/From,To Marker3D road segment for gyms[0]'s trainers: (2, 0, 9) → (12.5, 0, 9)
-├── Trainers2/From,To Marker3D road segment for gyms[1]'s trainers: (−9, 0, 7.5) → (−9, 0, −0.5)
-├── Trainers3/From,To Marker3D road segment for gyms[2]'s trainers: (−4, 0, 9) → (−12, 0, 9), walking toward the gym
-├── GymSpot3          Marker3D (−15, 0, 9): the third gym's trigger (no building), west end of the south road
+├── GymSlot1          GymSlot (gym_slot.gd) for gyms[0]: Entrance (13.5, 0, 5.0), trainers From (2, 0, 9) → To (12.5, 0, 9), Gym2 door clips
+├── GymSlot2          gyms[1]: Entrance (−14.2, 0, −5.7), From (−9, 0, 7.5) → To (−9, 0, −0.5), Gym3 door clips
+├── GymSlot3          gyms[2]: Entrance (−15, 0, 9), no door; From (−4, 0, 9) → To (−12, 0, 9), walking toward the gym
+├── ChampionSlot      GymSlot: Entrance (−5.2, 0, −6.8), the big `Gym` door clips
 ├── Trainers, Gyms    filled at runtime
 ├── Player            CharacterBody3D (player.gd), floating motion, capsule r 0.22 h 0.9
 │   ├── Boy           instance of assets/models/boy_explorer.glb (Idle / Walk / Run looped)
@@ -78,14 +79,16 @@ RegionMap            Node3D (region_map.gd)
                       opens the Flashcard Sanctuary and returns here), EncounterPanel
 ```
 
-**Where things go.** The map has three gym buildings; `GYM_BUILDINGS` puts `gyms[0]` in `Gym2`
-(the blue one by the south road), `gyms[1]` in `Gym3` (orange, west), and the Champion in `Gym`
-(the big red one, north). With three question types the third gym has no building: it stands at
-the `GymSpot3` marker (`MAX_GYMS` is 3), with no door animation. Each building trigger sits 0.8 in
-front of its building's double door (the door nodes' midpoint; every door faces +z), and walking in
-also plays that door's `<Building>_Door_Open` clip, then `_Door_Close` on the way out. A gym's
-trainers are spread along its `TrainersN` segment at `frac = (i+1)/(n+1)`. Move the markers in the
-editor to re-route; the script reads them at load.
+**Where things go.** Every gym is a `GymSlot` node in `region_map.tscn`, listed in the root's
+`gym_slots` export in question-type order, plus `champion_slot` for the Champion. `gyms[0]` uses
+`GymSlot1` (the blue building by the south road), `gyms[1]` `GymSlot2` (orange, west), `gyms[2]`
+`GymSlot3` (no building, so no door clips), and the Champion `ChampionSlot` (the big red `Gym`,
+north). A slot's `Entrance` marker is where its trigger stands (0.8 in front of the double door for
+the buildings), and its `door_open_clip` / `door_close_clip` are the map's own animation names,
+played as the explorer walks in and out. A gym's trainers are spread between the slot's `From` and
+`To` markers at `frac = (i+1)/(n+1)`. Move a marker in the editor to re-route; add a slot to the
+list for a fourth gym. Nothing is looked up by node name. Triggers come from
+`encounter_trigger.tscn` and the clear burst from `gym_burst.tscn`, both exported on the root.
 
 **Triggers.** Each is an `Area3D` with a cylinder (trainers r 0.45, doors r 0.7) on mask 4 (the
 player's layer), and a billboard `Label3D` (Josefin Bold, Deep Slate outline, drawn over geometry):
@@ -268,5 +271,5 @@ replay the effect.
 |---|---|
 | No mini-map / gym tracker | The plan called for one; the HUD badge row is the only progress view |
 | No region regeneration | The map is rebuilt from `pending_questions`; editing a saved topic changes the live map silently |
-| Fixed layout | Three gyms at most (a fourth type would get none); the third has no building, and the trainer roads and `GymSpot3` are hand-placed markers for this map only |
+| Fixed layout | Three gyms at most (a fourth type needs a fourth `GymSlot`); the third has no building, and the slot markers are hand-placed for this map only |
 | One-finger joystick | Touch is read as emulated mouse, so the stick and a second finger cannot act at once |

@@ -36,12 +36,10 @@ res://
 │   ├── autoload/              # the 7 autoloads: SaveManager, GameState, Api, CompanionState,
 │   │                          # SessionManager, MonetizationState, MusicManager
 │   ├── battle/                # battle.gd — turn resolution, damage, juice
-│   ├── companion/             # care room, skeletal rig
 │   ├── overworld/             # region map generation, player movement
 │   ├── review_session/        # upload + editable question list
-│   └── ui/                    # home (the hub), old care room root, session list, settings
-│       ├── boot/              # splash, loading, peek + tutorial
-│       └── widgets/           # pomodoro, HUD strip, button feedback
+│   └── ui/                    # home (the hub), session list, settings
+│       └── boot/              # splash, loading, peek + tutorial
 │
 ├── scenes/                    # .tscn files mirroring scripts/<feature>/
 │   ├── battle/                ├── companion/      ├── overworld/

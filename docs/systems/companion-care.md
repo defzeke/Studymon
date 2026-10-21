@@ -6,12 +6,10 @@ curriculum through `CURRICULUM` lines.
 
 - **State / logic:** `scripts/autoload/companion_state.gd` (autoload `CompanionState`)
 > The 3D home in `peek.tscn` (`home.gd`, see `ui-and-assets.md` §2 Home) is now where the player
-> cares for Kuiz; nothing routes to the 2D care room below any more. It has no stats yet.
-
-- **Care room UI:** `scripts/companion/companion.gd` → `scenes/ui/main.tscn`
-- **Status strip:** `scripts/ui/widgets/hud_strip.gd` → `scenes/ui/widgets/hud_strip.tscn` (instanced on `main.tscn`)
-- **Pomodoro UI:** `scripts/ui/widgets/pomodoro.gd` → `scenes/ui/widgets/pomodoro.tscn`
-- **Skeletal rig (disabled):** `scripts/companion/companion_rig.gd` → `scenes/companion/companion_rig.tscn`
+> cares for Kuiz. **The old 2D care room was removed** (`main.tscn`, `companion.gd`, the HUD strip,
+> the Pomodoro panel and the skeletal rig). `CompanionState` keeps its care and Pomodoro logic with no
+> UI attached, and its save fields are unchanged. Sections below that describe the room, the strip,
+> the Pomodoro panel and the rig are historical.
 
 ---
 

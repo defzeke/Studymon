@@ -2,16 +2,16 @@ extends Control
 ## Settings, opened from the Study Room: music and sound volume, large text, then the Phase 10
 ## mock monetization controls + debug quota reset. Every change is saved.
 
-@onready var premium_check: CheckBox = $Content/PremiumRow/PremiumCheck
-@onready var quota_label: Label = $Content/QuotaLabel
-@onready var pdf_label: Label = $Content/PdfQuotaLabel
-@onready var grade_label: Label = $Content/GradeQuotaLabel
-@onready var reset_btn: Button = $Content/ResetButton
-@onready var back_btn: Button = $Content/BackButton
-@onready var status_label: Label = $Content/StatusLabel
-@onready var music_slider: HSlider = $Content/MusicRow/MusicSlider
-@onready var sounds_slider: HSlider = $Content/SoundsRow/SoundsSlider
-@onready var large_text_check: CheckBox = $Content/LargeTextCheck
+@onready var premium_check: CheckBox = %PremiumCheck
+@onready var quota_label: Label = %QuotaLabel
+@onready var pdf_label: Label = %PdfQuotaLabel
+@onready var grade_label: Label = %GradeQuotaLabel
+@onready var reset_btn: Button = %ResetButton
+@onready var back_btn: Button = %BackButton
+@onready var status_label: Label = %StatusLabel
+@onready var music_slider: HSlider = %MusicSlider
+@onready var sounds_slider: HSlider = %SoundsSlider
+@onready var large_text_check: CheckBox = %LargeTextCheck
 
 func _ready() -> void:
 	theme = load("res://assets/theme/app_theme.tres") as Theme

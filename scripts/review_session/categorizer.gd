@@ -6,20 +6,20 @@ extends Control
 # Order matches the type OptionButton; contract: docs/systems/gameplay-structure.md.
 const QUESTION_TYPES: Array[String] = ["essay", "identification", "multiple_choice"]
 
-@onready var topic_name_field: LineEdit = $Content/TopicRow/TopicName
-@onready var file_btn: Button = $Content/UploadRow/FileButton
-@onready var paste_area: TextEdit = $Content/PasteArea
-@onready var study_btn: Button = $Content/StudyButton
-@onready var status_label: Label = $Content/StatusLabel
-@onready var loading_bar: ProgressBar = $Content/LoadingBar
-@onready var sanity_label: Label = $Content/SanityLabel
-@onready var questions_box: VBoxContainer = $Content/Scroll/QuestionsBox
-@onready var add_q_btn: Button = $Content/AddQuestionButton
-@onready var play_btn: Button = $Content/PlayButton
-@onready var back_btn: Button = $Content/BackButton
-@onready var file_dialog: FileDialog = $FileDialog
-@onready var quota_label: Label = $Content/QuotaLabel
-@onready var quota_dialog: ConfirmationDialog = $QuotaDialog
+@onready var topic_name_field: LineEdit = %TopicName
+@onready var file_btn: Button = %FileButton
+@onready var paste_area: TextEdit = %PasteArea
+@onready var study_btn: Button = %StudyButton
+@onready var status_label: Label = %StatusLabel
+@onready var loading_bar: ProgressBar = %LoadingBar
+@onready var sanity_label: Label = %SanityLabel
+@onready var questions_box: VBoxContainer = %QuestionsBox
+@onready var add_q_btn: Button = %AddQuestionButton
+@onready var play_btn: Button = %PlayButton
+@onready var back_btn: Button = %BackButton
+@onready var file_dialog: FileDialog = %FileDialog
+@onready var quota_label: Label = %QuotaLabel
+@onready var quota_dialog: ConfirmationDialog = %QuotaDialog
 
 var _studying: bool = false
 

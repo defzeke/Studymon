@@ -46,19 +46,20 @@ const LOOK_SPEED := 8.0
 const HEAD_CENTRE := 0.22
 const HEAD_RADIUS := 1.15
 
-@onready var anim: AnimationPlayer = $Stage/Kuiz/AnimationPlayer
-@onready var skeleton: Skeleton3D = $Stage/Kuiz/Skeleton3D
-@onready var camera: Camera3D = $Camera3D
-@onready var stage: Node3D = $Stage
-@onready var kuiz: Node3D = $Stage/Kuiz
-@onready var shadow: MeshInstance3D = $Stage/Shadow
+@onready var camera: Camera3D = %Camera3D
+@onready var stage: Node3D = %Stage
+@onready var kuiz: Node3D = %Kuiz
+# Inside the Kuiz glb, so found by type rather than by a path that a re-export could change.
+@onready var anim: AnimationPlayer = kuiz.find_child("AnimationPlayer", true, false)
+@onready var skeleton: Skeleton3D = kuiz.find_child("Skeleton3D", true, false)
+@onready var shadow: MeshInstance3D = %Shadow
 @onready var shadow_mat: StandardMaterial3D = shadow.mesh.material
-@onready var rooms: CanvasLayer = $Rooms
-@onready var room_sign: Control = $Top/RoomSign
-@onready var room_label: Label = $Top/RoomSign/Label
-@onready var night: Array[CanvasItem] = [$Rooms/StudyRoom/Night, $Rooms/StudyRoom/Veil]
-@onready var lights: Array[DirectionalLight3D] = [$Key, $Fill, $Rim]
-@onready var env: Environment = $WorldEnvironment.environment
+@onready var rooms: CanvasLayer = %Rooms
+@onready var room_sign: Control = %RoomSign
+@onready var room_label: Label = %RoomLabel
+@onready var night: Array[CanvasItem] = [%Night, %Veil]
+@onready var lights: Array[DirectionalLight3D] = [%Key, %Fill, %Rim]
+@onready var env: Environment = %WorldEnvironment.environment
 
 var room := "White"
 

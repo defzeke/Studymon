@@ -33,27 +33,33 @@ const MAX_FLING := 2600.0
 const REST_SPEED := 40.0
 const SURPRISE_COOLDOWN := 1.0
 
-@onready var peek: Node3D = get_parent()
-@onready var bar: Control = $Bar
-@onready var prev_btn: BaseButton = $Bar/Row/Prev
-@onready var next_btn: BaseButton = $Bar/Row/Next
+@onready var peek: Node3D = owner as Node3D
+@onready var tutorial: CanvasLayer = %Tutorial
+@onready var bar: Control = %Bar
+@onready var prev_btn: BaseButton = %Prev
+@onready var next_btn: BaseButton = %Next
+# Room name (the Rooms/<Name> node in peek.tscn) -> the bar section shown in that room.
 @onready var groups := {
-	"StudyRoom": $Bar/Row/Study,
-	"MaintenanceBay": $Bar/Row/Bay,
-	"DataKitchen": $Bar/Row/Kitchen,
-	"Playroom": $Bar/Row/Play,
+	"StudyRoom": %Study,
+	"MaintenanceBay": %Bay,
+	"DataKitchen": %Kitchen,
+	"Playroom": %PlayBar,
 }
-@onready var charge_btn: Button = $Bar/Row/Study/Charge
-@onready var play_btn: Button = $Bar/Row/Study/Play
-@onready var settings_btn: Button = $Bar/Row/Study/Settings
-@onready var tool_slot: TextureRect = $Bar/Row/Bay/Tool
-@onready var food_icon: TextureRect = $Bar/Row/Kitchen/Food/Icon
-@onready var food_label: Label = $Bar/Row/Kitchen/Food/Label
-@onready var fridge: BaseButton = $Fridge
-@onready var shop: Control = $Shop
-@onready var shop_list: VBoxContainer = $Shop/Body/List
-@onready var ball: TextureRect = $Ball
-@onready var held: TextureRect = $Held
+@onready var charge_btn: Button = %Charge
+@onready var play_btn: Button = %Play
+@onready var settings_btn: Button = %Settings
+@onready var tool_slot: TextureRect = %Tool
+@onready var food_prev_btn: BaseButton = %FoodPrev
+@onready var food_next_btn: BaseButton = %FoodNext
+@onready var food_icon: TextureRect = %FoodIcon
+@onready var food_label: Label = %FoodLabel
+@onready var fridge: BaseButton = %Fridge
+@onready var shop: Control = %Shop
+@onready var shop_list: VBoxContainer = %ShopList
+@onready var shop_close_btn: BaseButton = %Close
+@onready var buy_template: Button = %BuyTemplate
+@onready var ball: TextureRect = %Ball
+@onready var held: TextureRect = %Held
 
 var _room_i := 0
 var _busy := false
@@ -76,19 +82,19 @@ func _ready() -> void:
 	charge_btn.toggled.connect(_on_charge)
 	play_btn.pressed.connect(_on_play)
 	settings_btn.pressed.connect(func() -> void: get_tree().change_scene_to_file(SETTINGS_SCENE))
-	$Bar/Row/Kitchen/FoodPrev.pressed.connect(_pick_food.bind(-1))
-	$Bar/Row/Kitchen/FoodNext.pressed.connect(_pick_food.bind(1))
+	food_prev_btn.pressed.connect(_pick_food.bind(-1))
+	food_next_btn.pressed.connect(_pick_food.bind(1))
 	food_icon.gui_input.connect(_on_slot_input.bind("food"))
 	tool_slot.gui_input.connect(_on_slot_input.bind("tool"))
 	ball.gui_input.connect(_on_ball_input)
 	fridge.pressed.connect(_open_shop)
-	$Shop/Body/Close.pressed.connect(func() -> void: shop.hide())
+	shop_close_btn.pressed.connect(func() -> void: shop.hide())
 	_build_shop()
 	_pick_food(0)
 	if GameState.tutorial_done:
 		start.call_deferred()
 	else:
-		$"../Tutorial".finished.connect(start)
+		tutorial.finished.connect(start)
 
 ## Shows the bar in the Study Room; the save is read the first time home opens this session.
 func start() -> void:
@@ -172,11 +178,12 @@ func _build_shop() -> void:
 		var label := Label.new()
 		label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		label.add_theme_color_override("font_color", Color("29383A"))
-		var buy: Button = $Shop/Body/BuyTemplate.duplicate()
+		var buy: Button = buy_template.duplicate()
 		buy.show()
 		# shortcut: buying is free until the currency exists; then charge its price here.
 		buy.pressed.connect(func() -> void:
 			GameState.food_stock[food["id"]] += 1
+			SaveManager.save_progress()
 			_refresh_shop()
 			_refresh_food())
 		row.add_child(icon)
@@ -196,6 +203,7 @@ func _refresh_shop() -> void:
 
 func _eat(food: Dictionary) -> void:
 	GameState.food_stock[food["id"]] -= 1
+	SaveManager.save_progress()
 	_refresh_food()
 	var t := create_tween().set_parallel().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
 	t.tween_property(held, "position", peek.head_point() - held.size / 2.0, 0.25)

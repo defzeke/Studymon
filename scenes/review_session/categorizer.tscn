@@ -43,6 +43,7 @@ text = "Study Prep — Upload & Edit"
 horizontal_alignment = 1
 
 [node name="QuotaLabel" type="Label" parent="Content"]
+unique_name_in_owner = true
 layout_mode = 2
 horizontal_alignment = 1
 text = "Free AI Uses: PDFs 3/3 | Grades 10/10"
@@ -58,6 +59,7 @@ layout_mode = 2
 text = "Topic:"
 
 [node name="TopicName" type="LineEdit" parent="Content/TopicRow"]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -73,6 +75,7 @@ layout_mode = 2
 text = "Reviewer:"
 
 [node name="FileButton" type="Button" parent="Content/UploadRow"]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(180, 48)
 layout_mode = 2
 text = "Pick File..."
@@ -82,6 +85,7 @@ layout_mode = 2
 text = "Or paste text below:"
 
 [node name="PasteArea" type="TextEdit" parent="Content"]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 160)
 layout_mode = 2
 size_flags_vertical = 0
@@ -89,22 +93,26 @@ wrap_mode = 1
 placeholder_text = "Paste reviewer text here..."
 
 [node name="SanityLabel" type="Label" parent="Content"]
+unique_name_in_owner = true
 visible = false
 layout_mode = 2
 autowrap_mode = 2
 
 [node name="StudyButton" type="Button" parent="Content"]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 56)
 layout_mode = 2
 text = "🤖 AI is studying... Extract Questions"
 
 [node name="StatusLabel" type="Label" parent="Content"]
+unique_name_in_owner = true
 layout_mode = 2
 horizontal_alignment = 1
 autowrap_mode = 2
 text = ""
 
 [node name="LoadingBar" type="ProgressBar" parent="Content"]
+unique_name_in_owner = true
 visible = false
 custom_minimum_size = Vector2(0, 16)
 layout_mode = 2
@@ -124,26 +132,31 @@ size_flags_vertical = 3
 horizontal_scroll_mode = 0
 
 [node name="QuestionsBox" type="VBoxContainer" parent="Content/Scroll"]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 12
 
 [node name="AddQuestionButton" type="Button" parent="Content"]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 52)
 layout_mode = 2
 text = "+ Add Question"
 
 [node name="PlayButton" type="Button" parent="Content"]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 64)
 layout_mode = 2
 text = "▶ Confirm & Play"
 
 [node name="BackButton" type="Button" parent="Content"]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 52)
 layout_mode = 2
 text = "Back to Sessions"
 
 [node name="FileDialog" type="FileDialog" parent="."]
+unique_name_in_owner = true
 title = "Open a File"
 ok_button_text = "Open"
 file_mode = 0
@@ -151,6 +164,7 @@ access = 2
 visible = false
 
 [node name="QuotaDialog" type="ConfirmationDialog" parent="."]
+unique_name_in_owner = true
 title = "Quota Reached"
 dialog_text = "Weekly AI limit reached. Upgrade to Premium to continue."
 visible = false

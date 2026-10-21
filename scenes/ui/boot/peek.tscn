@@ -236,37 +236,46 @@ corner_radius_bottom_left = 60
 script = ExtResource("1_peek")
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+unique_name_in_owner = true
 environment = SubResource("Environment_white")
 
 [node name="Camera3D" type="Camera3D" parent="."]
+unique_name_in_owner = true
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.25, 16.5)
 keep_aspect = 0
 fov = 13.6
 
 [node name="Key" type="DirectionalLight3D" parent="."]
+unique_name_in_owner = true
 transform = Transform3D(0.7649, 0, -0.6441, -0.378, 0.8098, -0.4488, 0.5216, 0.5868, 0.6194, 0, 0, 0)
 light_energy = 0.7
 
 [node name="Fill" type="DirectionalLight3D" parent="."]
+unique_name_in_owner = true
 transform = Transform3D(0.5767, 0, 0.817, 0.1542, 0.9821, -0.1089, -0.8023, 0.1888, 0.5663, 0, 0, 0)
 light_color = Color(0.933, 0.957, 0.949, 1)
 light_energy = 0.36
 
 [node name="Rim" type="DirectionalLight3D" parent="."]
+unique_name_in_owner = true
 transform = Transform3D(-0.9191, 0, 0.3939, 0.1684, 0.9041, 0.3928, -0.3561, 0.4274, -0.831, 0, 0, 0)
 light_color = Color(0.831, 0.902, 0.886, 1)
 light_energy = 0.4
 
 [node name="Stage" type="Node3D" parent="."]
+unique_name_in_owner = true
 
 [node name="Shadow" type="MeshInstance3D" parent="Stage"]
+unique_name_in_owner = true
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.935, 0)
 cast_shadow = 0
 mesh = SubResource("PlaneMesh_shadow")
 
 [node name="Kuiz" parent="Stage" instance=ExtResource("2_kuiz")]
+unique_name_in_owner = true
 
 [node name="Rooms" type="CanvasLayer" parent="."]
+unique_name_in_owner = true
 layer = -1
 
 [node name="White" type="ColorRect" parent="Rooms"]
@@ -300,6 +309,7 @@ expand_mode = 1
 stretch_mode = 6
 
 [node name="Night" type="TextureRect" parent="Rooms/StudyRoom"]
+unique_name_in_owner = true
 modulate = Color(1, 1, 1, 0)
 layout_mode = 1
 anchors_preset = 15
@@ -313,6 +323,7 @@ expand_mode = 1
 stretch_mode = 6
 
 [node name="Veil" type="ColorRect" parent="Rooms/StudyRoom"]
+unique_name_in_owner = true
 modulate = Color(1, 1, 1, 0)
 layout_mode = 1
 anchors_preset = 15
@@ -360,11 +371,13 @@ expand_mode = 1
 stretch_mode = 6
 
 [node name="Tutorial" type="CanvasLayer" parent="."]
+unique_name_in_owner = true
 script = ExtResource("3_tutorial")
 
 [node name="Top" type="CanvasLayer" parent="."]
 
 [node name="RoomSign" type="PanelContainer" parent="Top"]
+unique_name_in_owner = true
 modulate = Color(1, 1, 1, 0)
 anchors_preset = 5
 anchor_left = 0.5
@@ -374,7 +387,8 @@ grow_horizontal = 2
 mouse_filter = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_sign")
 
-[node name="Label" type="Label" parent="Top/RoomSign"]
+[node name="RoomLabel" type="Label" parent="Top/RoomSign"]
+unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.9686, 0.9608, 0.9373, 1)
 theme_override_fonts/font = ExtResource("9_bold")
@@ -382,6 +396,7 @@ theme_override_font_sizes/font_size = 30
 horizontal_alignment = 1
 
 [node name="Speech" type="VBoxContainer" parent="Tutorial"]
+unique_name_in_owner = true
 modulate = Color(1, 1, 1, 0)
 anchors_preset = 12
 anchor_top = 1.0
@@ -427,6 +442,7 @@ mouse_filter = 2
 theme_override_constants/separation = 16
 
 [node name="Text" type="Label" parent="Tutorial/Speech/Dialogue/Body"]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 112)
 layout_mode = 2
 theme_override_colors/font_color = Color(0.1608, 0.2196, 0.2275, 1)
@@ -434,6 +450,7 @@ theme_override_font_sizes/font_size = 28
 autowrap_mode = 3
 
 [node name="Continue" type="Button" parent="Tutorial/Speech/Dialogue/Body"]
+unique_name_in_owner = true
 visible = false
 custom_minimum_size = Vector2(280, 64)
 layout_mode = 2
@@ -450,11 +467,13 @@ theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
 text = "Continue"
 
 [node name="NameRow" type="HBoxContainer" parent="Tutorial/Speech/Dialogue/Body"]
+unique_name_in_owner = true
 visible = false
 layout_mode = 2
 theme_override_constants/separation = 12
 
 [node name="NameInput" type="LineEdit" parent="Tutorial/Speech/Dialogue/Body/NameRow"]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 64)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -468,6 +487,7 @@ placeholder_text = "Enter your name"
 max_length = 16
 
 [node name="NameOk" type="Button" parent="Tutorial/Speech/Dialogue/Body/NameRow"]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(120, 64)
 layout_mode = 2
 theme_override_colors/font_color = Color(0.9686, 0.9608, 0.9373, 1)
@@ -485,6 +505,7 @@ disabled = true
 text = "OK"
 
 [node name="Hint" type="Control" parent="Tutorial/Speech/Dialogue/Body"]
+unique_name_in_owner = true
 modulate = Color(1, 1, 1, 0)
 custom_minimum_size = Vector2(24, 16)
 layout_mode = 2
@@ -492,6 +513,7 @@ size_flags_horizontal = 8
 mouse_filter = 2
 
 [node name="Arrow" type="Polygon2D" parent="Tutorial/Speech/Dialogue/Body/Hint"]
+unique_name_in_owner = true
 color = Color(0.3098, 0.5608, 0.5373, 1)
 polygon = PackedVector2Array(0, 0, 24, 0, 12, 16)
 
@@ -500,6 +522,7 @@ visible = false
 script = ExtResource("10_home")
 
 [node name="Fridge" type="TextureButton" parent="Home"]
+unique_name_in_owner = true
 visible = false
 anchors_preset = 4
 anchor_top = 0.5
@@ -514,6 +537,7 @@ ignore_texture_size = true
 stretch_mode = 5
 
 [node name="Bar" type="PanelContainer" parent="Home"]
+unique_name_in_owner = true
 anchors_preset = 12
 anchor_top = 1.0
 anchor_right = 1.0
@@ -531,6 +555,7 @@ layout_mode = 2
 theme_override_constants/separation = 8
 
 [node name="Prev" type="TextureButton" parent="Home/Bar/Row"]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(88, 120)
 layout_mode = 2
 size_flags_vertical = 4
@@ -540,12 +565,14 @@ stretch_mode = 5
 flip_h = true
 
 [node name="Study" type="HBoxContainer" parent="Home/Bar/Row"]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 22
 alignment = 1
 
 [node name="Charge" type="Button" parent="Home/Bar/Row/Study"]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(120, 120)
 layout_mode = 2
 size_flags_vertical = 4
@@ -561,6 +588,7 @@ icon_alignment = 1
 expand_icon = true
 
 [node name="Play" type="Button" parent="Home/Bar/Row/Study"]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(120, 120)
 layout_mode = 2
 size_flags_vertical = 4
@@ -575,6 +603,7 @@ icon_alignment = 1
 expand_icon = true
 
 [node name="Settings" type="Button" parent="Home/Bar/Row/Study"]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(120, 120)
 layout_mode = 2
 size_flags_vertical = 4
@@ -589,11 +618,13 @@ icon_alignment = 1
 expand_icon = true
 
 [node name="Bay" type="CenterContainer" parent="Home/Bar/Row"]
+unique_name_in_owner = true
 visible = false
 layout_mode = 2
 size_flags_horizontal = 3
 
 [node name="Tool" type="TextureRect" parent="Home/Bar/Row/Bay"]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(130, 130)
 layout_mode = 2
 texture = ExtResource("18_tool")
@@ -601,6 +632,7 @@ expand_mode = 1
 stretch_mode = 5
 
 [node name="Kitchen" type="HBoxContainer" parent="Home/Bar/Row"]
+unique_name_in_owner = true
 visible = false
 layout_mode = 2
 size_flags_horizontal = 3
@@ -608,6 +640,7 @@ theme_override_constants/separation = 6
 alignment = 1
 
 [node name="FoodPrev" type="TextureButton" parent="Home/Bar/Row/Kitchen"]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(56, 120)
 layout_mode = 2
 size_flags_vertical = 4
@@ -621,13 +654,15 @@ custom_minimum_size = Vector2(270, 0)
 layout_mode = 2
 theme_override_constants/separation = 2
 
-[node name="Icon" type="TextureRect" parent="Home/Bar/Row/Kitchen/Food"]
+[node name="FoodIcon" type="TextureRect" parent="Home/Bar/Row/Kitchen/Food"]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 104)
 layout_mode = 2
 expand_mode = 1
 stretch_mode = 5
 
-[node name="Label" type="Label" parent="Home/Bar/Row/Kitchen/Food"]
+[node name="FoodLabel" type="Label" parent="Home/Bar/Row/Kitchen/Food"]
+unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.9686, 0.9608, 0.9373, 1)
 theme_override_fonts/font = ExtResource("9_bold")
@@ -635,6 +670,7 @@ theme_override_font_sizes/font_size = 22
 horizontal_alignment = 1
 
 [node name="FoodNext" type="TextureButton" parent="Home/Bar/Row/Kitchen"]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(56, 120)
 layout_mode = 2
 size_flags_vertical = 4
@@ -643,12 +679,13 @@ ignore_texture_size = true
 stretch_mode = 5
 flip_h = false
 
-[node name="Play" type="CenterContainer" parent="Home/Bar/Row"]
+[node name="PlayBar" type="CenterContainer" parent="Home/Bar/Row"]
+unique_name_in_owner = true
 visible = false
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="Hint" type="Label" parent="Home/Bar/Row/Play"]
+[node name="Hint" type="Label" parent="Home/Bar/Row/PlayBar"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.9686, 0.9608, 0.9373, 1)
 theme_override_fonts/font = ExtResource("9_bold")
@@ -657,6 +694,7 @@ horizontal_alignment = 1
 text = "Fling the ball!"
 
 [node name="Next" type="TextureButton" parent="Home/Bar/Row"]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(88, 120)
 layout_mode = 2
 size_flags_vertical = 4
@@ -666,6 +704,7 @@ stretch_mode = 5
 flip_h = false
 
 [node name="Ball" type="TextureRect" parent="Home"]
+unique_name_in_owner = true
 visible = false
 offset_right = 96.0
 offset_bottom = 96.0
@@ -675,6 +714,7 @@ expand_mode = 1
 stretch_mode = 5
 
 [node name="Held" type="TextureRect" parent="Home"]
+unique_name_in_owner = true
 visible = false
 offset_right = 120.0
 offset_bottom = 120.0
@@ -683,6 +723,7 @@ expand_mode = 1
 stretch_mode = 5
 
 [node name="Shop" type="PanelContainer" parent="Home"]
+unique_name_in_owner = true
 visible = false
 anchors_preset = 8
 anchor_left = 0.5
@@ -709,12 +750,14 @@ theme_override_font_sizes/font_size = 36
 horizontal_alignment = 1
 text = "Fridge"
 
-[node name="List" type="VBoxContainer" parent="Home/Shop/Body"]
+[node name="ShopList" type="VBoxContainer" parent="Home/Shop/Body"]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 3
 theme_override_constants/separation = 10
 
 [node name="BuyTemplate" type="Button" parent="Home/Shop/Body"]
+unique_name_in_owner = true
 visible = false
 custom_minimum_size = Vector2(120, 64)
 layout_mode = 2
@@ -730,6 +773,7 @@ theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
 text = "Buy"
 
 [node name="Close" type="Button" parent="Home/Shop/Body"]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 64)
 layout_mode = 2
 theme_override_colors/font_color = Color(0.9686, 0.9608, 0.9373, 1)

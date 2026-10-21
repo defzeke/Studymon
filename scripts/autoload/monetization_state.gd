@@ -48,10 +48,12 @@ func consume(type: String) -> bool:
 		"pdf":
 			pdf_used_this_week += 1
 			quota_changed.emit()
+			SaveManager.save_progress()
 			return true
 		"grade":
 			grades_used_this_week += 1
 			quota_changed.emit()
+			SaveManager.save_progress()
 			return true
 		_:
 			return false

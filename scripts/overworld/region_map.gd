@@ -1,46 +1,39 @@
 extends Node3D
 ## Phase 6: 3D Overworld & Gym Structure (GDD §6.1). Contract: docs/systems/overworld.md.
 ## The island in assets/models/map.glb, seen from an angled top-down camera that follows the
-## explorer. One gym per question category, each in one of the map's gym buildings, with hallway
-## trainers on the road leading to it. Trainer/boss triggers hand off to Battle (Phase 7).
+## explorer. One gym per question category, each at one of the GymSlots placed in region_map.tscn,
+## with hallway trainers on the road leading to it. Trainer/boss triggers hand off to Battle (Phase 7).
 ## Phase 8: trainer markers carry mastery colours; the Champion holds the big gym —
 ## unlocks when all gym badges are earned, moveset = Mastered questions,
 ## clearing the gauntlet completes the region.
 ## Phase 9: particle burst on gym clear.
 
-# Map buildings, in route order: gyms[0], gyms[1], then the Champion. Doors face +z.
-const GYM_BUILDINGS: Array[String] = ["Gym2", "Gym3"]
-# The third gym has no building: it stands at the GymSpot3 marker on the west end of the south road.
-const MAX_GYMS := 3
-const CHAMPION_BUILDING := "Gym"
-const DOOR_FRONT := Vector3(0.0, 0.0, 0.8)
-const TRIGGER_RADIUS := 0.7
-const TRAINER_RADIUS := 0.45
-const LABEL_HEIGHT := 1.4
-const PLAYER_LAYER := 4
-const OBSTACLE_LAYER := 2
-# Walkable surfaces (ground layer: height only) and what blocks the explorer (obstacle layer).
-# Everything else (water, roofs, flags, doors, glows) gets no collision.
-const GROUND_MESHES: Array[String] = ["Ground_Roads", "Grass_Blocks", "Sand_", "House_Foundation", "Door_Step", "Plinth", "Court_Surface", "_Path", "Interior_Floor"]
-const OBSTACLE_MESHES: Array[String] = ["Wall_", "Window", "Door", "_Wall", "_Glass", "_Trim", "_Sign", "_Band", "Interior_Back", "Tree_", "Lamp_Pole", "Rocks"]
-const NOT_OBSTACLES: Array[String] = ["Door_Step", "Dome_Glass"]
-const LABEL_FONT: Font = preload("res://assets/fonts/JosefinSans-Bold.ttf")
-const INK := Color("29383A")
+# Where everything stands is set in region_map.tscn: one GymSlot per gym, in question-type order,
+# plus one for the Champion. A slot's markers place the gym and its trainer road, so nothing is found
+# by node name. Collision rules live on the MapCollision node.
+@export var gym_slots: Array[GymSlot] = []
+@export var champion_slot: GymSlot
+@export var trigger_scene: PackedScene
+@export var burst_scene: PackedScene
+## Plays the door clips. Left empty, the map's own AnimationPlayer is used.
+@export var map_anim: AnimationPlayer
+@export var trigger_radius := 0.7
+@export var trainer_radius := 0.45
 
-@onready var map: Node3D = $Map
-@onready var map_anim: AnimationPlayer = $Map/AnimationPlayer
-@onready var player: CharacterBody3D = $Player
-@onready var trainers_root: Node3D = $Trainers
-@onready var gyms_root: Node3D = $Gyms
-@onready var progress_label: Label = $HUD/TopBar/ProgressLabel
-@onready var badges_label: Label = $HUD/TopBar/BadgesLabel
-@onready var back_btn: Button = $HUD/TopBar/BackButton
-@onready var study_btn: Button = $HUD/StudyButton
-@onready var encounter_panel: PanelContainer = $HUD/EncounterPanel
-@onready var encounter_title: Label = $HUD/EncounterPanel/Margin/List/EncounterTitle
-@onready var encounter_question: Label = $HUD/EncounterPanel/Margin/List/EncounterQuestion
-@onready var encounter_close_btn: Button = $HUD/EncounterPanel/Margin/List/EncounterCloseButton
-@onready var encounter_clear_btn: Button = $HUD/EncounterPanel/Margin/List/EncounterClearButton
+@onready var map: Node3D = %Map
+@onready var player: CharacterBody3D = %Player
+@onready var spawn: Marker3D = %Spawn
+@onready var trainers_root: Node3D = %Trainers
+@onready var gyms_root: Node3D = %Gyms
+@onready var progress_label: Label = %ProgressLabel
+@onready var badges_label: Label = %BadgesLabel
+@onready var back_btn: Button = %BackButton
+@onready var study_btn: Button = %StudyButton
+@onready var encounter_panel: PanelContainer = %EncounterPanel
+@onready var encounter_title: Label = %EncounterTitle
+@onready var encounter_question: Label = %EncounterQuestion
+@onready var encounter_close_btn: Button = %EncounterCloseButton
+@onready var encounter_clear_btn: Button = %EncounterClearButton
 
 var _topic_id: String = ""
 var _pending_encounter: Dictionary = {}
@@ -62,32 +55,18 @@ func _ready() -> void:
 			{"id": "q2", "text": "Preview: explain feedback in your own words.", "type": "essay", "answer": "", "confidence": 0.6},
 		]
 	GameState.set_active_region(_topic_id)
+	if map_anim == null:
+		map_anim = map.find_child("AnimationPlayer", true, false) as AnimationPlayer
 	back_btn.pressed.connect(_on_back)
 	study_btn.pressed.connect(_on_study)
 	encounter_close_btn.pressed.connect(_on_encounter_close)
 	encounter_clear_btn.pressed.connect(_on_encounter_cleared)
 	_show_encounter(false)
 	SessionManager.overworld_progress_changed.connect(_refresh_progress)
-	_add_collisions()
-	player.global_position = $Spawn.global_position
+	if spawn != null:
+		player.global_position = spawn.global_position
 	_build_route()
 	_refresh_progress()
-
-# map.glb ships without collision; build trimesh bodies from its meshes by name.
-func _add_collisions() -> void:
-	for mesh: MeshInstance3D in map.find_children("*", "MeshInstance3D", true, false):
-		var n := String(mesh.name)
-		var layer := 0
-		if GROUND_MESHES.any(func(k: String) -> bool: return n.contains(k)):
-			layer = 1
-		elif OBSTACLE_MESHES.any(func(k: String) -> bool: return n.contains(k)) and not NOT_OBSTACLES.any(func(k: String) -> bool: return n.contains(k)) and not mesh.get_parent().name.contains("_Door_"):
-			layer = OBSTACLE_LAYER
-		if layer == 0:
-			continue
-		mesh.create_trimesh_collision()
-		var body := mesh.get_child(mesh.get_child_count() - 1) as StaticBody3D
-		body.collision_layer = layer
-		body.collision_mask = 0
 
 func _build_route() -> void:
 	for c in trainers_root.get_children():
@@ -98,16 +77,19 @@ func _build_route() -> void:
 	var gyms := SessionManager.get_gym_structure()
 	if gyms.is_empty():
 		return
-	# One gym per question type: two in map buildings, the third at its spot.
-	for gi in mini(gyms.size(), MAX_GYMS):
-		_add_gym_node(gyms[gi], GYM_BUILDINGS[gi] if gi < GYM_BUILDINGS.size() else "", gi)
-		# Hallway trainers for this gym, spread along its road (TrainersN/From → To).
-		var from: Vector3 = get_node("Trainers%d/From" % (gi + 1)).global_position
-		var to: Vector3 = get_node("Trainers%d/To" % (gi + 1)).global_position
+	# One gym per question type, in slot order.
+	for gi in mini(gyms.size(), gym_slots.size()):
+		var slot := gym_slots[gi]
+		_add_gym_node(gyms[gi], slot, gi)
+		# Hallway trainers for this gym, spread along its road (trainers_from → trainers_to).
+		if slot.trainers_from == null or slot.trainers_to == null:
+			continue
+		var from := slot.trainers_from.global_position
+		var to := slot.trainers_to.global_position
 		var indices: Array = gyms[gi]["trainer_indices"]
 		for ti in indices.size():
 			_add_trainer_node(int(indices[ti]), from.lerp(to, float(ti + 1) / float(indices.size() + 1)))
-	_add_champion_node(CHAMPION_BUILDING)
+	_add_champion_node()
 	# Snapshot cleared state on build so we don't burst for saves that already cleared.
 	_prev_cleared_gyms.clear()
 	for g in gyms:
@@ -121,108 +103,62 @@ func _add_trainer_node(q_idx: int, pos: Vector3) -> void:
 		return
 	var badge: Dictionary = SessionManager.mastery_badge(SessionManager.get_mastery_state(_topic_id, q_idx))
 	var tier := str(questions[q_idx].get("difficulty", "medium"))
-	var area := _trigger(pos, TRAINER_RADIUS, "T%d\n%s" % [q_idx + 1, tier.capitalize()])
-	var pad := MeshInstance3D.new()
-	var disc := CylinderMesh.new()
-	disc.top_radius = TRAINER_RADIUS
-	disc.bottom_radius = TRAINER_RADIUS
-	disc.height = 0.04
-	var mat := StandardMaterial3D.new()
-	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	mat.albedo_color = badge["color"]
-	disc.material = mat
-	pad.mesh = disc
-	pad.position.y = 0.04
-	area.add_child(pad)
+	var area := _trigger(pos, trainer_radius, "T%d\n%s" % [q_idx + 1, tier.capitalize()])
+	area.show_pad = true
+	area.pad_color = badge["color"]
 	area.body_entered.connect(_on_trainer_touched.bind(q_idx))
 	trainers_root.add_child(area)
 	# Dim if already cleared
 	if SessionManager.is_trainer_cleared(_topic_id, q_idx):
-		mat.albedo_color = mat.albedo_color.darkened(0.5)
-		(area.get_node("Label") as Label3D).modulate.a = 0.5
+		area.dim()
 
-func _add_gym_node(gym: Dictionary, building: String, gym_idx: int) -> void:
+func _add_gym_node(gym: Dictionary, slot: GymSlot, gym_idx: int) -> void:
+	if slot.entrance == null:
+		return
 	var gym_type: String = str(gym["type"])
 	var badge := "BADGE" if SessionManager.is_gym_cleared(_topic_id, gym_type) else "GYM %d" % (gym_idx + 1)
-	var pos: Vector3 = _door(building) if building != "" else (get_node("GymSpot%d" % (gym_idx + 1)) as Node3D).global_position
-	var area := _trigger(pos, TRIGGER_RADIUS, "%s\n%s" % [badge, gym_type.capitalize()])
+	var area := _trigger(slot.entrance.global_position, trigger_radius, "%s\n%s" % [badge, gym_type.capitalize()])
 	_gym_positions[gym_type] = area.position
 	area.body_entered.connect(_on_gym_touched.bind(gym_type))
-	if building != "":
-		_door_animates(area, building)
+	_door_animates(area, slot)
 	gyms_root.add_child(area)
 
-func _add_champion_node(building: String) -> void:
+func _add_champion_node() -> void:
+	if champion_slot == null or champion_slot.entrance == null:
+		return
 	var state := "LOCKED"
 	if SessionManager.is_champion_defeated(_topic_id):
 		state = "DOWN"
 	elif SessionManager.is_champion_available(_topic_id):
 		state = "FIGHT!"
-	var area := _trigger(_door(building), TRIGGER_RADIUS, "CHAMPION\n%s" % state)
+	var area := _trigger(champion_slot.entrance.global_position, trigger_radius, "CHAMPION\n%s" % state)
 	area.body_entered.connect(_on_champion_touched)
-	_door_animates(area, building)
+	_door_animates(area, champion_slot)
 	gyms_root.add_child(area)
 
-# Ground point in front of a gym building's double door.
-func _door(building: String) -> Vector3:
-	var mid: Vector3 = (map.get_node(building + "_Door_Left").global_position + map.get_node(building + "_Door_Right").global_position) / 2.0
-	return Vector3(mid.x, 0.0, mid.z) + DOOR_FRONT
+# Opens and closes the gym's door as the explorer enters and leaves; a slot with no clips has no door.
+func _door_animates(area: Area3D, slot: GymSlot) -> void:
+	if map_anim == null:
+		return
+	if map_anim.has_animation(slot.door_open_clip):
+		area.body_entered.connect(func(_b: Node3D) -> void: map_anim.play(slot.door_open_clip))
+	if map_anim.has_animation(slot.door_close_clip):
+		area.body_exited.connect(func(_b: Node3D) -> void: map_anim.play(slot.door_close_clip))
 
-func _door_animates(area: Area3D, building: String) -> void:
-	area.body_entered.connect(func(_b: Node3D) -> void: map_anim.play(building + "_Door_Open"))
-	area.body_exited.connect(func(_b: Node3D) -> void: map_anim.play(building + "_Door_Close"))
-
-# A trigger the explorer walks into, with a billboard label above it.
-func _trigger(pos: Vector3, radius: float, text: String) -> Area3D:
-	var area := Area3D.new()
+# A trigger the explorer walks into, from encounter_trigger.tscn; the caller adds it to the tree.
+func _trigger(pos: Vector3, radius: float, text: String) -> EncounterTrigger:
+	var area := trigger_scene.instantiate() as EncounterTrigger
 	area.position = pos
-	area.collision_layer = 0
-	area.collision_mask = PLAYER_LAYER
-	var shape := CollisionShape3D.new()
-	var cyl := CylinderShape3D.new()
-	cyl.radius = radius
-	cyl.height = 2.0
-	shape.shape = cyl
-	shape.position.y = 1.0
-	area.add_child(shape)
-	var label := Label3D.new()
-	label.name = "Label"
-	label.text = text
-	label.font = LABEL_FONT
-	label.font_size = 40
-	label.pixel_size = 0.01
-	label.outline_size = 12
-	label.outline_modulate = INK
-	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	label.no_depth_test = true
-	label.position.y = LABEL_HEIGHT
-	area.add_child(label)
+	area.radius = radius
+	area.text = text
 	return area
 
-# --- Phase 9: gym-clear burst (CPUParticles3D, one-shot, auto-freed) ---
+# --- Phase 9: gym-clear burst (one-shot, auto-freed) ---
 func _spawn_gym_burst(pos: Vector3) -> void:
-	var p := CPUParticles3D.new()
+	if burst_scene == null:
+		return
+	var p := burst_scene.instantiate() as CPUParticles3D
 	p.position = pos + Vector3.UP * 0.5
-	p.amount = 26
-	p.lifetime = 0.7
-	p.one_shot = true
-	p.explosiveness = 1.0
-	p.emission_shape = CPUParticles3D.EMISSION_SHAPE_SPHERE
-	p.emission_sphere_radius = 0.1
-	p.direction = Vector3.UP
-	p.spread = 60.0
-	p.gravity = Vector3(0, -6, 0)
-	p.initial_velocity_min = 2.0
-	p.initial_velocity_max = 4.0
-	var bit := SphereMesh.new()
-	bit.radius = 0.06
-	bit.height = 0.12
-	var mat := StandardMaterial3D.new()
-	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	mat.albedo_color = Color(0.35, 0.95, 0.55)
-	bit.material = mat
-	p.mesh = bit
-	p.emitting = true
 	add_child(p)
 	p.finished.connect(p.queue_free)
 

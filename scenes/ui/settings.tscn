@@ -62,6 +62,7 @@ layout_mode = 2
 text = "Music"
 
 [node name="MusicSlider" type="HSlider" parent="Content/MusicRow"]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -80,6 +81,7 @@ layout_mode = 2
 text = "Sounds"
 
 [node name="SoundsSlider" type="HSlider" parent="Content/SoundsRow"]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -89,23 +91,27 @@ step = 0.05
 value = 1.0
 
 [node name="LargeTextCheck" type="CheckBox" parent="Content"]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
 text = "Large text"
 
 [node name="QuotaLabel" type="Label" parent="Content"]
+unique_name_in_owner = true
 layout_mode = 2
 horizontal_alignment = 1
 text = "Free AI Uses: PDFs 3/3 | Grades 10/10"
 autowrap_mode = 2
 
 [node name="PdfQuotaLabel" type="Label" parent="Content"]
+unique_name_in_owner = true
 layout_mode = 2
 horizontal_alignment = 1
 text = "Free AI Uses: 3/3 PDFs remaining"
 autowrap_mode = 2
 
 [node name="GradeQuotaLabel" type="Label" parent="Content"]
+unique_name_in_owner = true
 layout_mode = 2
 horizontal_alignment = 1
 text = "Free AI Uses: 10/10 Grades remaining"
@@ -121,23 +127,27 @@ layout_mode = 2
 text = "Toggle Premium:"
 
 [node name="PremiumCheck" type="CheckBox" parent="Content/PremiumRow"]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
 size_flags_horizontal = 3
 text = "Free Tier"
 
 [node name="ResetButton" type="Button" parent="Content"]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 64)
 layout_mode = 2
 text = "Reset Quota (Debug: Weekly Rollover)"
 
 [node name="StatusLabel" type="Label" parent="Content"]
+unique_name_in_owner = true
 layout_mode = 2
 horizontal_alignment = 1
 autowrap_mode = 2
 text = ""
 
 [node name="BackButton" type="Button" parent="Content"]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 56)
 layout_mode = 2
 text = "Back"

@@ -61,12 +61,12 @@ func list_topics() -> void:
 func get_topics_cache() -> Array[Dictionary]:
 	return _topics.duplicate(true)
 
-func add_topic_to_history(topic_id: String, name: String, questions: Array[Dictionary]) -> void:
+func add_topic_to_history(topic_id: String, topic_label: String, questions: Array[Dictionary]) -> void:
 	for i in _topics.size():
 		if _topics[i].get("id", "") == topic_id:
-			_topics[i] = {"id": topic_id, "name": name, "question_count": questions.size(), "questions": questions.duplicate(true)}
+			_topics[i] = {"id": topic_id, "name": topic_label, "question_count": questions.size(), "questions": questions.duplicate(true)}
 			return
-	_topics.append({"id": topic_id, "name": name, "question_count": questions.size(), "questions": questions.duplicate(true)})
+	_topics.append({"id": topic_id, "name": topic_label, "question_count": questions.size(), "questions": questions.duplicate(true)})
 
 # --- Upload & extraction ---
 
@@ -169,8 +169,8 @@ func update_question(index: int, data: Dictionary) -> void:
 func confirm_topic(topic_name: String = "") -> void:
 	if editing_topic_id == "" or pending_questions.size() == 0:
 		return
-	var name := topic_name if topic_name != "" else editing_topic_id
-	add_topic_to_history(editing_topic_id, name, pending_questions)
+	var topic_label := topic_name if topic_name != "" else editing_topic_id
+	add_topic_to_history(editing_topic_id, topic_label, pending_questions)
 	Api.save_topic(editing_topic_id, pending_questions)
 	SaveManager.save_progress()
 	topic_saved.emit(editing_topic_id)

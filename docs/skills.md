@@ -25,7 +25,6 @@ $GODOT = "C:\Users\user\Downloads\Godot_v4.7.2-stable_win64.exe\Godot_v4.7.2-sta
 2. Run every scene you touched, plus the main scene. `--quit-after` takes frames, not seconds.
 
    ```powershell
-   & $GODOT --headless --path . res://scenes/ui/main.tscn          --quit-after 20
    & $GODOT --headless --path . res://scenes/ui/boot/splash.tscn        --quit-after 10
    & $GODOT --headless --path . res://scenes/ui/boot/loading.tscn       --quit-after 10
    & $GODOT --headless --path . res://scenes/ui/boot/peek.tscn          --quit-after 30
@@ -214,7 +213,7 @@ The save is `user://studymon_save.json`, which on Windows is:
 ```
 
 Delete it to start again at Level 1. Boot reads the save when home first opens after the tutorial;
-the old 2D care room is only reachable by opening `res://scenes/ui/main.tscn` directly. To test the campaign
+the old 2D care room has been removed. To test the campaign
 without earning 150 XP, set `"level": 5`, `"xp": 150`, `"campaign_ready": true` in the JSON, or call
 `CompanionState.add_xp(150)` from a temporary debug line. Do not commit debug lines or edited saves.
 

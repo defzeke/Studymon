@@ -22,47 +22,65 @@ const STRONG_ESSAY_SCORE := 0.7
 const SHAKE_BASE_INTENSITY := 8.0
 const HIT_STOP_BASE := 0.06
 
-@onready var flee_btn: Button = $Margin/List/TopBar/FleeButton
-@onready var title_label: Label = $Margin/List/TopBar/TitleLabel
-@onready var quota_label: Label = $Margin/List/QuotaLabel
-@onready var enemy_name: Label = $Margin/List/EnemyCard/Row/EnemyInfo/EnemyName
-@onready var enemy_hp_bar: ProgressBar = $Margin/List/EnemyCard/Row/EnemyInfo/EnemyHP
-@onready var player_hp_bar: ProgressBar = $Margin/List/PlayerCard/Row/PlayerInfo/PlayerHP
-@onready var qtype_label: Label = $Margin/List/QuestionCard/QBox/QuestionType
-@onready var question_label: Label = $Margin/List/QuestionCard/QBox/QuestionText
-@onready var answer_input: TextEdit = $Margin/List/AnswerInput
-@onready var submit_btn: Button = $Margin/List/SubmitButton
-@onready var judging_label: Label = $Margin/List/JudgingLabel
-@onready var result_label: Label = $Margin/List/ResultLabel
-@onready var result_panel: PanelContainer = $Margin/List/ResultPanel
-@onready var result_title: Label = $Margin/List/ResultPanel/RBox/ResultTitle
-@onready var xp_label: Label = $Margin/List/ResultPanel/RBox/XPLabel
-@onready var retry_btn: Button = $Margin/List/ResultPanel/RBox/RButtons/RetryButton
-@onready var continue_btn: Button = $Margin/List/ResultPanel/RBox/RButtons/ContinueButton
-@onready var quota_dialog: ConfirmationDialog = $QuotaDialog
+## Start-of-battle entrance (see _play_intro). Turn it off to drop straight into the fight.
+@export var play_intro := true
+@export var intro_text := "%s wants to battle!"
+@export var intro_card_slide := 420.0
+@export var intro_dialogue_slide := 700.0
+@export var intro_vs_hold := 0.5
+@export var intro_flash_strength := 0.85
+@export var intro_shake := 10.0
+
+@onready var stage: ArenaStage = %Stage
+@onready var enemy_card: Control = %EnemyCard
+@onready var player_card: Control = %PlayerCard
+@onready var dialogue: Control = %Dialogue
+@onready var vs_label: Label = %VsLabel
+@onready var flash: ColorRect = %Flash
+@onready var cam: Camera2D = %Camera2D
+@onready var mc_box: VBoxContainer = %MCBox
+@onready var mc_template: Button = %McTemplate
+@onready var flee_btn: Button = %FleeButton
+@onready var title_label: Label = %TitleLabel
+@onready var quota_label: Label = %QuotaLabel
+@onready var enemy_name: Label = %EnemyName
+@onready var enemy_level: Label = %EnemyLevel
+@onready var enemy_hp_bar: ProgressBar = %EnemyHP
+@onready var enemy_hp_text: Label = %EnemyHPText
+@onready var player_name: Label = %PlayerName
+@onready var player_level: Label = %PlayerLevel
+@onready var player_hp_bar: ProgressBar = %PlayerHP
+@onready var player_hp_text: Label = %PlayerHPText
+@onready var qtype_label: Label = %QuestionType
+@onready var question_label: Label = %QuestionText
+@onready var answer_input: TextEdit = %AnswerInput
+@onready var submit_btn: Button = %SubmitButton
+@onready var judging_label: Label = %JudgingLabel
+@onready var result_label: Label = %ResultLabel
+@onready var result_panel: PanelContainer = %ResultPanel
+@onready var result_title: Label = %ResultTitle
+@onready var xp_label: Label = %XPLabel
+@onready var retry_btn: Button = %RetryButton
+@onready var continue_btn: Button = %ContinueButton
+@onready var quota_dialog: ConfirmationDialog = %QuotaDialog
 
 var _q: Dictionary = {}
 var _qtype: String = "essay"
 var _tier: String = "medium"
 var _mc_options: Array[String] = []
-var _mc_box: VBoxContainer
 var _is_boss: bool = false
 var _is_champion: bool = false
 var _enemy_hp: int = 0
 var _enemy_max: int = 0
 var _player_hp: int = PLAYER_MAX_HP
+# HP last shown on the bars; a drop since then is what triggers the pet / robot reactions.
+var _shown_enemy_hp: int = 0
+var _shown_player_hp: int = 0
 var _awaiting: bool = false
 var _over: bool = false
 var _shake_tween: Tween
 
 func _ready() -> void:
-	# Phase 9 fix: Camera2D was breaking top-left anchored Control layout via Drag Center.
-	# Force FIXED_TOP_LEFT so shaking the camera offset never shifts the UI canvas origin.
-	var _cam := get_node_or_null("Camera2D") as Camera2D
-	if _cam:
-		_cam.anchor_mode = Camera2D.ANCHOR_MODE_FIXED_TOP_LEFT
-		_cam.position = Vector2.ZERO
-		_cam.offset = Vector2.ZERO
 	_q = SessionManager.get_battle_question()
 	if _q.is_empty():
 		# Direct scene run fallback: easy ID question so the arena is testable solo.
@@ -80,15 +98,19 @@ func _ready() -> void:
 	_enemy_max = BOSS_HP if _is_boss else int(TIERS[_tier]["hp"])
 	_enemy_hp = _enemy_max
 	enemy_hp_bar.max_value = _enemy_max
-	enemy_hp_bar.value = _enemy_hp
 	player_hp_bar.max_value = PLAYER_MAX_HP
-	player_hp_bar.value = _player_hp
-	var foe := "Trainer"
+	_refresh_bars()
+	var foe := "TRAINER"
 	if _is_champion:
-		foe = "Champion"
+		foe = "CHAMPION"
 	elif _is_boss:
-		foe = "Gym Boss"
-	enemy_name.text = "%s  HP %d/%d" % [foe, _enemy_hp, _enemy_max]
+		foe = "GYM BOSS"
+	enemy_name.text = foe
+	# Foes carry no stored level: show their tier (+1 for a boss / Champion) so both cards match.
+	enemy_level.text = "Lv%d" % (SessionManager.DIFFICULTIES.find(_tier) + 1 + (1 if _is_boss or _is_champion else 0))
+	player_name.text = "KUIZ"
+	player_level.text = "Lv%d" % CompanionState.level
+	stage.setup(_is_boss or _is_champion)
 	if _is_champion:
 		var cp := SessionManager.champion_progress()
 		title_label.text = "CHAMPION %d/%d" % [int(cp["done"]) + 1, int(cp["total"])]
@@ -113,6 +135,67 @@ func _ready() -> void:
 		_ms.quota_changed.connect(_update_quota_label)
 		_ms.premium_changed.connect(_on_premium_changed)
 	Api.quota_exceeded.connect(_on_quota_exceeded)
+	if play_intro:
+		_play_intro(foe)
+	else:
+		stage.start_hover()
+
+# Start-of-battle entrance. The bots fly onto their pads (ArenaStage.play_intro), the HUD slides in
+# around them, "VS" slams down and the screen flashes when the foe lands. Controls stay locked until
+# it ends. Every duration is an export on this node or on the Stage.
+func _play_intro(foe: String) -> void:
+	_set_inputs(false)
+	stage.play_intro()  # sets the start poses now, before the first frame
+	var cards: Array[Control] = [enemy_card, player_card, dialogue]
+	for c in cards:
+		c.modulate.a = 0.0
+	vs_label.visible = false
+	result_label.text = intro_text % foe.capitalize()
+	await get_tree().process_frame  # let the anchored layout settle so the rest positions are real
+	var enemy_rest := enemy_card.position
+	var player_rest := player_card.position
+	var dialogue_rest := dialogue.position
+	enemy_card.position.x -= intro_card_slide
+	player_card.position.x += intro_card_slide
+	dialogue.position.y += intro_dialogue_slide
+	var t := create_tween().set_parallel()
+	t.tween_property(dialogue, "position:y", dialogue_rest.y, 0.55).set_delay(0.3).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	t.tween_property(dialogue, "modulate:a", 1.0, 0.3).set_delay(0.3)
+	t.tween_property(enemy_card, "position:x", enemy_rest.x, 0.5).set_delay(0.6).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	t.tween_property(enemy_card, "modulate:a", 1.0, 0.25).set_delay(0.6)
+	t.tween_property(player_card, "position:x", player_rest.x, 0.5).set_delay(0.75).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	t.tween_property(player_card, "modulate:a", 1.0, 0.25).set_delay(0.75)
+	# Screen punch when the foe touches down.
+	stage.foe_landed.connect(func() -> void:
+		flash.modulate.a = intro_flash_strength
+		create_tween().tween_property(flash, "modulate:a", 0.0, 0.4)
+		_screen_shake(intro_shake, 0.3))
+	# "VS" slams in over the arena, holds, then fades.
+	get_tree().create_timer(0.85).timeout.connect(func() -> void:
+		vs_label.pivot_offset = vs_label.size / 2.0
+		vs_label.scale = Vector2.ONE * 3.0
+		vs_label.modulate.a = 0.0
+		vs_label.visible = true
+		var v := create_tween().set_parallel()
+		v.tween_property(vs_label, "scale", Vector2.ONE, 0.3).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		v.tween_property(vs_label, "modulate:a", 1.0, 0.15)
+		v.chain().tween_interval(intro_vs_hold)
+		v.chain().tween_property(vs_label, "modulate:a", 0.0, 0.3)
+		v.chain().tween_callback(vs_label.hide))
+	await t.finished
+	while stage.intro_running:
+		await get_tree().process_frame
+	if intro_vs_hold > 0.0:
+		await get_tree().create_timer(intro_vs_hold * 0.5).timeout
+	result_label.text = ""
+	_set_inputs(true)
+
+# Locks or unlocks everything the player can press or type into.
+func _set_inputs(on: bool) -> void:
+	flee_btn.disabled = not on
+	submit_btn.disabled = not on
+	answer_input.editable = on
+	_set_mc_enabled(on)
 
 func _update_quota_label() -> void:
 	if quota_label == null:
@@ -168,23 +251,17 @@ func _mc_choices() -> Array[String]:
 func _build_mc_buttons() -> void:
 	answer_input.visible = false
 	submit_btn.visible = false
-	_mc_box = VBoxContainer.new()
-	_mc_box.add_theme_constant_override("separation", 8)
-	answer_input.get_parent().add_child(_mc_box)
-	answer_input.get_parent().move_child(_mc_box, answer_input.get_index())
+	mc_box.visible = true
 	var correct := str(_q.get("answer", "")).strip_edges()
 	for opt in _mc_options:
-		var b := Button.new()
+		var b := mc_template.duplicate() as Button
 		b.text = opt
-		b.custom_minimum_size = Vector2(0, 56)
-		b.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		b.visible = true
 		b.pressed.connect(_on_mc_pick.bind(b, opt == correct))
-		_mc_box.add_child(b)
+		mc_box.add_child(b)
 
 func _set_mc_enabled(on: bool) -> void:
-	if _mc_box == null:
-		return
-	for b: Button in _mc_box.get_children():
+	for b: Button in mc_box.get_children():
 		b.disabled = not on
 
 func _on_mc_pick(button: Button, correct: bool) -> void:
@@ -238,9 +315,21 @@ func _on_job_status(job_id: String, status: String, _progress: float, result: Va
 			result_label.text = "%d dmg — %s" % [damage, feedback]
 	_finish_turn()
 
-func _finish_turn() -> void:
+func _refresh_bars() -> void:
+	_shown_enemy_hp = _enemy_hp
+	_shown_player_hp = _player_hp
 	enemy_hp_bar.value = _enemy_hp
 	player_hp_bar.value = _player_hp
+	enemy_hp_text.text = "%d/%d" % [_enemy_hp, _enemy_max]
+	player_hp_text.text = "%d/%d" % [_player_hp, PLAYER_MAX_HP]
+
+func _finish_turn() -> void:
+	if _player_hp < _shown_player_hp:
+		stage.enemy_attack()
+		stage.pet_hurt()
+	elif _enemy_hp < _shown_enemy_hp:
+		stage.pet_hit()
+	_refresh_bars()
 	_update_quota_label()
 	if _enemy_hp <= 0:
 		_win()
@@ -259,7 +348,6 @@ func _trigger_strong_hit_juice(score: float) -> void:
 
 func _screen_shake(intensity: float, duration: float) -> void:
 	# Prefer Camera2D offset if present (spec requirement), fallback to Control position.
-	var cam := get_node_or_null("Camera2D") as Camera2D
 	if cam:
 		var orig: Vector2 = cam.offset
 		var t := create_tween()
@@ -289,6 +377,8 @@ func _hit_stop(duration: float) -> void:
 
 func _win() -> void:
 	_over = true
+	stage.enemy_defeat()
+	stage.pet_win()
 	SessionManager.report_battle_result(true)
 	_set_mc_enabled(false)
 	var reward: int = int(TIERS[_tier]["xp"]) * (2 if _is_boss else 1)
@@ -328,8 +418,7 @@ func _on_retry() -> void:
 	_enemy_hp = _enemy_max
 	_player_hp = PLAYER_MAX_HP
 	_over = false
-	enemy_hp_bar.value = _enemy_hp
-	player_hp_bar.value = _player_hp
+	_refresh_bars()
 	answer_input.text = ""
 	result_label.text = ""
 	result_panel.visible = false

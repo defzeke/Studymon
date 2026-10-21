@@ -6,7 +6,8 @@ no cloud sync.
 - **Path:** `user://studymon_save.json`
 - **Written by:** `SaveManager.save_game()` — `scripts/autoload/save_manager.gd:6`
 - **Read by:** `SaveManager.load_game()` — `scripts/autoload/save_manager.gd:24`
-- **Schema tag:** `"v": 6`
+- **Schema tag:** `"v": 7` (v7 added `player_name` and `food_stock`; older saves load with defaults. The tutorial flag is deliberately not saved, so the intro plays every launch)
+- **Loaded:** once at boot, deferred from `SaveManager._ready`
 - **Format:** `JSON.stringify` of a single `Dictionary`, pretty-print off
 
 The build plan originally proposed `Resource`-based saves; the implementation uses JSON instead.
@@ -18,7 +19,7 @@ That is fine for the current scope but means there is **no type safety and no au
 
 ```jsonc
 {
-  "v": 6,
+  "v": 7,
 
   // CompanionState.to_dict()
   "level": 1,
@@ -34,6 +35,8 @@ That is fine for the current scope but means there is **no type safety and no au
   "campaign_unlocked_flag": false,
   "active_region_id": "",
   "large_text_enabled": false,
+  "player_name": "",
+  "food_stock": { "apple": 3 },
 
   // MusicManager (v5): settings sliders, 0..1; missing keys load as 1.0
   "music_volume": 1.0,
@@ -69,7 +72,7 @@ Field-by-field:
 
 | Field | Type | Written from | Notes |
 |---|---|---|---|
-| `v` | int | literal `4` | Never compared on load — see §6 |
+| `v` | int | literal `7` | Never compared on load — see §6 |
 | `level` | int | `CompanionState.level` | 1–5 |
 | `xp` | int | `CompanionState.xp` | Lifetime XP, not per-level |
 | `energy` / `focus` / `mood` | float | `CompanionState` | 0–100, clamped on mutation |
