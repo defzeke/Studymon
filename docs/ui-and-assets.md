@@ -344,13 +344,15 @@ painted at runtime; see `systems/companion-care.md` §7.
 
 `MusicManager` (autoload) owns two `AudioStreamPlayer`s:
 
-- `MainRoomPlayer` — `main room.mp3`, looping (set on the `AudioStreamMP3` resource), `-6 dB`,
-  started on `_ready()` and kept alive across scene changes.
+- `MusicPlayer` — starts `main room.mp3` looping at `-6 dB` on `_ready()` and persists across scene
+  changes. `splash.tscn` calls `play_loading()`, which starts `loading.mp3` at 1 s and fades it in
+  over 1 s; `loading.tscn` keeps the same track playing, and `peek.tscn` calls `play_main_room()` to
+  swap back. Both MP3s are looped at runtime, and the swap back to the main room is a hard cut.
 - `SfxPlayer` — single voice, so overlapping SFX cut each other off; `play_sfx_chain()` serialises a
   list with `await` and cancels itself if another chain starts (guarded by `_sfx_chain_id`).
 
-Only the day/night toggle plays sound (`charge.mp3`, then `charged.mp3` when going dark). Battles,
-level-ups, taps and gym clears are silent.
+Only the day/night toggle plays a one-shot SFX (`charge.mp3`, then `charged.mp3` when going dark).
+Battles, level-ups, taps and gym clears are silent.
 
 ---
 
@@ -360,7 +362,8 @@ level-ups, taps and gym clears are silent.
 
 | Asset | Used by |
 |---|---|
-| `audio/main room.mp3` | `music_manager.gd` (looping BGM) |
+| `audio/main room.mp3` | `music_manager.gd` (looping BGM for the hub/gameplay) |
+| `audio/loading.mp3` | `MusicManager.play_loading()` from `splash.tscn` through `loading.tscn` (starts at 1 s, 1 s fade-in) |
 | `audio/charge.mp3`, `audio/charged.mp3` | `companion.gd` day/night toggle; home's Charge button |
 | `fonts/JosefinSans-Regular.ttf` | theme default font |
 | `fonts/JosefinSans-Bold.ttf` | theme button font; `loading.tscn` title and tip labels |

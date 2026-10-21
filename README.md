@@ -20,7 +20,7 @@ res://
 ├── icon.svg
 │
 ├── assets/
-│   ├── audio/                 # BGM + SFX (main room loop, charge/charged)
+│   ├── audio/                 # BGM + SFX (loading and main room loops, charge/charged)
 │   ├── fonts/                 # Josefin Sans (Regular + Bold) — the project theme font
 │   ├── models/                # Kuiz, island map and explorer (.glb + extracted textures)
 │   ├── theme/                 # app_theme.tres — the single shared Theme (all screens use it)

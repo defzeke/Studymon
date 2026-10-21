@@ -19,6 +19,10 @@ fling the ball, Kuiz watches. Settings and the topic list now return home. New t
 `assets/sprites/props/` and `ui/arrow.svg`. Details in [`ui-and-assets.md`](ui-and-assets.md) §2
 Home.
 
+**Loading music — uncommitted.** `splash.tscn` starts `MusicManager.play_loading()`, which begins
+`loading.mp3` at 1 s and fades it in over 1 s; it runs through `loading.tscn`, and `peek.tscn`
+switches back to `main room.mp3`. `assets/audio/loading.mp3` and its `.import` are untracked.
+
 ## Blocked
 
 | Work | Blocked by |
