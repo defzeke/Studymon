@@ -10,6 +10,8 @@ extends Node3D
 
 # Map buildings, in route order: gyms[0], gyms[1], then the Champion. Doors face +z.
 const GYM_BUILDINGS: Array[String] = ["Gym2", "Gym3"]
+# The third gym has no building: it stands at the GymSpot3 marker on the west end of the south road.
+const MAX_GYMS := 3
 const CHAMPION_BUILDING := "Gym"
 const DOOR_FRONT := Vector3(0.0, 0.0, 0.8)
 const TRIGGER_RADIUS := 0.7
@@ -94,9 +96,9 @@ func _build_route() -> void:
 	var gyms := SessionManager.get_gym_structure()
 	if gyms.is_empty():
 		return
-	# One building per question type; there are only two types today.
-	for gi in mini(gyms.size(), GYM_BUILDINGS.size()):
-		_add_gym_node(gyms[gi], GYM_BUILDINGS[gi], gi)
+	# One gym per question type: two in map buildings, the third at its spot.
+	for gi in mini(gyms.size(), MAX_GYMS):
+		_add_gym_node(gyms[gi], GYM_BUILDINGS[gi] if gi < GYM_BUILDINGS.size() else "", gi)
 		# Hallway trainers for this gym, spread along its road (TrainersN/From → To).
 		var from: Vector3 = get_node("Trainers%d/From" % (gi + 1)).global_position
 		var to: Vector3 = get_node("Trainers%d/To" % (gi + 1)).global_position
@@ -139,10 +141,12 @@ func _add_trainer_node(q_idx: int, pos: Vector3) -> void:
 func _add_gym_node(gym: Dictionary, building: String, gym_idx: int) -> void:
 	var gym_type: String = str(gym["type"])
 	var badge := "BADGE" if SessionManager.is_gym_cleared(_topic_id, gym_type) else "GYM %d" % (gym_idx + 1)
-	var area := _trigger(_door(building), TRIGGER_RADIUS, "%s\n%s" % [badge, gym_type.capitalize()])
+	var pos: Vector3 = _door(building) if building != "" else (get_node("GymSpot%d" % (gym_idx + 1)) as Node3D).global_position
+	var area := _trigger(pos, TRIGGER_RADIUS, "%s\n%s" % [badge, gym_type.capitalize()])
 	_gym_positions[gym_type] = area.position
 	area.body_entered.connect(_on_gym_touched.bind(gym_type))
-	_door_animates(area, building)
+	if building != "":
+		_door_animates(area, building)
 	gyms_root.add_child(area)
 
 func _add_champion_node(building: String) -> void:

@@ -26,7 +26,7 @@ signal quota_exceeded(type: String)
 |---|---|---|
 | `mock_upload_pdf(topic, source_text)` | quota gate → 0.8 s timer → `job_status("job_001", "completed", …)` | **no HTTP call is made even when `MOCK = false`** |
 | `mock_get_topics()` | `job_status("topics", "completed", …, {topics: [...]})` with one fake "Biology 101" | — |
-| `grade_battle_question(q, answer)` | quota gate → local rubric → `job_status("grade", "completed", …, {score, feedback, damage, type})` | `POST /battle/grade` |
+| `grade_battle_question(q, answer)` | quota gate (essays only) → local rubric, which reads `q.difficulty` for the Hard Identification rule → `job_status("grade", "completed", …, {score, feedback, damage, type})`. Multiple Choice is graded in `battle.gd` and never calls this | `POST /battle/grade` |
 | `save_topic(topic_id, questions)` | fires HTTP anyway (fails silently against localhost) | `PUT /topics/{id}` |
 | `update_mastery(topic, qid, state)` | not called (guarded by `if not Api.MOCK`) | `PUT /mastery/{topic}/{qid}` |
 
@@ -86,7 +86,7 @@ Grade request payload (`api.gd:49-56`):
 
 ```jsonc
 {
-  "type": "essay",                 // or "identification"
+  "type": "essay",                 // or "identification"; Multiple Choice never reaches the API
   "question": "Explain how …",
   "answer": "The player's text",
   "source": "original excerpt",

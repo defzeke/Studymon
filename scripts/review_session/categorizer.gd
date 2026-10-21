@@ -3,6 +3,9 @@ extends Control
 ## Implements build-plan P5: word-count sanity, confidence badges, CRUD list, region generation.
 ## Phase 10: Quota label + paywall dialog via MonetizationState / Api.quota_exceeded.
 
+# Order matches the type OptionButton; contract: docs/systems/gameplay-structure.md.
+const QUESTION_TYPES: Array[String] = ["essay", "identification", "multiple_choice"]
+
 @onready var topic_name_field: LineEdit = $Content/TopicRow/TopicName
 @onready var file_btn: Button = $Content/UploadRow/FileButton
 @onready var paste_area: TextEdit = $Content/PasteArea
@@ -244,10 +247,17 @@ func _make_question_row(q: Dictionary, idx: int) -> Control:
 	var type_opt := OptionButton.new()
 	type_opt.add_item("Essay", 0)
 	type_opt.add_item("Identification", 1)
-	type_opt.selected = 1 if qtype == "identification" else 0
+	type_opt.add_item("Multiple Choice", 2)
+	type_opt.selected = maxi(0, QUESTION_TYPES.find(qtype))
 	type_opt.item_selected.connect(_on_type_changed.bind(idx))
 	type_opt.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	type_row.add_child(type_opt)
+	var diff_opt := OptionButton.new()
+	for tier in SessionManager.DIFFICULTIES:
+		diff_opt.add_item(tier.capitalize())
+	diff_opt.selected = maxi(0, SessionManager.DIFFICULTIES.find(str(q.get("difficulty", "medium"))))
+	diff_opt.item_selected.connect(_on_difficulty_changed.bind(idx))
+	type_row.add_child(diff_opt)
 	vbox.add_child(type_row)
 
 	var ans_field := LineEdit.new()
@@ -258,6 +268,15 @@ func _make_question_row(q: Dictionary, idx: int) -> Control:
 		ans_field.placeholder_text = "Key concepts"
 	ans_field.text_changed.connect(_on_answer_changed.bind(idx))
 	vbox.add_child(ans_field)
+	if qtype == "multiple_choice":
+		ans_field.placeholder_text = "Correct option"
+		var wrong: Array = q.get("distractors", [])
+		for n in 3:
+			var wrong_field := LineEdit.new()
+			wrong_field.text = str(wrong[n]) if n < wrong.size() else ""
+			wrong_field.placeholder_text = "Wrong option %d" % (n + 1)
+			wrong_field.text_changed.connect(_on_distractor_changed.bind(idx, n))
+			vbox.add_child(wrong_field)
 
 	var sep := HSeparator.new()
 	vbox.add_child(sep)
@@ -268,9 +287,18 @@ func _on_question_text_changed(idx: int, edit: TextEdit) -> void:
 	SessionManager.update_question(idx, {"text": edit.text})
 
 func _on_type_changed(idx_selected: int, q_idx: int) -> void:
-	# OptionButton emits selected index; map back
-	var t := "identification" if idx_selected == 1 else "essay"
-	SessionManager.update_question(q_idx, {"type": t})
+	SessionManager.update_question(q_idx, {"type": QUESTION_TYPES[idx_selected]})
+	_render_questions()
+
+func _on_difficulty_changed(idx_selected: int, q_idx: int) -> void:
+	SessionManager.update_question(q_idx, {"difficulty": SessionManager.DIFFICULTIES[idx_selected]})
+
+func _on_distractor_changed(new_text: String, q_idx: int, n: int) -> void:
+	var wrong: Array = SessionManager.get_pending_questions()[q_idx].get("distractors", [])
+	while wrong.size() < 3:
+		wrong.append("")
+	wrong[n] = new_text
+	SessionManager.update_question(q_idx, {"distractors": wrong})
 
 func _on_answer_changed(new_text: String, idx: int) -> void:
 	SessionManager.update_question(idx, {"answer": new_text})

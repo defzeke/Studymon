@@ -19,12 +19,19 @@ fling the ball, Kuiz watches. Settings and the topic list now return home. New t
 `assets/sprites/props/` and `ui/arrow.svg`. Details in [`ui-and-assets.md`](ui-and-assets.md) §2
 Home.
 
+**Gameplay structure Phases 0–2 — uncommitted.** Battles load (`battle.tscn` no longer references
+`bot_lv*.png`), progress saves after battles and topic confirmation (`SaveManager.save_progress()`),
+questions carry `difficulty` (and `distractors` for Multiple Choice) with save `"v": 6`, the mock
+extractor produces all three types and tiers, the categorizer edits them, battles scale by tier,
+essays alone use the grading quota, and a third gym (Multiple Choice) stands at a marker on the
+south road. Contract: [`systems/gameplay-structure.md`](systems/gameplay-structure.md).
+
 ## Blocked
 
 | Work | Blocked by |
 |---|---|
 | Kuiz's stats and the top bar | Waiting on the design: what goes at the top (including the currency), and what feeding, fixing, playing and charging should change |
-| Playing the core loop end to end | The row above, issue #1 (`battle.tscn` fails to parse on missing `bot_lv*.png`) and issue #8 (no care input, so Level 5 is unreachable without editing the save) |
+| Earning XP and the Level 5 gate | The row above: nothing on home calls `CompanionState.care()` (issue #8), so Play is ungated for now |
 | Any real backend call | Issue #7 (endpoints disagree) and issue #2 (auth header is a redaction placeholder) |
 | Claiming the Champion | Issue #6 (soft-lock when no question is `MASTERED`) |
 
@@ -34,16 +41,13 @@ P0/P1 first; each item's evidence and fix live in [`known-issues.md`](known-issu
 
 | Order | Item | Why now |
 |---|---|---|
-| 1 | #1 Add `bot_lv1..5.png` (or strip the `[ext_resource]` lines) | Unblocks the battle scene; also the prerequisite for #3 |
-| 2 | #8 Add Feed / Pet / Play buttons wired to `_on_care()` | Makes the pet loop playable and Level 5 reachable |
-| 3 | #3 Un-hide the companion rig and its animation guards | Core fantasy; depends on #1 |
-| 4 | #4 Show `TidbitBubble` when text is assigned | Level-5 gate and every curriculum line are currently invisible |
-| 5 | #5 `maxi(1, …)` instead of truncating XP to 0 | Diminishing returns currently stops XP entirely |
-| 6 | #10 Save after battle results and topic confirm | Quitting after a battle loses the work |
-| 7 | #6 Implement the documented Champion fallback | Region is otherwise impossible to finish |
-| 8 | #2 `Bearer` header + a way to set `auth_token` | Required before `MOCK` can flip |
-| 9 | #9 Standardise the job envelope (or add a `grade_result` signal) and handle non-2xx | Real responses are dropped today |
-| 10 | #15 Charge grading quota only for API-graded types | Identification exhausts the free week locally |
+| 1 | Gameplay structure Phase 3: trainers ordered by tier, boss lock, Champion fallback (#6), one `overworld_progress_changed` emit (#17) | Makes the three gyms a real Easy → Medium → Hard climb and the region finishable |
+| 2 | Gameplay structure Phase 4: Flashcard Sanctuary | Safe way to repair mastery |
+| 3 | #8 / #5 Care input that earns XP, once the top-bar design lands | Makes Level 5 reachable and gives the gate back |
+| 4 | #3 Un-hide the companion rig and its animation guards | Core fantasy |
+| 5 | #4 Show `TidbitBubble` when text is assigned | Level-5 gate and every curriculum line are currently invisible |
+| 6 | #2 `Bearer` header + a way to set `auth_token` | Required before `MOCK` can flip |
+| 7 | #9 Standardise the job envelope (or add a `grade_result` signal) and handle non-2xx | Real responses are dropped today |
 
 Hygiene, after the slice plays:
 

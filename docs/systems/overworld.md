@@ -10,8 +10,9 @@ leading to its gym, and a Champion fight in the big gym that closes the region.
 - **Progress + mastery state:** `scripts/autoload/session_manager.gd`
 - **Question data:** `SessionManager.pending_questions` (see `review-session.md`)
 
-Status: **Implemented; loads and plays on mocks.** Confirming an encounter still changes to
-`battle.tscn`, which fails to parse (`known-issues.md` #1).
+Status: **Implemented; loads and plays on mocks.** Confirming an encounter opens `battle.tscn`,
+which now loads. Gym tiers and the boss lock are Phase 3 of
+[`gameplay-structure.md`](gameplay-structure.md).
 
 ---
 
@@ -35,19 +36,19 @@ If `pending_questions` is empty (direct scene run), `region_map.gd:36-43` seeds 
 
 ## 2. Gym structure
 
-`get_gym_structure()` (`session_manager.gd:198-210`) buckets question indices by `type`, preserving
-first-seen order:
+`get_gym_structure()` buckets question indices by `type`, preserving first-seen order:
 
 ```gdscript
 [
-  {"type": "identification", "question_indices": [0, 2, 4]},
-  {"type": "essay",          "question_indices": [1, 3]}
+  {"type": "identification",   "question_indices": [0, 3]},
+  {"type": "essay",            "question_indices": [1, 4]},
+  {"type": "multiple_choice",  "question_indices": [2, 5]}
 ]
 ```
 
-So **a gym is a question type**, not a topic or a chapter. One Identification gym and one Essay gym
-per topic, regardless of question count. Re-typing a question in the categorizer moves it between
-gyms.
+So **a gym is a question type**, not a topic or a chapter. At most one gym per type (Identification,
+Essay, Multiple Choice) per topic, regardless of question count. Re-typing a question in the
+categorizer moves it between gyms.
 
 ---
 
@@ -62,6 +63,8 @@ RegionMap            Node3D (region_map.gd)
 ├── Spawn             Marker3D (−2, 0, 9), on the south road
 ├── Trainers1/From,To Marker3D road segment for gyms[0]'s trainers: (2, 0, 9) → (12.5, 0, 9)
 ├── Trainers2/From,To Marker3D road segment for gyms[1]'s trainers: (−9, 0, 7.5) → (−9, 0, −0.5)
+├── Trainers3/From,To Marker3D road segment for gyms[2]'s trainers: (−12, 0, 9) → (−4, 0, 9)
+├── GymSpot3          Marker3D (−15, 0, 9): the third gym's trigger (no building), west end of the south road
 ├── Trainers, Gyms    filled at runtime
 ├── Player            CharacterBody3D (player.gd), floating motion, capsule r 0.22 h 0.9
 │   ├── Boy           instance of assets/models/boy_explorer.glb (Idle / Walk / Run looped)
@@ -71,7 +74,8 @@ RegionMap            Node3D (region_map.gd)
 
 **Where things go.** The map has three gym buildings; `GYM_BUILDINGS` puts `gyms[0]` in `Gym2`
 (the blue one by the south road), `gyms[1]` in `Gym3` (orange, west), and the Champion in `Gym`
-(the big red one, north). There are only two question types, so two gyms. Each trigger sits 0.8 in
+(the big red one, north). With three question types the third gym has no building: it stands at
+the `GymSpot3` marker (`MAX_GYMS` is 3), with no door animation. Each building trigger sits 0.8 in
 front of its building's double door (the door nodes' midpoint; every door faces +z), and walking in
 also plays that door's `<Building>_Door_Open` clip, then `_Door_Close` on the way out. A gym's
 trainers are spread along its `TrainersN` segment at `frac = (i+1)/(n+1)`. Move the markers in the
@@ -250,11 +254,9 @@ replay the effect.
 
 | Gap | Detail |
 |---|---|
-| Battles won't load | Confirming an encounter opens `battle.tscn`, which still fails to parse (#1) |
-| No save on progress | Clear state and mastery persist only when something else triggers a save |
 | Champion soft-lock | Availability and moveset requirements can deadlock |
 | Gym ≠ trainer progress | Boss win clears the gym without clearing its trainers |
 | No mini-map / gym tracker | The plan called for one; the HUD badge row is the only progress view |
 | No region regeneration | The map is rebuilt from `pending_questions`; editing a saved topic changes the live map silently |
-| Fixed layout | Two gym buildings: a third question type would get no gym (skipped). Trainer roads are hand-placed markers for this map only |
+| Fixed layout | Three gyms at most (a fourth type would get none); the third has no building, and the trainer roads and `GymSpot3` are hand-placed markers for this map only |
 | One-finger joystick | Touch is read as emulated mouse, so the stick and a second finger cannot act at once |

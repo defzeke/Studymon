@@ -35,13 +35,14 @@ func save_topic(topic_id: String, questions: Array[Dictionary]) -> void:
 	_put("/topics/" + topic_id, {"questions": questions})
 
 ## Canonical Phase 7 entry: grade a full question dict (carries expected answer + key_concepts).
-## Quota-gated (Phase 10): free tier limits gradings per week.
+## Quota-gated (Phase 10): free tier limits gradings per week, and only essays use the AI.
 func grade_battle_question(q: Dictionary, answer: String) -> void:
 	var _ms := get_node_or_null("/root/MonetizationState")
-	if _ms != null and not _ms.can_consume("grade"):
+	var uses_ai: bool = str(q.get("type", "essay")).to_lower() == "essay"
+	if uses_ai and _ms != null and not _ms.can_consume("grade"):
 		quota_exceeded.emit("grade")
 		return
-	if _ms != null:
+	if uses_ai and _ms != null:
 		_ms.consume("grade")
 	if MOCK:
 		_execute_mock_grade(q, answer)
@@ -117,9 +118,10 @@ func _execute_mock_upload(topic_name: String, source_text: String) -> void:
 	else:
 		call_deferred("_mock_poll_done", payload)
 
-## Deterministic mock extractor: parses reviewer sentences into battle-ready
-## questions (alternating Identification / Essay) so battles use real material.
-## Stand-in for the Claude document-extraction endpoint (build plan Phase 5).
+## Deterministic mock extractor: parses reviewer sentences into battle-ready questions, rotating
+## Identification / Essay / Multiple Choice and tagging a tier by sentence length, so battles use
+## real material. Stand-in for the Claude document-extraction endpoint; contract:
+## docs/systems/gameplay-structure.md.
 func _build_questions_from_text(_topic_name: String, source_text: String) -> Array:
 	var sentences := _split_sentences(source_text)
 	# Keep content-bearing sentences only.
@@ -129,39 +131,56 @@ func _build_questions_from_text(_topic_name: String, source_text: String) -> Arr
 		var words := sent.split(" ", false)
 		if words.size() >= 6 and sent.length() >= 40:
 			usable.append(sent)
-		if usable.size() >= 8:
+		if usable.size() >= 12:
 			break
 	if usable.is_empty():
 		return _fallback_questions()
+	var terms_by: Array = []
+	for s in usable:
+		terms_by.append(_extract_terms(str(s)))
+	# Tier by sentence length: the shortest third is easy, the longest third hard.
+	var by_length: Array = range(usable.size())
+	by_length.sort_custom(func(a: int, b: int) -> bool: return str(usable[a]).length() < str(usable[b]).length())
+	var length_rank: Array = range(usable.size())
+	for r in by_length.size():
+		length_rank[by_length[r]] = r
 	var questions: Array = []
 	var idx := 0
-	for s in usable:
-		var terms := _extract_terms(str(s))
-		var excerpt: String = str(s).strip_edges().left(220)
-		if idx % 2 == 0:
-			# Identification: answer = strongest term in the sentence.
-			var answer := str(terms[0]) if not terms.is_empty() else ""
-			if answer == "":
-				continue
-			var concepts: Array = terms.slice(0, mini(3, terms.size()))
-			questions.append({
-				"id": "q%d" % (idx + 1),
-				"text": "What key term is described here? \"%s\"" % excerpt,
-				"type": "identification",
-				"answer": answer,
-				"key_concepts": concepts,
-				"confidence": 0.85,
-				"source": excerpt,
-			})
-		else:
-			var concepts_e: Array = terms.slice(0, mini(3, terms.size()))
+	for i in usable.size():
+		var terms: Array = terms_by[i]
+		var excerpt: String = str(usable[i]).strip_edges().left(220)
+		var tier: String = ["easy", "medium", "hard"][mini(2, length_rank[i] * 3 / usable.size())]
+		var concepts: Array = terms.slice(0, mini(3, terms.size()))
+		var answer := str(terms[0]) if not terms.is_empty() else ""
+		var kind := idx % 3
+		var wrong: Array = []
+		if kind == 2:
+			wrong = _distractors_for(answer, terms_by, i)
+			if wrong.size() < 3:
+				kind = 0
+		if kind == 1:
 			questions.append({
 				"id": "q%d" % (idx + 1),
 				"text": "Explain in your own words: %s" % excerpt,
 				"type": "essay",
+				"difficulty": "medium" if tier == "easy" else tier,
 				"answer": excerpt,
-				"key_concepts": concepts_e,
+				"key_concepts": concepts,
 				"confidence": 0.7,
+				"source": excerpt,
+			})
+		else:
+			if answer == "":
+				continue
+			questions.append({
+				"id": "q%d" % (idx + 1),
+				"text": ("Which term is described here? \"%s\"" if kind == 2 else "What key term is described here? \"%s\"") % excerpt,
+				"type": "multiple_choice" if kind == 2 else "identification",
+				"difficulty": tier,
+				"answer": answer,
+				"distractors": wrong,
+				"key_concepts": concepts,
+				"confidence": 0.8 if kind == 2 else 0.85,
 				"source": excerpt,
 			})
 		idx += 1
@@ -169,13 +188,29 @@ func _build_questions_from_text(_topic_name: String, source_text: String) -> Arr
 		return _fallback_questions()
 	return questions
 
-## Canned trio, used only when no reviewer text survived (binary PDF).
-## Editable in the categorizer; battles stay playable via this fallback.
+## Wrong options for a Multiple Choice question: top terms of the other sentences, never the answer.
+func _distractors_for(answer: String, terms_by: Array, own: int) -> Array:
+	var out: Array = []
+	for rank in 2:
+		for j in terms_by.size():
+			if j == own or terms_by[j].size() <= rank:
+				continue
+			var t := str(terms_by[j][rank])
+			if t.to_lower() != answer.to_lower() and out.find(t) == -1:
+				out.append(t)
+			if out.size() == 3:
+				return out
+	return out
+
+## Canned set, used only when no reviewer text survived (binary PDF). Covers every type and tier;
+## editable in the categorizer, and battles stay playable via this fallback.
 func _fallback_questions() -> Array:
 	return [
-		{"id": "q1", "text": "What is training data?", "type": "identification", "answer": "Examples used to teach an AI", "confidence": 0.5, "key_concepts": ["examples", "training"], "source": ""},
-		{"id": "q2", "text": "Explain how feedback helps an AI improve.", "type": "essay", "answer": "", "confidence": 0.45, "key_concepts": ["feedback", "reward", "iteration"], "source": ""},
-		{"id": "q3", "text": "Why does an AI need trial-and-error practice?", "type": "essay", "answer": "", "confidence": 0.4, "key_concepts": ["practice", "generalization"], "source": ""},
+		{"id": "q1", "text": "What is training data?", "type": "identification", "difficulty": "easy", "answer": "Examples used to teach an AI", "confidence": 0.5, "key_concepts": ["examples", "training"], "source": ""},
+		{"id": "q2", "text": "What does an AI learn from?", "type": "multiple_choice", "difficulty": "easy", "answer": "Training data", "distractors": ["Weather reports", "Phone batteries", "Screen brightness"], "confidence": 0.5, "key_concepts": ["training"], "source": ""},
+		{"id": "q3", "text": "Explain how feedback helps an AI improve.", "type": "essay", "difficulty": "medium", "answer": "", "confidence": 0.45, "key_concepts": ["feedback", "reward", "iteration"], "source": ""},
+		{"id": "q4", "text": "Which describes generalization?", "type": "multiple_choice", "difficulty": "medium", "answer": "Handling new examples it has not seen", "distractors": ["Memorizing every example", "Deleting old data", "Running faster"], "confidence": 0.4, "key_concepts": ["generalization"], "source": ""},
+		{"id": "q5", "text": "Why does an AI need trial-and-error practice?", "type": "essay", "difficulty": "hard", "answer": "", "confidence": 0.4, "key_concepts": ["practice", "generalization"], "source": ""},
 	]
 
 ## topic_001 stays the id for the default/empty name so old saves keep working.
@@ -260,6 +295,7 @@ func _mock_poll_done(data: Dictionary) -> void:
 # Internal helper: executes mock grading without quota check (called after gate).
 func _execute_mock_grade(q: Dictionary, answer: String) -> void:
 	var qtype: String = str(q.get("type", "essay")).to_lower()
+	var tier: String = str(q.get("difficulty", "medium")).to_lower()
 	var score := 0.0
 	var feedback := ""
 	if qtype == "identification" or qtype == "id":
@@ -271,10 +307,10 @@ func _execute_mock_grade(q: Dictionary, answer: String) -> void:
 		elif expected != "" and given == expected:
 			score = 1.0
 			feedback = "Exact hit — that's the one!"
-		elif expected != "" and (given.contains(expected) or expected.contains(given)):
+		elif expected != "" and tier != "hard" and (given.contains(expected) or expected.contains(given)):
 			score = 0.8
 			feedback = "Close enough — core term landed."
-		elif expected != "" and _fuzzy_match(given, expected):
+		elif expected != "" and _fuzzy_match(given, expected, 1 if tier == "hard" else 2):
 			score = 0.7
 			feedback = "Near miss on spelling, but the idea connected."
 		elif expected == "":
@@ -315,12 +351,12 @@ func _execute_mock_grade(q: Dictionary, answer: String) -> void:
 
 
 ## Token-overlap fuzzy match for identification answers (typo-tolerant).
-func _fuzzy_match(a: String, b: String) -> bool:
+func _fuzzy_match(a: String, b: String, max_distance: int = 2) -> bool:
 	if a == "" or b == "":
 		return false
 	if abs(a.length() - b.length()) > 3:
 		return false
-	return _edit_distance(a, b) <= 2
+	return _edit_distance(a, b) <= max_distance
 
 func _edit_distance(a: String, b: String) -> int:
 	var prev: Array = []

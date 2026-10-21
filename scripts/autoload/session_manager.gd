@@ -14,6 +14,8 @@ signal overworld_progress_changed
 # Client-side sanity: flag very short/garbled PDFs before sending to backend
 const MIN_WORDS := 20
 const MIN_CHARS := 80
+# Contract: docs/systems/gameplay-structure.md
+const DIFFICULTIES: Array[String] = ["easy", "medium", "hard"]
 
 var current_topic_id: String = ""
 var pending_questions: Array[Dictionary] = []
@@ -35,6 +37,23 @@ func _ready() -> void:
 	Api.job_status.connect(_on_job_status)
 
 # --- Topics history (mock-persisted in memory until SaveManager handles it) ---
+
+## Fills defaults and repairs rows a battle could not play: an unknown tier becomes medium, and a
+## Multiple Choice row without a correct answer and a wrong option becomes Identification.
+func normalize_question(q: Dictionary) -> Dictionary:
+	var d: Dictionary = q.duplicate(true)
+	d["type"] = str(d.get("type", "essay")).to_lower()
+	var tier := str(d.get("difficulty", "medium")).to_lower()
+	d["difficulty"] = tier if tier in DIFFICULTIES else "medium"
+	if d["type"] == "multiple_choice":
+		var wrong: Array = []
+		for x in d.get("distractors", []):
+			if str(x).strip_edges() != "":
+				wrong.append(str(x).strip_edges())
+		d["distractors"] = wrong
+		if str(d.get("answer", "")).strip_edges() == "" or wrong.is_empty():
+			d["type"] = "identification"
+	return d
 
 func list_topics() -> void:
 	Api.mock_get_topics()
@@ -115,12 +134,9 @@ func _on_job_status(job_id: String, status: String, progress: float, result: Var
 				var questions: Array[Dictionary] = []
 				for q in result["questions"]:
 					if q is Dictionary:
-						# Normalize type & confidence
-						var d: Dictionary = q.duplicate(true)
+						var d := normalize_question(q)
 						if not d.has("confidence"):
 							d["confidence"] = 0.7
-						if d.has("type"):
-							d["type"] = str(d["type"]).to_lower()
 						questions.append(d)
 				pending_questions = questions
 				editing_topic_id = topic_id
@@ -133,11 +149,13 @@ func _on_job_status(job_id: String, status: String, progress: float, result: Var
 
 func set_editing_topic(topic_id: String, questions: Array[Dictionary]) -> void:
 	editing_topic_id = topic_id
-	pending_questions = questions.duplicate(true)
+	pending_questions = []
+	for q in questions:
+		pending_questions.append(normalize_question(q))
 
-func add_question(text: String, qtype: String, answer: String = "", key_concepts: Array[String] = []) -> void:
+func add_question(text: String, qtype: String, answer: String = "", key_concepts: Array[String] = [], difficulty: String = "medium", distractors: Array = []) -> void:
 	var id = "q_" + str(pending_questions.size() + 1) + "_" + str(randi() % 10000)
-	pending_questions.append({"id": id, "text": text, "type": qtype.to_lower(), "answer": answer, "key_concepts": key_concepts, "confidence": 0.5})
+	pending_questions.append({"id": id, "text": text, "type": qtype.to_lower(), "difficulty": difficulty, "answer": answer, "distractors": distractors, "key_concepts": key_concepts, "confidence": 0.5})
 
 func remove_question(index: int) -> void:
 	if index >= 0 and index < pending_questions.size():
@@ -154,6 +172,7 @@ func confirm_topic(topic_name: String = "") -> void:
 	var name := topic_name if topic_name != "" else editing_topic_id
 	add_topic_to_history(editing_topic_id, name, pending_questions)
 	Api.save_topic(editing_topic_id, pending_questions)
+	SaveManager.save_progress()
 	topic_saved.emit(editing_topic_id)
 	_enter_overworld(editing_topic_id)
 
@@ -521,6 +540,11 @@ func from_dict(data: Dictionary) -> void:
 	_topics = []
 	for t in data.get("topics", []):
 		if t is Dictionary:
-			_topics.append((t as Dictionary).duplicate(true))
+			var topic: Dictionary = (t as Dictionary).duplicate(true)
+			var qs: Array = []
+			for q in topic.get("questions", []):
+				qs.append(normalize_question(q) if q is Dictionary else q)
+			topic["questions"] = qs
+			_topics.append(topic)
 	overworld_progress_changed.emit()
 	mastery_changed.emit()

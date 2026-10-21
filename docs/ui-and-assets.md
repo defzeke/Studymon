@@ -286,6 +286,11 @@ Vertical stack: `Title`, `QuotaLabel`, `TopicRow` (label + `TopicName` `LineEdit
 `StatusLabel`, `LoadingBar`, `QuestionsHeader`, `Scroll` → `QuestionsBox` (rows built in code),
 `AddQuestionButton`, `PlayButton`, `BackButton`, plus `FileDialog` and `QuotaDialog`.
 
+Each question row (built in `_make_question_row`) has a header (index, confidence, delete), the
+prompt `TextEdit`, a type row (`Type:` label, type `OptionButton` with Essay / Identification /
+Multiple Choice, tier `OptionButton` with Easy / Medium / Hard), the answer `LineEdit`, and for
+Multiple Choice three `Wrong option N` `LineEdit`s.
+
 `FileDialog` uses `file_mode = 0` (open file) and `access = 2` (filesystem), with **no filters** —
 any file type can be selected. Only the first 4000 characters of a text file are shown in the paste
 box, although all bytes are kept for the upload call (`categorizer.gd:89-96`).
@@ -304,7 +309,9 @@ box, although all bytes are kept for the upload call (`categorizer.gd:89-96`).
 (type, text), `AnswerInput` (`TextEdit`), `SubmitButton`, `JudgingLabel`, `ResultLabel`,
 `ResultPanel` (title, XP label, retry/continue), plus `QuotaDialog`.
 
-Both sprite slots (`EnemySprite`, `PlayerSprite`) reference missing `bot_lv*.png` textures.
+Both sprite slots (`EnemySprite`, `PlayerSprite`) have no texture. For a Multiple Choice question
+`battle.gd` hides `AnswerInput` and `SubmitButton` and builds a `VBoxContainer` of four option
+`Button`s (56 px tall) in their place at runtime.
 
 ### `hud_strip.tscn`
 
@@ -404,12 +411,9 @@ level-ups, taps and gym clears are silent.
 
 | Asset | Referenced by | Effect |
 |---|---|---|
-| `sprites/bot_lv1.png` | `battle.tscn:77` | parse error — battle scene will not load |
-| `sprites/bot_lv5.png` | `battle.tscn:107`, `region_map.tscn:5`, `player.gd:12` | parse error — overworld scene will not load |
-| `sprites/bot_lv1..5.png` | `companion.gd:80` | runtime warning "no bot textures found", pet invisible |
+| `sprites/bot_lv1..5.png` | `companion.gd:80` (loaded by path at runtime) | runtime warning "no bot textures found", pet invisible |
 
-Adding these five files restores the pet, the overworld and the battle arena. Until then the
-campaign flow stops at the first scene change after "Confirm & Play".
+`battle.tscn` and `region_map.tscn` no longer reference these files, so both scenes load.
 
 ---
 

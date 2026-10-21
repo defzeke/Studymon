@@ -88,11 +88,16 @@ job_status("job_001", "completed", 1.0, {topic_id, questions})
 
 ### Question builder — `_build_questions_from_text()` (`api.gd:138`)
 
-- Keeps sentences with **≥ 6 words and ≥ 40 chars**, up to **8** sentences.
-- Alternates by index:
-  - even → **Identification**: `What key term is described here? "<excerpt>"`, answer = the
+- Keeps sentences with **≥ 6 words and ≥ 40 chars**, up to **12** sentences.
+- **Tier** (`difficulty`): by sentence length, the shortest third `easy`, the middle `medium`, the
+  longest third `hard`; an essay is never `easy`.
+- Rotates by created-question index:
+  - 0 → **Identification**: `What key term is described here? "<excerpt>"`, answer = the
     highest-ranked extracted term, confidence `0.85`
-  - odd → **Essay**: `Explain in your own words: <excerpt>`, confidence `0.7`
+  - 1 → **Essay**: `Explain in your own words: <excerpt>`, confidence `0.7`
+  - 2 → **Multiple Choice**: `Which term is described here? "<excerpt>"`, answer = the top term,
+    `distractors` = top terms of the *other* sentences (`_distractors_for`), confidence `0.8`. With
+    fewer than three distinct wrong options it becomes an Identification.
 - `key_concepts` = first ≤ 3 extracted terms.
 - `source` = first 220 chars of the sentence.
 
@@ -108,9 +113,10 @@ garbage from tables/bullet fragments.
 
 ### Fallback — `_fallback_questions()` (`api.gd:189`)
 
-Three canned AI-literacy questions when nothing usable survives:
-`What is training data?` (id), `Explain how feedback helps an AI improve.` (essay),
-`Why does an AI need trial-and-error practice?` (essay) — confidences 0.5 / 0.45 / 0.4.
+Five canned AI-literacy questions when nothing usable survives, covering every type and tier:
+an easy Identification and Multiple Choice about training data, a medium Essay on feedback and
+Multiple Choice on generalization, and a hard Essay on trial-and-error practice — confidences
+0.4–0.5.
 
 ---
 
@@ -138,10 +144,17 @@ extraction result.
 | Action | Call | Effect |
 |---|---|---|
 | Edit prompt | `update_question(i, {"text": ...})` | writes into `pending_questions[i]` |
-| Change type | `update_question(i, {"type": "essay"|"identification"})` | OCR dropdown; remaps the gym later |
-| Edit answer | `update_question(i, {"answer": ...})` | same field used as key concepts for essays |
+| Change type | `update_question(i, {"type": "essay"\|"identification"\|"multiple_choice"})` | dropdown; re-renders the list (MC rows show their wrong-option fields); remaps the gym later |
+| Change tier | `update_question(i, {"difficulty": "easy"\|"medium"\|"hard"})` | second dropdown on the type row |
+| Edit answer | `update_question(i, {"answer": ...})` | same field used as key concepts for essays; the correct option for MC |
+| Edit wrong options | `update_question(i, {"distractors": [3 strings]})` | three `LineEdit`s, MC rows only |
 | Delete | `remove_question(i)` | `remove_at`, then full re-render |
-| Add | `add_question(text, type, answer, key_concepts)` | id `q_<n>_<rand0-9999>`, confidence 0.5 |
+| Add | `add_question(text, type, answer, key_concepts, difficulty, distractors)` | id `q_<n>_<rand0-9999>`, tier `medium`, confidence 0.5 |
+
+`SessionManager.normalize_question()` runs on extraction results, saved topics and reopened topics:
+it lowercases the type, defaults an unknown tier to `medium`, and turns a Multiple Choice row with
+no correct answer or no wrong option into an Identification. Rows the player leaves incomplete in
+the editor are kept as typed; the battle plays them as Identification.
 
 Rows are built in code (`_make_question_row`), not as a reusable scene. Each row shows:
 
@@ -149,8 +162,9 @@ Rows are built in code (`_make_question_row`), not as a reusable scene. Each row
 - confidence badge: ✓ green ≥ 85 %, ○ yellow ≥ 60 %, ⚠ red below
 - delete button
 - prompt `TextEdit`
-- type `OptionButton`
+- type `OptionButton` and tier `OptionButton`
 - answer/key-concepts `LineEdit`
+- for Multiple Choice, three wrong-option `LineEdit`s
 
 Edits are applied by index, so **deleting a row while editing others is safe only because the whole
 list is re-rendered** after every delete. Note that mastery keys also use indices (see
@@ -169,7 +183,8 @@ list is re-rendered** after every delete. Note that mastery keys also use indice
    same id, else appends a `{id, name, question_count, questions}` record.
 2. `Api.save_topic()` — `PUT /topics/{id}`; in MOCK mode `_put` still fires an HTTPRequest at
    `localhost:8000`, which simply fails and is ignored by `_on_request_completed`.
-3. Emits `topic_saved`, then `_enter_overworld()` → `build_map_data()` → `region_generated`.
+3. `SaveManager.save_progress()` — the new topic is saved at once (a no-op until a save has been loaded).
+4. Emits `topic_saved`, then `_enter_overworld()` → `build_map_data()` → `region_generated`.
 
 `build_map_data()` (`session_manager.gd:178-187`) produces:
 
@@ -212,5 +227,4 @@ categorizer with the previous `pending_questions` still loaded.
 | Fake topic injection | `mock_get_topics()` seeds "Biology 101" every boot |
 | Source text not persisted | Re-opening a topic later cannot re-run extraction on the original reviewer |
 | Topic id collisions | `topic_<unix%100000>` repeats every ~27.8 hours |
-| No save after confirm | New topics persist only on the next care-tap/settings save |
 | No quota feedback on file path | PDF quota is consumed inside `Api`, after the UI already started the "studying" state |

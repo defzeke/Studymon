@@ -10,7 +10,6 @@ Severity: **P0** blocks the core loop · **P1** blocks a feature or silently cor
 
 | # | Issue | Severity |
 |---|---|---|
-| 1 | Missing `bot_lv*.png` — `battle.tscn` fails to parse | **P0** |
 | 8 | No Feed / Pet / Play input in the care room | **P0** |
 | 2 | Auth header uses `***` instead of `Bearer` | **P1** |
 | 3 | Companion is invisible | **P1** |
@@ -19,49 +18,15 @@ Severity: **P0** blocks the core loop · **P1** blocks a feature or silently cor
 | 6 | Champion soft-lock | **P1** |
 | 7 | Client/backend endpoint drift | **P1** |
 | 9 | Real grade/extract responses are silently dropped | **P1** |
-| 10 | Progress is not saved after battles or topic confirm | **P1** |
 | 11 | ~~Large-text accessibility toggle is unreachable~~ — fixed | — |
 | 12 | `Condition "det == 0" is true` spam from the rig | **P2** |
 | 13 | `stats_changed` fires every frame | **P2** |
 | 14 | Full save write on every care tap | **P2** |
-| 15 | Identification answers consume grading quota | **P2** |
 | 16 | Save file loaded twice at boot | **P3** |
 | 17 | Duplicate `overworld_progress_changed` emissions | **P3** |
 | 19 | Fake "Biology 101" topic seeded on every boot | **P3** |
 | 20 | Stale docs, no tests/CI | **P3** |
 | 21 | Theme and scene colours predate the canonical palette | **P3** |
-
----
-
-## 1. Missing `bot_lv*.png` — `battle.tscn` fails to parse (P0)
-
-`region_map.tscn` no longer references the sprites (it is 3D now), so only the battle arena is
-affected.
-
-**Evidence**
-
-```
-$ Godot_v4.7.2 --headless --path . res://scenes/battle/battle.tscn --quit-after 20
-ERROR: Resource file not found: res://assets/sprites/bot_lv1.png …
-ERROR: Resource file not found: res://assets/sprites/bot_lv5.png …
-ERROR: res://scenes/battle/battle.tscn:77 / :107 - Parse Error …
-```
-
-`companion.gd:80` also looks for `bot_lv1..5.png` at runtime and falls back.
-
-**Impact:** `change_scene_to_file` to the battle fails, so the campaign is dead at the first
-"Fight Trainer!" in the overworld, and the battle arena cannot even be run standalone in the
-editor.
-
-**Fix (either):**
-
-- Add `assets/sprites/bot_lv1.png` … `bot_lv5.png` (the intended pet growth art), or
-- Remove the `[ext_resource]` entries for `bot_lv1.png` / `bot_lv5.png` (`battle.tscn:4-5`)
-  together with the `texture = ExtResource(…)` lines that use them (`battle.tscn:77`,
-  `battle.tscn:107`), then let the script's null-guards take over.
-
-Until then, note that a missing texture in a `.tscn` is a **parse error**, not a warning — it
-cannot be caught at runtime.
 
 ---
 
@@ -207,20 +172,6 @@ now 401/500/timeout are indistinguishable from success-with-no-body.
 
 ---
 
-## 10. Progress is not saved after battles or topic confirm (P1)
-
-`SaveManager.save_game()` is only called from care taps, level-up, campaign unlock and Settings.
-Mastery changes, cleared trainers/gyms, champion clears, new/edited topics and extraction results
-all mutate memory only (`data-model.md` §7).
-
-**Impact:** quitting after a battle or a new topic loses that work; `CompanionState.add_xp()` from a
-battle is also lost.
-
-**Fix:** save in `SessionManager.report_battle_result()`, `confirm_topic()` and after a champion win.
-Longer term, debounce a dirty flag instead of writing the whole file per event.
-
----
-
 ## 11. Large-text accessibility toggle — fixed
 
 `settings.tscn` now has a **Large text** checkbox bound to `GameState.set_large_text()`, saved on
@@ -267,17 +218,6 @@ synchronous `FileAccess` write per tap.
 
 **Fix:** debounce (e.g. save at most once every 5 s, plus on `NOTIFICATION_WM_CLOSE_REQUEST` /
 `NOTIFICATION_APPLICATION_PAUSED`).
-
----
-
-## 15. Identification answers consume grading quota (P2)
-
-`Api.grade_battle_question()` consumes a `"grade"` unit for every submission, including
-Identification questions that are graded locally by string comparison. Free tier = 10/week, so a
-topic with 12 ID questions exhausts the week's quota without a single LLM call.
-
-**Fix:** only consume quota on the paths that would hit the API (essay grading / extraction), or
-make the limit `pdfs` + `essays` and document it.
 
 ---
 
