@@ -35,6 +35,7 @@ const INK := Color("29383A")
 @onready var progress_label: Label = $HUD/TopBar/ProgressLabel
 @onready var badges_label: Label = $HUD/TopBar/BadgesLabel
 @onready var back_btn: Button = $HUD/TopBar/BackButton
+@onready var study_btn: Button = $HUD/StudyButton
 @onready var encounter_panel: PanelContainer = $HUD/EncounterPanel
 @onready var encounter_title: Label = $HUD/EncounterPanel/Margin/List/EncounterTitle
 @onready var encounter_question: Label = $HUD/EncounterPanel/Margin/List/EncounterQuestion
@@ -62,6 +63,7 @@ func _ready() -> void:
 		]
 	GameState.set_active_region(_topic_id)
 	back_btn.pressed.connect(_on_back)
+	study_btn.pressed.connect(_on_study)
 	encounter_close_btn.pressed.connect(_on_encounter_close)
 	encounter_clear_btn.pressed.connect(_on_encounter_cleared)
 	_show_encounter(false)
@@ -344,3 +346,7 @@ func _refresh_progress() -> void:
 
 func _on_back() -> void:
 	get_tree().change_scene_to_file("res://scenes/ui/session_list.tscn")
+
+func _on_study() -> void:
+	SessionManager.flashcards_return = "res://scenes/overworld/region_map.tscn"
+	get_tree().change_scene_to_file("res://scenes/review_session/flashcards.tscn")

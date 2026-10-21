@@ -463,6 +463,34 @@ func _questions_for(topic_id: String) -> Array:
 			return t.get("questions", [])
 	return []
 
+# --- Phase 4: Flashcard Sanctuary (contract: docs/systems/gameplay-structure.md §3.4) ---
+
+## Where the sanctuary's Back button returns to; its callers set it.
+var flashcards_return: String = "res://scenes/ui/session_list.tscn"
+
+## Card order for a review: Remaster, then New, Learning, Mastered; ties in question order.
+func flashcard_deck(topic_id: String) -> Array:
+	var order := [Mastery.REMASTER, Mastery.NEW, Mastery.LEARNING, Mastery.MASTERED]
+	var deck: Array = range(_questions_for(topic_id).size())
+	deck.sort_custom(func(a: int, b: int) -> bool:
+		var ra := order.find(get_mastery_state(topic_id, a))
+		var rb := order.find(get_mastery_state(topic_id, b))
+		return ra < rb or (ra == rb and a < b))
+	return deck
+
+## "Easy" in review lifts New or Remaster to Learning; Mastered is earned only in battle.
+## True when the card moved.
+func promote_from_review(topic_id: String, q_idx: int) -> bool:
+	var st := get_mastery_state(topic_id, q_idx)
+	if st != Mastery.NEW and st != Mastery.REMASTER:
+		return false
+	var k := _mastery_key(topic_id, q_idx)
+	var rec: Dictionary = _mastery.get(k, {"state": Mastery.NEW, "attempts": 0, "correct": 0, "last_correct": 0})
+	rec["state"] = Mastery.LEARNING
+	_mastery[k] = rec
+	mastery_changed.emit()
+	return true
+
 # --- Phase 8: Champion battle ---
 # Moveset = all current Mastered questions; falls back to every question
 # so the fight stays playable even with zero mastered.

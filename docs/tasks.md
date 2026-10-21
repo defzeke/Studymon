@@ -19,7 +19,7 @@ fling the ball, Kuiz watches. Settings and the topic list now return home. New t
 `assets/sprites/props/` and `ui/arrow.svg`. Details in [`ui-and-assets.md`](ui-and-assets.md) §2
 Home.
 
-**Gameplay structure Phases 0–3 — uncommitted.** Battles load (`battle.tscn` no longer references
+**Gameplay structure Phases 0–3 — committed.** Battles load (`battle.tscn` no longer references
 `bot_lv*.png`), progress saves after battles and topic confirmation (`SaveManager.save_progress()`),
 questions carry `difficulty` (and `distractors` for Multiple Choice) with save `"v": 6`, the mock
 extractor produces all three types and tiers, the categorizer edits them, battles scale by tier,
@@ -28,6 +28,11 @@ south road. Phase 3: trainers climb Easy → Hard along each road, the boss is t
 question and stays locked until its trainers are beaten, gyms clear only through the boss (#17), and
 the Champion falls back to every question, Easy to Hard (#6). Contract:
 [`systems/gameplay-structure.md`](systems/gameplay-structure.md).
+
+**Flashcard Sanctuary (Phase 4) — uncommitted.** `flashcards.tscn`: untimed review of a topic with
+Again / Hard / Easy. Easy lifts New or Remaster to Learning (never Mastered); each lifted card pays
++1 XP and +2 focus once, a finished deck +3 mood. Opened from the island's Study button and from a
+Cards button on each session-list row. Details in [`ui-and-assets.md`](ui-and-assets.md).
 
 ## Blocked
 
@@ -43,12 +48,15 @@ P0/P1 first; each item's evidence and fix live in [`known-issues.md`](known-issu
 
 | Order | Item | Why now |
 |---|---|---|
-| 1 | Gameplay structure Phase 4: Flashcard Sanctuary | Safe way to repair mastery |
-| 2 | #8 / #5 Care input that earns XP, once the top-bar design lands | Makes Level 5 reachable and gives the gate back |
-| 3 | #3 Un-hide the companion rig and its animation guards | Core fantasy |
-| 4 | #4 Show `TidbitBubble` when text is assigned | Level-5 gate and every curriculum line are currently invisible |
-| 5 | #2 `Bearer` header + a way to set `auth_token` | Required before `MOCK` can flip |
-| 6 | #9 Standardise the job envelope (or add a `grade_result` signal) and handle non-2xx | Real responses are dropped today |
+| 1 | #8 / #5 Care input that earns XP, once the top-bar design lands | Makes Level 5 reachable and gives the gate back |
+| 2 | #3 Un-hide the companion rig and its animation guards | Core fantasy |
+| 3 | #4 Show `TidbitBubble` when text is assigned | Level-5 gate and every curriculum line are currently invisible |
+| 4 | #2 `Bearer` header + a way to set `auth_token` | Required before `MOCK` can flip |
+| 5 | #9 Standardise the job envelope (or add a `grade_result` signal) and handle non-2xx | Real responses are dropped today |
+
+**Future, not started: Phase 5**, the real backend and the App Store / Google Play launch. The game
+stays on mocks until the maintainer decides to begin. The researched plan, store requirements and
+mock-first prep are in [`launch-plan.md`](launch-plan.md); items 4 and 5 above are part of it.
 
 Hygiene, after the slice plays:
 
@@ -70,6 +78,10 @@ Hygiene, after the slice plays:
 3. **Codex.** The remote branch `feat/remove-codex` suggests it is being cut. Remove the button and
    the `codex` save field, or keep it?
 4. **Save cadence.** Event-driven saves, a dirty flag with a timer, or save on app pause only (#14)?
+5. **Hosting (when Phase 5 starts).** Recommended: FastAPI on Cloud Run or Fly.io + Supabase. See
+   [`launch-plan.md`](launch-plan.md) §1.
+6. **Purchases timing (when Phase 5 starts).** Recommended: free launch with server-side quotas,
+   a premium plan later. See [`launch-plan.md`](launch-plan.md) §1.
 
 ## Done
 

@@ -39,21 +39,40 @@ func _make_row(topic: Dictionary) -> Control:
 		var qs = topic["questions"]
 		if qs is Array:
 			count = qs.size()
-	var row := Button.new()
-	row.custom_minimum_size = Vector2(0, 72)
-	row.alignment = HORIZONTAL_ALIGNMENT_LEFT
-	row.text = "  %s  ·  %d Qs" % [name, count]
-	row.pressed.connect(_on_open_topic.bind(topic))
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 8)
+	var open_btn := Button.new()
+	open_btn.custom_minimum_size = Vector2(0, 72)
+	open_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	open_btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	open_btn.text = "  %s  ·  %d Qs" % [name, count]
+	open_btn.pressed.connect(_on_open_topic.bind(topic))
+	row.add_child(open_btn)
+	var cards_btn := Button.new()
+	cards_btn.custom_minimum_size = Vector2(120, 72)
+	cards_btn.text = "Cards"
+	cards_btn.disabled = count == 0
+	cards_btn.pressed.connect(_on_open_cards.bind(topic))
+	row.add_child(cards_btn)
 	return row
 
-func _on_open_topic(topic: Dictionary) -> void:
+func _load_topic(topic: Dictionary) -> void:
 	var questions: Array[Dictionary] = []
 	if topic.has("questions") and topic["questions"] is Array:
 		for q in topic["questions"]:
 			if q is Dictionary:
 				questions.append(q)
 	SessionManager.set_editing_topic(str(topic.get("id", "")), questions)
+
+func _on_open_topic(topic: Dictionary) -> void:
+	_load_topic(topic)
 	get_tree().change_scene_to_file("res://scenes/review_session/categorizer.tscn")
+
+func _on_open_cards(topic: Dictionary) -> void:
+	_load_topic(topic)
+	SessionManager.current_topic_id = str(topic.get("id", ""))
+	SessionManager.flashcards_return = "res://scenes/ui/session_list.tscn"
+	get_tree().change_scene_to_file("res://scenes/review_session/flashcards.tscn")
 
 func _on_add_new() -> void:
 	SessionManager.pending_questions.clear()

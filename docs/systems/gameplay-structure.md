@@ -4,9 +4,11 @@ The target design for how a reviewer becomes a playable world: which gyms exist,
 works, where flashcards fit, and the order to build what is missing. It supersedes the old
 `gameplay_structure.md` draft (v2.6).
 
-Status: **Phases 0–3 implemented** (battles load, progress saves, the question model and mock
+Status: **Phases 0–4 implemented** (battles load, progress saves, the question model and mock
 generation, Multiple Choice and per-tier battles, a third gym spot on the map, tier-ordered
-trainers, the boss lock and the Champion fallback). **Phases 4–5 are proposed.** Where this page and the code disagree, the code describes today. As each phase lands,
+trainers, the boss lock, the Champion fallback and the Flashcard Sanctuary). **Phase 5 (the real
+AI backend and the store launch) is future work, not started: the game stays on mocks**
+([`../launch-plan.md`](../launch-plan.md)). Where this page and the code disagree, the code describes today. As each phase lands,
 move its facts into the owning doc (see [`../rules.md`](../rules.md) §2) and update the status here.
 
 - **Today's systems:** [`overworld.md`](overworld.md), [`battle.md`](battle.md),
@@ -110,11 +112,23 @@ counter. A Multiple Choice question with no correct answer or no wrong option is
 
 ### 3.4 Flashcard Sanctuary
 
-- Deck is the topic's questions: front is the prompt, back is the answer and source excerpt. New and Remaster come first.
-- Actions: **Again** (re-queue three ahead), **Hard** (end of deck), **Easy** (bank).
-- Easy moves NEW or REMASTER to LEARNING only. **MASTERED is earned only in battle.**
-- Rewards: a small focus and mood gain and a few XP. No timer, no HP loss, no quota use.
-- It gives a safe way to repair mastery, which also eases the Champion soft-lock path.
+Scene `scenes/review_session/flashcards.tscn`, logic `scripts/review_session/flashcards.gd`, built in
+the canonical palette (Soft Sage room, Warm Off-White card, Muted Teal controls).
+
+- Deck is the topic's questions (`SessionManager.flashcard_deck()`): front is the prompt and a
+  mastery badge, back is the answer (an Essay also lists its key ideas) and the source excerpt.
+  Order: Remaster, New, Learning, Mastered; ties in question order.
+- Show answer first; then **Again** (re-queue three cards ahead), **Hard** (to the end of the
+  deck) or **Easy** (bank it). The deck is done when the queue is empty.
+- Easy moves NEW or REMASTER to LEARNING only (`promote_from_review()`); a Learning or Mastered
+  card is unchanged. **MASTERED is earned only in battle.**
+- Rewards, each paid once per card because only a card that moves up pays: `+1 XP` and `+2 focus`
+  per promotion (`CompanionState.reward_card_banked()`), `+3 mood` when a deck with banked cards
+  finishes (`reward_deck_done()`). No timer, no HP loss, no quota use, no game over.
+- Entry points: the **Study** button on the island HUD (returns to the island) and the **Cards**
+  button on each session-list row (returns to the list). The caller sets
+  `SessionManager.flashcards_return`. Progress saves when the deck ends or on Back.
+- It gives a safe way to repair mastery before the Champion.
 
 ### 3.5 Mastery, Champion and quota
 
@@ -135,8 +149,8 @@ Each phase ships on its own and ends with the gates in [`../rules.md`](../rules.
 | 1 Data and generation — **done** | `difficulty` and `distractors` keys with `normalize_question()`; mock extractor rotates three types, tags tiers by sentence-length terciles and builds MC distractors; save `"v": 6`; categorizer edits type, difficulty and wrong options. Mastery is still keyed by question index | `session_manager.gd`, `api.gd`, `save_manager.gd`, `categorizer.gd` |
 | 2 Battle by type and difficulty — **done** | MC panel; per-tier constants and thresholds; essay-only quota; the third gym spot and `Trainers3` road so MC is reachable | `battle.gd`, `api.gd`, `region_map.gd`, `region_map.tscn` |
 | 3 Overworld tiers — **done** | Trainers ordered by tier with the tier on their labels; the boss is the hardest question and stays locked until the gym's trainers are cleared; gyms clear only through the boss (so `_recheck_gym_clear()` is gone and a trainer win emits once, #17); Champion fallback and Easy-to-Hard order (#6); the Trainers3 road now walks toward its gym | `region_map.gd`, `region_map.tscn`, `session_manager.gd` |
-| 4 Flashcard Sanctuary | New scene and script; entry from the map HUD and the session list; a mastery write that only allows NEW/REMASTER → LEARNING | `scenes/review_session/flashcards.tscn`, `flashcards.gd` |
-| 5 Real AI backend | Pick the contract (#7); PDF text extraction, Claude generation using §3.1, essay grading; `Bearer` header (#2); handle non-envelope and non-2xx responses (#9); keep `Api.MOCK` working | `backend/main.py`, `api.gd` |
+| 4 Flashcard Sanctuary — **done** | New scene and script; entry from the map HUD and the session list; a mastery write that only allows NEW/REMASTER → LEARNING; small once-per-card rewards | `scenes/review_session/flashcards.tscn`, `flashcards.gd`, `session_manager.gd`, `companion_state.gd` |
+| 5 Real AI backend and store launch — **Future (not started; mock first)**, plan in [`../launch-plan.md`](../launch-plan.md) | Pick the contract (#7); PDF text extraction, Claude generation using §3.1, essay grading; `Bearer` header (#2); handle non-envelope and non-2xx responses (#9); keep `Api.MOCK` working | `backend/main.py`, `api.gd` |
 
 ### Future
 

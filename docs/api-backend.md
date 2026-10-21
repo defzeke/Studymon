@@ -181,6 +181,9 @@ so keep `"job_001"` or generate ids that cannot collide with those two.
 
 ## 6. Suggested minimum to go live
 
+> The fuller, store-aware plan (accounts, quotas, evals, release pipeline) is in
+> [`launch-plan.md`](launch-plan.md). It is future work; the game stays on mocks for now.
+
 1. Decide the real paths (`/grade` vs `/battle/grade`) and fix the client **and** `backend/README.md`.
 2. Teach `_on_request_completed` to surface non-`job_id` payloads (or standardise every response on
    the job envelope) and to report non-2xx codes through a signal.

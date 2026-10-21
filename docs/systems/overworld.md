@@ -74,7 +74,8 @@ RegionMap            Node3D (region_map.gd)
 ├── Player            CharacterBody3D (player.gd), floating motion, capsule r 0.22 h 0.9
 │   ├── Boy           instance of assets/models/boy_explorer.glb (Idle / Walk / Run looped)
 │   └── Camera3D      (0, 7, 4.7), pitched −54°, fov 40 across the width
-└── HUD               TopBar, HintLabel, Joystick (bottom-left), EncounterPanel
+└── HUD               TopBar, HintLabel, Joystick (bottom-left), StudyButton (bottom-right,
+                      opens the Flashcard Sanctuary and returns here), EncounterPanel
 ```
 
 **Where things go.** The map has three gym buildings; `GYM_BUILDINGS` puts `gyms[0]` in `Gym2`

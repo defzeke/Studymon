@@ -8,7 +8,7 @@ home loop, whose Play button opens the upload screen; upload → edit → island
 mastery → Champion now plays end to end, with Multiple Choice, Identification and Essay gyms and
 Easy/Medium/Hard battles ([`systems/gameplay-structure.md`](systems/gameplay-structure.md)). What is
 still missing: care input that earns XP and the Level 5 gate (waiting on the top-bar design),
-the Flashcard Sanctuary (Phase 4) and a real backend. Trainers are tier-ordered, bosses are locked
+a real backend and the store launch (future, mock first: [`launch-plan.md`](launch-plan.md)). The Flashcard Sanctuary lets players review and repair mastery. Trainers are tier-ordered, bosses are locked
 until their trainers are beaten, and the Champion always has a moveset.
 
 ---
@@ -173,10 +173,9 @@ Ordered by leverage; the first two are the whole game.
 Done: the battle scene loads, progress saves after battles and topic confirmation, and the Champion
 fallback, tier-ordered trainers and boss lock are in.
 
-1. The Flashcard Sanctuary (Phase 4 of `systems/gameplay-structure.md`). *(P1)*
-2. Care input that earns XP and the Level 5 gate, once the top-bar design lands. *(P1)*
-3. Un-hide `TidbitBubble` and show it on every text assignment. *(P1)*
-4. Fix the `Authorization` scheme. *(P1)*
+1. Care input that earns XP and the Level 5 gate, once the top-bar design lands. *(P1)*
+2. Un-hide `TidbitBubble` and show it on every text assignment. *(P1)*
+3. Fix the `Authorization` scheme. *(P1)*
 
 The loop upload → edit → overworld → battle → mastery → Champion is playable end to end on mocks.
 

@@ -80,6 +80,15 @@ func add_xp(amount: int) -> void:
 	_check_level_up()
 	xp_changed.emit(xp, level)
 
+## Flashcard review (docs/systems/gameplay-structure.md §3.4): a card lifted a mastery step,
+## and a finished deck. Each card pays once, so reviewing the same cards cannot farm XP.
+func reward_card_banked() -> void:
+	focus = minf(STAT_MAX, focus + 2.0)
+	add_xp(1)
+
+func reward_deck_done() -> void:
+	mood = minf(STAT_MAX, mood + 3.0)
+
 func _check_level_up() -> void:
 	while level < MAX_LEVEL and xp >= XP_PER_LEVEL[level]:
 		level += 1

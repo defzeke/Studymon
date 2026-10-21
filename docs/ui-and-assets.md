@@ -70,6 +70,7 @@ text** checkbox in `settings.tscn` calls `set_large_text()` and saves.
 | `scenes/review_session/categorizer.tscn` | `Control` | `scripts/review_session/categorizer.gd` | upload + question editor |
 | `scenes/overworld/region_map.tscn` | `Node3D` | `scripts/overworld/region_map.gd` (+ `player.gd`, `joystick.gd`) | 3D island: explorer, trainers, gyms, champion |
 | `scenes/battle/battle.tscn` | `Control` | `scripts/battle/battle.gd` | arena |
+| `scenes/review_session/flashcards.tscn` | `Control` | `scripts/review_session/flashcards.gd` | Flashcard Sanctuary: untimed card review |
 | `scenes/ui/settings.tscn` | `Control` | `scripts/ui/settings.gd` | music and sound volume, large text, premium + quota debug; Back returns home |
 | `scenes/ui/widgets/hud_strip.tscn` | `VBoxContainer` | `scripts/ui/widgets/hud_strip.gd` | status strip (instanced) |
 | `scenes/ui/widgets/pomodoro.tscn` | `VBoxContainer` | `scripts/ui/widgets/pomodoro.gd` | timer panel (instanced) |
@@ -277,7 +278,18 @@ subtle), the soft-box reflections, and the page's off-white radial background.
 ### `session_list.tscn`
 
 `Background` (`ColorRect`), `Title`, `EmptyLabel`, `Scroll` → `ListBox`, `AddButton`, `BackButton`.
-Rows are built as `Button`s with `alignment = LEFT` and text `  <name>  ·  <N> Qs`.
+Rows are built in code as an `HBoxContainer`: a topic `Button` (`alignment = LEFT`, text
+`  <name>  ·  <N> Qs`, opens the editor) and a 120 px **Cards** `Button` that opens the Flashcard
+Sanctuary (disabled for an empty topic).
+
+### `flashcards.tscn`
+
+`Flashcards` (`Control`) → `Background` (`ColorRect`, Soft Sage), `Margin` → `List`: `TopBar`
+(`BackButton`, `ProgressLabel` "N left · M banked"), `CardPanel` → `CardBox` (`BadgeLabel`,
+`FrontLabel` 36 px, `Sep`, `AnswerLabel`, `SourceLabel`), `FlipButton` ("Show answer"), `RateRow`
+(`AgainButton` Soft Coral, `HardButton` Muted Amber, `EasyButton` Soft Green) and `DoneLabel`.
+The answer, source and rate row are hidden until the card is flipped. Colours and button styles
+are applied in `_style()` from the canonical palette; every button is at least 56 px tall.
 
 ### `categorizer.tscn`
 
