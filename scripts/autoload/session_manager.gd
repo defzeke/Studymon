@@ -20,15 +20,12 @@ var pending_questions: Array[Dictionary] = []
 var editing_topic_id: String = ""
 ## Phase 5: raw reviewer text from the last upload (paste or decoded file bytes).
 ## Stored so the mock extractor can parse USER material instead of canned defaults.
-## Per-topic copies persist in _source_by_topic after confirm.
 var last_source_text: String = ""
-var _source_by_topic: Dictionary = {}
 var _topics: Array[Dictionary] = []
 var _active_job_id: String = ""
 # Phase 6: per-region clear state (mock-persisted in memory)
 var _cleared_trainers: Dictionary = {}  # "topic_id:q_idx" -> true
 var _cleared_gyms: Dictionary = {}  # "topic_id:gym_type" -> true
-var _last_map_data: Dictionary = {}
 # Phase 7: battle context (survives the overworld -> battle scene change)
 var battle_topic_id: String = ""
 var battle_q_index: int = -1
@@ -87,14 +84,6 @@ func start_upload_from_text(topic_name: String, source_text: String) -> void:
 		return
 	last_source_text = source_text
 	start_upload(topic_name, source_text.to_utf8_buffer())
-
-## Raw reviewer text for a topic ("" if none stored).
-func get_source_text(topic_id: String) -> String:
-	if _source_by_topic.has(topic_id):
-		return str(_source_by_topic[topic_id])
-	if topic_id == editing_topic_id or topic_id == current_topic_id:
-		return last_source_text
-	return ""
 
 func _on_job_status(job_id: String, status: String, progress: float, result: Variant) -> void:
 	# Grade jobs belong to the battle scene (Api._mock_grade_done) — not extraction.
@@ -164,16 +153,12 @@ func confirm_topic(topic_name: String = "") -> void:
 		return
 	var name := topic_name if topic_name != "" else editing_topic_id
 	add_topic_to_history(editing_topic_id, name, pending_questions)
-	if last_source_text.strip_edges() != "":
-		_source_by_topic[editing_topic_id] = last_source_text
 	Api.save_topic(editing_topic_id, pending_questions)
 	topic_saved.emit(editing_topic_id)
 	_enter_overworld(editing_topic_id)
 
 func _enter_overworld(topic_id: String) -> void:
-	var map_data := build_map_data(topic_id, pending_questions)
-	_last_map_data = map_data
-	region_generated.emit(topic_id, map_data)
+	region_generated.emit(topic_id, build_map_data(topic_id, pending_questions))
 
 func build_map_data(topic_id: String, questions: Array[Dictionary]) -> Dictionary:
 	var gyms: Array = []
@@ -185,9 +170,6 @@ func build_map_data(topic_id: String, questions: Array[Dictionary]) -> Dictionar
 			gyms.append(t)
 		trainers.append({"q_index": i, "gym": t, "id": str(q.get("id", "q_%d" % i))})
 	return {"topic_id": topic_id, "gyms": gyms, "trainers": trainers}
-
-func get_last_map_data() -> Dictionary:
-	return _last_map_data.duplicate(true)
 
 func get_pending_questions() -> Array[Dictionary]:
 	return pending_questions.duplicate(true)
@@ -251,20 +233,6 @@ func get_progress(topic_id: String) -> Dictionary:
 		if is_gym_cleared(topic_id, str(g["type"])):
 			gyms_done += 1
 	return {"cleared": done, "total": total, "gyms_cleared": gyms_done, "gyms_total": gyms.size()}
-
-func reset_progress(topic_id: String) -> void:
-	for k in _cleared_trainers.keys():
-		if str(k).begins_with(topic_id + ":"):
-			_cleared_trainers.erase(k)
-	for k in _cleared_gyms.keys():
-		if str(k).begins_with(topic_id + ":"):
-			_cleared_gyms.erase(k)
-	for k in _mastery.keys():
-		if str(k).begins_with(topic_id + ":"):
-			_mastery.erase(k)
-	_champion_defeated.erase(topic_id)
-	overworld_progress_changed.emit()
-	mastery_changed.emit()
 
 # --- Phase 7: battle handoff ---
 
@@ -489,9 +457,6 @@ func is_champion_available(topic_id: String) -> bool:
 
 func is_champion_defeated(topic_id: String) -> bool:
 	return _champion_defeated.has(topic_id)
-
-func is_region_complete(topic_id: String) -> bool:
-	return is_champion_defeated(topic_id)
 
 func begin_champion_battle(topic_id: String) -> bool:
 	if not is_champion_available(topic_id):

@@ -62,10 +62,9 @@ Hygiene, after the slice plays:
 | #14 | Debounce the save instead of one full write per tap |
 | #11 | Add the large-text toggle to Settings |
 | #12 | Give leaf bones non-zero rest length, or skip degenerate weights |
-| #16, #17, #18, #19 | Double save load, duplicate signal, duplicate `current_topic_id`, phantom "Biology 101" |
-| #20 | Add a headless smoke-test script / CI, and remove the redundant branch in `categorizer.gd:73-79` |
+| #16, #17, #19 | Double save load, duplicate signal, phantom "Biology 101" |
+| #20 | Add a headless smoke-test script / CI |
 | #21 | Migrate the shared theme and inline scene colours to the canonical palette |
-| — | Remove the seven `# ponytail:` marker comments (rules §3) |
 
 ## Needs a decision
 
@@ -81,6 +80,9 @@ Hygiene, after the slice plays:
 
 ## Done
 
+- **2026-10-21** — cleanup, no behaviour change: removed unused assets (`hmm.mp3`, the run-cycle and
+  `loading_logo` PNGs, three companion SVGs), the five planning-stub READMEs, never-called helpers,
+  `GameState.current_topic_id` (#18), the `campaign_unlocked` signal and the `# ponytail:` tags.
 - **2026-10-21** — boot flow polish: splash → loading → peek handoffs on white with threaded
   loads, the loading screen's leaves, floating logo, striped bar and tips, the 3D `peek.tscn` with
   the artifact's look, and the text intro removed (`8db69c9`).

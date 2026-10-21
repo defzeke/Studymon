@@ -2,7 +2,6 @@ extends Control
 ## Phase 10: Settings — mock monetization controls + debug quota reset.
 ## Checkbox toggles MonetizationState.is_premium; button triggers weekly rollover.
 
-@onready var title_label: Label = $Content/Title
 @onready var premium_check: CheckBox = $Content/PremiumRow/PremiumCheck
 @onready var quota_label: Label = $Content/QuotaLabel
 @onready var pdf_label: Label = $Content/PdfQuotaLabel
@@ -24,7 +23,7 @@ func _ready() -> void:
 
 func _refresh() -> void:
 	var _ms := get_node_or_null("/root/MonetizationState")
-	# ponytail: null-guard lets scene run standalone without autoloads
+	# Null-guard: the scene also runs standalone, without autoloads.
 	if _ms == null:
 		return
 	# Prevent signal loop when setting checked state

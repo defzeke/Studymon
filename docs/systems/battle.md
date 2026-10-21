@@ -169,7 +169,7 @@ care tap or settings change (`data-model.md` §7).
   `SessionManager.get_battle_question()`, which `advance_champion()` has already re-pointed.
 - If the player loses mid-gauntlet, `Retry` is available; fleeing ends the run without clearing
   `_champion_defeated`.
-- The last win sets `_champion_defeated[topic_id]`, which is what `is_region_complete()` checks.
+- The last win sets `_champion_defeated[topic_id]`, which is what `is_champion_defeated()` reports.
 
 ---
 

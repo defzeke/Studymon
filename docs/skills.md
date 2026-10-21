@@ -213,7 +213,7 @@ The save is `user://studymon_save.json`, which on Windows is:
 %APPDATA%\Godot\app_userdata\Studymon\studymon_save.json
 ```
 
-Delete it (or call `SaveManager.reset_save()`) to start again at Level 1. Boot ends on `peek.tscn`
+Delete it to start again at Level 1. Boot ends on `peek.tscn`
 and never reads the save, so open `res://scenes/ui/main.tscn` directly to work on the care room. To test the campaign
 without earning 150 XP, set `"level": 5`, `"xp": 150`, `"campaign_ready": true` in the JSON, or call
 `CompanionState.add_xp(150)` from a temporary debug line. Do not commit debug lines or edited saves.

@@ -2,7 +2,6 @@ extends Node
 ## GameState — global run-time state (canonical; superset of Phase 0 + Phase 1 needs).
 ## Companion stats live in CompanionState; topics in SessionManager.
 
-signal campaign_unlocked
 signal large_text_changed(enabled: bool)
 
 var user_id: String = ""
@@ -11,7 +10,6 @@ var auth_token: String = ""
 var player_name: String = ""
 var campaign_unlocked_flag: bool = false
 var active_region_id: String = ""
-var current_topic_id: String = ""
 
 # --- Phase 9: Accessibility — font-size scaling hooked into app_theme.tres ---
 # Standard = theme default (28 / 32), Large = scaled for readability.
@@ -29,8 +27,6 @@ func set_campaign_unlocked(value: bool) -> void:
 	if campaign_unlocked_flag == value:
 		return
 	campaign_unlocked_flag = value
-	if value:
-		campaign_unlocked.emit()
 
 func set_active_region(region_id: String) -> void:
 	active_region_id = region_id

@@ -361,17 +361,6 @@ level-ups, taps and gym clears are silent.
 |---|---|
 | `sprites/kuizmon_loading.gif` | source for `kuizmon_splash.png`; Godot has no GIF importer |
 
-### Present but unused
-
-| Asset | Note |
-|---|---|
-| `audio/hmm.mp3` | no call site |
-| `sprites/1run_loading.png`, `2run_loading.png`, `3run_loading.png` | old loading-bar run cycle; its hidden `RunBot` node was removed |
-| `sprites/loading_logo.png` | full cat logo; the loading screen uses the `logo.png` wordmark |
-| `sprites/companion/happy_companion.svg` | rig only uses idle/blink/sad |
-| `sprites/companion/charge_companion.svg` | unused |
-| `sprites/companion/complete_companion.svg` | unused |
-
 ### Referenced but **missing** (breaks scenes)
 
 | Asset | Referenced by | Effect |

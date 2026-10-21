@@ -70,9 +70,6 @@ Used consistently across these docs:
   intent, but its stack notes are stale (it says "Godot 4.6, avoid 4.7"; the project is on 4.7.2).
 - [`../README.md`](../README.md) — player-facing overview.
 - [`../AGENTS.md`](../AGENTS.md) — the agent entry point; it links to `rules.md`, this index and `tasks.md`.
-- `autoload/README.md`, `ui/README.md`, `companion/README.md`, `battle/README.md`,
-  `review_session/README.md` — per-folder contract stubs written during planning. **These are
-  partially out of date**; this folder supersedes them where they conflict.
 
 ---
 

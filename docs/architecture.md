@@ -55,18 +55,17 @@ res://
 ├── project.godot
 ├── icon.svg
 ├── assets/
-│   ├── audio/            charge.mp3, charged.mp3, hmm.mp3, main room.mp3
+│   ├── audio/            charge.mp3, charged.mp3, main room.mp3
 │   ├── fonts/            JosefinSans-Regular.ttf, JosefinSans-Bold.ttf
 │   ├── models/           kuiz.glb (peek scene); map.glb + map_0.png, boy_explorer.glb + 2 .jpg
 │   │                     textures (overworld)
 │   └── sprites/
-│       ├── 1run_loading.png, 2run_loading.png, 3run_loading.png   # unused run cycle
 │       ├── leaf.svg                                               # loading falling leaves
 │       ├── loading.png                                            # loading background
 │       ├── logo.png                                               # loading wordmark
 │       ├── kuizmon_loading.gif                                    # splash source (not imported)
 │       ├── kuizmon_splash.png                                     # 60-frame splash sheet
-│       ├── companion/    idle, blink, sad, happy, charge, complete (.svg)
+│       ├── companion/    idle, blink, sad (.svg)
 │       ├── rooms/        temporary placeholders: study_room.svg (+ _night), maintenance_bay.svg,
 │       │                 data_kitchen.svg, playroom.svg
 │       └── ui/           campaign.png, charge.png, loading_spark.svg, pomodoro.svg,
@@ -87,7 +86,6 @@ res://
 │                         battle (battle/)
 ├── ui/                   app_theme.tres, hud_strip.tscn, pomodoro.tscn, README.md
 ├── backend/              main.py (FastAPI stub), requirements.txt, README.md
-├── companion/, battle/, review_session/   ← planning READMEs only, no code
 ├── docs/                 ← this folder
 ├── README.md
 └── quizmon-build-plan.md
@@ -143,9 +141,7 @@ Dependency notes:
   `get_node_or_null("/root/MonetizationState")`, so scenes can run standalone in the editor.
 - `CompanionState`, `GameState`, `SessionManager` are used as bare globals everywhere else —
   adding a new autoload with the same name as a `class_name` will break that.
-- `GameState.current_topic_id` duplicates `SessionManager.current_topic_id`. Both are written in
-  different places (`categorizer.gd:315`, `region_map.gd:45`); nothing reads the `GameState` copy.
-  Treat `SessionManager`'s field as the source of truth.
+- `SessionManager.current_topic_id` is the only current-topic field.
 
 ---
 
@@ -227,7 +223,6 @@ which exist precisely so the overworld can pass a question to the battle scene a
 | `codex_entry_added(text)` | `CompanionState` | `companion.gd` |
 | `campaign_gate_ready` | `CompanionState` | `companion.gd` |
 | `pomodoro_phase_changed(mode)` | `CompanionState` | `companion.gd` |
-| `campaign_unlocked` | `GameState` | *(none)* |
 | `large_text_changed(enabled)` | `GameState` | `companion.gd` (no UI emits it) |
 | `job_status(job_id, status, progress, result)` | `Api` | `SessionManager`, `battle.gd` |
 | `quota_exceeded(type)` | `Api` | `battle.gd`, `categorizer.gd` |

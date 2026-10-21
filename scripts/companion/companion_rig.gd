@@ -20,7 +20,7 @@ const BONE_PATH := {
 
 const IDLE_TEX: Texture2D = preload("res://assets/sprites/companion/idle_companion.svg")
 const BLINK_TEX: Texture2D = preload("res://assets/sprites/companion/blink_companion.svg")
-# ponytail: Face overlay is static (not bone-weighted) so blinks never fight the
+# Face overlay is static (not bone-weighted) so blinks never fight the
 # squash/breathe tweens; 1-2px drift vs the deformed body during a 0.2s blink.
 const BLINK_MIN_WAIT := 2.4
 const BLINK_MAX_WAIT := 4.8

@@ -27,7 +27,6 @@ categorizer.tscn  ◄───────────────────�
    ▼
 SessionManager.confirm_topic(name)
    ├─ add_topic_to_history()   → topics cache
-   ├─ store source text        → _source_by_topic
    ├─ Api.save_topic()         → PUT /topics/{id}  (no-op in MOCK)
    ├─ topic_saved signal
    └─ build_map_data() → region_generated → region_map.tscn
@@ -168,10 +167,9 @@ list is re-rendered** after every delete. Note that mastery keys also use indice
 
 1. `add_topic_to_history(editing_topic_id, name, pending_questions)` — overwrites an entry with the
    same id, else appends a `{id, name, question_count, questions}` record.
-2. Stores `last_source_text` under `_source_by_topic[topic_id]` (in memory only).
-3. `Api.save_topic()` — `PUT /topics/{id}`; in MOCK mode `_put` still fires an HTTPRequest at
+2. `Api.save_topic()` — `PUT /topics/{id}`; in MOCK mode `_put` still fires an HTTPRequest at
    `localhost:8000`, which simply fails and is ignored by `_on_request_completed`.
-4. Emits `topic_saved`, then `_enter_overworld()` → `build_map_data()` → `region_generated`.
+3. Emits `topic_saved`, then `_enter_overworld()` → `build_map_data()` → `region_generated`.
 
 `build_map_data()` (`session_manager.gd:178-187`) produces:
 
@@ -186,12 +184,9 @@ list is re-rendered** after every delete. Note that mastery keys also use indice
 }
 ```
 
-`categorizer.gd:311-317` then waits 0.6 s, sets `GameState.active_region_id` and
-`GameState.current_topic_id`, and changes scene to `region_map.tscn`.
-
-The map data is also cached in `_last_map_data` but the overworld **recomputes** gym structure from
-`pending_questions` instead of reading it — the cache is currently dead weight
-(`get_last_map_data()` has no callers).
+`categorizer.gd:311-317` then waits 0.6 s, sets `GameState.active_region_id`, and changes scene to
+`region_map.tscn`. The overworld **recomputes** gym structure from `pending_questions` instead of
+reading the map data.
 
 ---
 
@@ -218,5 +213,4 @@ categorizer with the previous `pending_questions` still loaded.
 | Source text not persisted | Re-opening a topic later cannot re-run extraction on the original reviewer |
 | Topic id collisions | `topic_<unix%100000>` repeats every ~27.8 hours |
 | No save after confirm | New topics persist only on the next care-tap/settings save |
-| Dead map cache | `_last_map_data` / `get_last_map_data()` unused |
 | No quota feedback on file path | PDF quota is consumed inside `Api`, after the UI already started the "studying" state |

@@ -34,7 +34,6 @@ Premium bypasses both (`can_consume` returns true, `consume` is a no-op, `get_re
 | `can_consume(type)` | `true` for premium; otherwise `used < limit` (also triggers rollover) |
 | `consume(type)` | `false` if not allowed; otherwise increments and emits `quota_changed` |
 | `get_remaining(type)` | `999` for premium, else clamped remaining (also triggers rollover) |
-| `get_quota_label()` | `"Premium: Unlimited"` or `"Free AI Uses: PDFs r/3 \| Grades r/10"` |
 | `set_premium(bool)` | flips the flag, emits `premium_changed` + `quota_changed` |
 | `reset_quota()` | zeroes both counters and restarts the week |
 | `to_dict()` / `from_dict()` | save/restore the four fields |

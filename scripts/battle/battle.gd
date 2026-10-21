@@ -103,7 +103,7 @@ func _update_quota_label() -> void:
 	if quota_label == null:
 		return
 	var _ms := get_node_or_null("/root/MonetizationState")
-	# ponytail: null-guard lets arena run standalone without autoloads
+	# Null-guard: the arena also runs standalone, without autoloads.
 	if _ms == null:
 		return
 	if _ms.is_premium:

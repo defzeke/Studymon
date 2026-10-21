@@ -32,7 +32,7 @@ var _levelup_particles: CPUParticles2D
 
 func _ready() -> void:
 	SaveManager.load_game()
-	# ponytail: companion stays hidden for now (scene already visible=false; enforce here too)
+	# The rig stays hidden until the level art exists (docs/known-issues.md #3).
 	if rig != null:
 		rig.visible = false
 	_load_bot_textures()
@@ -55,7 +55,6 @@ func _ready() -> void:
 		pomodoro_btn.pressed.connect(_on_pomodoro_pressed)
 	if charge_btn:
 		charge_btn.pressed.connect(_on_charge_pressed)
-	# ponytail: subtle hover-big / press-small on the room icon buttons
 	for icon_btn in [campaign_btn, charge_btn, settings_btn, pomodoro_btn]:
 		if icon_btn:
 			ButtonJuice.wire(icon_btn)
@@ -250,7 +249,7 @@ func _refresh_all() -> void:
 	campaign_btn.modulate = Color(1, 1, 1, 1) if GameState.campaign_unlocked_flag else Color(1, 1, 1, 0.75)
 
 func _show_level(lv: int) -> void:
-	# ponytail: skeletal rig has no level textures; no-op while hidden
+	# The skeletal rig has no level textures, so there is nothing to show while it is hidden.
 	if rig != null and not rig.visible:
 		return
 	if bot_sprite == null:

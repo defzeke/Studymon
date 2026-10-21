@@ -177,8 +177,6 @@ HUD strings (`_refresh_progress`):
 - `progress_label`: `Trainers c/t  CROWNED | CHAMP-READY | CHAMP-LOCKED`
 - `badges_label`: `Gyms g/G [X][ ]`
 
-`reset_progress(topic_id)` wipes trainers, gyms, mastery and the champion flag for that topic.
-
 ---
 
 ## 6. Mastery states
@@ -231,7 +229,7 @@ func advance_champion() -> bool
   entry. `advance_champion()` steps the index and applies the next question to
   `SessionManager.battle_*`, returning `false` when the queue is exhausted — at which point it sets
   `_champion_defeated[topic_id]` and emits `champion_defeated`.
-- **Region complete:** `is_region_complete()` is simply `is_champion_defeated()`.
+- **Region complete:** `is_champion_defeated()`.
 
 > **Soft-lock risk.** Clearing every gym on the first attempt can leave you with no `MASTERED`
 > questions (a single win only takes a question to `LEARNING`), so the Champion stays locked with
