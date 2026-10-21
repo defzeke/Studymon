@@ -65,11 +65,11 @@ in the UI ever calls `set_large_text()`**. `settings.tscn` has no accessibility 
 |---|---|---|---|
 | `scenes/ui/splash.tscn` | `Control` | `scripts/ui/splash.gd` | white intro, then loading |
 | `scenes/ui/loading.tscn` | `Control` | `scripts/ui/loading.gd` | boot loading bar |
-| `scenes/ui/peek.tscn` | `Node3D` | `scripts/ui/peek.gd` | 3D Kuiz peeks, greets and idles; the end of the boot flow and future tutorial host |
+| `scenes/ui/peek.tscn` | `Node3D` | `scripts/ui/peek.gd`, `scripts/ui/tutorial.gd` | 3D Kuiz peeks, then runs the tutorial and room tour; the end of the boot flow |
 | `scenes/ui/main.tscn` | `Control` | `scripts/ui/main.gd` (+ `companion.gd` on child) | care room |
 | `scenes/ui/session_list.tscn` | `Control` | `scripts/ui/session_list.gd` | topic history |
 | `scenes/review_session/categorizer.tscn` | `Control` | `scripts/review_session/categorizer.gd` | upload + question editor |
-| `scenes/overworld/region_map.tscn` | `Node2D` | `scripts/overworld/region_map.gd` (+ `player.gd`) | route, gyms, champion |
+| `scenes/overworld/region_map.tscn` | `Node3D` | `scripts/overworld/region_map.gd` (+ `player.gd`, `joystick.gd`) | 3D island: explorer, trainers, gyms, champion |
 | `scenes/battle/battle.tscn` | `Control` | `scripts/battle/battle.gd` | arena |
 | `scenes/ui/settings.tscn` | `Control` | `scripts/ui/settings.gd` | premium + quota debug |
 | `ui/hud_strip.tscn` | `VBoxContainer` | `scripts/ui/hud_strip.gd` | status strip (instanced) |
@@ -82,7 +82,7 @@ in the UI ever calls `set_large_text()`**. `settings.tscn` has no accessibility 
 Main                      (main.gd)  — only calls SaveManager.load_game()
 └── Room                  (companion.gd)
     ├── BgFill            ColorRect, sky blue fallback
-    ├── Background        TextureRect, rooms/main.svg
+    ├── Background        TextureRect, rooms/study_room.svg (study_room_night.svg at night)
     ├── TopBanner         TextureRect, AtlasTexture slice of ui/top_bar.svg (0, 79.5, 866, 130.4)
     ├── Table             TextureRect, ui/table.svg, pinned to bottom (−516 px height)
     ├── CompanionRig      instance of companion_rig.tscn — visible = false
@@ -149,18 +149,70 @@ needs a smaller font or `autowrap_mode`.
 
 ```text
 Peek                Node3D (peek.gd)
-├── WorldEnvironment  background #FFFFFF; ambient + reflections from a ProceduralSky "studio"
+├── WorldEnvironment  background = canvas (Rooms shows through); ambient + reflections from a
+│                     ProceduralSky "studio"
 ├── Camera3D          (0, 0.25, 16.5), fov 13.6, keep_aspect = width (near-orthographic front view)
 ├── Key / Fill / Rim  DirectionalLight3D 0.7 / 0.36 / 0.4, the artifact's three lights × 0.8
-├── Shadow            PlaneMesh 2.9 × 2.1 at y −0.935, radial Deep Slate GradientTexture2D
-└── Kuiz              instance of assets/models/kuiz.glb
+├── Stage             Node3D the tutorial moves and scales (room size, walks, coming close)
+│   ├── Shadow        PlaneMesh 2.9 × 2.1 at y −0.935, radial Deep Slate GradientTexture2D
+│   └── Kuiz          instance of assets/models/kuiz.glb
+├── Rooms             CanvasLayer −1, drawn behind the 3D: White (#FFFFFF), StudyRoom
+│                     (rooms/study_room.svg), MaintenanceBay, DataKitchen, Playroom, each covering
+└── Tutorial          CanvasLayer (tutorial.gd)
+    ├── RoomSign      top-centre Deep Slate pill naming the current room
+    └── Speech        bottom: "Kuiz" name tag over the Dialogue box (Text, Continue, NameRow with
+                      NameInput + NameOk, and a bobbing ▼ Hint)
 ```
 
 `peek.gd` plays `Peek_Surprise` (5.7 s): Kuiz rises from the bottom edge, the eyes widen with an
-"!", then a happy face with sparkles. It queues `Greetings` (2.9 s), then `Idle` (4 s, set to loop
-at runtime), with a 0.18 s blend between clips as in the artifact. **Kuiz then stays: nothing leads
-out of this scene.** It is where the tutorial will start, with Kuiz introducing the game and then
-guiding the player to the room; neither the tutorial script nor the rooms exist yet.
+"!", then a happy face with sparkles. `Idle` (4 s, set to loop at runtime) follows with a 0.18 s
+blend as in the artifact, and `peeked` starts the tutorial.
+
+### Tutorial (`tutorial.gd`, inside `peek.tscn`)
+
+Kuiz introduces the game, takes a profile and a name, then tours the rooms. Text types at 40
+characters a second; a tap (or `ui_accept`) finishes the typing, the next tap advances, and a line
+with a prompt waits for it instead. The script is the `LINES` table in `tutorial.gd`: text, clip,
+and optionally a `room` + `move` to make before the line, or a `prompt` after it. `{name}` is the
+player's name.
+
+| # | Line (start) | Clip | Before the line | After the line |
+|---|---|---|---|---|
+| 1 | "Hi there! Welcome to the hub!…" | `Greetings` | — (on white) | tap |
+| 2 | "First things first—let's set up our shared user profile…" | `Blink` | — | **Continue** button: the stand-in for Google sign-in / register |
+| 3 | "Awesome! Connection established…what name should I call you, Partner?" | `Charging` (the bolt reads as syncing) | — | **name** field + OK (1–16 characters; Enter also submits) |
+| 4 | "{name}! What a cool name!…" | `Happy` | — | tap |
+| 5 | "Alright, {name}, welcome to our main hub—The Study Room!…" | `State_Charging` (docked in the cradle: eyes closed, bolt, gem glowing) | **jump**: Kuiz hops, the white gives way to the Study Room at the top, and Kuiz lands at room size | tap |
+| 6 | "Since we're an official team now…Follow me!" | `Celebrate` (confetti) | — | tap |
+| 7 | "Welcome to The Maintenance Bay! Mind the loose gears!…" | `Surprised` | **walk** to the Maintenance Bay | tap |
+| 8 | "If you ever see me squeaking or moving a bit slow…" | `State_Sick` (screws working loose) | — | tap |
+| 9 | "Ooh, listen to that… Welcome to The Data Kitchen!" | `State_Hungry` (drooling, dreaming of a chip) | **walk** to the Data Kitchen | tap |
+| 10 | "I don't eat regular food…Spicy Memory Chips…" | `Pet` (hearts for its favourite snack) | — | tap |
+| 11 | "And last, but definitely not least… The Playroom!…" | `Happy` | **walk** to the Playroom | tap |
+| 12 | "And that's the whole tour!…" | `Greetings` (sparkles) | **close**: walk back to the Study Room, then drift up to the screen and keep hovering | tap |
+| 13 | "Ready to jump into our very first review session?" | `Learn_Something_New` (reads a book, then "!") | — | nothing yet: the tutorial ends here |
+
+- **Moves** live in `peek.gd` (`jump`, `walk`, `come_close`); the dialogue box fades out while Kuiz
+  moves, and taps are ignored. A walk hops Kuiz off to the right with a lean, swaps the room, and
+  hops it in from the left. Rooms cross-fade over 0.35 s and the room sign updates with them.
+- **Clips** are one-shots that fall back into `Idle`, except the `State_*` moods (charging, hungry,
+  sick…), which `peek.gd` sets to loop and holds until the next line.
+- **Props** (hearts, confetti, sparkles, the bolt, screws, the thought bubble, the book, tears) are
+  blend shapes, and each clip keys only its own. Every frame, before the `AnimationPlayer` runs,
+  `peek.gd` zeroes the prop shapes the current clip does not key: an outgoing clip's props fade
+  during the 0.18 s blend and then stay hidden, however early a tap cuts the clip.
+- **Unused clips:** `Angry`, `Confused`, `Look_Around`, `Sad`, `Wake_Up`, `State_Mid`,
+  `State_Sad`, `State_Tired`.
+- **The name** is kept in `GameState.player_name`, in memory only (no backend yet); it is not saved.
+- **Rooms are temporary.** All four are flat placeholder SVGs in the canonical palette
+  (`study_room.svg`, also the care room's background, `maintenance_bay.svg`, `data_kitchen.svg`,
+  `playroom.svg`), drawn with empty space in the middle for Kuiz. The Study Room's charging arch
+  and floor ring sit where Kuiz stands, so it docks in its cradle. They are
+  backdrops only: nothing in them is interactive.
+- **Known limit:** on a phone the on-screen keyboard can cover the name field, since the dialogue
+  box sits at the bottom and nothing moves it up yet.
+- **Nothing leads out of the scene yet.** After the last line Kuiz keeps hovering in the Study
+  Room; where "our very first review session" goes is still to be decided.
 
 **Why it needs code.** The model was authored in the "KUIZMON Pet Bot 3D – Rigged" artifact, whose
 three.js page renders it with its own code. The `.glb` carries only geometry, rig, animations,
@@ -177,16 +229,16 @@ colours and `extras` hints, which Godot imports as `get_meta("extras")` on nodes
 | Key 0.85, fill 0.45, rim 0.5, ACES tonemap, exposure 0.8 | Same directions and colours at × 0.8 energy, **linear** tonemap |
 | Peek re-anchored to the visible bottom edge, only while the peek clip plays | `_process` moves `Kuiz` by `(1.828 − half_height) × peek`, where `peek = clamp(0.9 − Head.y, 0, 1)` while `Peek_Surprise` is current, else 0 |
 | Contact shadow shrinks as the head lifts, hidden while peeking | Same formula on `Shadow` scale and alpha |
+| Smooth silhouette edges in the browser | `rendering/anti_aliasing/quality/msaa_3d` = 4× in `project.godot`; without it the ink outline stair-steps |
 
 Not ported: the `rim` edge/underside tint and the `env` per-material reflection strength (both
 subtle), the soft-box reflections, and the page's off-white radial background.
 
-- The background must stay `#FFFFFF`, so the tonemap stays linear (ACES would grey it) and the cut
-  from the loading screen's `Fade` is invisible. Light energies are scaled × 0.8 to stand in for the
+- The 3D draws over the `Rooms` canvas layer (`background_mode` = canvas). Its bottom child is a
+  `#FFFFFF` `White` rect, so the cut from the loading screen's `Fade` is invisible; the tonemap stays
+  linear so that white is not greyed (ACES would). Light energies are scaled × 0.8 to stand in for the
   artifact's exposure.
 - The handoff into this scene measured 9–33 ms on desktop while materials compile; it lands on white.
-- `kuiz.glb` also carries `Blink`, `Happy`, `Sad`, `Angry`, `Surprised`, `Look_Around`, `Confused`,
-  `Charging`, `Wake_Up` and `Pet`, unused for now.
 
 ### `session_list.tscn`
 
@@ -280,13 +332,18 @@ level-ups, taps and gym clears are silent.
 | `fonts/JosefinSans-Bold.ttf` | theme button font; `loading.tscn` title and tip labels |
 | `sprites/loading.png` | `loading.tscn` background |
 | `sprites/logo.png` | `loading.tscn` top-centre wordmark |
-| `sprites/leaf.svg` | `loading.tscn` falling leaves (white so particle colour tints it) |
+| `sprites/leaf.svg` | `loading.tscn` falling leaves, overworld autumn leaves (white so particle colour tints it) |
 | `sprites/ui/loading_spark.svg` | `loading.tscn` sparks either side of "Loading..." |
 | `sprites/ui/tip_bulb.svg` | `loading.tscn` tip icon |
-| `models/kuiz.glb` | `peek.tscn` 3D Kuiz head, 13 animations (`Peek_Surprise`, `Greetings`, `Idle` used) |
+| `models/map.glb`, `models/map_0.png` | `region_map.tscn` island (the PNG is its road texture) |
+| `models/boy_explorer.glb`, `boy_explorer_basecolor_v2.jpg`, `boy_explorer_normal_v2.jpg` | `region_map.tscn` explorer (`Idle`, `Walk`, `Run` used) |
+| `models/kuiz.glb` | `peek.tscn` 3D Kuiz head; 21 clips (13 one-shots, `Celebrate`, `Learn_Something_New`, six `State_*` moods), face and props on blend shapes |
 | `sprites/kuizmon_splash.png` | `splash.gd` 60-frame intro sheet (6 × 10 cells, 480 × 264) |
-| `sprites/rooms/main.svg` | care-room background (day) |
-| `sprites/rooms/dark_main.svg` | care-room background (night) |
+| `sprites/rooms/study_room.svg` | care-room, settings and categorizer background (day); the tutorial's Study Room (temporary placeholder) |
+| `sprites/rooms/study_room_night.svg` | care-room background at night (temporary placeholder) |
+| `sprites/rooms/maintenance_bay.svg` | tutorial Maintenance Bay (temporary placeholder) |
+| `sprites/rooms/data_kitchen.svg` | tutorial Data Kitchen (temporary placeholder) |
+| `sprites/rooms/playroom.svg` | tutorial Playroom (temporary placeholder) |
 | `sprites/ui/campaign.png` | CampaignButton icon |
 | `sprites/ui/charge.png` | ChargeButton icon |
 | `sprites/ui/pomodoro.svg` | PomodoroButton icon |
@@ -310,7 +367,6 @@ level-ups, taps and gym clears are silent.
 |---|---|
 | `audio/hmm.mp3` | no call site |
 | `sprites/1run_loading.png`, `2run_loading.png`, `3run_loading.png` | old loading-bar run cycle; its hidden `RunBot` node was removed |
-| `models/boy_explorer.glb`, `boy_explorer_basecolor_v2.jpg`, `boy_explorer_normal_v2.jpg` | no scene references them |
 | `sprites/loading_logo.png` | full cat logo; the loading screen uses the `logo.png` wordmark |
 | `sprites/companion/happy_companion.svg` | rig only uses idle/blink/sad |
 | `sprites/companion/charge_companion.svg` | unused |

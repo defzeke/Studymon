@@ -44,3 +44,4 @@ theme/custom="res://ui/app_theme.tres"
 
 rendering_device/driver.windows="d3d12"
 renderer/rendering_method="mobile"
+anti_aliasing/quality/msaa_3d=2

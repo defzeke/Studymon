@@ -25,11 +25,12 @@ window/stretch/aspect="expand"
 theme/custom="res://ui/app_theme.tres"
 
 [physics]
-3d/physics_engine="Jolt Physics"      # unused — the only 3D is peek.tscn, which has no physics
+3d/physics_engine="Jolt Physics"      # region_map.tscn: trimesh map collision, explorer body
 
 [rendering]
 rendering_device/driver.windows="d3d12"
 renderer/rendering_method="mobile"
+anti_aliasing/quality/msaa_3d=2       # 4x MSAA: smooths Kuiz's ink outline in peek.tscn
 ```
 
 Notes:
@@ -56,7 +57,8 @@ res://
 ├── assets/
 │   ├── audio/            charge.mp3, charged.mp3, hmm.mp3, main room.mp3
 │   ├── fonts/            JosefinSans-Regular.ttf, JosefinSans-Bold.ttf
-│   ├── models/           kuiz.glb (peek scene), boy_explorer.glb + 2 .jpg textures (unused)
+│   ├── models/           kuiz.glb (peek scene); map.glb + map_0.png, boy_explorer.glb + 2 .jpg
+│   │                     textures (overworld)
 │   └── sprites/
 │       ├── 1run_loading.png, 2run_loading.png, 3run_loading.png   # unused run cycle
 │       ├── leaf.svg                                               # loading falling leaves
@@ -65,7 +67,8 @@ res://
 │       ├── kuizmon_loading.gif                                    # splash source (not imported)
 │       ├── kuizmon_splash.png                                     # 60-frame splash sheet
 │       ├── companion/    idle, blink, sad, happy, charge, complete (.svg)
-│       ├── rooms/        main.svg (day), dark_main.svg (night)
+│       ├── rooms/        temporary placeholders: study_room.svg (+ _night), maintenance_bay.svg,
+│       │                 data_kitchen.svg, playroom.svg
 │       └── ui/           campaign.png, charge.png, loading_spark.svg, pomodoro.svg,
 │                         settings.svg, table.svg, tip_bulb.svg, top_bar.svg
 ├── autoload/             api.gd, game_state.gd          ← 2 autoloads live here
@@ -74,9 +77,9 @@ res://
 │   │                     session_manager.gd, monetization_state.gd, music_manager.gd
 │   ├── battle/           battle.gd
 │   ├── companion/        companion.gd, companion_rig.gd
-│   ├── overworld/        region_map.gd, player.gd
+│   ├── overworld/        region_map.gd, player.gd, joystick.gd, season.gd
 │   ├── review_session/   categorizer.gd
-│   └── ui/               splash.gd, loading.gd, peek.gd, main.gd, session_list.gd,
+│   └── ui/               splash.gd, loading.gd, peek.gd, tutorial.gd, main.gd, session_list.gd,
 │                         settings.gd, pomodoro.gd, hud_strip.gd, button_juice.gd
 ├── scenes/               splash, loading, peek, main, session_list, settings (ui/)
 │                         companion_rig (companion/)
@@ -155,9 +158,10 @@ splash.tscn  (main scene)
 loading.tscn
    │  ~7.6 s scripted fill, 0.4 s fade to white
    ▼
-peek.tscn  (3D, white)
-      Kuiz peeks (5.7 s), greets (2.9 s), then idles. End of the boot flow for now:
-      the tutorial that will lead from here into the room is not written yet.
+peek.tscn  (3D Kuiz over 2D rooms)
+      Kuiz peeks (5.7 s), then the tutorial: intro, profile Continue, name, and a tour of the
+      Study Room, Maintenance Bay, Data Kitchen and Playroom, back to the Study Room.
+      End of the boot flow for now: nothing leads out after the last line.
 
 main.tscn  (care room — not reachable from boot; open the scene directly to work on it)
    ├── CampaignButton (enabled only when campaign_unlocked) ─► session_list.tscn
@@ -205,6 +209,7 @@ thread-load the next scene while they play, so those changes hit the resource ca
 | Which battle am I in? | `SessionManager.battle_topic_id` / `battle_q_index` / `battle_is_boss` / `battle_is_champion` |
 | Free-tier usage? | `MonetizationState` |
 | Auth token / user id? | `GameState.auth_token` / `user_id` — **never set today** |
+| Player's name? | `GameState.player_name`, set by the tutorial; memory only, never saved |
 
 Rule of thumb: **scenes read and call autoloads; autoloads never call scenes.** The only
 scene↔scene coupling is `change_scene_to_file` and the `SessionManager` battle-handoff fields,
@@ -249,7 +254,8 @@ operation must pick a unique `job_id` or it will be consumed by the wrong listen
 4. `loading.gd:_advance()` — fades `Fade` back to white over 0.4 s, then changes to `peek.tscn`.
 5. `peek.tscn` `_ready()` — applies the artifact look to Kuiz (vertex colours, ink outline, flat
    self-lit parts, additive glows; see [`ui-and-assets.md`](ui-and-assets.md) §2), then plays
-   `Peek_Surprise` → `Greetings` → looping `Idle`. Boot ends here.
+   `Peek_Surprise` → looping `Idle`, and `peeked` starts `tutorial.gd`. Boot ends after its last
+   line.
 
 **No save is read during boot.** The only loader calls are in the care room, which boot no longer
 reaches: `main.gd:_ready()` calls `SaveManager.load_game()`, and the nested `Room` node's

@@ -3,7 +3,7 @@
 [ext_resource type="Script" uid="uid://brf3oq3rsq5ap" path="res://scripts/ui/main.gd" id="1_2p1s2"]
 [ext_resource type="Script" uid="uid://d2prasu04nenr" path="res://scripts/companion/companion.gd" id="2_02nsg"]
 [ext_resource type="PackedScene" path="res://ui/hud_strip.tscn" id="3_hud"]
-[ext_resource type="Texture2D" uid="uid://divoi50bh7x31" path="res://assets/sprites/rooms/main.svg" id="4_bg"]
+[ext_resource type="Texture2D" path="res://assets/sprites/rooms/study_room.svg" id="4_bg"]
 [ext_resource type="PackedScene" path="res://scenes/companion/companion_rig.tscn" id="4_rig"]
 [ext_resource type="PackedScene" path="res://ui/pomodoro.tscn" id="5_pom"]
 [ext_resource type="Texture2D" uid="uid://xib03t0vdah" path="res://assets/sprites/ui/campaign.png" id="6_camp"]

@@ -18,8 +18,8 @@ extends Control
 @onready var charge_btn: Button = $ChargeButton
 @onready var night_veil: ColorRect = $NightVeil
 
-const ROOM_DAY: Texture2D = preload("res://assets/sprites/rooms/main.svg")
-const ROOM_NIGHT: Texture2D = preload("res://assets/sprites/rooms/dark_main.svg")
+const ROOM_DAY: Texture2D = preload("res://assets/sprites/rooms/study_room.svg")
+const ROOM_NIGHT: Texture2D = preload("res://assets/sprites/rooms/study_room_night.svg")
 const CHARGE_SFX: AudioStream = preload("res://assets/audio/charge.mp3")
 const CHARGED_SFX: AudioStream = preload("res://assets/audio/charged.mp3")
 const NIGHT_DIM := Color(0.7, 0.7, 0.75)

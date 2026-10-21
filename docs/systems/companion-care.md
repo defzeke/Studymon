@@ -132,7 +132,7 @@ abandoned deliberately.
 | Control | Node | Behaviour |
 |---|---|---|
 | Campaign | `Room/CampaignButton` | Disabled until `GameState.campaign_unlocked_flag`; otherwise shows "Locked! Reach Level 5 first. (N XP to next level)" in the tidbit bubble |
-| Charge | `Room/ChargeButton` | Toggles day ↔ night room texture (`rooms/main.svg` / `dark_main.svg`), shows `NightVeil`, dims every other child to 70 % via `_base_modulate`, plays `charge.mp3` then `charged.mp3` when switching to night |
+| Charge | `Room/ChargeButton` | Toggles day ↔ night room texture (`rooms/study_room.svg` / `study_room_night.svg`), shows `NightVeil`, dims every other child to 70 % via `_base_modulate`, plays `charge.mp3` then `charged.mp3` when switching to night |
 | Pomodoro | `Room/PomodoroButton` | Toggles the in-scene `Pomodoro` panel visibility |
 | Settings | `Room/SettingsButton` | `change_scene_to_file("res://scenes/ui/settings.tscn")` |
 | Pet | *(none)* | **There are no Feed / Pet / Play buttons in the scene.** `_on_care()` exists in `companion.gd:127` but nothing connects a button to it. |

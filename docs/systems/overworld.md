@@ -1,16 +1,17 @@
 # Overworld, gyms and mastery
 
-The campaign map: a vertical route built from the topic's questions, with one gym per question
-type, a trainer per question, and a Champion fight that closes the region.
+The campaign map: the 3D island in `assets/models/map.glb`, seen from an angled top-down camera,
+with one gym per question type in the map's gym buildings, a trainer per question on the road
+leading to its gym, and a Champion fight in the big gym that closes the region.
 
 - **Map logic:** `scripts/overworld/region_map.gd` → `scenes/overworld/region_map.tscn`
-- **Player:** `scripts/overworld/player.gd`
+- **Player:** `scripts/overworld/player.gd` (the explorer, `assets/models/boy_explorer.glb`)
+- **Joystick:** `scripts/overworld/joystick.gd`
 - **Progress + mastery state:** `scripts/autoload/session_manager.gd`
 - **Question data:** `SessionManager.pending_questions` (see `review-session.md`)
 
-Status: **Implemented but currently unloadable.** `region_map.tscn` references
-`res://assets/sprites/bot_lv5.png`, which does not exist, so the scene fails to parse at runtime
-(`known-issues.md` #1). Everything below describes the code as written.
+Status: **Implemented; loads and plays on mocks.** Confirming an encounter still changes to
+`battle.tscn`, which fails to parse (`known-issues.md` #1).
 
 ---
 
@@ -50,44 +51,83 @@ gyms.
 
 ---
 
-## 3. Route generation (`_build_route`, `region_map.gd:54-92`)
+## 3. The island, the route and the explorer
 
 ```text
-y = 1100  ── player start (360, 1100)
-   │
-y -= 320  ── gym 1  (360, 780)
-   ├── trainers for gym 1 interpolated between the previous point and the gym,
-   │   alternating ±120 px horizontally
-y -= 320  ── gym 2  (360, 460)
-   ├── ...
-y -= 320  ── Champion (360, 140)
+RegionMap            Node3D (region_map.gd)
+├── WorldEnvironment  sky-blue background, ambient colour 0.7
+├── Sun               DirectionalLight3D with shadows (30 units)
+├── Map               instance of assets/models/map.glb
+├── Season            Node3D (season.gd): the season for this load, its weather particles
+├── Spawn             Marker3D (−2, 0, 9), on the south road
+├── Trainers1/From,To Marker3D road segment for gyms[0]'s trainers: (2, 0, 9) → (12.5, 0, 9)
+├── Trainers2/From,To Marker3D road segment for gyms[1]'s trainers: (−9, 0, 7.5) → (−9, 0, −0.5)
+├── Trainers, Gyms    filled at runtime
+├── Player            CharacterBody3D (player.gd), floating motion, capsule r 0.22 h 0.9
+│   ├── Boy           instance of assets/models/boy_explorer.glb (Idle / Walk / Run looped)
+│   └── Camera3D      (0, 7, 4.7), pitched −54°, fov 40 across the width
+└── HUD               TopBar, HintLabel, Joystick (bottom-left), EncounterPanel
 ```
 
-- Gyms are 320 px apart on a single `Line2D` (`Route`), width 14, tan colour.
-- Trainer positions: `frac = (i+1)/(n+1)` along the segment, `side = -120` for even indices,
-  `+120` for odd.
-- Every node is created at runtime — `Trainers/` and `Gyms/` start empty in the scene.
-- Rebuilding clears both roots first, so nothing accumulates.
+**Where things go.** The map has three gym buildings; `GYM_BUILDINGS` puts `gyms[0]` in `Gym2`
+(the blue one by the south road), `gyms[1]` in `Gym3` (orange, west), and the Champion in `Gym`
+(the big red one, north). There are only two question types, so two gyms. Each trigger sits 0.8 in
+front of its building's double door (the door nodes' midpoint; every door faces +z), and walking in
+also plays that door's `<Building>_Door_Open` clip, then `_Door_Close` on the way out. A gym's
+trainers are spread along its `TrainersN` segment at `frac = (i+1)/(n+1)`. Move the markers in the
+editor to re-route; the script reads them at load.
 
-Each trainer node is an `Area2D` + `CircleShape2D(36)` + `Label` `"T<N> <mastery emoji>"`. Cleared
-trainers are dimmed to `Color(0.5, 0.5, 0.5, 0.7)`.
+**Triggers.** Each is an `Area3D` with a cylinder (trainers r 0.45, doors r 0.7) on mask 4 (the
+player's layer), and a billboard `Label3D` (Josefin Bold, Deep Slate outline, drawn over geometry):
+`T<N>` over trainers, `GYM <n>` / `BADGE` plus the type over gyms, `CHAMPION` plus
+`LOCKED` / `FIGHT!` / `DOWN` over the Champion. A trainer also has a flat disc in its mastery colour
+(section 6); cleared trainers are darkened. Every node is created at runtime, and rebuilding clears
+both roots first.
 
-Each gym node is an `Area2D` + `CircleShape2D(56)` + label `"GYM"` / `"GYM-CLEAR"` plus
-`"<Type> G<n>"`.
+**Collision.** `map.glb` ships none, so `_add_collisions()` builds a trimesh body per mesh, by name:
 
-The Champion node is an `Area2D` + `CircleShape2D(64)` with one of `CHAMPION DOWN`,
-`CHAMPION FIGHT!`, `CHAMPION LOCKED`.
+| Layer | Meshes | Used for |
+|---|---|---|
+| 1, ground | roads, grass blocks, sand, foundations, door steps, gym plinths, courts and paths, gym interior floors | the explorer's height only |
+| 2, obstacles | house walls, windows, doors; gym walls, glass, trim, signs, bands, interior back walls; tree trunks and canopies; lamp poles; rocks | blocking |
+| none | water, seabed, foam, roofs, chimneys, flags, domes, lamp glow, court lines, the gym door leaves | — |
 
-Movement is `ui_left`/`ui_right`/`ui_up`/`ui_down` (arrows + WASD by default) at 300 px/s on a
-`CharacterBody2D` with `move_and_slide()` and a smoothed `Camera2D` child. The sprite flips on the
-x axis only — no directional animation exists.
+**Movement** (`player.gd`). The joystick (or arrows/WASD through `ui_*`) gives a direction in screen
+axes, mapped to the ground plane (up is −z). Below 75 % deflection the explorer walks at 2.2 u/s
+with `Walk`; beyond it, runs at 4.2 u/s with `Run`; at rest, `Idle` (0.15 s blends). The body moves
+flat against layer 2 only, then a ray onto layer 1 sets its height, so the 0.15 grass curbs and
+plinths never block it. A step whose ground is missing or below −0.05 (the water surface is −0.07)
+is undone, so the beach stops at the waterline. The `Boy` model turns smoothly to face the way it
+moves. `locked` freezes it while an encounter panel is open.
+
+**Seasons** (`season.gd`). Every load of the scene picks one of four at random, never the one the
+previous load had (a `static var` remembers it for the session):
+
+| Season | Light and sky | Foliage and grass | Weather around the explorer |
+|---|---|---|---|
+| Sunny | warm sun 1.15, sky blue | as authored | none |
+| Rainy | grey sun 0.35, grey sky, fog 0.025 | darker, wetter greens (30 %) | 400 rain streaks, fast |
+| Autumn | amber sun 1.0, warm sky | canopies 75 % toward Muted Amber, Soft Coral and two in-between tones; grass 45 % toward straw | 90 `leaf.svg` leaves drifting and spinning |
+| Snowy | cool sun 0.9, pale sky, fog 0.015 | canopies 55 % and grass 85 % toward snow white | 300 snowflakes, slow |
+
+The weather is one `GPUParticles3D` in world space, prewarmed so it is already falling on the first
+frame. It is emitted through the whole volume the camera sees around the explorer (0.5–4.5 units
+up, 14 wide, from 10 behind to 4 in front) rather than from above: at the camera's 54° pitch,
+anything spawned higher only crosses the view right at the lens. Particle colours are sRGB
+(`vertex_color_is_srgb`). Foliage is tinted on duplicated materials, because the imported ones are shared
+with every later load. The `Environment` resource is also shared, so every field is set every time.
+To drop a season, remove it from `Season` and `LOOKS`.
+
+**Joystick** (`joystick.gd`). A 320 px square at the bottom-left; base radius 120, knob 52, dead zone
+15 %. Touch reaches it as emulated mouse events, so one finger drives it; the knob springs back on
+release. Drawn with `_draw()` in Deep Slate, Warm Off-White and Muted Teal, so it needs no assets.
 
 ---
 
 ## 4. Encounter panel
 
-One shared `PanelContainer` (`HUD/EncounterPanel`) is reconfigured per encounter type. Touching an
-`Area2D` sets `_pending_encounter` and fills the title, body and action button.
+One shared `PanelContainer` (`HUD/EncounterPanel`) is reconfigured per encounter type. Walking into
+an `Area3D` sets `_pending_encounter` and fills the title, body and action button.
 
 | Encounter | `_pending_encounter` | Button |
 |---|---|---|
@@ -202,7 +242,7 @@ func advance_champion() -> bool
 ## 8. Feedback effects
 
 `_spawn_gym_burst(pos)` fires when `_refresh_progress` observes a gym that was not cleared at build
-time: 26 one-shot `CPUParticles2D` in green, auto-freed after 1.2 s. The cleared-state snapshot
+time: 26 one-shot green `CPUParticles3D` spheres at the gym door, freed when they finish. The cleared-state snapshot
 (`_prev_cleared_gyms`) is taken in `_build_route` so loading an already-cleared save does not
 replay the effect.
 
@@ -212,10 +252,11 @@ replay the effect.
 
 | Gap | Detail |
 |---|---|
-| Scene won't load | Missing `bot_lv5.png` ext_resource → parse error |
+| Battles won't load | Confirming an encounter opens `battle.tscn`, which still fails to parse (#1) |
 | No save on progress | Clear state and mastery persist only when something else triggers a save |
 | Champion soft-lock | Availability and moveset requirements can deadlock |
 | Gym ≠ trainer progress | Boss win clears the gym without clearing its trainers |
 | No mini-map / gym tracker | The plan called for one; the HUD badge row is the only progress view |
 | No region regeneration | The map is rebuilt from `pending_questions`; editing a saved topic changes the live map silently |
-| Movement is flat | No diagonal sprite, no walk animation, no tilemap/obstacles |
+| Fixed layout | Two gym buildings: a third question type would get no gym (skipped). Trainer roads are hand-placed markers for this map only |
+| One-finger joystick | Touch is read as emulated mouse, so the stick and a second finger cannot act at once |

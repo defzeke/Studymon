@@ -7,6 +7,8 @@ signal large_text_changed(enabled: bool)
 
 var user_id: String = ""
 var auth_token: String = ""
+# shortcut: memory only while there is no backend; save it with the profile once accounts exist.
+var player_name: String = ""
 var campaign_unlocked_flag: bool = false
 var active_region_id: String = ""
 var current_topic_id: String = ""

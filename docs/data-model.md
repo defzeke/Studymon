@@ -155,6 +155,7 @@ These live only in memory and are lost on quit or scene change:
 | Pomodoro (`_pomodoro_mode`, `_pomodoro_remaining`) | `CompanionState` | A running 25-minute focus timer is lost on quit |
 | Tap-cap counters (`_action_tap_counts`, `_last_hour_reset`) | `CompanionState` | Relaunching clears the hourly diminishing-returns counter — an easy exploit |
 | `GameState.user_id`, `auth_token` | `GameState` | Never set, never saved (no auth yet) |
+| `GameState.player_name` | `GameState` | Set by the tutorial, never saved; every launch replays the tutorial and asks again |
 | Trust/premium receipts | — | `is_premium` is a plain bool the player can flip in Settings |
 
 ---

@@ -1,7 +1,7 @@
 extends Control
 ## Boot loading screen (replaces login now that backend/auth is skipped).
-## Slow fill to 96%, pause, then a slow crawl to 100, fade to white and hand off to the peek scene,
-## which routes. Tips rotate every few seconds while loading.
+## Slow fill to 96%, pause, then a slow crawl to 100, fade to white and hand off to the peek scene.
+## Tips rotate every few seconds while loading.
 
 @onready var load_bar: ProgressBar = $Content/BarTrack/LoadBar
 @onready var tip_label: Label = $Content/TipRow/TipLabel

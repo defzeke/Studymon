@@ -10,7 +10,7 @@ Severity: **P0** blocks the core loop · **P1** blocks a feature or silently cor
 
 | # | Issue | Severity |
 |---|---|---|
-| 1 | Missing `bot_lv*.png` — `battle.tscn` and `region_map.tscn` fail to parse | **P0** |
+| 1 | Missing `bot_lv*.png` — `battle.tscn` fails to parse | **P0** |
 | 8 | No Feed / Pet / Play input in the care room | **P0** |
 | 2 | Auth header uses `***` instead of `Bearer` | **P1** |
 | 3 | Companion is invisible | **P1** |
@@ -34,35 +34,32 @@ Severity: **P0** blocks the core loop · **P1** blocks a feature or silently cor
 
 ---
 
-## 1. Missing `bot_lv*.png` — two scenes fail to parse (P0)
+## 1. Missing `bot_lv*.png` — `battle.tscn` fails to parse (P0)
+
+`region_map.tscn` no longer references the sprites (it is 3D now), so only the battle arena is
+affected.
 
 **Evidence**
 
 ```
-$ Godot_v4.7.2 --headless --path . res://scenes/overworld/region_map.tscn --quit-after 30
-ERROR: Resource file not found: res://assets/sprites/bot_lv5.png (expected type: Texture2D)
-ERROR: res://scenes/overworld/region_map.tscn:37 - Parse Error: [ext_resource] referenced
-       non-existent resource at: res://assets/sprites/bot_lv5.png.
-
 $ Godot_v4.7.2 --headless --path . res://scenes/battle/battle.tscn --quit-after 20
 ERROR: Resource file not found: res://assets/sprites/bot_lv1.png …
 ERROR: Resource file not found: res://assets/sprites/bot_lv5.png …
 ERROR: res://scenes/battle/battle.tscn:77 / :107 - Parse Error …
 ```
 
-`companion.gd:80` and `player.gd:12` also look for `bot_lv1..5.png` at runtime and fall back.
+`companion.gd:80` also looks for `bot_lv1..5.png` at runtime and falls back.
 
-**Impact:** `change_scene_to_file` to either scene fails, so the campaign is dead at the first
-"Confirm & Play" → overworld handoff, and the battle arena cannot even be run standalone in the
+**Impact:** `change_scene_to_file` to the battle fails, so the campaign is dead at the first
+"Fight Trainer!" in the overworld, and the battle arena cannot even be run standalone in the
 editor.
 
 **Fix (either):**
 
 - Add `assets/sprites/bot_lv1.png` … `bot_lv5.png` (the intended pet growth art), or
-- Remove the `[ext_resource]` entries for `bot_lv1.png` / `bot_lv5.png`
-  (`battle.tscn:4-5`, `region_map.tscn:5`) together with the `texture = ExtResource(…)` lines that
-  use them (`battle.tscn:77`, `battle.tscn:107`, `region_map.tscn:37`), then let the scripts'
-  null-guards take over.
+- Remove the `[ext_resource]` entries for `bot_lv1.png` / `bot_lv5.png` (`battle.tscn:4-5`)
+  together with the `texture = ExtResource(…)` lines that use them (`battle.tscn:77`,
+  `battle.tscn:107`), then let the script's null-guards take over.
 
 Until then, note that a missing texture in a `.tscn` is a **parse error**, not a warning — it
 cannot be caught at runtime.
@@ -331,8 +328,7 @@ when opened, drops the player into the categorizer with whatever `pending_questi
 - `autoload/README.md` says `SaveManager` will be deleted; it is now load-bearing.
 - `quizmon-build-plan.md` says "Godot 4.6, avoid 4.7"; the project is 4.7.2.
 - Unused assets: `hmm.mp3`, `loading_logo.png`, `1run_loading.png`, `2run_loading.png`,
-  `3run_loading.png`, `happy_companion.svg`, `charge_companion.svg`, `complete_companion.svg`,
-  `models/boy_explorer.glb` and its two `.jpg` textures.
+  `3run_loading.png`, `happy_companion.svg`, `charge_companion.svg`, `complete_companion.svg`.
 - No automated tests, no CI workflow, no formatting/lint config beyond `.editorconfig`.
 - `categorizer.gd:73-79` contains a redundant `if type == "grade"` branch that repeats the
   assignment above it.

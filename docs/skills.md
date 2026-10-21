@@ -181,9 +181,8 @@ The game looks for `res://assets/sprites/bot_lv1.png` … `bot_lv5.png`.
 1. Export five PNGs at the same canvas size and baseline, transparent background, and drop them in
    `assets/sprites/`.
 2. Let the editor import them (`.import` files are generated — never hand-write them).
-3. `companion.gd:77-86` auto-loads any that exist. `battle.tscn` and `region_map.tscn` reference
-   `bot_lv1.png` / `bot_lv5.png` directly, and `player.gd:12` falls back to `bot_lv5.png`, so adding
-   the five files also resolves issue #1 (the two parse errors).
+3. `companion.gd:77-86` auto-loads any that exist. `battle.tscn` references `bot_lv1.png` /
+   `bot_lv5.png` directly, so adding the five files also resolves issue #1 (its parse errors).
 4. Art alone does not make the pet appear. `_show_level()` and every care animation early-return
    while `rig.visible` is false, and both `main.tscn:83` and `companion.gd:36-37` force it false.
    Removing those flags is issue #3, and is what actually reveals the art.

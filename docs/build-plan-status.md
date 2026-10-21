@@ -4,10 +4,10 @@ Phase-by-phase comparison of [`../quizmon-build-plan.md`](../quizmon-build-plan.
 current code. Statuses follow the vocabulary in [`README.md`](README.md#status-vocabulary).
 
 **Headline:** every phase has client-side code, and the whole loop runs on mocks — but boot now
-ends on the peek scene (Kuiz greets and idles; the tutorial that leads on is not written), so the
+ends on the peek scene (Kuiz peeks up, then runs the tutorial and room tour, which lead nowhere yet), so the
 care room and everything after it are reached only by opening those scenes directly. Beyond that,
-the campaign stops at the first scene change after "Confirm & Play" because two scenes reference
-missing textures (`known-issues.md` #1), and the pet loop has no input (`#8`).
+the campaign stops at the first battle because `battle.tscn` references missing textures
+(`known-issues.md` #1), and the pet loop has no input (`#8`).
 
 ---
 
@@ -16,12 +16,12 @@ missing textures (`known-issues.md` #1), and the pet loop has no input (`#8`).
 | Phase | Plan scope | Status | Where |
 |---|---|---|---|
 | **0** | Project skeleton, folder structure, autoloads, theme, backend health | **Implemented** (layout differs) | `project.godot`, 7 autoloads, `ui/app_theme.tres`, `backend/main.py` |
-| **1** | Accounts, first login, meet-your-companion cutscene | **Partial** — 3D greeting only | `scenes/ui/peek.tscn`; tutorial unwritten, no auth, `GameState.set_user()` unused |
+| **1** | Accounts, first login, meet-your-companion cutscene | **Partial** — 3D peek + tutorial on mocks | `scenes/ui/peek.tscn`, `tutorial.gd`; no auth, name not saved, `GameState.set_user()` unused |
 | **2** | Pet-care loop: Pet/Feed/Play, stats, XP, decay, level gate, HUD strip | **Partial** — logic yes, input/art no | `companion_state.gd`, `companion.gd`, `hud_strip.tscn`; see #3, #5, #8 |
 | **3** | AI Codex + optional pop-quiz reuse | **Partial** — data only | `CURRICULUM` + `codex` array; no screen, bubble hidden (#4) |
 | **4** | Scheduler / Pomodoro with missed-rest penalty, HUD badge | **Implemented** | `companion_state.gd:168-241`, `pomodoro.tscn`, `PomoBadge` |
 | **5** | Upload PDF → extraction → editable list → region | **Implemented (mock)** | `categorizer.gd`, `session_manager.gd`, `api.gd:98-269` |
-| **6** | Overworld + gym structure + trainer encounters | **Broken at load** | `region_map.gd` (complete), missing `bot_lv5.png` |
+| **6** | Overworld + gym structure + trainer encounters | **Implemented (mock)** | 3D island `region_map.tscn`, `player.gd`, `joystick.gd`; battles behind it still broken (#1) |
 | **7** | Battle per question type, one judging pipeline | **Broken at load** | `battle.gd` (complete), missing `bot_lv1/5.png` |
 | **8** | Mastery states + 7-day decay + Champion recap | **Implemented** | `session_manager.gd:296-534`; soft-lock #6 |
 | **9** | Polish: insights, juice, accessibility, pacing | **Partial** | particles/shake/hit-stop/colourblind badges done; large text unreachable (#11), bubble hidden (#4) |
@@ -47,12 +47,14 @@ Deviations:
 
 ### Phase 1 — Accounts & first meeting ⚠️
 
-Done: the first meeting is `peek.tscn`. After the loading screen, the 3D Kuiz peeks up, greets and
-idles on white, every launch. The old text cutscene (`meet_companion.tscn`) and its starter-stats
-mock were removed; `CompanionState`'s defaults are the same starter stats.
+Done: the first meeting is `peek.tscn`. After the loading screen, the 3D Kuiz peeks up, then the
+tutorial (`tutorial.gd`) runs every launch: intro lines, a Continue button standing in for
+sign-in/register, a name prompt kept in memory, and a tour of four rooms (three of them temporary
+placeholder art). The old text cutscene (`meet_companion.tscn`) and its starter-stats mock were
+removed; `CompanionState`'s defaults are the same starter stats.
 
-Missing: the tutorial itself (Kuiz introducing the game and guiding the player to the room; no
-script yet), and so any path from boot into the care room. Supabase auth entirely: no login/signup
+Missing: anything after the tutorial's last line, and so any path from boot into the care room;
+saving the name. Supabase auth entirely: no login/signup
 scene, no token, no user record, no session restore. `GameState.user_id` / `auth_token` are
 declared and never written. `loading.gd:2` states this explicitly ("replaces login now that
 backend/auth is skipped").
@@ -98,15 +100,16 @@ Missing: real PDF parsing and `/extract`. Binary files always fall through to th
 questions (`review-session.md` §3). Raw-vs-edited extraction storage was not built because there is
 no extraction service yet.
 
-### Phase 6 — Overworld 🚫
+### Phase 6 — Overworld ✅ (mock)
 
-Code is complete: derived gym structure (one gym per question type), vertical route with
-interleaved trainers, runtime `Area2D` nodes, encounter panel, progress/badge HUD, gym-clear
-particles.
+Done: the 3D island (`map.glb`) under an angled top-down camera, the explorer (`boy_explorer.glb`)
+with Idle/Walk/Run on a left-hand joystick (keys too), collision built from the map's meshes,
+derived gym structure (one gym per question type) placed in the map's gym buildings with animated
+doors, trainers on the roads leading to them, the Champion in the big gym, encounter panel,
+progress/badge HUD, gym-clear particles.
 
-Blocked: `region_map.tscn` will not parse because of `bot_lv5.png` (#1). Also missing versus the
-plan: tilemap or obstacles, walk animation, mini-map, and any save of clear state at the moment it
-changes (#10).
+Missing versus the plan: a mini-map, and any save of clear state at the moment it changes (#10).
+Every "Fight" still lands on the broken `battle.tscn` (#1).
 
 ### Phase 7 — Battle 🚫
 

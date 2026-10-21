@@ -1,45 +1,84 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene format=3]
 
 [ext_resource type="Script" path="res://scripts/overworld/region_map.gd" id="1"]
 [ext_resource type="Script" path="res://scripts/overworld/player.gd" id="2"]
-[ext_resource type="Texture2D" path="res://assets/sprites/bot_lv5.png" id="3"]
+[ext_resource type="PackedScene" uid="uid://druo0njokh4g4" path="res://assets/models/map.glb" id="3_map"]
+[ext_resource type="PackedScene" uid="uid://yjyho2qlkvpo" path="res://assets/models/boy_explorer.glb" id="4_boy"]
+[ext_resource type="Script" path="res://scripts/overworld/joystick.gd" id="5_stick"]
+[ext_resource type="Script" path="res://scripts/overworld/season.gd" id="6_season"]
 
-[sub_resource type="CircleShape2D" id="player_shape"]
-radius = 24.0
+[sub_resource type="Environment" id="Environment_island"]
+background_mode = 1
+background_color = Color(0.749, 0.851, 0.902, 1)
+ambient_light_source = 2
+ambient_light_color = Color(0.8, 0.85, 0.88, 1)
+ambient_light_energy = 0.7
 
-[node name="RegionMap" type="Node2D"]
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_player"]
+radius = 0.22
+height = 0.9
+
+[node name="RegionMap" type="Node3D"]
 script = ExtResource("1")
 
-[node name="Background" type="ColorRect" parent="."]
-offset_left = -1000.0
-offset_top = -2000.0
-offset_right = 1720.0
-offset_bottom = 1400.0
-color = Color(0.13, 0.35, 0.2, 1)
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_island")
 
-[node name="Route" type="Line2D" parent="."]
-points = PackedVector2Array(360, 1100, 360, 780)
-width = 14.0
-default_color = Color(0.85, 0.75, 0.5, 1)
+[node name="Sun" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.8192, -0.4698, 0.329, 0, 0.5736, 0.8192, -0.5736, -0.671, 0.4698, 0, 10, 0)
+light_energy = 1.1
+shadow_enabled = true
+directional_shadow_max_distance = 30.0
 
-[node name="Trainers" type="Node2D" parent="."]
+[node name="Map" parent="." instance=ExtResource("3_map")]
 
-[node name="Gyms" type="Node2D" parent="."]
+[node name="Season" type="Node3D" parent="." node_paths=PackedStringArray("sun", "world", "map", "follow")]
+script = ExtResource("6_season")
+sun = NodePath("../Sun")
+world = NodePath("../WorldEnvironment")
+map = NodePath("../Map")
+follow = NodePath("../Player")
 
-[node name="Player" type="CharacterBody2D" parent="."]
-position = Vector2(360, 1100)
+[node name="Spawn" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 0, 9)
+
+[node name="Trainers1" type="Node3D" parent="."]
+
+[node name="From" type="Marker3D" parent="Trainers1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 0, 9)
+
+[node name="To" type="Marker3D" parent="Trainers1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12.5, 0, 9)
+
+[node name="Trainers2" type="Node3D" parent="."]
+
+[node name="From" type="Marker3D" parent="Trainers2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9, 0, 7.5)
+
+[node name="To" type="Marker3D" parent="Trainers2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9, 0, -0.5)
+
+[node name="Trainers" type="Node3D" parent="."]
+
+[node name="Gyms" type="Node3D" parent="."]
+
+[node name="Player" type="CharacterBody3D" parent="." node_paths=PackedStringArray("joystick")]
+collision_layer = 4
+collision_mask = 2
+motion_mode = 1
 script = ExtResource("2")
+joystick = NodePath("../HUD/Joystick")
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Player"]
-shape = SubResource("player_shape")
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Player"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.55, 0)
+shape = SubResource("CapsuleShape3D_player")
 
-[node name="Sprite2D" type="Sprite2D" parent="Player"]
-texture = ExtResource("3")
-scale = Vector2(0.35, 0.35)
+[node name="Boy" parent="Player" instance=ExtResource("4_boy")]
 
-[node name="Camera2D" type="Camera2D" parent="Player"]
-position_smoothing_enabled = true
-enabled = true
+[node name="Camera3D" type="Camera3D" parent="Player"]
+transform = Transform3D(1, 0, 0, 0, 0.5855, 0.8107, 0, -0.8107, 0.5855, 0, 7, 4.7)
+keep_aspect = 0
+fov = 40.0
 
 [node name="HUD" type="CanvasLayer" parent="."]
 
@@ -61,13 +100,17 @@ text = "←"
 [node name="ProgressLabel" type="Label" parent="HUD/TopBar"]
 layout_mode = 2
 size_flags_horizontal = 3
+theme_override_colors/font_outline_color = Color(0.1608, 0.2196, 0.2275, 1)
+theme_override_constants/outline_size = 8
 text = "Trainers 0/0"
 
 [node name="BadgesLabel" type="Label" parent="HUD/TopBar"]
 layout_mode = 2
 size_flags_horizontal = 3
-horizontal_alignment = 2
+theme_override_colors/font_outline_color = Color(0.1608, 0.2196, 0.2275, 1)
+theme_override_constants/outline_size = 8
 text = "Gyms 0/0"
+horizontal_alignment = 2
 
 [node name="HintLabel" type="Label" parent="HUD"]
 anchors_preset = 10
@@ -77,8 +120,21 @@ offset_top = 68.0
 offset_right = -12.0
 offset_bottom = 100.0
 grow_horizontal = 2
-text = "Walk into a trainer or gym (arrows/WASD, touch-drag on mobile later)"
+theme_override_colors/font_outline_color = Color(0.1608, 0.2196, 0.2275, 1)
+theme_override_constants/outline_size = 8
+text = "Use the joystick to walk into a trainer or gym"
 horizontal_alignment = 1
+
+[node name="Joystick" type="Control" parent="HUD"]
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 24.0
+offset_top = -344.0
+offset_right = 344.0
+offset_bottom = -24.0
+grow_vertical = 0
+script = ExtResource("5_stick")
 
 [node name="EncounterPanel" type="PanelContainer" parent="HUD"]
 visible = false

@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://c0udocdec3gfe"
-path="res://.godot/imported/dark_main.svg-3236c0af58a55809044afd3d2b8cc27d.ctex"
+uid="uid://cqiyhutvuk0a"
+path="res://.godot/imported/study_room.svg-b8b150691c690b58d0cd17ac3a8f2850.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/sprites/rooms/dark_main.svg"
-dest_files=["res://.godot/imported/dark_main.svg-3236c0af58a55809044afd3d2b8cc27d.ctex"]
+source_file="res://assets/sprites/rooms/study_room.svg"
+dest_files=["res://.godot/imported/study_room.svg-b8b150691c690b58d0cd17ac3a8f2850.ctex"]
 
 [params]
 
@@ -23,7 +23,7 @@ compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
 compress/normal_map=0
 compress/channel_pack=0
-mipmaps/generate=true
+mipmaps/generate=false
 mipmaps/limit=-1
 roughness/mode=0
 roughness/src_normal=""

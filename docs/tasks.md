@@ -6,25 +6,34 @@ Where the work stands. Short on purpose — this is a **register**, not a backlo
 > doc that owns it, and **those docs win** if the two disagree. See [`rules.md`](rules.md) §2. Do not
 > let a second status list grow here.
 
-Last updated: 2026-10-20.
+Last updated: 2026-10-21.
 
 ## In flight
 
-**Boot flow polish — uncommitted.** Splash → loading → peek, each handoff on white with the next
-scene thread-loaded. The loading screen gains falling leaves, a larger floating logo and a
-palette-coloured striped bar with a title and a tip row, and drops the hidden `RunBot`. The new
-`peek.tscn` renders the 3D `kuiz.glb` with the artifact's look and plays `Peek_Surprise` →
-`Greetings` → `Idle`, then stays. The text intro (`meet_companion.tscn`/`.gd`/`.gd.uid`) and
-`Api.mock_get_companion()` were deleted. New files to commit with their `.import`/`.uid` files:
-`leaf.svg`, `ui/loading_spark.svg`, `ui/tip_bulb.svg`, `assets/models/kuiz.glb`,
-`scenes/ui/peek.tscn`, `scripts/ui/peek.gd`. Details in [`ui-and-assets.md`](ui-and-assets.md) §2.
+**3D overworld — uncommitted.** `region_map.tscn` is now the 3D island (`map.glb`) under an angled
+top-down camera, dressed in a random season each load (`season.gd`: sunny, rainy, autumn, snowy), with the explorer (`boy_explorer.glb`) walking on a left-hand joystick
+(`joystick.gd`), collision built from the map's meshes, and the existing encounter logic re-homed:
+gyms in the map's gym buildings (animated doors), trainers on the roads to them, the Champion in the
+big gym. Details in [`systems/overworld.md`](systems/overworld.md) §3.
+
+**Study Room art — uncommitted.** The old room art (`rooms/main.svg`, `dark_main.svg`) was deleted;
+`study_room.svg` and `study_room_night.svg` (temporary placeholders) replace it in the tutorial, the
+care room and its night toggle, settings and the categorizer.
+
+**Tutorial — uncommitted.** After the peek, `tutorial.gd` (in `peek.tscn`) plays Kuiz's first-run
+lines with a fitting clip each, a Continue stand-in for sign-in, a name prompt
+(`GameState.player_name`, memory only), and a tour through the four temporary rooms. It also
+uses the new `kuiz.glb` clips (`State_Charging`, `State_Sick`, `State_Hungry`, `Celebrate`,
+`Learn_Something_New`), loops `State_*` moods, and hides props a clip does not key. It also carries
+the earlier peek polish: `Greetings` dropped after the peek, and 4× 3D MSAA for the ink
+outline. Details in [`ui-and-assets.md`](ui-and-assets.md) §2.
 
 ## Blocked
 
 | Work | Blocked by |
 |---|---|
-| Reaching the care room from boot | The tutorial in `peek.tscn` (Kuiz introduces the game, then guides the player to the room): no script yet, and the rooms are not built |
-| Playing the core loop end to end | The row above, issue #1 (two scenes fail to parse on missing `bot_lv*.png`) and issue #8 (no care input, so Level 5 is unreachable without editing the save) |
+| Reaching the care room from boot | What follows the tutorial's last line ("Ready to jump into our very first review session?") is not decided; all four rooms are temporary art |
+| Playing the core loop end to end | The row above, issue #1 (`battle.tscn` fails to parse on missing `bot_lv*.png`) and issue #8 (no care input, so Level 5 is unreachable without editing the save) |
 | Any real backend call | Issue #7 (endpoints disagree) and issue #2 (auth header is a redaction placeholder) |
 | Claiming the Champion | Issue #6 (soft-lock when no question is `MASTERED`) |
 
@@ -34,7 +43,7 @@ P0/P1 first; each item's evidence and fix live in [`known-issues.md`](known-issu
 
 | Order | Item | Why now |
 |---|---|---|
-| 1 | #1 Add `bot_lv1..5.png` (or strip the `[ext_resource]` lines) | Unblocks both broken scenes; also the prerequisite for #3 |
+| 1 | #1 Add `bot_lv1..5.png` (or strip the `[ext_resource]` lines) | Unblocks the battle scene; also the prerequisite for #3 |
 | 2 | #8 Add Feed / Pet / Play buttons wired to `_on_care()` | Makes the pet loop playable and Level 5 reachable |
 | 3 | #3 Un-hide the companion rig and its animation guards | Core fantasy; depends on #1 |
 | 4 | #4 Show `TidbitBubble` when text is assigned | Level-5 gate and every curriculum line are currently invisible |
@@ -72,6 +81,9 @@ Hygiene, after the slice plays:
 
 ## Done
 
+- **2026-10-21** — boot flow polish: splash → loading → peek handoffs on white with threaded
+  loads, the loading screen's leaves, floating logo, striped bar and tips, the 3D `peek.tscn` with
+  the artifact's look, and the text intro removed (`8db69c9`).
 - **2026-10-20** — docs set written; root README corrected; `AGENTS.md`, `rules.md`, `skills.md`,
   `tasks.md`, `glossary.md`, and the Ponytail skill added; splash intro and loading-screen art
   (`fb90236`).

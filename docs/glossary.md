@@ -40,7 +40,8 @@ Terms used throughout this repo, in the sense this repo means them.
 
 | Term | Meaning |
 |---|---|
-| **Region** | The overworld for one topic. A route of gyms plus the Champion arena, built from the topic's questions. |
+| **Region** | The overworld for one topic: the 3D island (`map.glb`) with its gyms, trainers and the Champion's gym, filled from the topic's questions. |
+| **Explorer** | The player's walking character on the island (`boy_explorer.glb`), steered with the on-screen joystick at the bottom-left. |
 | **Gym** | A group of encounters for one question type (`identification`, `essay`). Clearing every gym is the Champion prerequisite. |
 | **Trainer** | A single-question encounter on the route. Winning it counts toward its gym. |
 | **Boss** | The gym's final encounter. Same battle rules, larger presentation. |
@@ -65,8 +66,9 @@ Terms used throughout this repo, in the sense this repo means them.
 |---|---|
 | **Autoload** | A singleton registered in `[autoload]` in `project.godot`. Seven exist: `SaveManager`, `GameState`, `Api`, `CompanionState`, `SessionManager`, `MonetizationState`, `MusicManager`. |
 | **Splash** | The white intro screen (`splash.tscn`) that plays the 60-frame Kuizmon animation, then loads the loading screen. |
-| **Main scene** | `res://scenes/ui/splash.tscn`. It hands off to `loading.tscn`, then `peek.tscn`, where boot currently ends. |
-| **Peek** | `peek.tscn`: the 3D Kuiz head (`assets/models/kuiz.glb`) peeking up, greeting and idling on white after the loading screen. The future home of the tutorial, in which Kuiz introduces the game and guides the player to the room. |
+| **Main scene** | `res://scenes/ui/splash.tscn`. It hands off to `loading.tscn`, then `peek.tscn`, where boot currently ends after the tutorial. |
+| **Peek** | `peek.tscn`: the 3D Kuiz head (`assets/models/kuiz.glb`) peeking up on white after the loading screen. The tutorial then runs in the same scene. |
+| **Tutorial** | `tutorial.gd` in `peek.tscn`: Kuiz's first-run lines, the profile and name prompts, and the tour of the Study Room, Maintenance Bay, Data Kitchen and Playroom. The last three rooms are temporary art. |
 | **Ink outline** | The dark silhouette around Kuiz: an inverted hull (the mesh grown along its normals, front faces culled) in Deep Slate, sized by each node's `extras.outline`. |
 | **`.tscn` / `.tres`** | Godot scene and resource text files. Both are source here, not build output. |
 | **`ext_resource`** | A `.tscn` reference to an external file. If the target is missing, the scene fails to **parse** — no runtime fallback (issue #1). |
