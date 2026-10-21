@@ -26,9 +26,9 @@ $GODOT = "C:\Users\user\Downloads\Godot_v4.7.2-stable_win64.exe\Godot_v4.7.2-sta
 
    ```powershell
    & $GODOT --headless --path . res://scenes/ui/main.tscn          --quit-after 20
-   & $GODOT --headless --path . res://scenes/ui/splash.tscn        --quit-after 10
-   & $GODOT --headless --path . res://scenes/ui/loading.tscn       --quit-after 10
-   & $GODOT --headless --path . res://scenes/ui/peek.tscn          --quit-after 30
+   & $GODOT --headless --path . res://scenes/ui/boot/splash.tscn        --quit-after 10
+   & $GODOT --headless --path . res://scenes/ui/boot/loading.tscn       --quit-after 10
+   & $GODOT --headless --path . res://scenes/ui/boot/peek.tscn          --quit-after 30
    & $GODOT --headless --path . res://scenes/battle/battle.tscn    --quit-after 20
    & $GODOT --headless --path . res://scenes/overworld/region_map.tscn --quit-after 30
    ```
@@ -99,13 +99,13 @@ uvicorn main:app --port 8000    # GET /health
 ## Rebuild the splash sprite sheet
 
 Godot has no GIF importer. `splash.gd` reads a baked 6 × 10 sheet: 60 frames of 480 × 264 at 30 ms
-each. The source is [`assets/sprites/kuizmon_loading.gif`](../assets/sprites/kuizmon_loading.gif).
+each. The source is [`assets/sprites/boot/kuizmon_loading.gif`](../assets/sprites/boot/kuizmon_loading.gif).
 
 1. Regenerate the sheet with Windows PowerShell and `System.Drawing`:
 
    ```powershell
    Add-Type -AssemblyName System.Drawing
-   $gif = [System.Drawing.Image]::FromFile((Resolve-Path "assets\sprites\kuizmon_loading.gif").Path)
+   $gif = [System.Drawing.Image]::FromFile((Resolve-Path "assets\sprites\boot\kuizmon_loading.gif").Path)
    $fd = [System.Drawing.Imaging.FrameDimension]::Time
    $n = $gif.GetFrameCount($fd)
    $cols = 6; $rows = [math]::Ceiling($n / $cols); $fw = 480; $fh = 264
@@ -119,7 +119,7 @@ each. The source is [`assets/sprites/kuizmon_loading.gif`](../assets/sprites/kui
      $g.DrawImage($gif, ($i % $cols) * $fw, [math]::Floor($i / $cols) * $fh, $fw, $fh)
    }
    $g.Dispose()
-   $sheet.Save((Join-Path (Get-Location) "assets\sprites\kuizmon_splash.png"), [System.Drawing.Imaging.ImageFormat]::Png)
+   $sheet.Save((Join-Path (Get-Location) "assets\sprites\boot\kuizmon_splash.png"), [System.Drawing.Imaging.ImageFormat]::Png)
    $sheet.Dispose(); $gif.Dispose()
    ```
 
@@ -130,9 +130,9 @@ each. The source is [`assets/sprites/kuizmon_loading.gif`](../assets/sprites/kui
    ```
 
 3. If the frame count, cell size or grid changed, update `FRAME_COUNT`, `FRAME_SIZE`, `COLUMNS`
-   and `FRAME_TIME` at the top of `scripts/ui/splash.gd` in the same change.
+   and `FRAME_TIME` at the top of `scripts/ui/boot/splash.gd` in the same change.
 
-4. Smoke-test `res://scenes/ui/splash.tscn` and capture a frame to confirm the logo is centred on
+4. Smoke-test `res://scenes/ui/boot/splash.tscn` and capture a frame to confirm the logo is centred on
    white.
 
 ## Add a question type
@@ -142,7 +142,7 @@ type touches five places:
 
 1. **Categorizer UI** — `categorizer.gd:247-251` builds the `OptionButton` with two hard-coded
    entries, and `_on_type_changed()` (`:273-276`) maps index → type. Add the item and the mapping.
-2. **Mock grading** — `Api._execute_mock_grade()` (`autoload/api.gd:276-329`) branches on
+2. **Mock grading** — `Api._execute_mock_grade()` (`scripts/autoload/api.gd:276-329`) branches on
    `identification` vs everything else. Add the branch, or the new type is graded as an essay.
 3. **Battle input** — `battle.gd:86` sets the placeholder and `:151` branches on type for KO juice.
    Check the answer field is usable for the new shape.
@@ -190,7 +190,7 @@ The game looks for `res://assets/sprites/bot_lv1.png` … `bot_lv5.png`.
 
 ## Wire the real backend
 
-1. The switch is `const MOCK := true` in `autoload/api.gd:11`. Flipping it disables every mock path,
+1. The switch is `const MOCK := true` in `scripts/autoload/api.gd:11`. Flipping it disables every mock path,
    so the endpoints below must exist first.
 2. Contract the client already calls:
    - `POST /battle/grade` — `{type, question, answer, source, expected, key_concepts}`

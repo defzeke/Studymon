@@ -11,7 +11,7 @@ extends Control
 @onready var status_label: Label = $Content/StatusLabel
 
 func _ready() -> void:
-	theme = load("res://ui/app_theme.tres") as Theme
+	theme = load("res://assets/theme/app_theme.tres") as Theme
 	premium_check.toggled.connect(_on_premium_toggled)
 	reset_btn.pressed.connect(_on_reset_pressed)
 	back_btn.pressed.connect(_on_back)

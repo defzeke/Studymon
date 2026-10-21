@@ -66,7 +66,7 @@ Terms used throughout this repo, in the sense this repo means them.
 |---|---|
 | **Autoload** | A singleton registered in `[autoload]` in `project.godot`. Seven exist: `SaveManager`, `GameState`, `Api`, `CompanionState`, `SessionManager`, `MonetizationState`, `MusicManager`. |
 | **Splash** | The white intro screen (`splash.tscn`) that plays the 60-frame Kuizmon animation, then loads the loading screen. |
-| **Main scene** | `res://scenes/ui/splash.tscn`. It hands off to `loading.tscn`, then `peek.tscn`, where boot currently ends after the tutorial. |
+| **Main scene** | `res://scenes/ui/boot/splash.tscn`. It hands off to `loading.tscn`, then `peek.tscn`, where boot currently ends after the tutorial. |
 | **Peek** | `peek.tscn`: the 3D Kuiz head (`assets/models/kuiz.glb`) peeking up on white after the loading screen. The tutorial then runs in the same scene. |
 | **Tutorial** | `tutorial.gd` in `peek.tscn`: Kuiz's first-run lines, the profile and name prompts, and the tour of the Study Room, Maintenance Bay, Data Kitchen and Playroom. The last three rooms are temporary art. |
 | **Ink outline** | The dark silhouette around Kuiz: an inverted hull (the mesh grown along its normals, front faces culled) in Deep Slate, sized by each node's `extras.outline`. |
@@ -74,7 +74,7 @@ Terms used throughout this repo, in the sense this repo means them.
 | **`ext_resource`** | A `.tscn` reference to an external file. If the target is missing, the scene fails to **parse** — no runtime fallback (issue #1). |
 | **`.import` / `.uid`** | Generated metadata for assets. Never hand-edit; let the editor regenerate them. |
 | **`user://`** | Godot's per-project writable directory. The save is `user://studymon_save.json`. |
-| **`MOCK`** | `const MOCK := true` in `autoload/api.gd`. When true, every API call is served by canned or locally computed data. |
+| **`MOCK`** | `const MOCK := true` in `scripts/autoload/api.gd`. When true, every API call is served by canned or locally computed data. |
 | **Job envelope** | The mock's async response shape: `{job_id, status, progress, result}`, broadcast on `Api.job_status`. |
 | **`job_status`** | The global signal every async result travels on. Handlers match a `job_id`; `"grade"` is currently a magic id (issue #9). |
 | **Rig** | `CompanionRig`, the skeletal `Skeleton2D` pet. Hidden in favour of `bot_sprite`, and the source of the `det == 0` warnings. |

@@ -6,8 +6,8 @@ curriculum through `CURRICULUM` lines.
 
 - **State / logic:** `scripts/autoload/companion_state.gd` (autoload `CompanionState`)
 - **Care room UI:** `scripts/companion/companion.gd` → `scenes/ui/main.tscn`
-- **Status strip:** `scripts/ui/hud_strip.gd` → `ui/hud_strip.tscn` (instanced on `main.tscn`)
-- **Pomodoro UI:** `scripts/ui/pomodoro.gd` → `ui/pomodoro.tscn`
+- **Status strip:** `scripts/ui/widgets/hud_strip.gd` → `scenes/ui/widgets/hud_strip.tscn` (instanced on `main.tscn`)
+- **Pomodoro UI:** `scripts/ui/widgets/pomodoro.gd` → `scenes/ui/widgets/pomodoro.tscn`
 - **Skeletal rig (disabled):** `scripts/companion/companion_rig.gd` → `scenes/companion/companion_rig.tscn`
 
 ---
@@ -145,7 +145,7 @@ missing, so the room renders without a pet (`known-issues.md` #3).
 
 ## 6. Pomodoro (Phase 4)
 
-Logic lives in `CompanionState`, UI in `ui/pomodoro.tscn`. One timer drives both phases.
+Logic lives in `CompanionState`, UI in `scenes/ui/widgets/pomodoro.tscn`. One timer drives both phases.
 
 ```
                  start_pomodoro()

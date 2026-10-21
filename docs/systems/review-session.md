@@ -4,7 +4,7 @@ Turns reviewer material into an editable question bank, then into the region dat
 consumes.
 
 - **State / pipeline:** `scripts/autoload/session_manager.gd` (autoload `SessionManager`)
-- **Extraction (mock):** `autoload/api.gd` — `mock_upload_pdf()`, `_build_questions_from_text()`
+- **Extraction (mock):** `scripts/autoload/api.gd` — `mock_upload_pdf()`, `_build_questions_from_text()`
 - **Topic list screen:** `scripts/ui/session_list.gd` → `scenes/ui/session_list.tscn`
 - **Upload / edit screen:** `scripts/review_session/categorizer.gd` → `scenes/review_session/categorizer.tscn`
 

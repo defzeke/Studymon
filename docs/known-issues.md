@@ -67,7 +67,7 @@ cannot be caught at runtime.
 
 ## 2. Auth header uses `***` (P1)
 
-`autoload/api.gd:65`
+`scripts/autoload/api.gd:65`
 
 ```gdscript
 headers.append("Authorization: *** " + GameState.auth_token)
@@ -328,16 +328,16 @@ caught).
 
 **Evidence**
 
-- `ui/app_theme.tres:7,14,23` uses navy button/panel fills (`#1C264F`, `#0A122B`) and `#EDF5FF`
+- `assets/theme/app_theme.tres:7,14,23` uses navy button/panel fills (`#1C264F`, `#0A122B`) and `#EDF5FF`
   button text; none are in the palette in [`ui-and-assets.md`](ui-and-assets.md#color-palette) §1.
-- `ui/hud_strip.tscn:6-61`, `scenes/ui/session_list.tscn:21`, `scenes/battle/battle.tscn:28`, and
+- `scenes/ui/widgets/hud_strip.tscn:6-61`, `scenes/ui/session_list.tscn:21`, `scenes/battle/battle.tscn:28`, and
   `scenes/ui/main.tscn:43` hard-code other navy/cyan/blue values. (`loading.tscn` has been migrated.)
 - The palette was documented after those files were written.
 
 **Impact:** New screens that follow the palette will visibly clash with the existing theme; the
 shared theme does not represent the intended art direction.
 
-**Fix:** migrate `ui/app_theme.tres` first (button, panel, font colour), then replace the inline
+**Fix:** migrate `assets/theme/app_theme.tres` first (button, panel, font colour), then replace the inline
 `Color(...)` overrides in the scenes above with palette roles. Update the token table in
 [`ui-and-assets.md`](ui-and-assets.md) §1 in the same change; leave the art assets alone.
 

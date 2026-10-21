@@ -38,7 +38,7 @@ Where the two disagree, the docs say so explicitly.
 | Item | Value |
 |---|---|
 | Engine | Godot **4.7.2** stable (`config/features = ("4.7", "Mobile")`) |
-| Main scene | `res://scenes/ui/splash.tscn` |
+| Main scene | `res://scenes/ui/boot/splash.tscn` |
 | Viewport | 720 × 1280, stretch `canvas_items`, aspect `expand` |
 | Renderer | `mobile`, D3D12 on Windows |
 | Language | GDScript only (25 files, ~145 KB) |
@@ -66,7 +66,7 @@ Used consistently across these docs:
 
 ## Relationship to the other docs in the repo
 
-- [`../quizmon-build-plan.md`](../quizmon-build-plan.md) — the original 10-phase plan. Still the design
+- [`quizmon-build-plan.md`](quizmon-build-plan.md) — the original 10-phase plan. Still the design
   intent, but its stack notes are stale (it says "Godot 4.6, avoid 4.7"; the project is on 4.7.2).
 - [`../README.md`](../README.md) — player-facing overview.
 - [`../AGENTS.md`](../AGENTS.md) — the agent entry point; it links to `rules.md`, this index and `tasks.md`.

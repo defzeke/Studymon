@@ -5,7 +5,7 @@ the answer is scored; the score becomes damage.
 
 - **Scene / logic:** `scripts/battle/battle.gd` → `scenes/battle/battle.tscn`
 - **Handoff state:** `SessionManager.battle_*` (`begin_battle`, `get_battle_question`)
-- **Judging:** `autoload/api.gd` — `grade_battle_question()`, `_execute_mock_grade()`
+- **Judging:** `scripts/autoload/api.gd` — `grade_battle_question()`, `_execute_mock_grade()`
 - **Outcome recording:** `SessionManager.report_battle_result()` → `record_battle_outcome()`
 
 Status: **Implemented, fully mocked grading**, and currently **unloadable** — `battle.tscn`

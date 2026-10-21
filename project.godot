@@ -11,15 +11,15 @@ config_version=5
 [application]
 
 config/name="Studymon"
-run/main_scene="res://scenes/ui/splash.tscn"
+run/main_scene="res://scenes/ui/boot/splash.tscn"
 config/features=PackedStringArray("4.6", "Mobile")
 config/icon="res://icon.svg"
 
 [autoload]
 
 SaveManager="*res://scripts/autoload/save_manager.gd"
-GameState="*res://autoload/game_state.gd"
-Api="*res://autoload/api.gd"
+GameState="*res://scripts/autoload/game_state.gd"
+Api="*res://scripts/autoload/api.gd"
 CompanionState="*res://scripts/autoload/companion_state.gd"
 SessionManager="*res://scripts/autoload/session_manager.gd"
 MonetizationState="*res://scripts/autoload/monetization_state.gd"
@@ -34,7 +34,7 @@ window/stretch/aspect="expand"
 
 [gui]
 
-theme/custom="res://ui/app_theme.tres"
+theme/custom="res://assets/theme/app_theme.tres"
 
 [physics]
 

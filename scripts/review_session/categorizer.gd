@@ -22,7 +22,7 @@ var _studying: bool = false
 var _file_bytes: PackedByteArray = PackedByteArray()
 
 func _ready() -> void:
-	theme = load("res://ui/app_theme.tres") as Theme
+	theme = load("res://assets/theme/app_theme.tres") as Theme
 	topic_name_field.placeholder_text = "Topic name (e.g. Biology 101)"
 	topic_name_field.text = "My Review Topic"
 	paste_area.placeholder_text = "Paste reviewer text here — or pick a PDF/notes file..."

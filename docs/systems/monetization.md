@@ -5,7 +5,7 @@ limited number of PDF ingestions and answer gradings per week. This matches the 
 recommendation (§Phase 10) because it maps to the real variable cost (LLM calls).
 
 - **State:** `scripts/autoload/monetization_state.gd` (autoload `MonetizationState`)
-- **Gates:** `autoload/api.gd`
+- **Gates:** `scripts/autoload/api.gd`
 - **UI:** `scenes/ui/settings.tscn`, `scenes/review_session/categorizer.tscn`,
   `scenes/battle/battle.tscn`
 - **Persistence:** inside `SaveManager` (`monetization` block)

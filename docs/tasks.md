@@ -80,6 +80,9 @@ Hygiene, after the slice plays:
 
 ## Done
 
+- **2026-10-21** — repository layout, no behaviour change: all autoloads in `scripts/autoload/`,
+  the theme in `assets/theme/`, boot flow and HUD widgets in `ui/boot/` and `ui/widgets/`, boot art
+  in `assets/sprites/boot/`, `leaf.svg` in `assets/sprites/effects/`, `quizmon-build-plan.md` in `docs/`.
 - **2026-10-21** — cleanup, no behaviour change: removed unused assets (`hmm.mp3`, the run-cycle and
   `loading_logo` PNGs, three companion SVGs), the five planning-stub READMEs, never-called helpers,
   `GameState.current_topic_id` (#18), the `campaign_unlocked` signal and the `# ponytail:` tags.
