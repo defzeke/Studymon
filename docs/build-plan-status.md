@@ -185,7 +185,7 @@ Champion — is playable end-to-end on mocks.
 | Plan says | Reality | Note |
 |---|---|---|
 | Godot 4.6.x, "avoid 4.7" | 4.7.2 stable | 4.7 is the shipping line now; keep it |
-| `Resource`-based saves | JSON file, `"v": 4` | simpler diffs, no type safety |
+| `Resource`-based saves | JSON file, `"v": 5` | simpler diffs, no type safety |
 | FastAPI **or** Node backend with Claude + Supabase | FastAPI health check only | no Claude, no Supabase, no DB |
 | Supabase Auth / DB / Storage | none | auth skipped by design for now |
 | Job polling for long tasks | `job_status` signal + mock timer | no polling loop, single shared `HTTPRequest` |

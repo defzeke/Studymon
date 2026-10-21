@@ -45,7 +45,7 @@ Where the two disagree, the docs say so explicitly.
 | Scenes | 12 (`.tscn`) |
 | Autoloads | 7 |
 | Backend | FastAPI stub, `/health` only — client runs on `Api.MOCK = true` |
-| Persistence | Single JSON file `user://studymon_save.json`, schema `"v": 4` |
+| Persistence | Single JSON file `user://studymon_save.json`, schema `"v": 5` |
 | Tests / CI | None |
 
 ---

@@ -77,4 +77,4 @@ func _on_reset_pressed() -> void:
 	_refresh()
 
 func _on_back() -> void:
-	get_tree().change_scene_to_file("res://scenes/ui/peek.tscn")
+	get_tree().change_scene_to_file("res://scenes/ui/boot/peek.tscn")

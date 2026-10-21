@@ -92,7 +92,7 @@ and [`data-model.md`](data-model.md) in the same change.
 build paths by string concatenation.
 
 **Save changes are versioned.** Additive fields get a default in the loader; a semantic change bumps
-the version literal (`data["v"] = 4` at `save_manager.gd:8`) and documents the migration in
+the version literal (`data["v"] = 5` in `save_manager.gd`) and documents the migration in
 [`data-model.md`](data-model.md). Never silently reinterpret an existing field.
 
 **Mock mode stays working.** `Api.MOCK = true` is the only path the game actually runs today. When
