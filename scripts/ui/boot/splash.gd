@@ -18,6 +18,8 @@ var _frame: int = 0
 var _done: bool = false
 
 func _ready() -> void:
+	if has_node("/root/MusicManager"):
+		(get_node("/root/MusicManager") as Node).call("play_loading")
 	ResourceLoader.load_threaded_request(NEXT_SCENE)
 	for i in FRAME_COUNT:
 		var frame := AtlasTexture.new()

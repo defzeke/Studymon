@@ -73,6 +73,7 @@ var _energy: Array[float] = []
 var _ambient := 0.0
 
 func _ready() -> void:
+	MusicManager.play_main_room()
 	for mesh_instance: MeshInstance3D in kuiz.find_children("*", "MeshInstance3D", true, false):
 		var outline: float = mesh_instance.get_meta("extras", {}).get("outline", 0.0)
 		if outline > 0.0:

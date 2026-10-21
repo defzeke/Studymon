@@ -40,7 +40,7 @@ func _ready() -> void:
 	_tip_index = randi() % TIPS.size()
 	tip_label.text = TIPS[_tip_index]
 	if has_node("/root/MusicManager"):
-		(get_node("/root/MusicManager") as Node).call("ensure_playing")
+		(get_node("/root/MusicManager") as Node).call("play_loading")
 	_fade_in()
 	_bob_logo()
 	_start_tip_cycle()

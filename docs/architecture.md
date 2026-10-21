@@ -54,7 +54,7 @@ res://
 ├── project.godot
 ├── icon.svg
 ├── assets/
-│   ├── audio/            charge.mp3, charged.mp3, main room.mp3
+│   ├── audio/            charge.mp3, charged.mp3, loading.mp3, main room.mp3
 │   ├── fonts/            JosefinSans-Regular.ttf, JosefinSans-Bold.ttf
 │   ├── models/           kuiz.glb (peek scene); map.glb + map_0.png, boy_explorer.glb + 2 .jpg
 │   │                     textures (overworld)
@@ -113,7 +113,7 @@ Declared in this order (Godot instantiates top-down, so earlier autoloads are `_
 | 4 | `CompanionState` | `scripts/autoload/companion_state.gd` | stats, XP/level, codex, pomodoro |
 | 5 | `SessionManager` | `scripts/autoload/session_manager.gd` | topics, extraction, gyms, mastery, champion, battle handoff |
 | 6 | `MonetizationState` | `scripts/autoload/monetization_state.gd` | weekly quotas, premium flag |
-| 7 | `MusicManager` | `scripts/autoload/music_manager.gd` | looping BGM + one-shot SFX |
+| 7 | `MusicManager` | `scripts/autoload/music_manager.gd` | main-room + loading BGM, one-shot SFX |
 
 ```text
                         ┌──────────────┐
@@ -243,17 +243,19 @@ operation must pick a unique `job_id` or it will be consumed by the wrong listen
 
 ## 7. Boot sequence
 
-1. `splash.tscn` `_ready()` — starts a threaded load of `loading.tscn`, slices `kuizmon_splash.png`
-   into 60 `AtlasTexture` frames and starts playback at 30 ms/frame. After 1.8 s it holds the last
-   frame for 0.5 s, fades the logo to white over 0.25 s, then changes to the already-loaded
+1. `splash.tscn` `_ready()` — calls `MusicManager.play_loading()` (starts `loading.mp3` at 1 s and
+   fades it in over 1 s), starts a threaded load of `loading.tscn`, slices `kuizmon_splash.png` into
+   60 `AtlasTexture` frames and starts playback at 30 ms/frame. After 1.8 s it holds the last frame
+   for 0.5 s, fades the logo to white over 0.25 s, then changes to the already-loaded
    `loading.tscn`.
-2. `loading.tscn` `_ready()` — loads theme, starts a threaded load of `peek.tscn`, asks
-   `MusicManager.ensure_playing()`, fades its white `Fade` overlay out over 0.4 s, and starts tip
-   rotation.
+2. `loading.tscn` `_ready()` — loads theme, starts a threaded load of `peek.tscn`, calls
+   `MusicManager.play_loading()` (a no-op while the same track is already playing), fades its white
+   `Fade` overlay out over 0.4 s, and starts tip rotation.
 3. ~7.6 s tween: 0 → 96 % in 5 s, hold 0.6 s, crawl to 100 % in 2 s.
 4. `loading.gd:_advance()` — fades `Fade` back to white over 0.4 s, then changes to `peek.tscn`.
-5. `peek.tscn` `_ready()` — applies the artifact look to Kuiz (vertex colours, ink outline, flat
-   self-lit parts, additive glows; see [`ui-and-assets.md`](ui-and-assets.md) §2), then plays
+5. `peek.tscn` `_ready()` — switches the BGM back to `main room.mp3`, applies the artifact look to
+   Kuiz (vertex colours, ink outline, flat self-lit parts, additive glows; see
+   [`ui-and-assets.md`](ui-and-assets.md) §2), then plays
    `Peek_Surprise` → looping `Idle`, and `peeked` starts `tutorial.gd`. A tap after its last line
    emits `finished`, and `home.gd` takes over.
 6. `home.gd:start()` — `SaveManager.load_once()` reads the save the first time home opens in a

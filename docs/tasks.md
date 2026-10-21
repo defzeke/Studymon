@@ -33,6 +33,9 @@ the Champion falls back to every question, Easy to Hard (#6). Contract:
 Again / Hard / Easy. Easy lifts New or Remaster to Learning (never Mastered); each lifted card pays
 +1 XP and +2 focus once, a finished deck +3 mood. Opened from the island's Study button and from a
 Cards button on each session-list row. Details in [`ui-and-assets.md`](ui-and-assets.md).
+**Loading music — uncommitted.** `splash.tscn` starts `MusicManager.play_loading()`, which begins
+`loading.mp3` at 1 s and fades it in over 1 s; it runs through `loading.tscn`, and `peek.tscn`
+switches back to `main room.mp3`. `assets/audio/loading.mp3` and its `.import` are untracked.
 
 ## Blocked
 
