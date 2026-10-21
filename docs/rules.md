@@ -152,6 +152,5 @@ These are unresolved and belong to the docs that own them:
    `/grade` + `/extract`. Pick one and update both sides (issue #7).
 2. **Auth.** `GameState.auth_token` is never set and the header is broken (issue #2). Is login in
    scope for the vertical slice?
-3. **Champion rule.** Fallback to all questions, or require a Mastered moveset (issue #6)?
-4. **Codex.** The remote branch `feat/remove-codex` suggests it is being cut. Keep the button out of
+3. **Codex.** The remote branch `feat/remove-codex` suggests it is being cut. Keep the button out of
    the UI until that lands.

@@ -1,6 +1,6 @@
 extends Node3D
-## Dresses the island for a season picked at random each time the overworld loads, never the same
-## one twice in a row: light, sky, fog, foliage and grass tint, and weather falling around the
+## Dresses the island for the real-world season (Northern Hemisphere calendar, from the device date),
+## so it lasts for months: light, sky, fog, foliage and grass tint, and weather falling around the
 ## explorer. Contract: docs/systems/overworld.md §3.
 
 enum Season { SUNNY, RAINY, AUTUMN, SNOWY }
@@ -35,7 +35,17 @@ const WEATHER_BOX := Vector3(7.0, 2.0, 7.0)
 # Culling box for the simulated particles: the emitter box plus the fall to the ground.
 const WEATHER_BOUNDS := AABB(Vector3(-8.0, -4.0, -8.0), Vector3(16.0, 7.0, 16.0))
 
-static var _last := -1
+## Dec–Feb snowy, Mar–May sunny, Jun–Aug sunny with rain every fourth day of the month,
+## Sep–Nov autumn. The same date always gives the same season.
+static func season_for(month: int, day: int) -> Season:
+	match month:
+		12, 1, 2:
+			return Season.SNOWY
+		3, 4, 5:
+			return Season.SUNNY
+		6, 7, 8:
+			return Season.RAINY if day % 4 == 0 else Season.SUNNY
+	return Season.AUTUMN
 
 @export var sun: DirectionalLight3D
 @export var world: WorldEnvironment
@@ -46,10 +56,8 @@ var season: Season
 var _weather: GPUParticles3D
 
 func _ready() -> void:
-	var options: Array = Season.values()
-	options.erase(_last)
-	season = options.pick_random()
-	_last = season
+	var today := Time.get_date_dict_from_system()
+	season = season_for(int(today["month"]), int(today["day"]))
 	var look: Dictionary = LOOKS[season]
 	sun.light_color = look["sun"]
 	sun.light_energy = look["sun_energy"]

@@ -10,6 +10,8 @@ extends Node3D
 
 # Map buildings, in route order: gyms[0], gyms[1], then the Champion. Doors face +z.
 const GYM_BUILDINGS: Array[String] = ["Gym2", "Gym3"]
+# The third gym has no building: it stands at the GymSpot3 marker on the west end of the south road.
+const MAX_GYMS := 3
 const CHAMPION_BUILDING := "Gym"
 const DOOR_FRONT := Vector3(0.0, 0.0, 0.8)
 const TRIGGER_RADIUS := 0.7
@@ -33,6 +35,7 @@ const INK := Color("29383A")
 @onready var progress_label: Label = $HUD/TopBar/ProgressLabel
 @onready var badges_label: Label = $HUD/TopBar/BadgesLabel
 @onready var back_btn: Button = $HUD/TopBar/BackButton
+@onready var study_btn: Button = $HUD/StudyButton
 @onready var encounter_panel: PanelContainer = $HUD/EncounterPanel
 @onready var encounter_title: Label = $HUD/EncounterPanel/Margin/List/EncounterTitle
 @onready var encounter_question: Label = $HUD/EncounterPanel/Margin/List/EncounterQuestion
@@ -60,6 +63,7 @@ func _ready() -> void:
 		]
 	GameState.set_active_region(_topic_id)
 	back_btn.pressed.connect(_on_back)
+	study_btn.pressed.connect(_on_study)
 	encounter_close_btn.pressed.connect(_on_encounter_close)
 	encounter_clear_btn.pressed.connect(_on_encounter_cleared)
 	_show_encounter(false)
@@ -94,13 +98,13 @@ func _build_route() -> void:
 	var gyms := SessionManager.get_gym_structure()
 	if gyms.is_empty():
 		return
-	# One building per question type; there are only two types today.
-	for gi in mini(gyms.size(), GYM_BUILDINGS.size()):
-		_add_gym_node(gyms[gi], GYM_BUILDINGS[gi], gi)
+	# One gym per question type: two in map buildings, the third at its spot.
+	for gi in mini(gyms.size(), MAX_GYMS):
+		_add_gym_node(gyms[gi], GYM_BUILDINGS[gi] if gi < GYM_BUILDINGS.size() else "", gi)
 		# Hallway trainers for this gym, spread along its road (TrainersN/From → To).
 		var from: Vector3 = get_node("Trainers%d/From" % (gi + 1)).global_position
 		var to: Vector3 = get_node("Trainers%d/To" % (gi + 1)).global_position
-		var indices: Array = gyms[gi]["question_indices"]
+		var indices: Array = gyms[gi]["trainer_indices"]
 		for ti in indices.size():
 			_add_trainer_node(int(indices[ti]), from.lerp(to, float(ti + 1) / float(indices.size() + 1)))
 	_add_champion_node(CHAMPION_BUILDING)
@@ -116,7 +120,8 @@ func _add_trainer_node(q_idx: int, pos: Vector3) -> void:
 	if q_idx < 0 or q_idx >= questions.size():
 		return
 	var badge: Dictionary = SessionManager.mastery_badge(SessionManager.get_mastery_state(_topic_id, q_idx))
-	var area := _trigger(pos, TRAINER_RADIUS, "T%d" % (q_idx + 1))
+	var tier := str(questions[q_idx].get("difficulty", "medium"))
+	var area := _trigger(pos, TRAINER_RADIUS, "T%d\n%s" % [q_idx + 1, tier.capitalize()])
 	var pad := MeshInstance3D.new()
 	var disc := CylinderMesh.new()
 	disc.top_radius = TRAINER_RADIUS
@@ -139,10 +144,12 @@ func _add_trainer_node(q_idx: int, pos: Vector3) -> void:
 func _add_gym_node(gym: Dictionary, building: String, gym_idx: int) -> void:
 	var gym_type: String = str(gym["type"])
 	var badge := "BADGE" if SessionManager.is_gym_cleared(_topic_id, gym_type) else "GYM %d" % (gym_idx + 1)
-	var area := _trigger(_door(building), TRIGGER_RADIUS, "%s\n%s" % [badge, gym_type.capitalize()])
+	var pos: Vector3 = _door(building) if building != "" else (get_node("GymSpot%d" % (gym_idx + 1)) as Node3D).global_position
+	var area := _trigger(pos, TRIGGER_RADIUS, "%s\n%s" % [badge, gym_type.capitalize()])
 	_gym_positions[gym_type] = area.position
 	area.body_entered.connect(_on_gym_touched.bind(gym_type))
-	_door_animates(area, building)
+	if building != "":
+		_door_animates(area, building)
 	gyms_root.add_child(area)
 
 func _add_champion_node(building: String) -> void:
@@ -234,19 +241,24 @@ func _on_trainer_touched(_body: Node3D, q_idx: int) -> void:
 	_show_encounter(true)
 
 func _on_gym_touched(_body: Node3D, gym_type: String) -> void:
-	var gyms := SessionManager.get_gym_structure()
-	var indices: Array = []
-	for g in gyms:
+	var boss := -1
+	var count := 0
+	for g in SessionManager.get_gym_structure():
 		if str(g["type"]) == gym_type:
-			indices = g["question_indices"]
+			boss = int(g["boss_index"])
+			count = (g["question_indices"] as Array).size()
 			break
-	_pending_encounter = {"kind": "gym", "gym": gym_type, "question_indices": indices}
+	_pending_encounter = {"kind": "gym", "gym": gym_type, "boss_index": boss}
 	var cleared := SessionManager.is_gym_cleared(_topic_id, gym_type)
-	var count := indices.size()
-	encounter_title.text = "Gym: %s %s" % [gym_type.capitalize(), "(badge earned)" if cleared else "— Boss ahead!"]
-	encounter_question.text = "%d question(s) in this gym. Boss is the final question." % count
-	encounter_clear_btn.text = "Fight Boss!" if not cleared else "Badge Earned"
-	encounter_clear_btn.disabled = cleared
+	var left := SessionManager.gym_trainers_left(_topic_id, gym_type)
+	var locked := not cleared and left > 0
+	encounter_title.text = "Gym: %s %s" % [gym_type.capitalize(), "(badge earned)" if cleared else ("— boss locked" if locked else "— boss ahead!")]
+	if locked:
+		encounter_question.text = "Beat %d more trainer(s) on the road first, easiest to hardest, then face the boss." % left
+	else:
+		encounter_question.text = "%d question(s) in this gym. The boss is its hardest question." % count
+	encounter_clear_btn.text = "Badge Earned" if cleared else ("Boss Locked" if locked else "Fight Boss!")
+	encounter_clear_btn.disabled = cleared or locked
 	_show_encounter(true)
 
 func _on_champion_touched(_body: Node3D) -> void:
@@ -268,14 +280,7 @@ func _on_champion_touched(_body: Node3D) -> void:
 		_show_encounter(true)
 		return
 	var moveset := SessionManager.champion_moveset(_topic_id)
-	if moveset.is_empty():
-		_pending_encounter = {}
-		encounter_title.text = "CHAMPION — not ready"
-		encounter_question.text = "No Mastered questions yet. Win rematches to master questions, then face the Champion."
-		encounter_clear_btn.text = "Locked"
-		encounter_clear_btn.disabled = true
-		_show_encounter(true)
-		return
+	var all_questions := SessionManager.mastered_indices(_topic_id).is_empty()
 	var questions := SessionManager.get_pending_questions()
 	var lines: Array[String] = []
 	for n in mini(moveset.size(), 6):
@@ -287,7 +292,8 @@ func _on_champion_touched(_body: Node3D) -> void:
 		lines.append("...and %d more." % (moveset.size() - 6))
 	_pending_encounter = {"kind": "champion"}
 	encounter_title.text = "CHAMPION — %d challenger(s)" % moveset.size()
-	encounter_question.text = "The Champion fields your Mastered questions:\n" + "\n".join(lines) + "\nWin them all back-to-back to complete the region!"
+	var fields := "every question, since none is Mastered yet" if all_questions else "your Mastered questions"
+	encounter_question.text = "The Champion fields %s, easiest first:\n" % fields + "\n".join(lines) + "\nWin them all back-to-back to complete the region!"
 	encounter_clear_btn.text = "Challenge Champion!"
 	encounter_clear_btn.disabled = false
 	_show_encounter(true)
@@ -307,11 +313,10 @@ func _on_encounter_cleared() -> void:
 	if _pending_encounter.get("kind") == "trainer":
 		SessionManager.begin_battle(_topic_id, int(_pending_encounter.get("q_index", 0)), false)
 	elif _pending_encounter.get("kind") == "gym":
-		var indices: Array = _pending_encounter.get("question_indices", [])
-		if indices.is_empty():
+		var boss := int(_pending_encounter.get("boss_index", -1))
+		if boss < 0 or SessionManager.gym_trainers_left(_topic_id, str(_pending_encounter["gym"])) > 0:
 			return
-		# Boss = final question of the gym.
-		SessionManager.begin_battle(_topic_id, int(indices[indices.size() - 1]), true)
+		SessionManager.begin_battle(_topic_id, boss, true)
 	elif _pending_encounter.get("kind") == "champion":
 		if not SessionManager.begin_champion_battle(_topic_id):
 			return
@@ -341,3 +346,7 @@ func _refresh_progress() -> void:
 
 func _on_back() -> void:
 	get_tree().change_scene_to_file("res://scenes/ui/session_list.tscn")
+
+func _on_study() -> void:
+	SessionManager.flashcards_return = "res://scenes/overworld/region_map.tscn"
+	get_tree().change_scene_to_file("res://scenes/review_session/flashcards.tscn")

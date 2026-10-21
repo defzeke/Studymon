@@ -1,15 +1,17 @@
 # Battle and answer grading
 
-Turn-based arena. One question is bound before the scene loads; the player answers in free text;
-the answer is scored; the score becomes damage.
+Turn-based arena. One question is bound before the scene loads. Identification and Essay are
+answered in free text and scored; Multiple Choice is tapped and graded locally. The question's
+difficulty tier sets the enemy's HP, the counter damage and the thresholds
+([`gameplay-structure.md`](gameplay-structure.md) §3.3).
 
 - **Scene / logic:** `scripts/battle/battle.gd` → `scenes/battle/battle.tscn`
 - **Handoff state:** `SessionManager.battle_*` (`begin_battle`, `get_battle_question`)
 - **Judging:** `scripts/autoload/api.gd` — `grade_battle_question()`, `_execute_mock_grade()`
 - **Outcome recording:** `SessionManager.report_battle_result()` → `record_battle_outcome()`
 
-Status: **Implemented, fully mocked grading**, and currently **unloadable** — `battle.tscn`
-references `bot_lv1.png` / `bot_lv5.png`, which do not exist (`known-issues.md` #1).
+Status: **Implemented, fully mocked grading.** The enemy and player cards have no sprites yet (the
+old `bot_lv*.png` references were removed from `battle.tscn`).
 
 ---
 
@@ -32,7 +34,7 @@ SessionManager.begin_champion_battle(topic_id)            # champion (fills a qu
 | `battle_champion_queue` / `battle_champion_index` | remaining Mastered questions |
 
 `get_battle_question()` returns a deep copy of `pending_questions[battle_q_index]`, or `{}` if the
-index is stale. `battle.gd:61-63` substitutes a hard-coded preview question in that case
+index is stale. `battle.gd` substitutes a hard-coded preview question in that case
 (`"What is the capital of France?"` → `Paris`), which is what makes the scene testable standalone.
 
 ---
@@ -41,21 +43,23 @@ index is stale. `battle.gd:61-63` substitutes a hard-coded preview question in t
 
 ```gdscript
 const PLAYER_MAX_HP := 100
-const ENEMY_HP      := 100
 const BOSS_HP       := 150
-
-const ID_COUNTER    := 30      # damage taken on a failed Identification
-const XP_REWARD     := 5       # trainer win
-const BOSS_XP_REWARD      := 10
 const CHAMPION_XP_REWARD  := 15  # bonus for finishing the gauntlet
+
+const TIERS := {
+	"easy":   {"hp": 60,  "counter": 15, "xp": 5,  "essay_pass": 0.5},
+	"medium": {"hp": 100, "counter": 25, "xp": 8,  "essay_pass": 0.65},
+	"hard":   {"hp": 150, "counter": 35, "xp": 12, "essay_pass": 0.8},
+}
 
 const STRONG_ESSAY_SCORE  := 0.7   # juice threshold
 const SHAKE_BASE_INTENSITY := 8.0
 const HIT_STOP_BASE       := 0.06
 ```
 
-Enemy max HP is `BOSS_HP` when `battle_is_boss` (gym boss **and** the final champion step), else
-`ENEMY_HP`. The player always starts at 100.
+The tier is the question's `difficulty` (default `medium`). Enemy max HP is `BOSS_HP` when
+`battle_is_boss` (gym boss **and** the final champion step), else the tier's `hp`. A boss also
+doubles the tier's XP. The player always starts at 100.
 
 ---
 
@@ -63,27 +67,34 @@ Enemy max HP is `BOSS_HP` when `battle_is_boss` (gym boss **and** the final cham
 
 ```text
 _ready()
-  bind question, set title ("Battle" / "Boss Battle" / "CHAMPION n/total")
+  bind question, resolve tier, set title ("Battle" / "Boss Battle" / "CHAMPION n/total")
+  type label shows "<Type> · <Tier>"
+  Multiple Choice: build four option buttons (answer + wrong options, shuffled), hide the text
+    input and Attack button. A MC row with no answer or no wrong option is played as Identification.
   reset HP bars, hide result panel
   connect Api.job_status, Api.quota_exceeded, MonetizationState signals
 
-submit
+multiple choice tap (local, no Api call, no quota)
+  correct ─► enemy HP = 0, "ONE-HIT KO!" + light shake
+  wrong   ─► that button greys out, player HP -= tier counter
+
+submit (Identification / Essay)
   empty answer ─► "Type an answer first." (no quota consumed)
   otherwise:
      judge → Api.grade_battle_question(q, answer)
-              ├─ quota exhausted ─► Api.quota_exceeded("grade") ─► paywall dialog, no grading
+              ├─ essay and quota exhausted ─► Api.quota_exceeded("grade") ─► paywall dialog
               └─ MOCK ─► _execute_mock_grade() ─► call_deferred
                           job_status("grade", "completed", 1.0, {score, feedback, damage, type})
 
 job_status("grade")
   IDENTIFICATION:
      score >= 0.7 ─► enemy HP = 0, "ONE-HIT KO!" + light shake
-     else         ─► player HP -= 30, "Blocked! Enemy counters for 30."
+     else         ─► player HP -= tier counter
   ESSAY:
-     enemy HP -= damage (default round(score*100))
-     if enemy survives: player HP -= 10 + (1-score)*20
-     strong hit (score >= 0.7): shake + hit-stop
-  then: win / lose / keep fighting
+     score >= tier essay_pass ─► enemy HP -= damage (default round(score*100)), else 0 damage
+     if enemy survives: player HP -= round(counter * (0.4 + 0.6 * (1 - score)))
+     strong hit (score >= 0.7, damage > 0): shake + hit-stop
+  then: win / lose / keep fighting (_finish_turn)
 ```
 
 There is **no turn cap and no enemy AI** — the enemy only ever "counters" as a damage formula.
@@ -92,8 +103,8 @@ There is **no turn cap and no enemy AI** — the enemy only ever "counters" as a
 
 ## 4. Scoring (mock)
 
-`Api._execute_mock_grade()` (`api.gd:276-329`) implements the hybrid rubric the build plan asked
-for, entirely locally.
+`Api._execute_mock_grade()` implements the hybrid rubric the build plan asked for, entirely
+locally. Multiple Choice never reaches it.
 
 ### Identification (`type == "identification"` or `"id"`)
 
@@ -101,12 +112,12 @@ for, entirely locally.
 |---|---|---|
 | empty answer | 0.0 | "No answer — the enemy shrugs it off." |
 | exact match (lowercased, trimmed) | 1.0 | "Exact hit — that's the one!" |
-| one contains the other | 0.8 | "Close enough — core term landed." |
-| Levenshtein distance ≤ 2 (±3 length) | 0.7 | "Near miss on spelling, but the idea connected." |
+| one contains the other (**not on Hard**) | 0.8 | "Close enough — core term landed." |
+| Levenshtein distance ≤ 2 (±3 length); **≤ 1 on Hard** | 0.7 | "Near miss on spelling, but the idea connected." |
 | no answer key set | 0.5 if ≥ 2 chars | "No answer key — effort counts for half." |
 | anything else | 0.0 | "That missed — review the concept and strike again." |
 
-`_fuzzy_match` / `_edit_distance` are hand-written (`api.gd:333-351`), not Godot helpers.
+`_fuzzy_match(a, b, max_distance)` / `_edit_distance` are hand-written, not Godot helpers.
 
 ### Essay
 
@@ -139,7 +150,7 @@ and is expected to return `{score, feedback, damage}` in the same shape.
 
 1. `SessionManager.report_battle_result(true)` → mastery update, trainer cleared,
    gym badge if `battle_is_boss`.
-2. Reward: `10` for boss, else `5`.
+2. Reward: the tier's XP (5 / 8 / 12), doubled for a boss.
 3. If champion: `advance_champion()`; if the queue is finished add `+15` and show
    "CHAMPION DEFEATED — Region Complete!".
 4. `CompanionState.add_xp(reward)` — silently dropped at max level.
@@ -149,15 +160,16 @@ and is expected to return `{score, feedback, damage}` in the same shape.
 `_lose()`:
 
 1. `SessionManager.report_battle_result(false)` → mastery demotion only; **no** trainer/gym clear.
-2. `Retry` resets both HP bars and the answer field **in place** — no scene reload, and the loss is
-   only recorded once (it is not re-recorded on retry).
+2. `Retry` resets both HP bars and the answer field **in place**, re-enabling Multiple Choice
+   options — no scene reload, and the loss is only recorded once (it is not re-recorded on retry).
 3. `Continue` ("Flee") returns to the overworld.
 
 `Flee()` (top bar) sets `battle_is_champion = false` and leaves — a flee from a Champion gauntlet
 forfeits the run even though completed questions keep their mastery.
 
-**XP is not saved here.** `CompanionState.add_xp` mutates memory; persistence waits for the next
-care tap or settings change (`data-model.md` §7).
+`_win()` and `_lose()` end with `SaveManager.save_progress()`, so mastery, clears and XP persist
+at once. It does nothing until a save has been loaded, so a battle run on its own cannot overwrite
+the real save (`data-model.md` §7).
 
 ---
 
@@ -188,9 +200,9 @@ The camera is a child of the `Battle` Control, not of a 2D world — everything 
 ## 8. Quota interaction
 
 `Api.grade_battle_question()` checks `MonetizationState.can_consume("grade")` **before** grading
-and consumes one unit on success (`api.gd:39-45`). Consequences:
+and consumes one unit on success — **for essays only**. Identification and Multiple Choice grade
+locally and are free. Consequences:
 
-- Identification questions cost the same quota as essays (see `known-issues.md` #15).
 - A failed/empty submit is blocked earlier by `battle.gd`, so it does not consume quota.
 - When exhausted, `quota_exceeded.emit("grade")` fires, `_awaiting` is reset, the submit button
   re-enables, and a `ConfirmationDialog` offers "Upgrade to Premium" (which is a mock flag in
@@ -202,10 +214,10 @@ and consumes one unit on success (`api.gd:39-45`). Consequences:
 
 | Gap | Detail |
 |---|---|
-| Scene unloadable | missing `bot_lv1.png` / `bot_lv5.png` textures |
+| No enemy/player art | both sprite cards are empty until new art exists |
 | Grading is local | no Claude call; `/battle/grade` only fires when `MOCK == false` |
-| Grading is quota-gated even when mocked | free-tier counter drains without any API cost |
-| No result persistence | mastery/XP/clears rely on a later unrelated save |
-| No multiple choice / true-false | only `identification` and `essay` are understood |
+| Essay quota drains when mocked | the free-tier counter drops without any API cost |
+| No true/false | only Multiple Choice, `identification` and `essay` are understood |
+| Boss is not the Hard tier | the boss is the gym's hardest question, not necessarily Hard; it always has 150 HP |
 | No audio | no SFX or music cues for hits, victory, defeat |
 | `Camera2D` in a `Control` | workaround-heavy; a `CanvasLayer` or pure-UI shake would be simpler |

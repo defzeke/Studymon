@@ -6,7 +6,7 @@ no cloud sync.
 - **Path:** `user://studymon_save.json`
 - **Written by:** `SaveManager.save_game()` — `scripts/autoload/save_manager.gd:6`
 - **Read by:** `SaveManager.load_game()` — `scripts/autoload/save_manager.gd:24`
-- **Schema tag:** `"v": 5`
+- **Schema tag:** `"v": 6`
 - **Format:** `JSON.stringify` of a single `Dictionary`, pretty-print off
 
 The build plan originally proposed `Resource`-based saves; the implementation uses JSON instead.
@@ -18,7 +18,7 @@ That is fine for the current scope but means there is **no type safety and no au
 
 ```jsonc
 {
-  "v": 5,
+  "v": 6,
 
   // CompanionState.to_dict()
   "level": 1,
@@ -97,14 +97,18 @@ verbatim inside `session.topics[].questions`.
 |---|---|---|
 | `id` | string | `q1`, `q2`… from extraction; `q_<n>_<rand>` for manually added |
 | `text` | string | The prompt shown in battle / the editor |
-| `type` | string | `"identification"` or `"essay"` (always lowercased) |
-| `answer` | string | Expected answer (Identification) or a model excerpt (Essay) |
+| `type` | string | `"identification"`, `"essay"` or `"multiple_choice"` (always lowercased) |
+| `difficulty` | string | `"easy"`, `"medium"` or `"hard"` (v6; a missing or unknown value loads as `"medium"`) |
+| `answer` | string | Expected answer (Identification), a model excerpt (Essay) or the correct option (Multiple Choice) |
+| `distractors` | string[] | Multiple Choice only (v6): the wrong options; blanks are dropped on load |
 | `key_concepts` | string[] | Keywords used for essay coverage scoring |
 | `confidence` | float | 0–1. Drives the categorizer's colour-coded badge; **not** sent to battle |
 | `source` | string | Source sentence excerpt; forwarded as `source` to a real grade call |
 
-Only `text`, `type`, `answer` and `key_concepts` affect battle outcome. `confidence` is purely a
-"how much should I double-check this" hint for the player.
+Only `text`, `type`, `difficulty`, `answer`, `distractors` and `key_concepts` affect battle
+outcome. `confidence` is purely a "how much should I double-check this" hint for the player.
+`SessionManager.normalize_question()` applies the defaults and repairs unplayable Multiple Choice
+rows (see [`systems/review-session.md`](systems/review-session.md) §6); a v5 save needs no migration.
 
 ---
 
@@ -208,8 +212,9 @@ Behaviour worth knowing:
 | `companion.gd:145` on level-up | rare |
 | `companion.gd:196` on campaign ready | once |
 | `settings.gd:49,56,63` premium toggle / quota reset | rare |
-| *(missing)* after battle, after topic confirm, after mastery change | — |
+| `SaveManager.save_progress()` after a battle win or loss (`battle.gd`), and after a topic is confirmed (`confirm_topic`) | once per event |
 
-Battles, mastery updates, cleared gyms and new topics are **not** saved at the moment they change;
-they persist only because some later care tap or settings change happens to write the whole file.
-Quitting straight after a battle loses that progress.
+`save_progress()` writes only when a save has already been loaded this session (`load_game()` /
+`load_once()` set the flag), so a scene run on its own can never overwrite the real save with
+defaults. Mastery, cleared gyms and trainers, Champion wins, XP and new topics now persist at the
+moment they change. Mastery changed outside a battle (none today) would still wait for the next save.

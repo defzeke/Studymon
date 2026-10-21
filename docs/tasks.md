@@ -19,6 +19,20 @@ fling the ball, Kuiz watches. Settings and the topic list now return home. New t
 `assets/sprites/props/` and `ui/arrow.svg`. Details in [`ui-and-assets.md`](ui-and-assets.md) §2
 Home.
 
+**Gameplay structure Phases 0–3 — committed.** Battles load (`battle.tscn` no longer references
+`bot_lv*.png`), progress saves after battles and topic confirmation (`SaveManager.save_progress()`),
+questions carry `difficulty` (and `distractors` for Multiple Choice) with save `"v": 6`, the mock
+extractor produces all three types and tiers, the categorizer edits them, battles scale by tier,
+essays alone use the grading quota, and a third gym (Multiple Choice) stands at a marker on the
+south road. Phase 3: trainers climb Easy → Hard along each road, the boss is the gym's hardest
+question and stays locked until its trainers are beaten, gyms clear only through the boss (#17), and
+the Champion falls back to every question, Easy to Hard (#6). Contract:
+[`systems/gameplay-structure.md`](systems/gameplay-structure.md).
+
+**Flashcard Sanctuary (Phase 4) — uncommitted.** `flashcards.tscn`: untimed review of a topic with
+Again / Hard / Easy. Easy lifts New or Remaster to Learning (never Mastered); each lifted card pays
++1 XP and +2 focus once, a finished deck +3 mood. Opened from the island's Study button and from a
+Cards button on each session-list row. Details in [`ui-and-assets.md`](ui-and-assets.md).
 **Loading music — uncommitted.** `splash.tscn` starts `MusicManager.play_loading()`, which begins
 `loading.mp3` at 1 s and fades it in over 1 s; it runs through `loading.tscn`, and `peek.tscn`
 switches back to `main room.mp3`. `assets/audio/loading.mp3` and its `.import` are untracked.
@@ -28,9 +42,8 @@ switches back to `main room.mp3`. `assets/audio/loading.mp3` and its `.import` a
 | Work | Blocked by |
 |---|---|
 | Kuiz's stats and the top bar | Waiting on the design: what goes at the top (including the currency), and what feeding, fixing, playing and charging should change |
-| Playing the core loop end to end | The row above, issue #1 (`battle.tscn` fails to parse on missing `bot_lv*.png`) and issue #8 (no care input, so Level 5 is unreachable without editing the save) |
+| Earning XP and the Level 5 gate | The row above: nothing on home calls `CompanionState.care()` (issue #8), so Play is ungated for now |
 | Any real backend call | Issue #7 (endpoints disagree) and issue #2 (auth header is a redaction placeholder) |
-| Claiming the Champion | Issue #6 (soft-lock when no question is `MASTERED`) |
 
 ## Next
 
@@ -38,16 +51,15 @@ P0/P1 first; each item's evidence and fix live in [`known-issues.md`](known-issu
 
 | Order | Item | Why now |
 |---|---|---|
-| 1 | #1 Add `bot_lv1..5.png` (or strip the `[ext_resource]` lines) | Unblocks the battle scene; also the prerequisite for #3 |
-| 2 | #8 Add Feed / Pet / Play buttons wired to `_on_care()` | Makes the pet loop playable and Level 5 reachable |
-| 3 | #3 Un-hide the companion rig and its animation guards | Core fantasy; depends on #1 |
-| 4 | #4 Show `TidbitBubble` when text is assigned | Level-5 gate and every curriculum line are currently invisible |
-| 5 | #5 `maxi(1, …)` instead of truncating XP to 0 | Diminishing returns currently stops XP entirely |
-| 6 | #10 Save after battle results and topic confirm | Quitting after a battle loses the work |
-| 7 | #6 Implement the documented Champion fallback | Region is otherwise impossible to finish |
-| 8 | #2 `Bearer` header + a way to set `auth_token` | Required before `MOCK` can flip |
-| 9 | #9 Standardise the job envelope (or add a `grade_result` signal) and handle non-2xx | Real responses are dropped today |
-| 10 | #15 Charge grading quota only for API-graded types | Identification exhausts the free week locally |
+| 1 | #8 / #5 Care input that earns XP, once the top-bar design lands | Makes Level 5 reachable and gives the gate back |
+| 2 | #3 Un-hide the companion rig and its animation guards | Core fantasy |
+| 3 | #4 Show `TidbitBubble` when text is assigned | Level-5 gate and every curriculum line are currently invisible |
+| 4 | #2 `Bearer` header + a way to set `auth_token` | Required before `MOCK` can flip |
+| 5 | #9 Standardise the job envelope (or add a `grade_result` signal) and handle non-2xx | Real responses are dropped today |
+
+**Future, not started: Phase 5**, the real backend and the App Store / Google Play launch. The game
+stays on mocks until the maintainer decides to begin. The researched plan, store requirements and
+mock-first prep are in [`launch-plan.md`](launch-plan.md); items 4 and 5 above are part of it.
 
 Hygiene, after the slice plays:
 
@@ -56,7 +68,7 @@ Hygiene, after the slice plays:
 | #13 | Emit `stats_changed` at ~5 Hz or only on change |
 | #14 | Debounce the save instead of one full write per tap |
 | #12 | Give leaf bones non-zero rest length, or skip degenerate weights |
-| #16, #17, #19 | Double save load, duplicate signal, phantom "Biology 101" |
+| #16, #19 | Double save load, phantom "Biology 101" |
 | #20 | Add a headless smoke-test script / CI |
 | #21 | Migrate the shared theme and inline scene colours to the canonical palette |
 
@@ -66,11 +78,13 @@ Hygiene, after the slice plays:
    `/extract`? Pick the client shape (it already consumes it) and rewrite the backend doc (#7).
 2. **Auth scope.** Is login part of the vertical slice, or does the client stay anonymous while
    `MOCK` is on (#2)?
-3. **Champion rule.** Fallback to all questions when none is `MASTERED`, or require a Mastered
-   moveset and explain it (#6)?
-4. **Codex.** The remote branch `feat/remove-codex` suggests it is being cut. Remove the button and
+3. **Codex.** The remote branch `feat/remove-codex` suggests it is being cut. Remove the button and
    the `codex` save field, or keep it?
-5. **Save cadence.** Event-driven saves, a dirty flag with a timer, or save on app pause only (#14)?
+4. **Save cadence.** Event-driven saves, a dirty flag with a timer, or save on app pause only (#14)?
+5. **Hosting (when Phase 5 starts).** Recommended: FastAPI on Cloud Run or Fly.io + Supabase. See
+   [`launch-plan.md`](launch-plan.md) §1.
+6. **Purchases timing (when Phase 5 starts).** Recommended: free launch with server-side quotas,
+   a premium plan later. See [`launch-plan.md`](launch-plan.md) §1.
 
 ## Done
 

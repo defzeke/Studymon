@@ -25,6 +25,7 @@ Where the two disagree, the docs say so explicitly.
 | Work on the map, gyms, mastery, Champion | [`systems/overworld.md`](systems/overworld.md) |
 | Work on battles and answer grading | [`systems/battle.md`](systems/battle.md) |
 | See the target gyms / difficulty / flashcard design | [`systems/gameplay-structure.md`](systems/gameplay-structure.md) |
+| Plan the real backend and the App Store / Google Play launch (future) | [`launch-plan.md`](launch-plan.md) |
 | Work on free-tier limits / paywall | [`systems/monetization.md`](systems/monetization.md) |
 | Change a screen or add art | [`ui-and-assets.md`](ui-and-assets.md) |
 | Wire the real backend | [`api-backend.md`](api-backend.md) |

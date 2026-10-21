@@ -14,6 +14,8 @@ signal overworld_progress_changed
 # Client-side sanity: flag very short/garbled PDFs before sending to backend
 const MIN_WORDS := 20
 const MIN_CHARS := 80
+# Contract: docs/systems/gameplay-structure.md
+const DIFFICULTIES: Array[String] = ["easy", "medium", "hard"]
 
 var current_topic_id: String = ""
 var pending_questions: Array[Dictionary] = []
@@ -35,6 +37,23 @@ func _ready() -> void:
 	Api.job_status.connect(_on_job_status)
 
 # --- Topics history (mock-persisted in memory until SaveManager handles it) ---
+
+## Fills defaults and repairs rows a battle could not play: an unknown tier becomes medium, and a
+## Multiple Choice row without a correct answer and a wrong option becomes Identification.
+func normalize_question(q: Dictionary) -> Dictionary:
+	var d: Dictionary = q.duplicate(true)
+	d["type"] = str(d.get("type", "essay")).to_lower()
+	var tier := str(d.get("difficulty", "medium")).to_lower()
+	d["difficulty"] = tier if tier in DIFFICULTIES else "medium"
+	if d["type"] == "multiple_choice":
+		var wrong: Array = []
+		for x in d.get("distractors", []):
+			if str(x).strip_edges() != "":
+				wrong.append(str(x).strip_edges())
+		d["distractors"] = wrong
+		if str(d.get("answer", "")).strip_edges() == "" or wrong.is_empty():
+			d["type"] = "identification"
+	return d
 
 func list_topics() -> void:
 	Api.mock_get_topics()
@@ -115,12 +134,9 @@ func _on_job_status(job_id: String, status: String, progress: float, result: Var
 				var questions: Array[Dictionary] = []
 				for q in result["questions"]:
 					if q is Dictionary:
-						# Normalize type & confidence
-						var d: Dictionary = q.duplicate(true)
+						var d := normalize_question(q)
 						if not d.has("confidence"):
 							d["confidence"] = 0.7
-						if d.has("type"):
-							d["type"] = str(d["type"]).to_lower()
 						questions.append(d)
 				pending_questions = questions
 				editing_topic_id = topic_id
@@ -133,11 +149,13 @@ func _on_job_status(job_id: String, status: String, progress: float, result: Var
 
 func set_editing_topic(topic_id: String, questions: Array[Dictionary]) -> void:
 	editing_topic_id = topic_id
-	pending_questions = questions.duplicate(true)
+	pending_questions = []
+	for q in questions:
+		pending_questions.append(normalize_question(q))
 
-func add_question(text: String, qtype: String, answer: String = "", key_concepts: Array[String] = []) -> void:
+func add_question(text: String, qtype: String, answer: String = "", key_concepts: Array[String] = [], difficulty: String = "medium", distractors: Array = []) -> void:
 	var id = "q_" + str(pending_questions.size() + 1) + "_" + str(randi() % 10000)
-	pending_questions.append({"id": id, "text": text, "type": qtype.to_lower(), "answer": answer, "key_concepts": key_concepts, "confidence": 0.5})
+	pending_questions.append({"id": id, "text": text, "type": qtype.to_lower(), "difficulty": difficulty, "answer": answer, "distractors": distractors, "key_concepts": key_concepts, "confidence": 0.5})
 
 func remove_question(index: int) -> void:
 	if index >= 0 and index < pending_questions.size():
@@ -154,6 +172,7 @@ func confirm_topic(topic_name: String = "") -> void:
 	var name := topic_name if topic_name != "" else editing_topic_id
 	add_topic_to_history(editing_topic_id, name, pending_questions)
 	Api.save_topic(editing_topic_id, pending_questions)
+	SaveManager.save_progress()
 	topic_saved.emit(editing_topic_id)
 	_enter_overworld(editing_topic_id)
 
@@ -176,7 +195,22 @@ func get_pending_questions() -> Array[Dictionary]:
 
 # --- Phase 6: gym structure + clear-state progress ---
 
-## Groups pending questions by type: [{type, question_indices: [int]}]
+## Rank of a question's tier, Easy 0 to Hard 2 (unknown tiers count as medium).
+func _tier_rank(q: Dictionary) -> int:
+	return maxi(0, DIFFICULTIES.find(str(q.get("difficulty", "medium"))))
+
+## Indices sorted Easy to Hard, ties in question order.
+func _sorted_by_tier(indices: Array, questions: Array) -> Array:
+	var out := indices.duplicate()
+	out.sort_custom(func(a: int, b: int) -> bool:
+		var ra := _tier_rank(questions[a])
+		var rb := _tier_rank(questions[b])
+		return ra < rb or (ra == rb and a < b))
+	return out
+
+## Groups pending questions by type:
+## [{type, question_indices, trainer_indices, boss_index}]. Trainers climb Easy to Hard; the boss
+## is the hardest question of the gym (the last one among ties). Contract: docs/systems/gameplay-structure.md.
 func get_gym_structure() -> Array[Dictionary]:
 	var order: Array = []
 	var buckets: Dictionary = {}
@@ -188,8 +222,20 @@ func get_gym_structure() -> Array[Dictionary]:
 		buckets[t].append(i)
 	var out: Array[Dictionary] = []
 	for t in order:
-		out.append({"type": t, "question_indices": buckets[t]})
+		var ranked := _sorted_by_tier(buckets[t], pending_questions)
+		var boss: int = ranked.pop_back()
+		out.append({"type": t, "question_indices": buckets[t], "trainer_indices": ranked, "boss_index": boss})
 	return out
+
+## Trainers of a gym still to beat before its boss opens.
+func gym_trainers_left(topic_id: String, gym_type: String) -> int:
+	var left := 0
+	for g in get_gym_structure():
+		if str(g["type"]) == gym_type:
+			for qi in g["trainer_indices"]:
+				if not is_trainer_cleared(topic_id, int(qi)):
+					left += 1
+	return left
 
 func _trainer_key(topic_id: String, q_idx: int) -> String:
 	return "%s:%d" % [topic_id, q_idx]
@@ -199,7 +245,6 @@ func is_trainer_cleared(topic_id: String, q_idx: int) -> bool:
 
 func mark_trainer_cleared(topic_id: String, q_idx: int) -> void:
 	_cleared_trainers[_trainer_key(topic_id, q_idx)] = true
-	_recheck_gym_clear(topic_id)
 	overworld_progress_changed.emit()
 
 func is_gym_cleared(topic_id: String, gym_type: String) -> bool:
@@ -207,18 +252,6 @@ func is_gym_cleared(topic_id: String, gym_type: String) -> bool:
 
 func mark_gym_cleared(topic_id: String, gym_type: String) -> void:
 	_cleared_gyms["%s:%s" % [topic_id, gym_type]] = true
-	overworld_progress_changed.emit()
-
-func _recheck_gym_clear(topic_id: String) -> void:
-	for gym in get_gym_structure():
-		var t: String = str(gym["type"])
-		var all_done := true
-		for qi in gym["question_indices"]:
-			if not is_trainer_cleared(topic_id, int(qi)):
-				all_done = false
-				break
-		if all_done:
-			_cleared_gyms["%s:%s" % [topic_id, t]] = true
 	overworld_progress_changed.emit()
 
 func get_progress(topic_id: String) -> Dictionary:
@@ -430,6 +463,34 @@ func _questions_for(topic_id: String) -> Array:
 			return t.get("questions", [])
 	return []
 
+# --- Phase 4: Flashcard Sanctuary (contract: docs/systems/gameplay-structure.md §3.4) ---
+
+## Where the sanctuary's Back button returns to; its callers set it.
+var flashcards_return: String = "res://scenes/ui/session_list.tscn"
+
+## Card order for a review: Remaster, then New, Learning, Mastered; ties in question order.
+func flashcard_deck(topic_id: String) -> Array:
+	var order := [Mastery.REMASTER, Mastery.NEW, Mastery.LEARNING, Mastery.MASTERED]
+	var deck: Array = range(_questions_for(topic_id).size())
+	deck.sort_custom(func(a: int, b: int) -> bool:
+		var ra := order.find(get_mastery_state(topic_id, a))
+		var rb := order.find(get_mastery_state(topic_id, b))
+		return ra < rb or (ra == rb and a < b))
+	return deck
+
+## "Easy" in review lifts New or Remaster to Learning; Mastered is earned only in battle.
+## True when the card moved.
+func promote_from_review(topic_id: String, q_idx: int) -> bool:
+	var st := get_mastery_state(topic_id, q_idx)
+	if st != Mastery.NEW and st != Mastery.REMASTER:
+		return false
+	var k := _mastery_key(topic_id, q_idx)
+	var rec: Dictionary = _mastery.get(k, {"state": Mastery.NEW, "attempts": 0, "correct": 0, "last_correct": 0})
+	rec["state"] = Mastery.LEARNING
+	_mastery[k] = rec
+	mastery_changed.emit()
+	return true
+
 # --- Phase 8: Champion battle ---
 # Moveset = all current Mastered questions; falls back to every question
 # so the fight stays playable even with zero mastered.
@@ -438,13 +499,20 @@ var battle_is_champion: bool = false
 var battle_champion_queue: Array = []
 var battle_champion_index: int = 0
 
-func champion_moveset(topic_id: String) -> Array:
-	var qs: Array = _questions_for(topic_id)
+func mastered_indices(topic_id: String) -> Array:
 	var mastered: Array = []
-	for i in qs.size():
+	for i in _questions_for(topic_id).size():
 		if get_mastery_state(topic_id, i) == Mastery.MASTERED:
 			mastered.append(i)
 	return mastered
+
+## The Champion's questions, Easy to Hard: the Mastered ones, or every question when none is.
+func champion_moveset(topic_id: String) -> Array:
+	var qs: Array = _questions_for(topic_id)
+	var picked := mastered_indices(topic_id)
+	if picked.is_empty():
+		picked = range(qs.size())
+	return _sorted_by_tier(picked, qs)
 
 func is_champion_available(topic_id: String) -> bool:
 	var gyms := get_gym_structure()
@@ -521,6 +589,11 @@ func from_dict(data: Dictionary) -> void:
 	_topics = []
 	for t in data.get("topics", []):
 		if t is Dictionary:
-			_topics.append((t as Dictionary).duplicate(true))
+			var topic: Dictionary = (t as Dictionary).duplicate(true)
+			var qs: Array = []
+			for q in topic.get("questions", []):
+				qs.append(normalize_question(q) if q is Dictionary else q)
+			topic["questions"] = qs
+			_topics.append(topic)
 	overworld_progress_changed.emit()
 	mastery_changed.emit()

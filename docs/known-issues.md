@@ -10,58 +10,21 @@ Severity: **P0** blocks the core loop · **P1** blocks a feature or silently cor
 
 | # | Issue | Severity |
 |---|---|---|
-| 1 | Missing `bot_lv*.png` — `battle.tscn` fails to parse | **P0** |
 | 8 | No Feed / Pet / Play input in the care room | **P0** |
 | 2 | Auth header uses `***` instead of `Bearer` | **P1** |
 | 3 | Companion is invisible | **P1** |
 | 4 | `TidbitBubble` is permanently hidden | **P1** |
 | 5 | Hourly diminishing returns yields **0 XP** | **P1** |
-| 6 | Champion soft-lock | **P1** |
 | 7 | Client/backend endpoint drift | **P1** |
 | 9 | Real grade/extract responses are silently dropped | **P1** |
-| 10 | Progress is not saved after battles or topic confirm | **P1** |
 | 11 | ~~Large-text accessibility toggle is unreachable~~ — fixed | — |
 | 12 | `Condition "det == 0" is true` spam from the rig | **P2** |
 | 13 | `stats_changed` fires every frame | **P2** |
 | 14 | Full save write on every care tap | **P2** |
-| 15 | Identification answers consume grading quota | **P2** |
 | 16 | Save file loaded twice at boot | **P3** |
-| 17 | Duplicate `overworld_progress_changed` emissions | **P3** |
 | 19 | Fake "Biology 101" topic seeded on every boot | **P3** |
 | 20 | Stale docs, no tests/CI | **P3** |
 | 21 | Theme and scene colours predate the canonical palette | **P3** |
-
----
-
-## 1. Missing `bot_lv*.png` — `battle.tscn` fails to parse (P0)
-
-`region_map.tscn` no longer references the sprites (it is 3D now), so only the battle arena is
-affected.
-
-**Evidence**
-
-```
-$ Godot_v4.7.2 --headless --path . res://scenes/battle/battle.tscn --quit-after 20
-ERROR: Resource file not found: res://assets/sprites/bot_lv1.png …
-ERROR: Resource file not found: res://assets/sprites/bot_lv5.png …
-ERROR: res://scenes/battle/battle.tscn:77 / :107 - Parse Error …
-```
-
-`companion.gd:80` also looks for `bot_lv1..5.png` at runtime and falls back.
-
-**Impact:** `change_scene_to_file` to the battle fails, so the campaign is dead at the first
-"Fight Trainer!" in the overworld, and the battle arena cannot even be run standalone in the
-editor.
-
-**Fix (either):**
-
-- Add `assets/sprites/bot_lv1.png` … `bot_lv5.png` (the intended pet growth art), or
-- Remove the `[ext_resource]` entries for `bot_lv1.png` / `bot_lv5.png` (`battle.tscn:4-5`)
-  together with the `texture = ExtResource(…)` lines that use them (`battle.tscn:77`,
-  `battle.tscn:107`), then let the script's null-guards take over.
-
-Until then, note that a missing texture in a `.tscn` is a **parse error**, not a warning — it
-cannot be caught at runtime.
 
 ---
 
@@ -140,26 +103,6 @@ and persist `_action_tap_counts` / `_last_hour_reset` if the cap is meant to sur
 
 ---
 
-## 6. Champion soft-lock (P1)
-
-`session_manager.gd:473-512`
-
-- `is_champion_available()` requires **every gym cleared**.
-- `begin_champion_battle()` returns `false` when `champion_moveset()` (Mastered questions only) is
-  empty.
-- A first-time win only promotes a question to `LEARNING`, so clearing every gym on the first
-  attempt can leave **zero** Mastered questions.
-- The comment above the section says the moveset "falls back to every question", but the code has no
-  fallback anywhere.
-
-**Impact:** the region can never be completed; the Champion stays "not ready" until the player
-deliberately loses/rematches enough questions to reach `MASTERED`.
-
-**Fix:** implement the documented fallback (all questions when no Mastered ones exist), or gate
-availability on "all gyms cleared **or** ≥1 Mastered question" and message it in the encounter panel.
-
----
-
 ## 7. Client/backend endpoint drift (P1)
 
 | Concern | `backend/README.md` | `api.gd` |
@@ -204,20 +147,6 @@ button disabled, "judging…" label stuck).
 **Fix:** either standardise every backend response on the job envelope, or emit a new
 `grade_result(data)` signal for non-`job_id` payloads. Also handle non-2xx `_response_code` — right
 now 401/500/timeout are indistinguishable from success-with-no-body.
-
----
-
-## 10. Progress is not saved after battles or topic confirm (P1)
-
-`SaveManager.save_game()` is only called from care taps, level-up, campaign unlock and Settings.
-Mastery changes, cleared trainers/gyms, champion clears, new/edited topics and extraction results
-all mutate memory only (`data-model.md` §7).
-
-**Impact:** quitting after a battle or a new topic loses that work; `CompanionState.add_xp()` from a
-battle is also lost.
-
-**Fix:** save in `SessionManager.report_battle_result()`, `confirm_topic()` and after a champion win.
-Longer term, debounce a dirty flag instead of writing the whole file per event.
 
 ---
 
@@ -270,17 +199,6 @@ synchronous `FileAccess` write per tap.
 
 ---
 
-## 15. Identification answers consume grading quota (P2)
-
-`Api.grade_battle_question()` consumes a `"grade"` unit for every submission, including
-Identification questions that are graded locally by string comparison. Free tier = 10/week, so a
-topic with 12 ID questions exhausts the week's quota without a single LLM call.
-
-**Fix:** only consume quota on the paths that would hit the API (essay grading / extraction), or
-make the limit `pdfs` + `essays` and document it.
-
----
-
 ## 16. Save file loaded twice at boot (P3)
 
 `main.gd:4` calls `SaveManager.load_game()`, then the child `Room` node's `companion.gd:34` calls it
@@ -288,15 +206,6 @@ again. The second load re-emits `stats_changed` / `xp_changed` and re-runs the m
 
 **Fix:** keep only the `main.gd` call (or move the load into `SaveManager._ready()` once, ordered
 after the state autoloads).
-
----
-
-## 17. Duplicate `overworld_progress_changed` emissions (P3)
-
-`_recheck_gym_clear()` (`session_manager.gd:230-240`) emits inside the `for` loop **and** again after
-it, so a single trainer win can fire the signal N+1 times and rebuild the HUD each time.
-
-**Fix:** move the emit out of the loop; only emit if a gym actually became cleared.
 
 ---
 
@@ -316,7 +225,6 @@ when opened, drops the player into the categorizer with whatever `pending_questi
   and singletons that were never written (`GameManager`, `AIService`, `SoundManager`).
 - `quizmon-build-plan.md` says "Godot 4.6, avoid 4.7"; the project is 4.7.2.
 - No automated tests, no CI workflow, no formatting/lint config beyond `.editorconfig`.
-- `session_manager.gd:465-467` documents a fallback that was never implemented (see #6).
 
 **Fix:** the root README is corrected in this docs pass; consider a `tests/` folder with a headless
 GUT suite and a GitHub Action that runs `godot --headless --import` (which is how issues #1/#12 were

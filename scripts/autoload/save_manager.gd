@@ -14,7 +14,7 @@ func load_once() -> void:
 
 func save_game() -> bool:
 	var data := CompanionState.to_dict()
-	data["v"] = 5
+	data["v"] = 6
 	data["campaign_unlocked_flag"] = GameState.campaign_unlocked_flag
 	data["active_region_id"] = GameState.active_region_id
 	data["large_text_enabled"] = GameState.large_text_enabled
@@ -32,7 +32,13 @@ func save_game() -> bool:
 	f.close()
 	return true
 
+## Progress saves never run before a load, so a scene run on its own cannot overwrite the real save.
+func save_progress() -> void:
+	if _loaded:
+		save_game()
+
 func load_game() -> bool:
+	_loaded = true
 	if not FileAccess.file_exists(SAVE_PATH):
 		return false
 	var f := FileAccess.open(SAVE_PATH, FileAccess.READ)

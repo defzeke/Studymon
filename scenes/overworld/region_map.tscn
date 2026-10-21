@@ -58,6 +58,17 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9, 0, 7.5)
 [node name="To" type="Marker3D" parent="Trainers2"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9, 0, -0.5)
 
+[node name="Trainers3" type="Node3D" parent="."]
+
+[node name="From" type="Marker3D" parent="Trainers3"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 0, 9)
+
+[node name="To" type="Marker3D" parent="Trainers3"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12, 0, 9)
+
+[node name="GymSpot3" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -15, 0, 9)
+
 [node name="Trainers" type="Node3D" parent="."]
 
 [node name="Gyms" type="Node3D" parent="."]
@@ -135,6 +146,21 @@ offset_right = 344.0
 offset_bottom = -24.0
 grow_vertical = 0
 script = ExtResource("5_stick")
+
+[node name="StudyButton" type="Button" parent="HUD"]
+custom_minimum_size = Vector2(150, 64)
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -174.0
+offset_top = -88.0
+offset_right = -24.0
+offset_bottom = -24.0
+grow_horizontal = 0
+grow_vertical = 0
+text = "Study"
 
 [node name="EncounterPanel" type="PanelContainer" parent="HUD"]
 visible = false

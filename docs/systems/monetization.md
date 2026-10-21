@@ -64,14 +64,14 @@ The window is a rolling 7 × 24 h from first use, **not** aligned to a calendar 
 | Gate | Location | Signal on failure |
 |---|---|---|
 | PDF extraction | `Api.mock_upload_pdf()` → `can_consume("pdf")` (`api.gd:99-105`) | `Api.quota_exceeded("pdf")` |
-| Answer grading | `Api.grade_battle_question()` → `can_consume("grade")` (`api.gd:40-45`) | `Api.quota_exceeded("grade")` |
+| Essay grading | `Api.grade_battle_question()` → `can_consume("grade")`, **essays only** | `Api.quota_exceeded("grade")` |
 
-Both gates run **before** any work, and both consume **on success only**. Handlers:
+Both gates run **before** any work, and both consume **on success only**. Identification and
+Multiple Choice grade locally, so they never touch the quota. Handlers:
 
-- `battle.gd:118-124` — resets `_awaiting`, hides the "judging" label, re-enables submit, shows a
+- `battle.gd` `_on_quota_exceeded` — resets `_awaiting`, hides the "judging" label, re-enables submit, shows a
   `ConfirmationDialog` ("Weekly AI limit reached. Upgrade to Premium to continue.").
-- `categorizer.gd:73-79` — same dialog; the `if type == "grade"` branch is a no-op duplicate of the
-  line above it.
+- `categorizer.gd` `_on_quota_exceeded` — same dialog.
 
 Neither handler provides a path to actually upgrade — the dialog is informational.
 

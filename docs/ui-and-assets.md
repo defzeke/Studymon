@@ -70,6 +70,7 @@ text** checkbox in `settings.tscn` calls `set_large_text()` and saves.
 | `scenes/review_session/categorizer.tscn` | `Control` | `scripts/review_session/categorizer.gd` | upload + question editor |
 | `scenes/overworld/region_map.tscn` | `Node3D` | `scripts/overworld/region_map.gd` (+ `player.gd`, `joystick.gd`) | 3D island: explorer, trainers, gyms, champion |
 | `scenes/battle/battle.tscn` | `Control` | `scripts/battle/battle.gd` | arena |
+| `scenes/review_session/flashcards.tscn` | `Control` | `scripts/review_session/flashcards.gd` | Flashcard Sanctuary: untimed card review |
 | `scenes/ui/settings.tscn` | `Control` | `scripts/ui/settings.gd` | music and sound volume, large text, premium + quota debug; Back returns home |
 | `scenes/ui/widgets/hud_strip.tscn` | `VBoxContainer` | `scripts/ui/widgets/hud_strip.gd` | status strip (instanced) |
 | `scenes/ui/widgets/pomodoro.tscn` | `VBoxContainer` | `scripts/ui/widgets/pomodoro.gd` | timer panel (instanced) |
@@ -277,7 +278,18 @@ subtle), the soft-box reflections, and the page's off-white radial background.
 ### `session_list.tscn`
 
 `Background` (`ColorRect`), `Title`, `EmptyLabel`, `Scroll` → `ListBox`, `AddButton`, `BackButton`.
-Rows are built as `Button`s with `alignment = LEFT` and text `  <name>  ·  <N> Qs`.
+Rows are built in code as an `HBoxContainer`: a topic `Button` (`alignment = LEFT`, text
+`  <name>  ·  <N> Qs`, opens the editor) and a 120 px **Cards** `Button` that opens the Flashcard
+Sanctuary (disabled for an empty topic).
+
+### `flashcards.tscn`
+
+`Flashcards` (`Control`) → `Background` (`ColorRect`, Soft Sage), `Margin` → `List`: `TopBar`
+(`BackButton`, `ProgressLabel` "N left · M banked"), `CardPanel` → `CardBox` (`BadgeLabel`,
+`FrontLabel` 36 px, `Sep`, `AnswerLabel`, `SourceLabel`), `FlipButton` ("Show answer"), `RateRow`
+(`AgainButton` Soft Coral, `HardButton` Muted Amber, `EasyButton` Soft Green) and `DoneLabel`.
+The answer, source and rate row are hidden until the card is flipped. Colours and button styles
+are applied in `_style()` from the canonical palette; every button is at least 56 px tall.
 
 ### `categorizer.tscn`
 
@@ -285,6 +297,11 @@ Vertical stack: `Title`, `QuotaLabel`, `TopicRow` (label + `TopicName` `LineEdit
 (label + `FileButton`), `PasteLabel`, `PasteArea` (`TextEdit`), `SanityLabel`, `StudyButton`,
 `StatusLabel`, `LoadingBar`, `QuestionsHeader`, `Scroll` → `QuestionsBox` (rows built in code),
 `AddQuestionButton`, `PlayButton`, `BackButton`, plus `FileDialog` and `QuotaDialog`.
+
+Each question row (built in `_make_question_row`) has a header (index, confidence, delete), the
+prompt `TextEdit`, a type row (`Type:` label, type `OptionButton` with Essay / Identification /
+Multiple Choice, tier `OptionButton` with Easy / Medium / Hard), the answer `LineEdit`, and for
+Multiple Choice three `Wrong option N` `LineEdit`s.
 
 `FileDialog` uses `file_mode = 0` (open file) and `access = 2` (filesystem), with **no filters** —
 any file type can be selected. Only the first 4000 characters of a text file are shown in the paste
@@ -304,7 +321,9 @@ box, although all bytes are kept for the upload call (`categorizer.gd:89-96`).
 (type, text), `AnswerInput` (`TextEdit`), `SubmitButton`, `JudgingLabel`, `ResultLabel`,
 `ResultPanel` (title, XP label, retry/continue), plus `QuotaDialog`.
 
-Both sprite slots (`EnemySprite`, `PlayerSprite`) reference missing `bot_lv*.png` textures.
+Both sprite slots (`EnemySprite`, `PlayerSprite`) have no texture. For a Multiple Choice question
+`battle.gd` hides `AnswerInput` and `SubmitButton` and builds a `VBoxContainer` of four option
+`Button`s (56 px tall) in their place at runtime.
 
 ### `hud_strip.tscn`
 
@@ -407,12 +426,9 @@ Battles, level-ups, taps and gym clears are silent.
 
 | Asset | Referenced by | Effect |
 |---|---|---|
-| `sprites/bot_lv1.png` | `battle.tscn:77` | parse error — battle scene will not load |
-| `sprites/bot_lv5.png` | `battle.tscn:107`, `region_map.tscn:5`, `player.gd:12` | parse error — overworld scene will not load |
-| `sprites/bot_lv1..5.png` | `companion.gd:80` | runtime warning "no bot textures found", pet invisible |
+| `sprites/bot_lv1..5.png` | `companion.gd:80` (loaded by path at runtime) | runtime warning "no bot textures found", pet invisible |
 
-Adding these five files restores the pet, the overworld and the battle arena. Until then the
-campaign flow stops at the first scene change after "Confirm & Play".
+`battle.tscn` and `region_map.tscn` no longer reference these files, so both scenes load.
 
 ---
 

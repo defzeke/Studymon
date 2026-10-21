@@ -109,6 +109,13 @@ main.tscn boot ─► companion.gd: if CompanionState.campaign_ready:
 `campaign_unlocked_flag` is what actually enables `CampaignButton`; `CompanionState.campaign_ready`
 is what gets saved. They can drift if a save is hand-edited.
 
+### Other XP and stat sources
+
+Battle wins add XP (`add_xp`). The Flashcard Sanctuary adds a little more
+(`reward_card_banked()`: +1 XP and +2 focus per card it lifts a mastery step; `reward_deck_done()`:
++3 mood), see [`gameplay-structure.md`](gameplay-structure.md) §3.4. None of these go through
+`care()`, so the hourly cap does not apply; each card pays once.
+
 ---
 
 ## 4. Codex / curriculum
