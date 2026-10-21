@@ -6,11 +6,12 @@ extends SubViewportContainer
 
 @export var pet_scene: PackedScene
 @export var foe_scenes: Array[PackedScene] = []
-@export var pet_height := 2.4
-@export var foe_height := 2.1
+@export var pet_height := 2.6
+@export var foe_height := 3.0
 @export var big_foe_scale := 1.3
-## Kuiz's idle pose sits above the rest-pose bounds measured here; this brings it onto the pad.
-@export var pet_sink := Vector3(0, -0.55, 0)
+## Kuiz's idle pose sits above the rest-pose bounds measured here, so it is lowered by this share of its
+## height to stand on the pad.
+@export var pet_sink_ratio := 0.36
 @export var foot_lift := 0.03
 @export var idle_clip: StringName = &"Idle"
 @export var attack_clip: StringName = &"Attack"
@@ -19,6 +20,11 @@ extends SubViewportContainer
 @export var pet_hit_clip: StringName = &"Happy"
 @export var pet_win_clip: StringName = &"Celebrate"
 
+@export_group("Look")
+@export var ink_color := Color("29383A")
+## Outline width for models that carry no outline hint of their own (the robots); 0 turns it off.
+@export var foe_outline := 0.012
+@export var flat_self_lit := 0.85
 @export_group("Intro")
 ## Where each bot starts, relative to its pad, before it moves in.
 @export var intro_pet_offset := Vector3(-9, 1.5, 4)
@@ -32,12 +38,27 @@ extends SubViewportContainer
 @export var intro_fov_extra := 14.0
 @export var intro_camera_time := 1.4
 @export_group("Idle hover")
-@export var pet_hover_height := 0.08
+@export var pet_hover_height := 0.05
 @export var foe_hover_height := 0.03
 @export var hover_time := 1.3
 
+@export_group("Strikes")
+## How far toward its target an attacker runs (0 = stays home, 1 = on top of it).
+## Attacks happen in place: the attacker plays its attack clip, and after this long the blow lands.
+@export var strike_impact_time := 0.55
+## After the blow lands, how long before the exchange counts as finished.
+@export var strike_recover_time := 0.6
+@export var pet_attack_clip: StringName = &"Angry"
+## The foe has no hurt clip, so it flinches with a quick tilt unless a clip with this name exists.
+@export var foe_hurt_clip: StringName = &""
+
 ## The foe has touched down: time for a flash, a shake, a dust burst.
 signal foe_landed
+signal pet_landed
+## An attacker's blow has connected; `on_pet` is true when Kuiz was the one hit.
+signal strike_hit(on_pet: bool)
+## The attacker is back on its pad.
+signal strike_finished
 
 @onready var pet_spot: Node3D = %PetSpot
 @onready var foe_spot: Node3D = %FoeSpot
@@ -54,10 +75,12 @@ var intro_running := false
 
 ## `big_foe` (gym boss, Champion) makes the opponent larger.
 func setup(big_foe: bool) -> void:
-	_pet_model = _add_model(pet_scene, pet_spot, pet_height, pet_sink)
+	_pet_model = _add_model(pet_scene, pet_spot, pet_height, Vector3(0, -pet_sink_ratio * pet_height, 0))
+	_dress(_pet_model, 0.0)
 	_pet = _idle(_pet_model)
 	if not foe_scenes.is_empty():
 		_foe_model = _add_model(foe_scenes.pick_random(), foe_spot, foe_height * (big_foe_scale if big_foe else 1.0), Vector3.ZERO)
+		_dress(_foe_model, foe_outline)
 		_foe = _idle(_foe_model)
 
 ## Gentle floating on both bots. play_intro() starts it when it finishes; call this when skipping the intro.
@@ -101,6 +124,7 @@ func play_intro() -> void:
 	t.tween_property(_foe_model, "position:y", foe_rest.y, intro_foe_time).set_delay(intro_foe_delay).set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
 	get_tree().create_timer(intro_pet_time * 0.75).timeout.connect(func() -> void:
 		pet_dust.restart()
+		pet_landed.emit()
 		_play(_pet, pet_hit_clip, true))
 	get_tree().create_timer(intro_foe_delay + intro_foe_time * 0.4).timeout.connect(func() -> void:
 		foe_dust.restart()
@@ -113,6 +137,43 @@ func play_intro() -> void:
 func enemy_attack() -> void:
 	_play(_foe, attack_clip, true)
 
+## The foe charges Kuiz, hits it, and trots home. Emits strike_hit on impact, strike_finished at the end.
+func enemy_strike() -> void:
+	await _strike(_foe_model, _pet_model, _foe, attack_clip, true)
+
+## Kuiz charges the foe, hits it, and floats home.
+func pet_strike() -> void:
+	await _strike(_pet_model, _foe_model, _pet, pet_attack_clip, false)
+
+## Where a hit lands on screen (in the Battle scene's coordinates), for floating numbers.
+func impact_point(on_pet: bool) -> Vector2:
+	var model := _pet_model if on_pet else _foe_model
+	if model == null:
+		return global_position + size / 2.0
+	var top := model.global_position + Vector3.UP * (pet_height if on_pet else foe_height) * 0.55
+	return global_position + camera.unproject_position(top)
+
+func _strike(attacker: Node3D, target: Node3D, anim: AnimationPlayer, clip: StringName, on_pet: bool) -> void:
+	if attacker == null or target == null:
+		strike_hit.emit(on_pet)
+		strike_finished.emit()
+		return
+	_play(anim, clip, true)
+	await get_tree().create_timer(strike_impact_time).timeout
+	(pet_dust if on_pet else foe_dust).restart()
+	strike_hit.emit(on_pet)
+	# The one hit reacts where it stands: Kuiz plays its hurt clip, the foe flinches.
+	if on_pet:
+		_play(_pet, pet_hurt_clip, true)
+	elif _foe != null and foe_hurt_clip != &"" and _foe.has_animation(foe_hurt_clip):
+		_play(_foe, foe_hurt_clip, true)
+	else:
+		var wob := create_tween()
+		wob.tween_property(target, "rotation:z", 0.2, 0.06)
+		wob.tween_property(target, "rotation:z", -0.15, 0.08)
+		wob.tween_property(target, "rotation:z", 0.0, 0.1)
+	await get_tree().create_timer(strike_recover_time).timeout
+	strike_finished.emit()
 func enemy_defeat() -> void:
 	_play(_foe, defeat_clip, false)
 
@@ -137,6 +198,40 @@ func _add_model(scene: PackedScene, spot: Node3D, height: float, offset: Vector3
 	model.position = -Vector3(box.get_center().x, box.position.y, box.get_center().z) * s + offset
 	model.position.y += foot_lift
 	return model
+
+# Gives a model the look it has on the home screen. Kuiz's glb carries its shading as extras: an ink
+# outline width per mesh, vertex colours (the teal and gold) and self-lit parts. Without applying them it
+# renders plain white. `default_outline` outlines meshes that carry no hint (the robots).
+func _dress(model: Node3D, default_outline: float) -> void:
+	if model == null:
+		return
+	for mi: MeshInstance3D in model.find_children("*", "MeshInstance3D", true, false):
+		var extras: Dictionary = mi.get_meta("extras", {})
+		var outline := float(extras.get("outline", default_outline))
+		if outline > 0.0:
+			mi.material_overlay = _ink(outline)
+		for i in mi.get_surface_override_material_count():
+			var mat := mi.get_active_material(i) as BaseMaterial3D
+			if mat == null:
+				continue
+			var m_extras: Dictionary = mat.get_meta("extras", {})
+			if m_extras.is_empty():
+				continue
+			mat.vertex_color_use_as_albedo = true
+			if float(m_extras.get("selfLit", 0.0)) >= flat_self_lit:
+				mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+			if str(m_extras.get("blend", "")) == "additive":
+				mat.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+
+# Inverted hull: the mesh grown along its normals with front faces culled, so only the rim shows.
+func _ink(width: float) -> StandardMaterial3D:
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.cull_mode = BaseMaterial3D.CULL_FRONT
+	mat.grow = true
+	mat.grow_amount = width
+	mat.albedo_color = ink_color
+	return mat
 
 # The model's AnimationPlayer, started on its looping idle clip.
 func _idle(model: Node3D) -> AnimationPlayer:

@@ -31,7 +31,28 @@ const HIT_STOP_BASE := 0.06
 @export var intro_flash_strength := 0.85
 @export var intro_shake := 10.0
 
+@export_group("Sound effects")
+@export var sfx_whoosh: AudioStream
+@export var sfx_land: AudioStream
+@export var sfx_vs: AudioStream
+@export var sfx_click: AudioStream
+@export var sfx_correct: AudioStream
+@export var sfx_wrong: AudioStream
+@export var sfx_hit: AudioStream
+@export var sfx_hurt: AudioStream
+@export var sfx_win: AudioStream
+@export var sfx_lose: AudioStream
+
+@export var hit_shake := 8.0
+@export var hit_flash_strength := 0.45
+## How long the VICTORY / DEFEATED banner stays before the result panel appears.
+@export var end_banner_hold := 1.5
+
 @onready var stage: ArenaStage = %Stage
+@onready var damage_template: Label = %DamageTemplate
+@onready var end_banner: Label = %EndBanner
+@onready var confetti: CPUParticles2D = %Confetti
+@onready var blocker: Control = %Blocker
 @onready var enemy_card: Control = %EnemyCard
 @onready var player_card: Control = %PlayerCard
 @onready var dialogue: Control = %Dialogue
@@ -146,6 +167,9 @@ func _ready() -> void:
 func _play_intro(foe: String) -> void:
 	_set_inputs(false)
 	stage.play_intro()  # sets the start poses now, before the first frame
+	_sfx(sfx_whoosh)
+	_sfx_later(sfx_whoosh, stage.intro_foe_delay, 0.75)
+	stage.pet_landed.connect(func() -> void: _sfx(sfx_land, 1.2, 0.7))
 	var cards: Array[Control] = [enemy_card, player_card, dialogue]
 	for c in cards:
 		c.modulate.a = 0.0
@@ -167,11 +191,13 @@ func _play_intro(foe: String) -> void:
 	t.tween_property(player_card, "modulate:a", 1.0, 0.25).set_delay(0.75)
 	# Screen punch when the foe touches down.
 	stage.foe_landed.connect(func() -> void:
+		_sfx(sfx_land)
 		flash.modulate.a = intro_flash_strength
 		create_tween().tween_property(flash, "modulate:a", 0.0, 0.4)
 		_screen_shake(intro_shake, 0.3))
 	# "VS" slams in over the arena, holds, then fades.
 	get_tree().create_timer(0.85).timeout.connect(func() -> void:
+		_sfx(sfx_vs)
 		vs_label.pivot_offset = vs_label.size / 2.0
 		vs_label.scale = Vector2.ONE * 3.0
 		vs_label.modulate.a = 0.0
@@ -189,6 +215,13 @@ func _play_intro(foe: String) -> void:
 		await get_tree().create_timer(intro_vs_hold * 0.5).timeout
 	result_label.text = ""
 	_set_inputs(true)
+
+func _sfx(stream: AudioStream, pitch := 1.0, gain := 1.0) -> void:
+	MusicManager.play_sfx_layered(stream, pitch, gain)
+
+# Holds only the stream, so a pending sound still plays (or is simply dropped) if the scene changes first.
+func _sfx_later(stream: AudioStream, delay: float, pitch := 1.0) -> void:
+	MusicManager.get_tree().create_timer(delay).timeout.connect(func() -> void: MusicManager.play_sfx_layered(stream, pitch))
 
 # Locks or unlocks everything the player can press or type into.
 func _set_inputs(on: bool) -> void:
@@ -228,6 +261,7 @@ func _on_submit() -> void:
 	if answer == "":
 		result_label.text = "Type an answer first."
 		return
+	_sfx(sfx_click)
 	_awaiting = true
 	submit_btn.disabled = true
 	judging_label.visible = true
@@ -267,6 +301,7 @@ func _set_mc_enabled(on: bool) -> void:
 func _on_mc_pick(button: Button, correct: bool) -> void:
 	if _over:
 		return
+	_sfx(sfx_click)
 	if correct:
 		_enemy_hp = 0
 		result_label.text = "ONE-HIT KO! That's the one."
@@ -275,7 +310,7 @@ func _on_mc_pick(button: Button, correct: bool) -> void:
 		button.disabled = true
 		var counter := int(TIERS[_tier]["counter"])
 		_player_hp = maxi(0, _player_hp - counter)
-		result_label.text = "Blocked! Enemy counters for %d." % counter
+		result_label.text = "Wrong! The enemy strikes back for %d." % counter
 	_finish_turn()
 
 func _on_job_status(job_id: String, status: String, _progress: float, result: Variant) -> void:
@@ -299,7 +334,7 @@ func _on_job_status(job_id: String, status: String, _progress: float, result: Va
 		else:
 			var counter := int(TIERS[_tier]["counter"])
 			_player_hp = maxi(0, _player_hp - counter)
-			result_label.text = "Blocked! Enemy counters for %d. %s" % [counter, feedback]
+			result_label.text = "Not quite! The enemy strikes back for %d. %s" % [counter, feedback]
 	else:
 		var passed := score >= float(TIERS[_tier]["essay_pass"])
 		var damage: int = int(data.get("damage", int(round(score * 100.0)))) if passed else 0
@@ -323,13 +358,23 @@ func _refresh_bars() -> void:
 	enemy_hp_text.text = "%d/%d" % [_enemy_hp, _enemy_max]
 	player_hp_text.text = "%d/%d" % [_player_hp, PLAYER_MAX_HP]
 
+# Plays out the turn's blows, then decides what happens next. A correct answer sends Kuiz at the foe; a
+# wrong or weak one sends the foe at Kuiz (both, for a partly right essay). HP drops when each blow lands.
 func _finish_turn() -> void:
-	if _player_hp < _shown_player_hp:
-		stage.enemy_attack()
-		stage.pet_hurt()
-	elif _enemy_hp < _shown_enemy_hp:
-		stage.pet_hit()
-	_refresh_bars()
+	var enemy_loss := _shown_enemy_hp - _enemy_hp
+	var player_loss := _shown_player_hp - _player_hp
+	blocker.visible = true
+	if enemy_loss > 0:
+		stage.pet_strike()
+		await stage.strike_hit
+		_land_hit(false, enemy_loss)
+		await stage.strike_finished
+	if player_loss > 0:
+		stage.enemy_strike()
+		await stage.strike_hit
+		_land_hit(true, player_loss)
+		await stage.strike_finished
+	blocker.visible = false
 	_update_quota_label()
 	if _enemy_hp <= 0:
 		_win()
@@ -338,6 +383,82 @@ func _finish_turn() -> void:
 	else:
 		submit_btn.disabled = false
 
+# A blow connects: the bar drops, the number flies up, the screen punches.
+func _land_hit(on_pet: bool, amount: int) -> void:
+	if on_pet:
+		_shown_player_hp = _player_hp
+		create_tween().tween_property(player_hp_bar, "value", float(_player_hp), 0.3)
+		player_hp_text.text = "%d/%d" % [_player_hp, PLAYER_MAX_HP]
+		_sfx(sfx_hurt)
+		_sfx_later(sfx_wrong, 0.05)
+		_flash_screen(Color(1.0, 0.35, 0.3), hit_flash_strength)
+	else:
+		_shown_enemy_hp = _enemy_hp
+		create_tween().tween_property(enemy_hp_bar, "value", float(_enemy_hp), 0.3)
+		enemy_hp_text.text = "%d/%d" % [_enemy_hp, _enemy_max]
+		_sfx(sfx_hit)
+		_sfx_later(sfx_correct, 0.1)
+		_flash_screen(Color.WHITE, hit_flash_strength * 0.7)
+	_screen_shake(hit_shake, 0.22)
+	_pop_damage("-%d" % amount, stage.impact_point(on_pet), Color("C97970") if on_pet else Color("D6A85F"))
+
+# The answer field, Fight button and choice buttons give way to the result panel, so it fits the smaller box.
+func _show_answer_controls(on: bool) -> void:
+	var is_mc := _qtype == "multiple_choice"
+	answer_input.visible = on and not is_mc
+	submit_btn.visible = on and not is_mc
+	mc_box.visible = on and is_mc
+
+func _flash_screen(color: Color, strength: float) -> void:
+	flash.color = color
+	flash.modulate.a = strength
+	create_tween().tween_property(flash, "modulate:a", 0.0, 0.4)
+
+# A number that pops up at `at`, floats up and fades. Copies the DamageTemplate label.
+func _pop_damage(text: String, at: Vector2, color: Color) -> void:
+	var l := damage_template.duplicate() as Label
+	l.text = text
+	l.visible = true
+	l.add_theme_color_override("font_color", color)
+	add_child(l)
+	l.reset_size()
+	l.pivot_offset = l.size / 2.0
+	l.position = at - l.size / 2.0
+	l.scale = Vector2.ONE * 0.4
+	var t := create_tween().set_parallel()
+	t.tween_property(l, "scale", Vector2.ONE, 0.18).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	t.tween_property(l, "position:y", l.position.y - 110.0, 0.9).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	t.tween_property(l, "modulate:a", 0.0, 0.35).set_delay(0.55)
+	t.chain().tween_callback(l.queue_free)
+
+# The end-of-battle moment: a big banner across the arena, confetti on a win, then the result panel.
+func _end_sequence(win: bool, banner: String) -> void:
+	if win:
+		stage.enemy_defeat()
+		stage.pet_win()
+		_sfx(sfx_win)
+		confetti.position.x = size.x / 2.0
+		confetti.emission_rect_extents.x = size.x / 2.0
+		confetti.restart()
+		_flash_screen(Color.WHITE, 0.6)
+	else:
+		stage.enemy_attack()
+		stage.pet_hurt()
+		_sfx(sfx_lose)
+		_flash_screen(Color(0.8, 0.25, 0.2), 0.35)
+	end_banner.text = banner
+	end_banner.add_theme_color_override("font_color", Color("D6A85F") if win else Color("C97970"))
+	end_banner.pivot_offset = end_banner.size / 2.0
+	end_banner.scale = Vector2.ONE * 3.0
+	end_banner.modulate.a = 0.0
+	end_banner.visible = true
+	var b := create_tween().set_parallel()
+	b.tween_property(end_banner, "scale", Vector2.ONE, 0.4).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	b.tween_property(end_banner, "modulate:a", 1.0, 0.2)
+	await get_tree().create_timer(end_banner_hold).timeout
+	create_tween().tween_property(end_banner, "modulate:a", 0.0, 0.35)
+	_show_answer_controls(false)
+	result_panel.visible = true
 # --- Phase 9: juice ---
 func _trigger_strong_hit_juice(score: float) -> void:
 	var intensity := SHAKE_BASE_INTENSITY + score * 10.0
@@ -377,8 +498,6 @@ func _hit_stop(duration: float) -> void:
 
 func _win() -> void:
 	_over = true
-	stage.enemy_defeat()
-	stage.pet_win()
 	SessionManager.report_battle_result(true)
 	_set_mc_enabled(false)
 	var reward: int = int(TIERS[_tier]["xp"]) * (2 if _is_boss else 1)
@@ -400,8 +519,8 @@ func _win() -> void:
 		xp_label.text = "+%d XP  •  %s" % [reward, str(_q.get("text", "")).left(60)]
 	retry_btn.visible = false
 	continue_btn.text = "Next" if more else "Overworld"
-	result_panel.visible = true
 	SaveManager.save_progress()
+	_end_sequence(true, "CHAMPION!" if _is_champion and not more else "VICTORY!")
 
 func _lose() -> void:
 	_over = true
@@ -411,10 +530,11 @@ func _lose() -> void:
 	xp_label.text = "Tip: train up, then strike again."
 	retry_btn.visible = true
 	continue_btn.text = "Flee"
-	result_panel.visible = true
 	SaveManager.save_progress()
+	_end_sequence(false, "DEFEATED")
 
 func _on_retry() -> void:
+	_sfx(sfx_click)
 	_enemy_hp = _enemy_max
 	_player_hp = PLAYER_MAX_HP
 	_over = false
@@ -422,10 +542,12 @@ func _on_retry() -> void:
 	answer_input.text = ""
 	result_label.text = ""
 	result_panel.visible = false
+	_show_answer_controls(true)
 	_set_mc_enabled(true)
 	submit_btn.disabled = false
 
 func _on_continue() -> void:
+	_sfx(sfx_click)
 	# Champion gauntlet: next fight reloads the arena with the queued question.
 	if _is_champion and SessionManager.battle_is_champion:
 		get_tree().change_scene_to_file("res://scenes/battle/battle.tscn")
@@ -433,6 +555,7 @@ func _on_continue() -> void:
 	get_tree().change_scene_to_file("res://scenes/overworld/region_map.tscn")
 
 func _on_flee() -> void:
+	_sfx(sfx_click)
 	# Abandoning the gauntlet forfeits the run (progress per-question stays).
 	SessionManager.battle_is_champion = false
 	get_tree().change_scene_to_file("res://scenes/overworld/region_map.tscn")

@@ -1,54 +1,104 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://b57g1wg4vrmdb"]
 
-[ext_resource type="Script" path="res://scripts/battle/battle.gd" id="1"]
-[ext_resource type="Script" path="res://scripts/battle/arena_stage.gd" id="2"]
-[ext_resource type="PackedScene" path="res://assets/models/kuiz.glb" id="3_kuiz"]
-[ext_resource type="PackedScene" path="res://assets/models/robot_1.glb" id="4_robot1"]
-[ext_resource type="PackedScene" path="res://assets/models/robot_2.glb" id="5_robot2"]
+[ext_resource type="Script" uid="uid://dpilw0krtgg8p" path="res://scripts/battle/battle.gd" id="1"]
+[ext_resource type="Script" uid="uid://bji63y7sd31fj" path="res://scripts/battle/arena_stage.gd" id="2"]
+[ext_resource type="PackedScene" uid="uid://bie3cdc7b2aon" path="res://assets/models/kuiz.glb" id="3_kuiz"]
+[ext_resource type="PackedScene" uid="uid://vx16mlhrn463" path="res://assets/models/robot_1.glb" id="4_robot1"]
+[ext_resource type="PackedScene" uid="uid://cy7755jgyeime" path="res://assets/models/robot_2.glb" id="5_robot2"]
 [ext_resource type="FontFile" uid="uid://rrcw5ky5bnsk" path="res://assets/fonts/JosefinSans-Bold.ttf" id="6_font"]
+[ext_resource type="Texture2D" uid="uid://vvhyt784hoip" path="res://assets/sprites/battle/battle_backdrop.svg" id="7_backdrop"]
+[ext_resource type="Texture2D" uid="uid://dfpheat8jf2e3" path="res://assets/sprites/effects/leaf.svg" id="8_leaf"]
+[ext_resource type="AudioStream" uid="uid://b7ycvh82scq54" path="res://assets/audio/sfx/sfx_whoosh.wav" id="10_whoosh"]
+[ext_resource type="AudioStream" uid="uid://bo5hoga34gfw1" path="res://assets/audio/sfx/sfx_land.wav" id="11_land"]
+[ext_resource type="AudioStream" uid="uid://c4ga2cuvjucg8" path="res://assets/audio/sfx/sfx_vs.wav" id="12_vs"]
+[ext_resource type="AudioStream" uid="uid://yubk6e4tn0kl" path="res://assets/audio/sfx/sfx_click.wav" id="13_click"]
+[ext_resource type="AudioStream" uid="uid://7e7r4hitt687" path="res://assets/audio/sfx/sfx_correct.wav" id="14_correct"]
+[ext_resource type="AudioStream" uid="uid://c2ncf0ti7ipbp" path="res://assets/audio/sfx/sfx_wrong.wav" id="15_wrong"]
+[ext_resource type="AudioStream" uid="uid://bgbk0gh3chhg0" path="res://assets/audio/sfx/sfx_hit.wav" id="16_hit"]
+[ext_resource type="AudioStream" uid="uid://gx86rehn3gri" path="res://assets/audio/sfx/sfx_hurt.wav" id="17_hurt"]
+[ext_resource type="AudioStream" uid="uid://bk4yndblv0rb5" path="res://assets/audio/sfx/sfx_win.wav" id="18_win"]
+[ext_resource type="AudioStream" uid="uid://cugu6p5g0m1h6" path="res://assets/audio/sfx/sfx_lose.wav" id="19_lose"]
 
-[sub_resource type="StandardMaterial3D" id="Material_pad_rim"]
-shading_mode = 0
-albedo_color = Color(0.66, 0.74, 0.5, 1)
+[sub_resource type="Gradient" id="Gradient_confetti"]
+colors = PackedColorArray(0.84, 0.66, 0.37, 1, 0.79, 0.44, 0.44, 1, 0.31, 0.56, 0.54, 1, 0.97, 0.96, 0.94, 1)
 
-[sub_resource type="StandardMaterial3D" id="Material_pad_top"]
-shading_mode = 0
-albedo_color = Color(0.85, 0.9, 0.7, 1)
-
-[sub_resource type="CylinderMesh" id="Mesh_pad_rim"]
-material = SubResource("Material_pad_rim")
-top_radius = 1.495
-bottom_radius = 1.495
-height = 0.12
-
-[sub_resource type="CylinderMesh" id="Mesh_pad_top"]
-material = SubResource("Material_pad_top")
-top_radius = 1.3
-bottom_radius = 1.3
-height = 0.12
+[sub_resource type="Gradient" id="Gradient_leaves"]
+offsets = PackedFloat32Array(0, 0, 1)
+colors = PackedColorArray(0.84, 0.66, 0.37, 1, 0.79, 0.47, 0.44, 1, 0.79, 0.44, 0.25, 1)
 
 [sub_resource type="StandardMaterial3D" id="Material_dust"]
+transparency = 1
 shading_mode = 0
 albedo_color = Color(1, 0.97, 0.86, 0.9)
-transparency = 1
 
 [sub_resource type="SphereMesh" id="Mesh_dust"]
 material = SubResource("Material_dust")
 radius = 0.09
 height = 0.18
 
-[sub_resource type="Gradient" id="Gradient_bg"]
-colors = PackedColorArray(0.96, 0.97, 0.93, 1, 0.84, 0.89, 0.76, 1)
+[sub_resource type="StandardMaterial3D" id="Material_pad_rim"]
+shading_mode = 0
+albedo_color = Color(0.72, 0.55, 0.32, 1)
 
-[sub_resource type="GradientTexture2D" id="GradientTexture2D_bg"]
-gradient = SubResource("Gradient_bg")
-fill_from = Vector2(0.5, 0)
-fill_to = Vector2(0.5, 0.55)
+[sub_resource type="CylinderMesh" id="Mesh_pad_rim"]
+material = SubResource("Material_pad_rim")
+top_radius = 1.2
+bottom_radius = 1.2
+height = 0.12
+
+[sub_resource type="Gradient" id="Gradient_shadow"]
+offsets = PackedFloat32Array(0, 0.55, 1)
+colors = PackedColorArray(0.16, 0.22, 0.23, 0.5, 0.16, 0.22, 0.23, 0.2, 0.16, 0.22, 0.23, 0)
+
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_shadow"]
+gradient = SubResource("Gradient_shadow")
+fill = 1
+fill_from = Vector2(0.5, 0.5)
+fill_to = Vector2(0.5, 0)
+
+[sub_resource type="StandardMaterial3D" id="Material_shadow"]
+transparency = 1
+depth_draw_mode = 2
+shading_mode = 0
+albedo_texture = SubResource("GradientTexture2D_shadow")
+
+[sub_resource type="PlaneMesh" id="Mesh_shadow"]
+material = SubResource("Material_shadow")
+size = Vector2(2.3, 1.7)
+
+[sub_resource type="StandardMaterial3D" id="Material_pad_top"]
+shading_mode = 0
+albedo_color = Color(0.9, 0.78, 0.55, 1)
+
+[sub_resource type="CylinderMesh" id="Mesh_pad_top"]
+material = SubResource("Material_pad_top")
+top_radius = 1.04
+bottom_radius = 1.04
+height = 0.12
 
 [sub_resource type="Environment" id="Environment_arena"]
 ambient_light_source = 2
-ambient_light_color = Color(1, 1, 1, 1)
-ambient_light_energy = 0.7
+ambient_light_color = Color(0.95, 0.9, 0.85, 1)
+ambient_light_energy = 0.75
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_hp_back"]
+bg_color = Color(0.2, 0.25, 0.26, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_hp_fill"]
+bg_color = Color(0.35, 0.8, 0.4, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[sub_resource type="Theme" id="Theme_battle"]
+Label/colors/font_color = Color(0.16, 0.22, 0.23, 1)
+ProgressBar/styles/background = SubResource("StyleBoxFlat_hp_back")
+ProgressBar/styles/fill = SubResource("StyleBoxFlat_hp_fill")
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_card"]
 content_margin_left = 14.0
@@ -82,26 +132,7 @@ corner_radius_top_right = 14
 corner_radius_bottom_right = 14
 corner_radius_bottom_left = 14
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_hp_fill"]
-bg_color = Color(0.35, 0.8, 0.4, 1)
-corner_radius_top_left = 6
-corner_radius_top_right = 6
-corner_radius_bottom_right = 6
-corner_radius_bottom_left = 6
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_hp_back"]
-bg_color = Color(0.2, 0.25, 0.26, 1)
-corner_radius_top_left = 6
-corner_radius_top_right = 6
-corner_radius_bottom_right = 6
-corner_radius_bottom_left = 6
-
-[sub_resource type="Theme" id="Theme_battle"]
-Label/colors/font_color = Color(0.16, 0.22, 0.23, 1)
-ProgressBar/styles/background = SubResource("StyleBoxFlat_hp_back")
-ProgressBar/styles/fill = SubResource("StyleBoxFlat_hp_fill")
-
-[node name="Battle" type="Control"]
+[node name="Battle" type="Control" unique_id=121004192]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -109,14 +140,22 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1")
+sfx_whoosh = ExtResource("10_whoosh")
+sfx_land = ExtResource("11_land")
+sfx_vs = ExtResource("12_vs")
+sfx_click = ExtResource("13_click")
+sfx_correct = ExtResource("14_correct")
+sfx_wrong = ExtResource("15_wrong")
+sfx_hit = ExtResource("16_hit")
+sfx_hurt = ExtResource("17_hurt")
+sfx_win = ExtResource("18_win")
+sfx_lose = ExtResource("19_lose")
 
-[node name="Camera2D" type="Camera2D" parent="."]
+[node name="Camera2D" type="Camera2D" parent="." unique_id=1859445956]
 unique_name_in_owner = true
 anchor_mode = 0
-enabled = true
-offset = Vector2(0, 0)
 
-[node name="Background" type="TextureRect" parent="."]
+[node name="Floor" type="ColorRect" parent="." unique_id=1533664003]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -124,15 +163,46 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-texture = SubResource("GradientTexture2D_bg")
-expand_mode = 1
+color = Color(0.9137, 0.8196, 0.6275, 1)
 
-[node name="Stage" type="SubViewportContainer" parent="."]
+[node name="Background" type="TextureRect" parent="." unique_id=1660456919]
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 1.0
+anchor_bottom = 0.66
+grow_horizontal = 2
+mouse_filter = 2
+texture = ExtResource("7_backdrop")
+expand_mode = 1
+stretch_mode = 6
+
+[node name="Leaves" type="CPUParticles2D" parent="Background" unique_id=1296968377]
+position = Vector2(360, -40)
+amount = 14
+texture = ExtResource("8_leaf")
+lifetime = 9.0
+preprocess = 9.0
+emission_shape = 3
+emission_rect_extents = Vector2(420, 8)
+direction = Vector2(0.25, 1)
+spread = 20.0
+gravity = Vector2(12, 18)
+initial_velocity_min = 60.0
+initial_velocity_max = 110.0
+angular_velocity_min = -80.0
+angular_velocity_max = 80.0
+angle_min = -180.0
+angle_max = 180.0
+scale_amount_min = 0.8
+scale_amount_max = 1.3
+color_initial_ramp = SubResource("Gradient_leaves")
+
+[node name="Stage" type="SubViewportContainer" parent="." unique_id=177965793]
 unique_name_in_owner = true
 layout_mode = 1
-anchors_preset = 10
+anchors_preset = -1
 anchor_right = 1.0
-anchor_bottom = 0.5
+anchor_bottom = 0.66
 grow_horizontal = 2
 mouse_filter = 2
 stretch = true
@@ -140,26 +210,27 @@ script = ExtResource("2")
 pet_scene = ExtResource("3_kuiz")
 foe_scenes = Array[PackedScene]([ExtResource("4_robot1"), ExtResource("5_robot2")])
 
-[node name="View" type="SubViewport" parent="Stage"]
+[node name="View" type="SubViewport" parent="Stage" unique_id=1125434779]
 own_world_3d = true
 transparent_bg = true
 handle_input_locally = false
-size = Vector2i(720, 640)
+msaa_3d = 2
+size = Vector2i(720, 844)
 render_target_update_mode = 4
 
-[node name="World" type="Node3D" parent="Stage/View"]
+[node name="World" type="Node3D" parent="Stage/View" unique_id=1496213442]
 
-[node name="Camera3D" type="Camera3D" parent="Stage/View/World"]
+[node name="Camera3D" type="Camera3D" parent="Stage/View/World" unique_id=852086257]
 unique_name_in_owner = true
 transform = Transform3D(1, 0, 0, 0, 0.9521, 0.3057, 0, -0.3057, 0.9521, 0, 3.6, 8.5)
 keep_aspect = 0
 fov = 40.0
 
-[node name="PetSpot" type="Marker3D" parent="Stage/View/World"]
+[node name="PetSpot" type="Marker3D" parent="Stage/View/World" unique_id=1921649533]
 unique_name_in_owner = true
-transform = Transform3D(0.8192, 0, 0.5736, 0, 1, 0, -0.5736, 0, 0.8192, -1.2, 0, 1.3)
+transform = Transform3D(-1.3625138, 0, 0.6273408, 0, 1.4999995, 0, -0.6273408, 0, -1.3625138, -0.6830845, -0.10930872, 3.5880132)
 
-[node name="PetDust" type="CPUParticles3D" parent="Stage/View/World/PetSpot"]
+[node name="PetDust" type="CPUParticles3D" parent="Stage/View/World/PetSpot" unique_id=1894722829]
 unique_name_in_owner = true
 emitting = false
 amount = 18
@@ -175,21 +246,25 @@ gravity = Vector3(0, -2, 0)
 initial_velocity_min = 0.8
 initial_velocity_max = 1.8
 scale_amount_min = 0.5
-scale_amount_max = 1.0
 
-[node name="PadRim" type="MeshInstance3D" parent="Stage/View/World/PetSpot"]
+[node name="PadRim" type="MeshInstance3D" parent="Stage/View/World/PetSpot" unique_id=1589546290]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.06, 0)
 mesh = SubResource("Mesh_pad_rim")
 
-[node name="PadTop" type="MeshInstance3D" parent="Stage/View/World/PetSpot"]
+[node name="Shadow" type="MeshInstance3D" parent="Stage/View/World/PetSpot" unique_id=244117467]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.045, 0)
+cast_shadow = 0
+mesh = SubResource("Mesh_shadow")
+
+[node name="PadTop" type="MeshInstance3D" parent="Stage/View/World/PetSpot" unique_id=1152302186]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.03, 0)
 mesh = SubResource("Mesh_pad_top")
 
-[node name="FoeSpot" type="Marker3D" parent="Stage/View/World"]
+[node name="FoeSpot" type="Marker3D" parent="Stage/View/World" unique_id=1638244181]
 unique_name_in_owner = true
-transform = Transform3D(0.8192, 0, -0.5736, 0, 1, 0, 0.5736, 0, 0.8192, 1.4, 0, -1.5)
+transform = Transform3D(1.0711786, 0, -0.54090345, 0, 1.2000002, 0, 0.54090345, 0, 1.0711786, 2.1685853, 0, -1.4345324)
 
-[node name="FoeDust" type="CPUParticles3D" parent="Stage/View/World/FoeSpot"]
+[node name="FoeDust" type="CPUParticles3D" parent="Stage/View/World/FoeSpot" unique_id=1938340487]
 unique_name_in_owner = true
 emitting = false
 amount = 24
@@ -207,22 +282,29 @@ initial_velocity_max = 2.4
 scale_amount_min = 0.5
 scale_amount_max = 1.2
 
-[node name="PadRim" type="MeshInstance3D" parent="Stage/View/World/FoeSpot"]
+[node name="PadRim" type="MeshInstance3D" parent="Stage/View/World/FoeSpot" unique_id=786221429]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.06, 0)
 mesh = SubResource("Mesh_pad_rim")
 
-[node name="PadTop" type="MeshInstance3D" parent="Stage/View/World/FoeSpot"]
+[node name="Shadow" type="MeshInstance3D" parent="Stage/View/World/FoeSpot" unique_id=1743113997]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.045, 0)
+cast_shadow = 0
+mesh = SubResource("Mesh_shadow")
+
+[node name="PadTop" type="MeshInstance3D" parent="Stage/View/World/FoeSpot" unique_id=702287959]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.03, 0)
 mesh = SubResource("Mesh_pad_top")
 
-[node name="Sun" type="DirectionalLight3D" parent="Stage/View/World"]
-rotation_degrees = Vector3(-50, 25, 0)
-light_energy = 0.9
+[node name="Sun" type="DirectionalLight3D" parent="Stage/View/World" unique_id=730261799]
+transform = Transform3D(0.8192, -0.4698, 0.329, 0, 0.5736, 0.8192, -0.5736, -0.671, 0.4698, 0, 10, 0)
+light_energy = 1.1
+shadow_enabled = true
+directional_shadow_max_distance = 30.0
 
-[node name="Env" type="WorldEnvironment" parent="Stage/View/World"]
+[node name="Env" type="WorldEnvironment" parent="Stage/View/World" unique_id=667121253]
 environment = SubResource("Environment_arena")
 
-[node name="HUD" type="Control" parent="."]
+[node name="HUD" type="Control" parent="." unique_id=182389738]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -232,7 +314,7 @@ grow_vertical = 2
 mouse_filter = 2
 theme = SubResource("Theme_battle")
 
-[node name="TopBar" type="HBoxContainer" parent="HUD"]
+[node name="TopBar" type="HBoxContainer" parent="HUD" unique_id=510050685]
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
@@ -243,21 +325,21 @@ offset_bottom = 58.0
 grow_horizontal = 2
 theme_override_constants/separation = 12
 
-[node name="FleeButton" type="Button" parent="HUD/TopBar"]
+[node name="FleeButton" type="Button" parent="HUD/TopBar" unique_id=525637767]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(132, 52)
 layout_mode = 2
 size_flags_vertical = 0
 text = "← Run"
 
-[node name="TitleLabel" type="Label" parent="HUD/TopBar"]
+[node name="TitleLabel" type="Label" parent="HUD/TopBar" unique_id=1175026631]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 text = "Battle"
 horizontal_alignment = 2
 
-[node name="EnemyCard" type="PanelContainer" parent="HUD"]
+[node name="EnemyCard" type="PanelContainer" parent="HUD" unique_id=1474864920]
 unique_name_in_owner = true
 layout_mode = 0
 offset_left = 16.0
@@ -266,57 +348,56 @@ offset_right = 350.0
 offset_bottom = 182.0
 theme_override_styles/panel = SubResource("StyleBoxFlat_card")
 
-[node name="Box" type="VBoxContainer" parent="HUD/EnemyCard"]
+[node name="Box" type="VBoxContainer" parent="HUD/EnemyCard" unique_id=890092352]
 layout_mode = 2
 theme_override_constants/separation = 4
 
-[node name="NameRow" type="HBoxContainer" parent="HUD/EnemyCard/Box"]
+[node name="NameRow" type="HBoxContainer" parent="HUD/EnemyCard/Box" unique_id=1858298145]
 layout_mode = 2
 
-[node name="EnemyName" type="Label" parent="HUD/EnemyCard/Box/NameRow"]
+[node name="EnemyName" type="Label" parent="HUD/EnemyCard/Box/NameRow" unique_id=1112697161]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 text = "TRAINER"
 clip_text = true
 
-[node name="EnemyLevel" type="Label" parent="HUD/EnemyCard/Box/NameRow"]
+[node name="EnemyLevel" type="Label" parent="HUD/EnemyCard/Box/NameRow" unique_id=13985820]
 unique_name_in_owner = true
 layout_mode = 2
 text = "Lv1"
 
-[node name="HPRow" type="HBoxContainer" parent="HUD/EnemyCard/Box"]
+[node name="HPRow" type="HBoxContainer" parent="HUD/EnemyCard/Box" unique_id=799094901]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="HPTag" type="Label" parent="HUD/EnemyCard/Box/HPRow"]
+[node name="HPTag" type="Label" parent="HUD/EnemyCard/Box/HPRow" unique_id=1741952199]
 layout_mode = 2
 text = "HP"
 
-[node name="EnemyHP" type="ProgressBar" parent="HUD/EnemyCard/Box/HPRow"]
+[node name="EnemyHP" type="ProgressBar" parent="HUD/EnemyCard/Box/HPRow" unique_id=1376902192]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 16)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 4
-max_value = 100.0
 value = 100.0
 show_percentage = false
 
-[node name="EnemyHPText" type="Label" parent="HUD/EnemyCard/Box"]
+[node name="EnemyHPText" type="Label" parent="HUD/EnemyCard/Box" unique_id=935112100]
 unique_name_in_owner = true
 layout_mode = 2
 text = "100/100"
 horizontal_alignment = 2
 
-[node name="PlayerCard" type="PanelContainer" parent="HUD"]
+[node name="PlayerCard" type="PanelContainer" parent="HUD" unique_id=1084644790]
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = -1
 anchor_left = 1.0
-anchor_top = 0.5
+anchor_top = 0.66
 anchor_right = 1.0
-anchor_bottom = 0.5
+anchor_bottom = 0.66
 offset_left = -350.0
 offset_top = -130.0
 offset_right = -16.0
@@ -325,54 +406,53 @@ grow_horizontal = 0
 grow_vertical = 0
 theme_override_styles/panel = SubResource("StyleBoxFlat_card")
 
-[node name="Box" type="VBoxContainer" parent="HUD/PlayerCard"]
+[node name="Box" type="VBoxContainer" parent="HUD/PlayerCard" unique_id=1014653902]
 layout_mode = 2
 theme_override_constants/separation = 4
 
-[node name="NameRow" type="HBoxContainer" parent="HUD/PlayerCard/Box"]
+[node name="NameRow" type="HBoxContainer" parent="HUD/PlayerCard/Box" unique_id=1348387828]
 layout_mode = 2
 
-[node name="PlayerName" type="Label" parent="HUD/PlayerCard/Box/NameRow"]
+[node name="PlayerName" type="Label" parent="HUD/PlayerCard/Box/NameRow" unique_id=1428105847]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 text = "KUIZ"
 clip_text = true
 
-[node name="PlayerLevel" type="Label" parent="HUD/PlayerCard/Box/NameRow"]
+[node name="PlayerLevel" type="Label" parent="HUD/PlayerCard/Box/NameRow" unique_id=1095304902]
 unique_name_in_owner = true
 layout_mode = 2
 text = "Lv1"
 
-[node name="HPRow" type="HBoxContainer" parent="HUD/PlayerCard/Box"]
+[node name="HPRow" type="HBoxContainer" parent="HUD/PlayerCard/Box" unique_id=1176702461]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="HPTag" type="Label" parent="HUD/PlayerCard/Box/HPRow"]
+[node name="HPTag" type="Label" parent="HUD/PlayerCard/Box/HPRow" unique_id=1668310894]
 layout_mode = 2
 text = "HP"
 
-[node name="PlayerHP" type="ProgressBar" parent="HUD/PlayerCard/Box/HPRow"]
+[node name="PlayerHP" type="ProgressBar" parent="HUD/PlayerCard/Box/HPRow" unique_id=1775068969]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 16)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 4
-max_value = 100.0
 value = 100.0
 show_percentage = false
 
-[node name="PlayerHPText" type="Label" parent="HUD/PlayerCard/Box"]
+[node name="PlayerHPText" type="Label" parent="HUD/PlayerCard/Box" unique_id=612809208]
 unique_name_in_owner = true
 layout_mode = 2
 text = "100/100"
 horizontal_alignment = 2
 
-[node name="Dialogue" type="PanelContainer" parent="."]
+[node name="Dialogue" type="PanelContainer" parent="." unique_id=428512085]
 unique_name_in_owner = true
 layout_mode = 1
-anchors_preset = 12
-anchor_top = 0.5
+anchors_preset = -1
+anchor_top = 0.66
 anchor_right = 1.0
 anchor_bottom = 1.0
 offset_left = 12.0
@@ -383,119 +463,119 @@ grow_vertical = 0
 theme = SubResource("Theme_battle")
 theme_override_styles/panel = SubResource("StyleBoxFlat_dialogue")
 
-[node name="Box" type="VBoxContainer" parent="Dialogue"]
+[node name="Box" type="VBoxContainer" parent="Dialogue" unique_id=861685374]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="QuotaLabel" type="Label" parent="Dialogue/Box"]
+[node name="QuotaLabel" type="Label" parent="Dialogue/Box" unique_id=335882041]
 unique_name_in_owner = true
 layout_mode = 2
 text = "Free AI Uses: 10/10"
 horizontal_alignment = 2
 autowrap_mode = 2
 
-[node name="QuestionType" type="Label" parent="Dialogue/Box"]
+[node name="QuestionType" type="Label" parent="Dialogue/Box" unique_id=1468473619]
 unique_name_in_owner = true
 layout_mode = 2
 text = "ESSAY"
 
-[node name="QScroll" type="ScrollContainer" parent="Dialogue/Box"]
-custom_minimum_size = Vector2(0, 96)
+[node name="QScroll" type="ScrollContainer" parent="Dialogue/Box" unique_id=356121677]
+custom_minimum_size = Vector2(0, 72)
 layout_mode = 2
 size_flags_vertical = 3
 horizontal_scroll_mode = 0
 
-[node name="QuestionText" type="Label" parent="Dialogue/Box/QScroll"]
+[node name="QuestionText" type="Label" parent="Dialogue/Box/QScroll" unique_id=1386034149]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 text = "Question..."
 autowrap_mode = 3
 
-[node name="AnswerInput" type="TextEdit" parent="Dialogue/Box"]
+[node name="AnswerInput" type="TextEdit" parent="Dialogue/Box" unique_id=711044931]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 100)
+custom_minimum_size = Vector2(0, 64)
 layout_mode = 2
 placeholder_text = "Type your answer..."
 
-[node name="MCBox" type="VBoxContainer" parent="Dialogue/Box"]
+[node name="MCBox" type="VBoxContainer" parent="Dialogue/Box" unique_id=1475166945]
 unique_name_in_owner = true
 visible = false
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="McTemplate" type="Button" parent="Dialogue/Box/MCBox"]
+[node name="McTemplate" type="Button" parent="Dialogue/Box/MCBox" unique_id=854317589]
 unique_name_in_owner = true
 visible = false
 custom_minimum_size = Vector2(0, 56)
 layout_mode = 2
 autowrap_mode = 3
 
-[node name="SubmitButton" type="Button" parent="Dialogue/Box"]
+[node name="SubmitButton" type="Button" parent="Dialogue/Box" unique_id=841089349]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 56)
+custom_minimum_size = Vector2(0, 52)
 layout_mode = 2
 text = "FIGHT"
 
-[node name="JudgingLabel" type="Label" parent="Dialogue/Box"]
+[node name="JudgingLabel" type="Label" parent="Dialogue/Box" unique_id=1017233099]
 unique_name_in_owner = true
 visible = false
 layout_mode = 2
 text = "judging..."
 horizontal_alignment = 1
 
-[node name="ResultLabel" type="Label" parent="Dialogue/Box"]
+[node name="ResultLabel" type="Label" parent="Dialogue/Box" unique_id=1164243638]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 40)
 layout_mode = 2
 autowrap_mode = 3
 
-[node name="ResultPanel" type="PanelContainer" parent="Dialogue/Box"]
+[node name="ResultPanel" type="PanelContainer" parent="Dialogue/Box" unique_id=68113693]
 unique_name_in_owner = true
 visible = false
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_card")
 
-[node name="RBox" type="VBoxContainer" parent="Dialogue/Box/ResultPanel"]
+[node name="RBox" type="VBoxContainer" parent="Dialogue/Box/ResultPanel" unique_id=2113730735]
 layout_mode = 2
 theme_override_constants/separation = 10
 
-[node name="ResultTitle" type="Label" parent="Dialogue/Box/ResultPanel/RBox"]
+[node name="ResultTitle" type="Label" parent="Dialogue/Box/ResultPanel/RBox" unique_id=802224372]
 unique_name_in_owner = true
 layout_mode = 2
 text = "Victory!"
 horizontal_alignment = 1
 
-[node name="XPLabel" type="Label" parent="Dialogue/Box/ResultPanel/RBox"]
+[node name="XPLabel" type="Label" parent="Dialogue/Box/ResultPanel/RBox" unique_id=1743714759]
 unique_name_in_owner = true
 layout_mode = 2
 text = "+5 XP"
 horizontal_alignment = 1
 autowrap_mode = 2
 
-[node name="RButtons" type="HBoxContainer" parent="Dialogue/Box/ResultPanel/RBox"]
+[node name="RButtons" type="HBoxContainer" parent="Dialogue/Box/ResultPanel/RBox" unique_id=1763650769]
 layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="RetryButton" type="Button" parent="Dialogue/Box/ResultPanel/RBox/RButtons"]
+[node name="RetryButton" type="Button" parent="Dialogue/Box/ResultPanel/RBox/RButtons" unique_id=161581583]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 52)
 layout_mode = 2
 size_flags_horizontal = 3
 text = "↻ Retry"
 
-[node name="ContinueButton" type="Button" parent="Dialogue/Box/ResultPanel/RBox/RButtons"]
+[node name="ContinueButton" type="Button" parent="Dialogue/Box/ResultPanel/RBox/RButtons" unique_id=879944101]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 52)
 layout_mode = 2
 size_flags_horizontal = 3
 text = "Overworld →"
 
-[node name="VsLabel" type="Label" parent="."]
+[node name="VsLabel" type="Label" parent="." unique_id=2130521214]
 unique_name_in_owner = true
 visible = false
 layout_mode = 1
-anchors_preset = 8
+anchors_preset = -1
 anchor_left = 0.5
 anchor_top = 0.28
 anchor_right = 0.5
@@ -506,7 +586,6 @@ offset_right = 150.0
 offset_bottom = 90.0
 grow_horizontal = 2
 grow_vertical = 2
-mouse_filter = 2
 theme_override_colors/font_color = Color(0.8392, 0.6588, 0.3725, 1)
 theme_override_colors/font_outline_color = Color(0.1608, 0.2196, 0.2275, 1)
 theme_override_constants/outline_size = 18
@@ -516,7 +595,7 @@ text = "VS"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="Flash" type="ColorRect" parent="."]
+[node name="Flash" type="ColorRect" parent="." unique_id=364988397]
 unique_name_in_owner = true
 modulate = Color(1, 1, 1, 0)
 layout_mode = 1
@@ -526,10 +605,75 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-color = Color(1, 1, 1, 1)
 
-[node name="QuotaDialog" type="ConfirmationDialog" parent="."]
+[node name="Blocker" type="Control" parent="."]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="DamageTemplate" type="Label" parent="."]
+unique_name_in_owner = true
+visible = false
+layout_mode = 0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.8, 0.44, 0.44, 1)
+theme_override_colors/font_outline_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_constants/outline_size = 14
+theme_override_fonts/font = ExtResource("6_font")
+theme_override_font_sizes/font_size = 64
+text = "-10"
+
+[node name="EndBanner" type="Label" parent="."]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.26
+anchor_right = 0.5
+anchor_bottom = 0.26
+offset_left = -340.0
+offset_top = -90.0
+offset_right = 340.0
+offset_bottom = 90.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.8392, 0.6588, 0.3725, 1)
+theme_override_colors/font_outline_color = Color(0.1608, 0.2196, 0.2275, 1)
+theme_override_constants/outline_size = 22
+theme_override_fonts/font = ExtResource("6_font")
+theme_override_font_sizes/font_size = 120
+text = "VICTORY!"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Confetti" type="CPUParticles2D" parent="."]
+unique_name_in_owner = true
+position = Vector2(360, -20)
+emitting = false
+amount = 80
+lifetime = 2.6
+one_shot = true
+explosiveness = 0.7
+emission_shape = 3
+emission_rect_extents = Vector2(360, 6)
+direction = Vector2(0, 1)
+spread = 35.0
+gravity = Vector2(0, 520)
+initial_velocity_min = 160.0
+initial_velocity_max = 380.0
+angular_velocity_min = -360.0
+angular_velocity_max = 360.0
+scale_amount_min = 6.0
+scale_amount_max = 12.0
+color_initial_ramp = SubResource("Gradient_confetti")
+[node name="QuotaDialog" type="ConfirmationDialog" parent="." unique_id=551566539]
 unique_name_in_owner = true
 title = "Quota Reached"
 dialog_text = "Weekly AI limit reached. Upgrade to Premium to continue."
-visible = false
