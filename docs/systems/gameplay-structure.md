@@ -4,9 +4,9 @@ The target design for how a reviewer becomes a playable world: which gyms exist,
 works, where flashcards fit, and the order to build what is missing. It supersedes the old
 `gameplay_structure.md` draft (v2.6).
 
-Status: **Phases 0–2 implemented** (battles load, progress saves, the question model and mock
-generation, Multiple Choice and per-tier battles, a third gym spot on the map). **Phases 3–5 are
-proposed.** Where this page and the code disagree, the code describes today. As each phase lands,
+Status: **Phases 0–3 implemented** (battles load, progress saves, the question model and mock
+generation, Multiple Choice and per-tier battles, a third gym spot on the map, tier-ordered
+trainers, the boss lock and the Champion fallback). **Phases 4–5 are proposed.** Where this page and the code disagree, the code describes today. As each phase lands,
 move its facts into the owning doc (see [`../rules.md`](../rules.md) §2) and update the status here.
 
 - **Today's systems:** [`overworld.md`](overworld.md), [`battle.md`](battle.md),
@@ -80,13 +80,15 @@ Generation rules for the extractor and the AI:
 
 ### 3.2 Gyms and progression
 
-- A gym is a question **type** (as today, `get_gym_structure()`), now with three tiers.
-- Trainers on the road are ordered Easy then Medium; the **Hard** question(s) form the gym boss.
-- The boss is **locked until every non-Hard trainer in that gym is cleared.** This closes the
-  current gap where a boss win clears the gym without its trainers ([`overworld.md`](overworld.md) §5).
+- A gym is a question **type** (`get_gym_structure()`), holding questions of all three tiers.
+- Its questions are ranked Easy to Hard. The **hardest** (the last among ties) is the **boss**; every
+  other question is a **trainer**, standing along the road in that order, Easy nearest the start.
+  A gym with a single question has no trainers.
+- The boss is **locked until every trainer of that gym is cleared**, so a boss win can no longer clear
+  a gym whose trainers were skipped ([`overworld.md`](overworld.md) §5).
 - Gym cleared means the boss is defeated. The Champion is available when every gym that has
   questions is cleared.
-- A type with no questions gets no gym (current behaviour).
+- A type with no questions gets no gym.
 
 ### 3.3 Difficulty scaling
 
@@ -118,8 +120,8 @@ counter. A Multiple Choice question with no correct answer or no wrong option is
 
 - Keep `NEW → LEARNING → MASTERED`, with `REMASTER` after a miss or 7 days ([`overworld.md`](overworld.md) §6).
 - Champion moveset is the MASTERED questions, **falling back to all questions** when none are
-  mastered (what the code comments already claim; resolves #6). The queue is sorted Easy to Hard so
-  the last step is a Hard boss.
+  mastered. The queue is sorted Easy to Hard (ties in question order), so the last step, the 150 HP
+  boss, is the hardest question.
 - Only Essay grading and extraction use the AI, so only they consume quota. Identification and MC
   grade locally and are free (resolves #15).
 
@@ -132,7 +134,7 @@ Each phase ships on its own and ends with the gates in [`../rules.md`](../rules.
 | 0 Unblock — **done** | #1 battle scene parse; #10 save after battle, confirm and Champion win (`SaveManager.save_progress()`). #8 (care buttons) and the Level 5 gate are superseded by the home loop; #5 sits in `care()`, which nothing calls now | `scenes/battle/battle.tscn`, `save_manager.gd`, `session_manager.gd`, `battle.gd` |
 | 1 Data and generation — **done** | `difficulty` and `distractors` keys with `normalize_question()`; mock extractor rotates three types, tags tiers by sentence-length terciles and builds MC distractors; save `"v": 6`; categorizer edits type, difficulty and wrong options. Mastery is still keyed by question index | `session_manager.gd`, `api.gd`, `save_manager.gd`, `categorizer.gd` |
 | 2 Battle by type and difficulty — **done** | MC panel; per-tier constants and thresholds; essay-only quota; the third gym spot and `Trainers3` road so MC is reachable | `battle.gd`, `api.gd`, `region_map.gd`, `region_map.tscn` |
-| 3 Overworld tiers | Order trainers by difficulty; boss lock; tier on labels; Champion fallback; `_recheck_gym_clear()` emits once (#17) | `region_map.gd`, `session_manager.gd` |
+| 3 Overworld tiers — **done** | Trainers ordered by tier with the tier on their labels; the boss is the hardest question and stays locked until the gym's trainers are cleared; gyms clear only through the boss (so `_recheck_gym_clear()` is gone and a trainer win emits once, #17); Champion fallback and Easy-to-Hard order (#6); the Trainers3 road now walks toward its gym | `region_map.gd`, `region_map.tscn`, `session_manager.gd` |
 | 4 Flashcard Sanctuary | New scene and script; entry from the map HUD and the session list; a mastery write that only allows NEW/REMASTER → LEARNING | `scenes/review_session/flashcards.tscn`, `flashcards.gd` |
 | 5 Real AI backend | Pick the contract (#7); PDF text extraction, Claude generation using §3.1, essay grading; `Bearer` header (#2); handle non-envelope and non-2xx responses (#9); keep `Api.MOCK` working | `backend/main.py`, `api.gd` |
 

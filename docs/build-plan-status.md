@@ -8,8 +8,8 @@ home loop, whose Play button opens the upload screen; upload → edit → island
 mastery → Champion now plays end to end, with Multiple Choice, Identification and Essay gyms and
 Easy/Medium/Hard battles ([`systems/gameplay-structure.md`](systems/gameplay-structure.md)). What is
 still missing: care input that earns XP and the Level 5 gate (waiting on the top-bar design),
-tier-ordered trainers and the boss lock (Phase 3), the Flashcard Sanctuary (Phase 4) and a real
-backend.
+the Flashcard Sanctuary (Phase 4) and a real backend. Trainers are tier-ordered, bosses are locked
+until their trainers are beaten, and the Champion always has a moveset.
 
 ---
 
@@ -25,7 +25,7 @@ backend.
 | **5** | Upload PDF → extraction → editable list → region | **Implemented (mock)** | `categorizer.gd`, `session_manager.gd`, `api.gd:98-269` |
 | **6** | Overworld + gym structure + trainer encounters | **Implemented (mock)** | 3D island `region_map.tscn`, `player.gd`, `joystick.gd`; three gyms (one at a marker, no building) |
 | **7** | Battle per question type, one judging pipeline | **Implemented (mock)** | `battle.gd`: Identification, Essay and Multiple Choice, per-tier HP/counter/thresholds |
-| **8** | Mastery states + 7-day decay + Champion recap | **Implemented** | `session_manager.gd:296-534`; soft-lock #6 |
+| **8** | Mastery states + 7-day decay + Champion recap | **Implemented** | `session_manager.gd`; Champion falls back to every question |
 | **9** | Polish: insights, juice, accessibility, pacing | **Partial** | particles/shake/hit-stop/colourblind badges and the large-text toggle done; bubble hidden (#4) |
 | **10** | Monetization quota + stretch | **Partial (mock)** | `monetization_state.gd` + gates; no store, no deck sharing |
 
@@ -129,8 +129,11 @@ Done: `NEW → LEARNING → REMASTER → MASTERED`, demotion on loss, lazy 7-day
 badges surfaced on trainers / summaries / encounter text, champion queue with per-step questions and
 region-complete state.
 
-Gaps: soft-lock when no question is Mastered (#6), and mastery keyed by array index so editing a
-topic's questions silently re-points records (`data-model.md` §4).
+The Champion's moveset is the Mastered questions, falling back to every question when none is, sorted
+Easy to Hard.
+
+Gap: mastery is keyed by array index, so editing a topic's questions silently re-points records
+(`data-model.md` §4).
 
 ### Phase 9 — Polish ⚠️
 
@@ -167,13 +170,13 @@ progression past Level 5.
 
 Ordered by leverage; the first two are the whole game.
 
-Done: the battle scene loads, and progress saves after battles and topic confirmation.
+Done: the battle scene loads, progress saves after battles and topic confirmation, and the Champion
+fallback, tier-ordered trainers and boss lock are in.
 
-1. Implement the documented champion fallback moveset. *(P1)*
-2. Tier-ordered trainers and the boss lock (Phase 3 of `systems/gameplay-structure.md`). *(P1)*
-3. Care input that earns XP and the Level 5 gate, once the top-bar design lands. *(P1)*
-4. Un-hide `TidbitBubble` and show it on every text assignment. *(P1)*
-5. Fix the `Authorization` scheme. *(P1)*
+1. The Flashcard Sanctuary (Phase 4 of `systems/gameplay-structure.md`). *(P1)*
+2. Care input that earns XP and the Level 5 gate, once the top-bar design lands. *(P1)*
+3. Un-hide `TidbitBubble` and show it on every text assignment. *(P1)*
+4. Fix the `Authorization` scheme. *(P1)*
 
 The loop upload → edit → overworld → battle → mastery → Champion is playable end to end on mocks.
 

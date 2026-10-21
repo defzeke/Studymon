@@ -15,7 +15,6 @@ Severity: **P0** blocks the core loop · **P1** blocks a feature or silently cor
 | 3 | Companion is invisible | **P1** |
 | 4 | `TidbitBubble` is permanently hidden | **P1** |
 | 5 | Hourly diminishing returns yields **0 XP** | **P1** |
-| 6 | Champion soft-lock | **P1** |
 | 7 | Client/backend endpoint drift | **P1** |
 | 9 | Real grade/extract responses are silently dropped | **P1** |
 | 11 | ~~Large-text accessibility toggle is unreachable~~ — fixed | — |
@@ -23,7 +22,6 @@ Severity: **P0** blocks the core loop · **P1** blocks a feature or silently cor
 | 13 | `stats_changed` fires every frame | **P2** |
 | 14 | Full save write on every care tap | **P2** |
 | 16 | Save file loaded twice at boot | **P3** |
-| 17 | Duplicate `overworld_progress_changed` emissions | **P3** |
 | 19 | Fake "Biology 101" topic seeded on every boot | **P3** |
 | 20 | Stale docs, no tests/CI | **P3** |
 | 21 | Theme and scene colours predate the canonical palette | **P3** |
@@ -102,26 +100,6 @@ gained = maxi(1, int(round(base * xp_mult)))
 ```
 
 and persist `_action_tap_counts` / `_last_hour_reset` if the cap is meant to survive restarts.
-
----
-
-## 6. Champion soft-lock (P1)
-
-`session_manager.gd:473-512`
-
-- `is_champion_available()` requires **every gym cleared**.
-- `begin_champion_battle()` returns `false` when `champion_moveset()` (Mastered questions only) is
-  empty.
-- A first-time win only promotes a question to `LEARNING`, so clearing every gym on the first
-  attempt can leave **zero** Mastered questions.
-- The comment above the section says the moveset "falls back to every question", but the code has no
-  fallback anywhere.
-
-**Impact:** the region can never be completed; the Champion stays "not ready" until the player
-deliberately loses/rematches enough questions to reach `MASTERED`.
-
-**Fix:** implement the documented fallback (all questions when no Mastered ones exist), or gate
-availability on "all gyms cleared **or** ≥1 Mastered question" and message it in the encounter panel.
 
 ---
 
@@ -231,15 +209,6 @@ after the state autoloads).
 
 ---
 
-## 17. Duplicate `overworld_progress_changed` emissions (P3)
-
-`_recheck_gym_clear()` (`session_manager.gd:230-240`) emits inside the `for` loop **and** again after
-it, so a single trainer win can fire the signal N+1 times and rebuild the HUD each time.
-
-**Fix:** move the emit out of the loop; only emit if a gym actually became cleared.
-
----
-
 ## 19. Fake "Biology 101" topic seeded on every boot (P3)
 
 `Api.mock_get_topics()` returns `Biology 101` with `question_count: 2` but no `questions` array.
@@ -256,7 +225,6 @@ when opened, drops the player into the categorizer with whatever `pending_questi
   and singletons that were never written (`GameManager`, `AIService`, `SoundManager`).
 - `quizmon-build-plan.md` says "Godot 4.6, avoid 4.7"; the project is 4.7.2.
 - No automated tests, no CI workflow, no formatting/lint config beyond `.editorconfig`.
-- `session_manager.gd:465-467` documents a fallback that was never implemented (see #6).
 
 **Fix:** the root README is corrected in this docs pass; consider a `tests/` folder with a headless
 GUT suite and a GitHub Action that runs `godot --headless --import` (which is how issues #1/#12 were

@@ -40,15 +40,20 @@ If `pending_questions` is empty (direct scene run), `region_map.gd:36-43` seeds 
 
 ```gdscript
 [
-  {"type": "identification",   "question_indices": [0, 3]},
-  {"type": "essay",            "question_indices": [1, 4]},
-  {"type": "multiple_choice",  "question_indices": [2, 5]}
+  {"type": "identification", "question_indices": [0, 1, 2],
+   "trainer_indices": [1, 2], "boss_index": 0},     # Q1 easy, Q2 medium, Q0 hard
+  {"type": "essay", "question_indices": [3], "trainer_indices": [], "boss_index": 3}
 ]
 ```
 
 So **a gym is a question type**, not a topic or a chapter. At most one gym per type (Identification,
 Essay, Multiple Choice) per topic, regardless of question count. Re-typing a question in the
 categorizer moves it between gyms.
+
+Inside a gym, questions are ranked Easy to Hard (ties in question order). The **last** one is the
+boss; the rest are the trainers, in that order along the road: the Easy trainers stand nearest the
+start of the road, the hardest nearest the gym. A gym with one question has no trainers, so its boss
+is open at once.
 
 ---
 
@@ -63,7 +68,7 @@ RegionMap            Node3D (region_map.gd)
 ├── Spawn             Marker3D (−2, 0, 9), on the south road
 ├── Trainers1/From,To Marker3D road segment for gyms[0]'s trainers: (2, 0, 9) → (12.5, 0, 9)
 ├── Trainers2/From,To Marker3D road segment for gyms[1]'s trainers: (−9, 0, 7.5) → (−9, 0, −0.5)
-├── Trainers3/From,To Marker3D road segment for gyms[2]'s trainers: (−12, 0, 9) → (−4, 0, 9)
+├── Trainers3/From,To Marker3D road segment for gyms[2]'s trainers: (−4, 0, 9) → (−12, 0, 9), walking toward the gym
 ├── GymSpot3          Marker3D (−15, 0, 9): the third gym's trigger (no building), west end of the south road
 ├── Trainers, Gyms    filled at runtime
 ├── Player            CharacterBody3D (player.gd), floating motion, capsule r 0.22 h 0.9
@@ -137,15 +142,17 @@ an `Area3D` sets `_pending_encounter` and fills the title, body and action butto
 |---|---|---|
 | Trainer (uncleared) | `{kind: "trainer", q_index, gym}` | `Fight Trainer!` → `begin_battle(topic, q_idx, false)` |
 | Trainer (cleared) | same | `Already Cleared` (disabled) |
-| Gym boss | `{kind: "gym", gym, question_indices}` | `Fight Boss!` → `begin_battle(topic, last index of gym, true)` |
+| Gym boss (trainers cleared) | `{kind: "gym", gym, boss_index}` | `Fight Boss!` → `begin_battle(topic, boss_index, true)` |
+| Gym boss (trainers left) | same | `Boss Locked` (disabled); the text says how many trainers remain |
 | Gym (cleared) | — | `Badge Earned` (disabled) |
 | Champion (region complete) | `{}` | `Crowned` (disabled) |
 | Champion (locked) | `{}` | `Locked` (disabled) |
 | Champion (ready) | `{kind: "champion"}` | `Challenge Champion!` → `begin_champion_battle(topic)` |
 
-The boss is **the last question index in that gym's bucket**, not a separate boss question. The
-Champion panel doubles as the pre-fight summary: it lists up to 6 Mastered questions with mastery
-badges plus `...and N more.`
+The boss is the gym's **hardest question** (the last one among ties) and is not also a trainer.
+The Champion panel doubles as the pre-fight summary: it lists up to 6 of the Champion's questions
+with mastery badges plus `...and N more.`, and says so when it fields every question because none
+is Mastered yet.
 
 Confirming an encounter hides the panel and does `change_scene_to_file("res://scenes/battle/battle.tscn")`.
 
@@ -158,14 +165,13 @@ Two independent dictionaries, both keyed by strings:
 | Store | Key | Set by |
 |---|---|---|
 | `_cleared_trainers` | `"<topic_id>:<q_index>"` | `mark_trainer_cleared()` after a win |
-| `_cleared_gyms` | `"<topic_id>:<gym_type>"` | `mark_gym_cleared()` (boss win) or `_recheck_gym_clear()` |
+| `_cleared_gyms` | `"<topic_id>:<gym_type>"` | `mark_gym_cleared()` on a boss win |
 
-`_recheck_gym_clear()` runs after every trainer win and clears the gym when **all** of its
-`question_indices` are cleared.
-
-Consequence worth knowing: beating the **boss directly** marks the whole gym cleared even if the
-other trainers in that gym were never fought. Gym progress and trainer progress are therefore not
-strictly ordered, and the HUD can show `Trainers 1/5  Gyms 1/2`.
+A gym is cleared **only by its boss**, and the boss only opens once every trainer of that gym is
+cleared (`gym_trainers_left()` is 0), so progress is strictly ordered. A boss win also marks the
+boss question's own trainer key cleared, so it counts in `Trainers c/t`. `mark_trainer_cleared()`
+emits `overworld_progress_changed` once. Saves made under the old rule (a gym cleared once all its
+trainers were) keep their cleared gyms.
 
 `get_progress(topic_id)` returns:
 
@@ -227,17 +233,14 @@ func advance_champion() -> bool
 ```
 
 - **Availability:** at least one gym and *all* gyms cleared.
-- **Moveset:** all questions currently `MASTERED`. If none are mastered, `begin_champion_battle()`
-  returns false and the panel shows "No Mastered questions yet…".
+- **Moveset:** the `MASTERED` questions, **falling back to every question** when none is mastered,
+  sorted Easy to Hard (ties in question order) so the last step, the 150 HP boss, is the hardest.
+  `mastered_indices()` gives the Mastered subset.
 - **Queue:** `battle_champion_queue` holds `{topic_id, q_idx, boss}`, `boss` true only on the last
   entry. `advance_champion()` steps the index and applies the next question to
   `SessionManager.battle_*`, returning `false` when the queue is exhausted — at which point it sets
   `_champion_defeated[topic_id]` and emits `champion_defeated`.
 - **Region complete:** `is_champion_defeated()`.
-
-> **Soft-lock risk.** Clearing every gym on the first attempt can leave you with no `MASTERED`
-> questions (a single win only takes a question to `LEARNING`), so the Champion stays locked with
-> no in-game explanation beyond "Win rematches to master questions". See `known-issues.md` #6.
 
 ---
 
@@ -254,8 +257,6 @@ replay the effect.
 
 | Gap | Detail |
 |---|---|
-| Champion soft-lock | Availability and moveset requirements can deadlock |
-| Gym ≠ trainer progress | Boss win clears the gym without clearing its trainers |
 | No mini-map / gym tracker | The plan called for one; the HUD badge row is the only progress view |
 | No region regeneration | The map is rebuilt from `pending_questions`; editing a saved topic changes the live map silently |
 | Fixed layout | Three gyms at most (a fourth type would get none); the third has no building, and the trainer roads and `GymSpot3` are hand-placed markers for this map only |

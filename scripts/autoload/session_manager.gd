@@ -195,7 +195,22 @@ func get_pending_questions() -> Array[Dictionary]:
 
 # --- Phase 6: gym structure + clear-state progress ---
 
-## Groups pending questions by type: [{type, question_indices: [int]}]
+## Rank of a question's tier, Easy 0 to Hard 2 (unknown tiers count as medium).
+func _tier_rank(q: Dictionary) -> int:
+	return maxi(0, DIFFICULTIES.find(str(q.get("difficulty", "medium"))))
+
+## Indices sorted Easy to Hard, ties in question order.
+func _sorted_by_tier(indices: Array, questions: Array) -> Array:
+	var out := indices.duplicate()
+	out.sort_custom(func(a: int, b: int) -> bool:
+		var ra := _tier_rank(questions[a])
+		var rb := _tier_rank(questions[b])
+		return ra < rb or (ra == rb and a < b))
+	return out
+
+## Groups pending questions by type:
+## [{type, question_indices, trainer_indices, boss_index}]. Trainers climb Easy to Hard; the boss
+## is the hardest question of the gym (the last one among ties). Contract: docs/systems/gameplay-structure.md.
 func get_gym_structure() -> Array[Dictionary]:
 	var order: Array = []
 	var buckets: Dictionary = {}
@@ -207,8 +222,20 @@ func get_gym_structure() -> Array[Dictionary]:
 		buckets[t].append(i)
 	var out: Array[Dictionary] = []
 	for t in order:
-		out.append({"type": t, "question_indices": buckets[t]})
+		var ranked := _sorted_by_tier(buckets[t], pending_questions)
+		var boss: int = ranked.pop_back()
+		out.append({"type": t, "question_indices": buckets[t], "trainer_indices": ranked, "boss_index": boss})
 	return out
+
+## Trainers of a gym still to beat before its boss opens.
+func gym_trainers_left(topic_id: String, gym_type: String) -> int:
+	var left := 0
+	for g in get_gym_structure():
+		if str(g["type"]) == gym_type:
+			for qi in g["trainer_indices"]:
+				if not is_trainer_cleared(topic_id, int(qi)):
+					left += 1
+	return left
 
 func _trainer_key(topic_id: String, q_idx: int) -> String:
 	return "%s:%d" % [topic_id, q_idx]
@@ -218,7 +245,6 @@ func is_trainer_cleared(topic_id: String, q_idx: int) -> bool:
 
 func mark_trainer_cleared(topic_id: String, q_idx: int) -> void:
 	_cleared_trainers[_trainer_key(topic_id, q_idx)] = true
-	_recheck_gym_clear(topic_id)
 	overworld_progress_changed.emit()
 
 func is_gym_cleared(topic_id: String, gym_type: String) -> bool:
@@ -226,18 +252,6 @@ func is_gym_cleared(topic_id: String, gym_type: String) -> bool:
 
 func mark_gym_cleared(topic_id: String, gym_type: String) -> void:
 	_cleared_gyms["%s:%s" % [topic_id, gym_type]] = true
-	overworld_progress_changed.emit()
-
-func _recheck_gym_clear(topic_id: String) -> void:
-	for gym in get_gym_structure():
-		var t: String = str(gym["type"])
-		var all_done := true
-		for qi in gym["question_indices"]:
-			if not is_trainer_cleared(topic_id, int(qi)):
-				all_done = false
-				break
-		if all_done:
-			_cleared_gyms["%s:%s" % [topic_id, t]] = true
 	overworld_progress_changed.emit()
 
 func get_progress(topic_id: String) -> Dictionary:
@@ -457,13 +471,20 @@ var battle_is_champion: bool = false
 var battle_champion_queue: Array = []
 var battle_champion_index: int = 0
 
-func champion_moveset(topic_id: String) -> Array:
-	var qs: Array = _questions_for(topic_id)
+func mastered_indices(topic_id: String) -> Array:
 	var mastered: Array = []
-	for i in qs.size():
+	for i in _questions_for(topic_id).size():
 		if get_mastery_state(topic_id, i) == Mastery.MASTERED:
 			mastered.append(i)
 	return mastered
+
+## The Champion's questions, Easy to Hard: the Mastered ones, or every question when none is.
+func champion_moveset(topic_id: String) -> Array:
+	var qs: Array = _questions_for(topic_id)
+	var picked := mastered_indices(topic_id)
+	if picked.is_empty():
+		picked = range(qs.size())
+	return _sorted_by_tier(picked, qs)
 
 func is_champion_available(topic_id: String) -> bool:
 	var gyms := get_gym_structure()

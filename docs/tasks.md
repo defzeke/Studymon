@@ -19,12 +19,15 @@ fling the ball, Kuiz watches. Settings and the topic list now return home. New t
 `assets/sprites/props/` and `ui/arrow.svg`. Details in [`ui-and-assets.md`](ui-and-assets.md) §2
 Home.
 
-**Gameplay structure Phases 0–2 — uncommitted.** Battles load (`battle.tscn` no longer references
+**Gameplay structure Phases 0–3 — uncommitted.** Battles load (`battle.tscn` no longer references
 `bot_lv*.png`), progress saves after battles and topic confirmation (`SaveManager.save_progress()`),
 questions carry `difficulty` (and `distractors` for Multiple Choice) with save `"v": 6`, the mock
 extractor produces all three types and tiers, the categorizer edits them, battles scale by tier,
 essays alone use the grading quota, and a third gym (Multiple Choice) stands at a marker on the
-south road. Contract: [`systems/gameplay-structure.md`](systems/gameplay-structure.md).
+south road. Phase 3: trainers climb Easy → Hard along each road, the boss is the gym's hardest
+question and stays locked until its trainers are beaten, gyms clear only through the boss (#17), and
+the Champion falls back to every question, Easy to Hard (#6). Contract:
+[`systems/gameplay-structure.md`](systems/gameplay-structure.md).
 
 ## Blocked
 
@@ -33,7 +36,6 @@ south road. Contract: [`systems/gameplay-structure.md`](systems/gameplay-structu
 | Kuiz's stats and the top bar | Waiting on the design: what goes at the top (including the currency), and what feeding, fixing, playing and charging should change |
 | Earning XP and the Level 5 gate | The row above: nothing on home calls `CompanionState.care()` (issue #8), so Play is ungated for now |
 | Any real backend call | Issue #7 (endpoints disagree) and issue #2 (auth header is a redaction placeholder) |
-| Claiming the Champion | Issue #6 (soft-lock when no question is `MASTERED`) |
 
 ## Next
 
@@ -41,13 +43,12 @@ P0/P1 first; each item's evidence and fix live in [`known-issues.md`](known-issu
 
 | Order | Item | Why now |
 |---|---|---|
-| 1 | Gameplay structure Phase 3: trainers ordered by tier, boss lock, Champion fallback (#6), one `overworld_progress_changed` emit (#17) | Makes the three gyms a real Easy → Medium → Hard climb and the region finishable |
-| 2 | Gameplay structure Phase 4: Flashcard Sanctuary | Safe way to repair mastery |
-| 3 | #8 / #5 Care input that earns XP, once the top-bar design lands | Makes Level 5 reachable and gives the gate back |
-| 4 | #3 Un-hide the companion rig and its animation guards | Core fantasy |
-| 5 | #4 Show `TidbitBubble` when text is assigned | Level-5 gate and every curriculum line are currently invisible |
-| 6 | #2 `Bearer` header + a way to set `auth_token` | Required before `MOCK` can flip |
-| 7 | #9 Standardise the job envelope (or add a `grade_result` signal) and handle non-2xx | Real responses are dropped today |
+| 1 | Gameplay structure Phase 4: Flashcard Sanctuary | Safe way to repair mastery |
+| 2 | #8 / #5 Care input that earns XP, once the top-bar design lands | Makes Level 5 reachable and gives the gate back |
+| 3 | #3 Un-hide the companion rig and its animation guards | Core fantasy |
+| 4 | #4 Show `TidbitBubble` when text is assigned | Level-5 gate and every curriculum line are currently invisible |
+| 5 | #2 `Bearer` header + a way to set `auth_token` | Required before `MOCK` can flip |
+| 6 | #9 Standardise the job envelope (or add a `grade_result` signal) and handle non-2xx | Real responses are dropped today |
 
 Hygiene, after the slice plays:
 
@@ -56,7 +57,7 @@ Hygiene, after the slice plays:
 | #13 | Emit `stats_changed` at ~5 Hz or only on change |
 | #14 | Debounce the save instead of one full write per tap |
 | #12 | Give leaf bones non-zero rest length, or skip degenerate weights |
-| #16, #17, #19 | Double save load, duplicate signal, phantom "Biology 101" |
+| #16, #19 | Double save load, phantom "Biology 101" |
 | #20 | Add a headless smoke-test script / CI |
 | #21 | Migrate the shared theme and inline scene colours to the canonical palette |
 
@@ -66,11 +67,9 @@ Hygiene, after the slice plays:
    `/extract`? Pick the client shape (it already consumes it) and rewrite the backend doc (#7).
 2. **Auth scope.** Is login part of the vertical slice, or does the client stay anonymous while
    `MOCK` is on (#2)?
-3. **Champion rule.** Fallback to all questions when none is `MASTERED`, or require a Mastered
-   moveset and explain it (#6)?
-4. **Codex.** The remote branch `feat/remove-codex` suggests it is being cut. Remove the button and
+3. **Codex.** The remote branch `feat/remove-codex` suggests it is being cut. Remove the button and
    the `codex` save field, or keep it?
-5. **Save cadence.** Event-driven saves, a dirty flag with a timer, or save on app pause only (#14)?
+4. **Save cadence.** Event-driven saves, a dirty flag with a timer, or save on app pause only (#14)?
 
 ## Done
 
