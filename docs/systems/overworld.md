@@ -64,7 +64,7 @@ RegionMap            Node3D (region_map.gd)
 ├── WorldEnvironment  sky-blue background, ambient colour 0.7
 ├── Sun               DirectionalLight3D with shadows (30 units)
 ├── Map               instance of assets/models/map.glb
-├── Season            Node3D (season.gd): the season for this load, its weather particles
+├── Season            Node3D (season.gd): the real-world season, its weather particles
 ├── Spawn             Marker3D (−2, 0, 9), on the south road
 ├── Trainers1/From,To Marker3D road segment for gyms[0]'s trainers: (2, 0, 9) → (12.5, 0, 9)
 ├── Trainers2/From,To Marker3D road segment for gyms[1]'s trainers: (−9, 0, 7.5) → (−9, 0, −0.5)
@@ -110,8 +110,16 @@ plinths never block it. A step whose ground is missing or below −0.05 (the wat
 is undone, so the beach stops at the waterline. The `Boy` model turns smoothly to face the way it
 moves. `locked` freezes it while an encounter panel is open.
 
-**Seasons** (`season.gd`). Every load of the scene picks one of four at random, never the one the
-previous load had (a `static var` remembers it for the session):
+**Seasons** (`season.gd`). The island follows the real-world season, from the device's local date,
+on a Northern Hemisphere calendar (`season_for(month, day)`), so a season lasts for months and the
+same date always gives the same one:
+
+| Months | Season |
+|---|---|
+| Dec, Jan, Feb | Snowy |
+| Mar, Apr, May | Sunny |
+| Jun, Jul, Aug | Sunny, with a Rainy day every fourth day of the month (4th, 8th, …) |
+| Sep, Oct, Nov | Autumn |
 
 | Season | Light and sky | Foliage and grass | Weather around the explorer |
 |---|---|---|---|
