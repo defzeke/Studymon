@@ -61,15 +61,6 @@
 <path d="M312 328 q28.0 -16 56 0 l-4 62 q-24.0 14 -48 0 z" fill="#C97970" stroke="#29383A" stroke-width="4" stroke-linejoin="round"/>
 <rect x="325.7" y="347.6" width="28.7" height="4" fill="#29383A"/><rect x="325.7" y="358.4" width="28.7" height="4" fill="#29383A"/><rect x="332.6" y="340.7" width="4" height="28.7" fill="#29383A"/><rect x="343.4" y="340.7" width="4" height="28.7" fill="#29383A"/><rect x="331.0" y="346.0" width="17.9" height="17.9" rx="3" fill="#29383A"/><rect x="336.0" y="351.0" width="8.1" height="8.1" fill="#F7F5EF"/>
 <path d="M340.0 384 q-10 -8 -4 -20 q4 6 8 2 q-2 -8 4 -14 q10 16 0 32 z" fill="#D6A85F" stroke="#29383A" stroke-width="3" stroke-linejoin="round"/>
-<rect x="40" y="560" width="150" height="82" rx="12" fill="#687778" stroke="#29383A" stroke-width="4" />
-<rect x="54" y="574" width="92" height="54" rx="8" fill="#29383A" stroke="#29383A" stroke-width="4" />
-<rect x="64" y="584" width="72" height="34" fill="#4F8F89" fill-opacity="0.6"/><circle cx="168" cy="588" r="5" fill="#D6A85F"/><circle cx="168" cy="606" r="5" fill="#D6A85F"/><circle cx="168" cy="624" r="5" fill="#D6A85F"/>
-<ellipse cx="110" cy="944" rx="130" ry="23.4" fill="#29383A" fill-opacity="0.22"/>
-<rect x="-10" y="642" width="230" height="296" rx="8" fill="#F7F5EF" stroke="#29383A" stroke-width="4" />
-<rect x="-10" y="642" width="230" height="22" fill="#687778" stroke="#29383A" stroke-width="4"/>
-<rect x="20" y="700" width="80" height="210" rx="8" fill="#E8F0EA" stroke="#29383A" stroke-width="3" />
-<rect x="116" y="700" width="80" height="210" rx="8" fill="#E8F0EA" stroke="#29383A" stroke-width="3" />
-<rect x="84" y="790" width="8" height="40" rx="4" fill="#29383A"/><rect x="124" y="790" width="8" height="40" rx="4" fill="#29383A"/>
 <ellipse cx="620" cy="944" rx="120" ry="21.6" fill="#29383A" fill-opacity="0.22"/>
 <rect x="520" y="300" width="196" height="640" rx="26" fill="#C97970" stroke="#29383A" stroke-width="4" />
 <rect x="540" y="330" width="156" height="320" rx="16" fill="#E8F0EA" stroke="#29383A" stroke-width="4" />

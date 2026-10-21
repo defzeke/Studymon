@@ -5,6 +5,9 @@ the review campaign. This is the loop that carries the "raise an AI" fantasy and
 curriculum through `CURRICULUM` lines.
 
 - **State / logic:** `scripts/autoload/companion_state.gd` (autoload `CompanionState`)
+> The 3D home in `peek.tscn` (`home.gd`, see `ui-and-assets.md` §2 Home) is now where the player
+> cares for Kuiz; nothing routes to the 2D care room below any more. It has no stats yet.
+
 - **Care room UI:** `scripts/companion/companion.gd` → `scenes/ui/main.tscn`
 - **Status strip:** `scripts/ui/widgets/hud_strip.gd` → `scenes/ui/widgets/hud_strip.tscn` (instanced on `main.tscn`)
 - **Pomodoro UI:** `scripts/ui/widgets/pomodoro.gd` → `scenes/ui/widgets/pomodoro.tscn`

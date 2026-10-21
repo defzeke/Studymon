@@ -8,6 +8,15 @@
 [ext_resource type="Texture2D" uid="uid://dxlttenkjoxk3" path="res://assets/sprites/rooms/data_kitchen.svg" id="7_kitchen"]
 [ext_resource type="Texture2D" uid="uid://ccppygip5qb0o" path="res://assets/sprites/rooms/playroom.svg" id="8_play"]
 [ext_resource type="FontFile" uid="uid://rrcw5ky5bnsk" path="res://assets/fonts/JosefinSans-Bold.ttf" id="9_bold"]
+[ext_resource type="Script" path="res://scripts/ui/home.gd" id="10_home"]
+[ext_resource type="Texture2D" uid="uid://i7am4ybv0c52" path="res://assets/sprites/rooms/study_room_night.svg" id="11_night"]
+[ext_resource type="Texture2D" uid="uid://dydlp172mmkf4" path="res://assets/sprites/ui/charge.png" id="12_charge"]
+[ext_resource type="Texture2D" uid="uid://xib03t0vdah" path="res://assets/sprites/ui/campaign.png" id="13_play"]
+[ext_resource type="Texture2D" uid="uid://bsrt0omkxuxvu" path="res://assets/sprites/ui/settings.svg" id="14_settings"]
+[ext_resource type="Texture2D" uid="uid://brsehmv02c2wi" path="res://assets/sprites/ui/arrow.svg" id="15_arrow"]
+[ext_resource type="Texture2D" uid="uid://dikx1hxt44uiv" path="res://assets/sprites/props/fridge.svg" id="16_fridge"]
+[ext_resource type="Texture2D" uid="uid://bioxxsfvhs5hg" path="res://assets/sprites/props/ball.svg" id="17_ball"]
+[ext_resource type="Texture2D" uid="uid://vbirq6xlxh8v" path="res://assets/sprites/props/screwdriver.svg" id="18_tool"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_studio"]
 sky_top_color = Color(0.99, 1, 0.995, 1)
@@ -164,6 +173,65 @@ corner_radius_top_right = 16
 corner_radius_bottom_right = 16
 corner_radius_bottom_left = 16
 
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bar"]
+content_margin_left = 12.0
+content_margin_top = 12.0
+content_margin_right = 12.0
+content_margin_bottom = 12.0
+bg_color = Color(0.1608, 0.2196, 0.2275, 0.88)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.9686, 0.9608, 0.9373, 0.9)
+corner_radius_top_left = 32
+corner_radius_top_right = 32
+corner_radius_bottom_right = 32
+corner_radius_bottom_left = 32
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_round"]
+content_margin_left = 20.0
+content_margin_top = 20.0
+content_margin_right = 20.0
+content_margin_bottom = 20.0
+bg_color = Color(0.3098, 0.5608, 0.5373, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.9686, 0.9608, 0.9373, 0.9)
+corner_radius_top_left = 60
+corner_radius_top_right = 60
+corner_radius_bottom_right = 60
+corner_radius_bottom_left = 60
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_round_on"]
+content_margin_left = 20.0
+content_margin_top = 20.0
+content_margin_right = 20.0
+content_margin_bottom = 20.0
+bg_color = Color(0.8392, 0.6588, 0.3725, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.9686, 0.9608, 0.9373, 0.9)
+corner_radius_top_left = 60
+corner_radius_top_right = 60
+corner_radius_bottom_right = 60
+corner_radius_bottom_left = 60
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_round_off"]
+content_margin_left = 20.0
+content_margin_top = 20.0
+content_margin_right = 20.0
+content_margin_bottom = 20.0
+bg_color = Color(0.4078, 0.4667, 0.4706, 0.6)
+corner_radius_top_left = 60
+corner_radius_top_right = 60
+corner_radius_bottom_right = 60
+corner_radius_bottom_left = 60
+
 [node name="Peek" type="Node3D"]
 script = ExtResource("1_peek")
 
@@ -231,6 +299,30 @@ texture = ExtResource("4_study")
 expand_mode = 1
 stretch_mode = 6
 
+[node name="Night" type="TextureRect" parent="Rooms/StudyRoom"]
+modulate = Color(1, 1, 1, 0)
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("11_night")
+expand_mode = 1
+stretch_mode = 6
+
+[node name="Veil" type="ColorRect" parent="Rooms/StudyRoom"]
+modulate = Color(1, 1, 1, 0)
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.1608, 0.2196, 0.2275, 0.45)
+
 [node name="MaintenanceBay" type="TextureRect" parent="Rooms"]
 modulate = Color(1, 1, 1, 0)
 anchors_preset = 15
@@ -270,7 +362,9 @@ stretch_mode = 6
 [node name="Tutorial" type="CanvasLayer" parent="."]
 script = ExtResource("3_tutorial")
 
-[node name="RoomSign" type="PanelContainer" parent="Tutorial"]
+[node name="Top" type="CanvasLayer" parent="."]
+
+[node name="RoomSign" type="PanelContainer" parent="Top"]
 modulate = Color(1, 1, 1, 0)
 anchors_preset = 5
 anchor_left = 0.5
@@ -280,7 +374,7 @@ grow_horizontal = 2
 mouse_filter = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_sign")
 
-[node name="Label" type="Label" parent="Tutorial/RoomSign"]
+[node name="Label" type="Label" parent="Top/RoomSign"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.9686, 0.9608, 0.9373, 1)
 theme_override_fonts/font = ExtResource("9_bold")
@@ -400,3 +494,251 @@ mouse_filter = 2
 [node name="Arrow" type="Polygon2D" parent="Tutorial/Speech/Dialogue/Body/Hint"]
 color = Color(0.3098, 0.5608, 0.5373, 1)
 polygon = PackedVector2Array(0, 0, 24, 0, 12, 16)
+
+[node name="Home" type="CanvasLayer" parent="."]
+visible = false
+script = ExtResource("10_home")
+
+[node name="Fridge" type="TextureButton" parent="Home"]
+visible = false
+anchors_preset = 4
+anchor_top = 0.5
+anchor_bottom = 0.5
+offset_left = 16.0
+offset_top = -40.0
+offset_right = 166.0
+offset_bottom = 245.0
+grow_vertical = 2
+texture_normal = ExtResource("16_fridge")
+ignore_texture_size = true
+stretch_mode = 5
+
+[node name="Bar" type="PanelContainer" parent="Home"]
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 16.0
+offset_top = -184.0
+offset_right = -16.0
+offset_bottom = -16.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_styles/panel = SubResource("StyleBoxFlat_bar")
+
+[node name="Row" type="HBoxContainer" parent="Home/Bar"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Prev" type="TextureButton" parent="Home/Bar/Row"]
+custom_minimum_size = Vector2(88, 120)
+layout_mode = 2
+size_flags_vertical = 4
+texture_normal = ExtResource("15_arrow")
+ignore_texture_size = true
+stretch_mode = 5
+flip_h = true
+
+[node name="Study" type="HBoxContainer" parent="Home/Bar/Row"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 22
+alignment = 1
+
+[node name="Charge" type="Button" parent="Home/Bar/Row/Study"]
+custom_minimum_size = Vector2(120, 120)
+layout_mode = 2
+size_flags_vertical = 4
+theme_override_styles/normal = SubResource("StyleBoxFlat_round")
+theme_override_styles/hover = SubResource("StyleBoxFlat_round")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_round_on")
+theme_override_styles/hover_pressed = SubResource("StyleBoxFlat_round_on")
+theme_override_styles/disabled = SubResource("StyleBoxFlat_round_off")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
+toggle_mode = true
+icon = ExtResource("12_charge")
+icon_alignment = 1
+expand_icon = true
+
+[node name="Play" type="Button" parent="Home/Bar/Row/Study"]
+custom_minimum_size = Vector2(120, 120)
+layout_mode = 2
+size_flags_vertical = 4
+theme_override_styles/normal = SubResource("StyleBoxFlat_round")
+theme_override_styles/hover = SubResource("StyleBoxFlat_round")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_round_on")
+theme_override_styles/hover_pressed = SubResource("StyleBoxFlat_round_on")
+theme_override_styles/disabled = SubResource("StyleBoxFlat_round_off")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
+icon = ExtResource("13_play")
+icon_alignment = 1
+expand_icon = true
+
+[node name="Settings" type="Button" parent="Home/Bar/Row/Study"]
+custom_minimum_size = Vector2(120, 120)
+layout_mode = 2
+size_flags_vertical = 4
+theme_override_styles/normal = SubResource("StyleBoxFlat_round")
+theme_override_styles/hover = SubResource("StyleBoxFlat_round")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_round_on")
+theme_override_styles/hover_pressed = SubResource("StyleBoxFlat_round_on")
+theme_override_styles/disabled = SubResource("StyleBoxFlat_round_off")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
+icon = ExtResource("14_settings")
+icon_alignment = 1
+expand_icon = true
+
+[node name="Bay" type="CenterContainer" parent="Home/Bar/Row"]
+visible = false
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Tool" type="TextureRect" parent="Home/Bar/Row/Bay"]
+custom_minimum_size = Vector2(130, 130)
+layout_mode = 2
+texture = ExtResource("18_tool")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Kitchen" type="HBoxContainer" parent="Home/Bar/Row"]
+visible = false
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 6
+alignment = 1
+
+[node name="FoodPrev" type="TextureButton" parent="Home/Bar/Row/Kitchen"]
+custom_minimum_size = Vector2(56, 120)
+layout_mode = 2
+size_flags_vertical = 4
+texture_normal = ExtResource("15_arrow")
+ignore_texture_size = true
+stretch_mode = 5
+flip_h = true
+
+[node name="Food" type="VBoxContainer" parent="Home/Bar/Row/Kitchen"]
+custom_minimum_size = Vector2(270, 0)
+layout_mode = 2
+theme_override_constants/separation = 2
+
+[node name="Icon" type="TextureRect" parent="Home/Bar/Row/Kitchen/Food"]
+custom_minimum_size = Vector2(0, 104)
+layout_mode = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Label" type="Label" parent="Home/Bar/Row/Kitchen/Food"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_fonts/font = ExtResource("9_bold")
+theme_override_font_sizes/font_size = 22
+horizontal_alignment = 1
+
+[node name="FoodNext" type="TextureButton" parent="Home/Bar/Row/Kitchen"]
+custom_minimum_size = Vector2(56, 120)
+layout_mode = 2
+size_flags_vertical = 4
+texture_normal = ExtResource("15_arrow")
+ignore_texture_size = true
+stretch_mode = 5
+flip_h = false
+
+[node name="Play" type="CenterContainer" parent="Home/Bar/Row"]
+visible = false
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Hint" type="Label" parent="Home/Bar/Row/Play"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_fonts/font = ExtResource("9_bold")
+theme_override_font_sizes/font_size = 26
+horizontal_alignment = 1
+text = "Fling the ball!"
+
+[node name="Next" type="TextureButton" parent="Home/Bar/Row"]
+custom_minimum_size = Vector2(88, 120)
+layout_mode = 2
+size_flags_vertical = 4
+texture_normal = ExtResource("15_arrow")
+ignore_texture_size = true
+stretch_mode = 5
+flip_h = false
+
+[node name="Ball" type="TextureRect" parent="Home"]
+visible = false
+offset_right = 96.0
+offset_bottom = 96.0
+pivot_offset = Vector2(48, 48)
+texture = ExtResource("17_ball")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Held" type="TextureRect" parent="Home"]
+visible = false
+offset_right = 120.0
+offset_bottom = 120.0
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Shop" type="PanelContainer" parent="Home"]
+visible = false
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -310.0
+offset_top = -470.0
+offset_right = 310.0
+offset_bottom = 400.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_box")
+
+[node name="Body" type="VBoxContainer" parent="Home/Shop"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Title" type="Label" parent="Home/Shop/Body"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.1608, 0.2196, 0.2275, 1)
+theme_override_fonts/font = ExtResource("9_bold")
+theme_override_font_sizes/font_size = 36
+horizontal_alignment = 1
+text = "Fridge"
+
+[node name="List" type="VBoxContainer" parent="Home/Shop/Body"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 10
+
+[node name="BuyTemplate" type="Button" parent="Home/Shop/Body"]
+visible = false
+custom_minimum_size = Vector2(120, 64)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_colors/font_hover_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_colors/font_pressed_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_fonts/font = ExtResource("9_bold")
+theme_override_font_sizes/font_size = 26
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn")
+theme_override_styles/hover = SubResource("StyleBoxFlat_btn")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_btn_pressed")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
+text = "Buy"
+
+[node name="Close" type="Button" parent="Home/Shop/Body"]
+custom_minimum_size = Vector2(0, 64)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_colors/font_hover_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_colors/font_pressed_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_fonts/font = ExtResource("9_bold")
+theme_override_font_sizes/font_size = 28
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn")
+theme_override_styles/hover = SubResource("StyleBoxFlat_btn")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_btn_pressed")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
+text = "Close"

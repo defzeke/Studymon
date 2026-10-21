@@ -24,7 +24,7 @@ the campaign stops at the first battle because `battle.tscn` references missing 
 | **6** | Overworld + gym structure + trainer encounters | **Implemented (mock)** | 3D island `region_map.tscn`, `player.gd`, `joystick.gd`; battles behind it still broken (#1) |
 | **7** | Battle per question type, one judging pipeline | **Broken at load** | `battle.gd` (complete), missing `bot_lv1/5.png` |
 | **8** | Mastery states + 7-day decay + Champion recap | **Implemented** | `session_manager.gd:296-534`; soft-lock #6 |
-| **9** | Polish: insights, juice, accessibility, pacing | **Partial** | particles/shake/hit-stop/colourblind badges done; large text unreachable (#11), bubble hidden (#4) |
+| **9** | Polish: insights, juice, accessibility, pacing | **Partial** | particles/shake/hit-stop/colourblind badges and the large-text toggle done; bubble hidden (#4) |
 | **10** | Monetization quota + stretch | **Partial (mock)** | `monetization_state.gd` + gates; no store, no deck sharing |
 
 ---
@@ -136,7 +136,7 @@ Done: rule-based insights (`INSIGHT_TRIGGERS`, three triggers, priority ordered)
 gym-clear `CPUParticles2D`, screen shake + hit-stop on strong hits, colourblind-safe mastery colours,
 XP curve explicitly tuned and documented, hover/press juice helper.
 
-Missing: large-text UI (#11), visible insight/dialogue text (#4), SFX for hits/level-ups/gym clears,
+Missing: visible insight/dialogue text (#4), SFX for hits/level-ups/gym clears,
 onboarding pacing verification on device, and any accessibility options beyond the colour choices.
 
 ### Phase 10 — Monetization & stretch ⚠️
@@ -173,7 +173,7 @@ Ordered by leverage; the first two are the whole game.
 4. Un-hide `TidbitBubble` and show it on every text assignment. *(P1)*
 5. Save after `report_battle_result()` and `confirm_topic()`. *(P1)*
 6. Implement the documented champion fallback moveset. *(P1)*
-7. Fix the `Authorization` scheme and add a large-text checkbox. *(P1/P2)*
+7. Fix the `Authorization` scheme. *(P1)*
 
 Once 1–2 land, the full loop — care → Level 5 → upload → edit → overworld → battle → mastery →
 Champion — is playable end-to-end on mocks.

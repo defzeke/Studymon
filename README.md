@@ -28,8 +28,9 @@ res://
 │       ├── boot/              # splash sheet (+ its .gif source), loading background, wordmark
 │       ├── effects/           # leaf.svg (loading and autumn weather)
 │       ├── companion/         # idle / blink / sad (SVG)
+│       ├── props/             # temporary foods, fridge, ball, screwdriver
 │       ├── rooms/             # temporary rooms: study_room (+ night), maintenance_bay, data_kitchen, playroom
-│       └── ui/                # campaign, charge, pomodoro, settings, table, top bar
+│       └── ui/                # campaign, charge, pomodoro, settings, table, top bar, arrow
 │
 ├── scripts/
 │   ├── autoload/              # the 7 autoloads: SaveManager, GameState, Api, CompanionState,
@@ -38,7 +39,7 @@ res://
 │   ├── companion/             # care room, skeletal rig
 │   ├── overworld/             # region map generation, player movement
 │   ├── review_session/        # upload + editable question list
-│   └── ui/                    # care room root, session list, settings
+│   └── ui/                    # home (the hub), old care room root, session list, settings
 │       ├── boot/              # splash, loading, peek + tutorial
 │       └── widgets/           # pomodoro, HUD strip, button feedback
 │

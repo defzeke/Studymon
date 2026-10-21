@@ -3,12 +3,23 @@ extends Node
 ## (Cloud save arrives with backend/auth; format is versioned via "v".)
 
 const SAVE_PATH := "user://studymon_save.json"
+
+var _loaded := false
+
+## Loads the save once per session; later calls keep the in-memory state (it may be newer).
+func load_once() -> void:
+	if not _loaded:
+		_loaded = true
+		load_game()
+
 func save_game() -> bool:
 	var data := CompanionState.to_dict()
-	data["v"] = 4
+	data["v"] = 5
 	data["campaign_unlocked_flag"] = GameState.campaign_unlocked_flag
 	data["active_region_id"] = GameState.active_region_id
 	data["large_text_enabled"] = GameState.large_text_enabled
+	data["music_volume"] = MusicManager.music_volume
+	data["sfx_volume"] = MusicManager.sfx_volume
 	data["session"] = SessionManager.to_dict()
 	var _ms := get_node_or_null("/root/MonetizationState")
 	if _ms != null:
@@ -38,6 +49,8 @@ func load_game() -> bool:
 	if parsed.has("large_text_enabled"):
 		GameState.large_text_enabled = bool(parsed["large_text_enabled"])
 		GameState._apply_theme_font_size()
+	MusicManager.set_music_volume(float(parsed.get("music_volume", 1.0)))
+	MusicManager.set_sfx_volume(float(parsed.get("sfx_volume", 1.0)))
 	SessionManager.from_dict(parsed.get("session", {}))
 	if parsed.has("monetization"):
 		var _ms := get_node_or_null("/root/MonetizationState")

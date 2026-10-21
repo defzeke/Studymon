@@ -1,12 +1,14 @@
 extends CanvasLayer
 ## The first-run tutorial over peek.tscn: Kuiz introduces itself, takes a profile and a name, then
 ## tours the rooms. A tap finishes the typing, then advances; a line with a prompt waits for it.
+## A tap after the last line ends it (`finished`), and home.gd takes over.
 ## Contract: docs/ui-and-assets.md §2 Tutorial.
 
 const CHARS_PER_SEC := 40.0
 const FADE_TIME := 0.35
-# One entry per line. clip: Kuiz's animation for the line (a State_* mood loops until the next line). room + move: where Kuiz goes before the
-# line and how (jump, walk, close). prompt: what the player must do once the line is shown.
+# One entry per line. clip: Kuiz's animation for the line (a State_* mood loops until the next
+# line). room + move: where Kuiz goes before the line and how (jump, walk, close). prompt: what the
+# player must do once the line is shown.
 const LINES: Array[Dictionary] = [
 	{"text": "Hi there! Welcome to the hub! I’m Kuiz, your AI study partner and digital companion. I've been waiting so long for my system setup to finish so we could finally meet!", "clip": "Greetings"},
 	{"text": "First things first—let’s set up our shared user profile so I know who I’m teaming up with. Would you like to sign in with your Google Account to save your study progress automatically, or register a new profile?", "clip": "Blink", "prompt": "profile"},
@@ -22,17 +24,9 @@ const LINES: Array[Dictionary] = [
 	{"text": "And that’s the whole tour! Keep me fed, tuned-up, well-rested, and happy, and we'll conquer every study session together.", "clip": "Greetings", "room": "StudyRoom", "move": "close"},
 	{"text": "Ready to jump into our very first review session?", "clip": "Learn_Something_New"},
 ]
-const ROOM_NAMES := {
-	"StudyRoom": "The Study Room",
-	"MaintenanceBay": "The Maintenance Bay",
-	"DataKitchen": "The Data Kitchen",
-	"Playroom": "The Playroom",
-}
+signal finished
 
 @onready var peek: Node3D = get_parent()
-@onready var rooms: CanvasLayer = $"../Rooms"
-@onready var room_sign: Control = $RoomSign
-@onready var room_label: Label = $RoomSign/Label
 @onready var speech: Control = $Speech
 @onready var text: Label = $Speech/Dialogue/Body/Text
 @onready var continue_button: Button = $Speech/Dialogue/Body/Continue
@@ -44,10 +38,11 @@ const ROOM_NAMES := {
 var _line := -1
 var _typing: Tween
 var _waiting := false
-var _room: CanvasItem
 
 func _ready() -> void:
-	_room = rooms.get_node("White")
+	if GameState.tutorial_done:
+		speech.hide()
+		return
 	continue_button.pressed.connect(_next)
 	name_input.text_changed.connect(func(t: String) -> void: name_ok.disabled = t.strip_edges().is_empty())
 	name_input.text_submitted.connect(func(_t: String) -> void: _submit_name())
@@ -77,16 +72,22 @@ func _next() -> void:
 	continue_button.hide()
 	name_row.hide()
 	_line += 1
+	if _line == LINES.size():
+		GameState.tutorial_done = true
+		set_process_unhandled_input(false)
+		await _fade(speech, 0.0).finished
+		finished.emit()
+		return
 	var line: Dictionary = LINES[_line]
 	if line.has("move"):
 		await _fade(speech, 0.0).finished
 		match line["move"]:
 			"jump":
-				await peek.jump(_show_room.bind(line["room"]))
+				await peek.jump(peek.show_room.bind(line["room"]))
 			"walk":
-				await peek.walk(_show_room.bind(line["room"]))
+				await peek.walk(peek.show_room.bind(line["room"]))
 			"close":
-				await peek.walk(_show_room.bind(line["room"]))
+				await peek.walk(peek.show_room.bind(line["room"]))
 				await peek.come_close()
 		_fade(speech, 1.0)
 	peek.act(line["clip"])
@@ -104,8 +105,8 @@ func _shown() -> void:
 			name_row.show()
 			name_input.grab_focus()
 		_:
-			_waiting = _line < LINES.size() - 1
-			hint.modulate.a = 1.0 if _waiting else 0.0
+			_waiting = true
+			hint.modulate.a = 1.0
 
 func _submit_name() -> void:
 	var player_name := name_input.text.strip_edges()
@@ -114,17 +115,6 @@ func _submit_name() -> void:
 	GameState.player_name = player_name
 	name_input.release_focus()
 	_next()
-
-func _show_room(room_name: String) -> void:
-	var room: CanvasItem = rooms.get_node(room_name)
-	var old := _room
-	rooms.move_child(room, -1)
-	_room = room
-	_fade(room, 1.0).finished.connect(func() -> void: old.modulate.a = 0.0)
-	var t := create_tween()
-	t.tween_property(room_sign, "modulate:a", 0.0, FADE_TIME * room_sign.modulate.a)
-	t.tween_callback(func() -> void: room_label.text = ROOM_NAMES[room_name])
-	t.tween_property(room_sign, "modulate:a", 1.0, FADE_TIME)
 
 func _fade(item: CanvasItem, alpha: float) -> Tween:
 	var t := create_tween()

@@ -20,7 +20,7 @@ Severity: **P0** blocks the core loop · **P1** blocks a feature or silently cor
 | 7 | Client/backend endpoint drift | **P1** |
 | 9 | Real grade/extract responses are silently dropped | **P1** |
 | 10 | Progress is not saved after battles or topic confirm | **P1** |
-| 11 | Large-text accessibility toggle is unreachable | **P2** |
+| 11 | ~~Large-text accessibility toggle is unreachable~~ — fixed | — |
 | 12 | `Condition "det == 0" is true` spam from the rig | **P2** |
 | 13 | `stats_changed` fires every frame | **P2** |
 | 14 | Full save write on every care tap | **P2** |
@@ -182,6 +182,9 @@ it, and update `backend/README.md`. Add `/extract` to the client when `MOCK` fli
 `main.tscn` has no buttons wired to any action. `ButtonJuice` is applied only to the four icon
 buttons (campaign / charge / settings / pomodoro).
 
+The 3D home (`home.gd`) now has care actions (food, screwdriver, ball, charge), but by design they
+do not touch `CompanionState` yet: there are no stats until their design lands.
+
 **Impact:** the pet loop cannot be played, so Level 5 (and therefore the campaign) is unreachable
 without editing the save file.
 
@@ -218,13 +221,10 @@ Longer term, debounce a dirty flag instead of writing the whole file per event.
 
 ---
 
-## 11. Large-text accessibility toggle is unreachable (P2)
+## 11. Large-text accessibility toggle — fixed
 
-`GameState.set_large_text()` exists, is persisted, applied on load, and `companion.gd` listens for
-the signal — but nothing calls it. `settings.tscn` exposes only premium and quota reset.
-
-**Fix:** add a `CheckBox` in Settings bound to `GameState.set_large_text(pressed)`. The root-theme
-assignment in `_apply_theme_font_size()` already propagates to instantiated screens.
+`settings.tscn` now has a **Large text** checkbox bound to `GameState.set_large_text()`, saved on
+toggle.
 
 ---
 

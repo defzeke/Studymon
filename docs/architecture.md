@@ -64,6 +64,7 @@ res://
 │       │                 source, not imported), loading.png (background), logo.png (wordmark)
 │       ├── effects/      leaf.svg (loading leaves, autumn weather)
 │       ├── companion/    idle, blink, sad (.svg)
+│       ├── props/        foods, fridge, ball, screwdriver (temporary placeholders)
 │       ├── rooms/        temporary placeholders: study_room.svg (+ _night), maintenance_bay.svg,
 │       │                 data_kitchen.svg, playroom.svg
 │       └── ui/           campaign.png, charge.png, loading_spark.svg, pomodoro.svg,
@@ -76,7 +77,7 @@ res://
 │   ├── companion/        companion.gd, companion_rig.gd
 │   ├── overworld/        region_map.gd, player.gd, joystick.gd, season.gd
 │   ├── review_session/   categorizer.gd
-│   └── ui/               main.gd, session_list.gd, settings.gd
+│   └── ui/               home.gd, main.gd, session_list.gd, settings.gd
 │       ├── boot/         splash.gd, loading.gd, peek.gd, tutorial.gd
 │       └── widgets/      hud_strip.gd, pomodoro.gd, button_juice.gd
 ├── scenes/               main, session_list, settings (ui/)
@@ -152,20 +153,24 @@ splash.tscn  (main scene)
 loading.tscn
    │  ~7.6 s scripted fill, 0.4 s fade to white
    ▼
-peek.tscn  (3D Kuiz over 2D rooms)
-      Kuiz peeks (5.7 s), then the tutorial: intro, profile Continue, name, and a tour of the
-      Study Room, Maintenance Bay, Data Kitchen and Playroom, back to the Study Room.
-      End of the boot flow for now: nothing leads out after the last line.
+peek.tscn  (3D Kuiz over 2D rooms; the hub)
+   │  Kuiz peeks (5.7 s), then the tutorial: intro, profile Continue, name, and a tour of the
+   │  Study Room, Maintenance Bay, Data Kitchen and Playroom. A tap after the last line starts
+   │  the home loop; once the tutorial is done this session, the scene opens straight into it.
+   ├── ◀ / ▶   walk between the four rooms
+   ├── Play     ─► categorizer.tscn  (new topic id, like the topic list's Add)
+   └── Settings ─► settings.tscn ──► back to peek.tscn
 
-main.tscn  (care room — not reachable from boot; open the scene directly to work on it)
+main.tscn  (old 2D care room — nothing routes here any more; open the scene directly)
    ├── CampaignButton (enabled only when campaign_unlocked) ─► session_list.tscn
    ├── PomodoroButton ─► toggles in-scene scenes/ui/widgets/pomodoro.tscn
    ├── ChargeButton   ─► toggles day/night room art + SFX
-   └── SettingsButton ─► settings.tscn ──► back to main
+   └── SettingsButton ─► settings.tscn
 
 session_list.tscn
    ├── Add New Topic ─► categorizer.tscn  (editing_topic_id = topic_<unix%100000>)
-   └── Open topic    ─► categorizer.tscn  (loads stored questions)
+   ├── Open topic    ─► categorizer.tscn  (loads stored questions)
+   └── Back          ─► peek.tscn (home)
 
 categorizer.tscn
    └── Confirm & Play ─► confirm_topic() ─► region_generated ─► region_map.tscn
@@ -204,6 +209,8 @@ thread-load the next scene while they play, so those changes hit the resource ca
 | Free-tier usage? | `MonetizationState` |
 | Auth token / user id? | `GameState.auth_token` / `user_id` — **never set today** |
 | Player's name? | `GameState.player_name`, set by the tutorial; memory only, never saved |
+| Tutorial seen / food in stock? | `GameState.tutorial_done` / `food_stock`; memory only, never saved |
+| Music / sound volume? | `MusicManager.music_volume` / `sfx_volume` (0–1), saved |
 
 Rule of thumb: **scenes read and call autoloads; autoloads never call scenes.** The only
 scene↔scene coupling is `change_scene_to_file` and the `SessionManager` battle-handoff fields,
@@ -247,12 +254,14 @@ operation must pick a unique `job_id` or it will be consumed by the wrong listen
 4. `loading.gd:_advance()` — fades `Fade` back to white over 0.4 s, then changes to `peek.tscn`.
 5. `peek.tscn` `_ready()` — applies the artifact look to Kuiz (vertex colours, ink outline, flat
    self-lit parts, additive glows; see [`ui-and-assets.md`](ui-and-assets.md) §2), then plays
-   `Peek_Surprise` → looping `Idle`, and `peeked` starts `tutorial.gd`. Boot ends after its last
-   line.
+   `Peek_Surprise` → looping `Idle`, and `peeked` starts `tutorial.gd`. A tap after its last line
+   emits `finished`, and `home.gd` takes over.
+6. `home.gd:start()` — `SaveManager.load_once()` reads the save the first time home opens in a
+   session (later calls keep the in-memory state, which may be newer), then shows the bar.
 
-**No save is read during boot.** The only loader calls are in the care room, which boot no longer
-reaches: `main.gd:_ready()` calls `SaveManager.load_game()`, and the nested `Room` node's
-`companion.gd:_ready()` calls it **again** (see known issues). A first-time companion starts from
+**The save is read when home first opens**, not during splash/loading/tutorial. The old care room
+still loads it its own way if opened directly: `main.gd:_ready()` calls `SaveManager.load_game()`,
+and the nested `Room` node's `companion.gd:_ready()` calls it **again** (see known issues). A first-time companion starts from
 `CompanionState`'s own defaults (level 1, energy 80, focus 70, mood 75, first codex line).
 
 There is no login, no token exchange, and no read of `GameState.user_id` anywhere in the codebase —

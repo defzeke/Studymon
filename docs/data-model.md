@@ -6,7 +6,7 @@ no cloud sync.
 - **Path:** `user://studymon_save.json`
 - **Written by:** `SaveManager.save_game()` — `scripts/autoload/save_manager.gd:6`
 - **Read by:** `SaveManager.load_game()` — `scripts/autoload/save_manager.gd:24`
-- **Schema tag:** `"v": 4`
+- **Schema tag:** `"v": 5`
 - **Format:** `JSON.stringify` of a single `Dictionary`, pretty-print off
 
 The build plan originally proposed `Resource`-based saves; the implementation uses JSON instead.
@@ -18,7 +18,7 @@ That is fine for the current scope but means there is **no type safety and no au
 
 ```jsonc
 {
-  "v": 4,
+  "v": 5,
 
   // CompanionState.to_dict()
   "level": 1,
@@ -34,6 +34,10 @@ That is fine for the current scope but means there is **no type safety and no au
   "campaign_unlocked_flag": false,
   "active_region_id": "",
   "large_text_enabled": false,
+
+  // MusicManager (v5): settings sliders, 0..1; missing keys load as 1.0
+  "music_volume": 1.0,
+  "sfx_volume": 1.0,
 
   // SessionManager.to_dict()
   "session": {
@@ -155,6 +159,8 @@ These live only in memory and are lost on quit or scene change:
 | Tap-cap counters (`_action_tap_counts`, `_last_hour_reset`) | `CompanionState` | Relaunching clears the hourly diminishing-returns counter — an easy exploit |
 | `GameState.user_id`, `auth_token` | `GameState` | Never set, never saved (no auth yet) |
 | `GameState.player_name` | `GameState` | Set by the tutorial, never saved; every launch replays the tutorial and asks again |
+| `GameState.tutorial_done` | `GameState` | Set when the tutorial ends; lets screens return to home without replaying it, until the app closes |
+| `GameState.food_stock` | `GameState` | Home's food counts (id → count); a relaunch restocks the starting amounts |
 | Trust/premium receipts | — | `is_premium` is a plain bool the player can flip in Settings |
 
 ---
