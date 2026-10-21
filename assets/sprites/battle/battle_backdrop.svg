@@ -1,0 +1,101 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="768" viewBox="0 0 720 768">
+  <!-- Flat 2D take on the island map: sea and sky behind, buildings, autumn trees, and an open sand plaza
+       in the middle where the two pads stand. Palette is the map's (olive grass, sand, amber/coral canopies). -->
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#C9DFE8"/>
+      <stop offset="1" stop-color="#F4E9D2"/>
+    </linearGradient>
+    <linearGradient id="plaza" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#F6E8C9"/>
+      <stop offset="1" stop-color="#E9D1A0"/>
+    </linearGradient>
+    <g id="treeRound">
+      <rect x="-5" y="-4" width="10" height="26" rx="2" fill="#7A5236"/>
+      <polygon points="0,-78 34,-62 48,-24 32,10 -32,10 -48,-24 -34,-62" fill="currentColor"/>
+      <polygon points="0,-78 34,-62 48,-24 12,-30 -6,-52" fill="#FFFFFF" fill-opacity="0.16"/>
+      <polygon points="48,-24 32,10 -32,10 -10,-6 22,-8" fill="#29383A" fill-opacity="0.16"/>
+    </g>
+    <g id="treeCone">
+      <rect x="-4" y="-2" width="8" height="20" rx="2" fill="#7A5236"/>
+      <polygon points="0,-84 30,-34 -30,-34" fill="currentColor"/>
+      <polygon points="0,-62 38,-6 -38,-6" fill="currentColor"/>
+      <polygon points="0,-62 38,-6 8,-10" fill="#29383A" fill-opacity="0.16"/>
+    </g>
+    <g id="lamp">
+      <rect x="-2" y="-64" width="4" height="64" fill="#29383A"/>
+      <ellipse cx="0" cy="-68" rx="9" ry="6" fill="#29383A"/>
+      <ellipse cx="0" cy="-64" rx="5" ry="2" fill="#F4D88A"/>
+    </g>
+  </defs>
+
+  <!-- sky and sea -->
+  <rect width="720" height="768" fill="url(#sky)"/>
+  <rect y="196" width="720" height="130" fill="#3F93A8"/>
+  <path d="M0 214 Q60 206 120 214 T240 214 T360 214 T480 214 T600 214 T720 214" stroke="#FFFFFF" stroke-opacity="0.35" stroke-width="3" fill="none"/>
+  <path d="M0 238 Q60 230 120 238 T240 238 T360 238 T480 238 T600 238 T720 238" stroke="#FFFFFF" stroke-opacity="0.22" stroke-width="3" fill="none"/>
+
+  <!-- far shore: sand, then the buildings standing on it -->
+  <path d="M0 292 Q90 276 200 288 T420 286 T640 284 T720 290 L720 400 L0 400 Z" fill="#EFD9A6"/>
+
+  <!-- left: orange-roofed hall -->
+  <rect x="26" y="262" width="236" height="64" fill="#F6E7CB"/>
+  <rect x="16" y="244" width="256" height="24" rx="3" fill="#E5A04B"/>
+  <rect x="16" y="266" width="256" height="8" fill="#3F7CA6"/>
+  <rect x="64" y="284" width="26" height="42" fill="#7A5236"/><rect x="198" y="284" width="26" height="42" fill="#7A5236"/>
+  <rect x="104" y="284" width="30" height="22" fill="#9EC3D4"/><rect x="154" y="284" width="30" height="22" fill="#9EC3D4"/>
+  <rect x="40" y="206" width="4" height="40" fill="#8A8F90"/><rect x="236" y="214" width="4" height="32" fill="#8A8F90"/>
+
+  <!-- right: red-roofed gym with a dome -->
+  <rect x="420" y="276" width="270" height="52" fill="#F6E7CB"/>
+  <path d="M404 280 L436 244 L676 244 L708 280 Z" fill="#C8473C"/>
+  <path d="M404 280 L412 270 L700 270 L708 280 Z" fill="#FFFFFF" fill-opacity="0.85"/>
+  <path d="M500 244 A46 46 0 0 1 592 244 Z" fill="#CFE3D6"/>
+  <path d="M520 244 A26 26 0 0 1 572 244" stroke="#FFFFFF" stroke-opacity="0.6" stroke-width="4" fill="none"/>
+  <rect x="532" y="296" width="28" height="32" fill="#7A5236"/>
+  <rect x="448" y="292" width="34" height="22" fill="#9EC3D4"/><rect x="620" y="292" width="34" height="22" fill="#9EC3D4"/>
+
+  <!-- small blue-roofed house between them -->
+  <rect x="304" y="288" width="64" height="40" fill="#F6E7CB"/>
+  <polygon points="294,290 336,258 378,290" fill="#3F6FA8"/>
+  <rect x="326" y="302" width="20" height="26" fill="#7A5236"/>
+
+  <!-- olive grass patches behind the plaza -->
+  <path d="M0 330 Q60 322 120 336 Q150 372 100 410 L0 420 Z" fill="#B7B14B"/>
+  <path d="M720 326 Q664 322 610 338 Q578 372 622 408 L720 418 Z" fill="#B7B14B"/>
+  <path d="M250 336 Q310 328 380 334 Q400 350 360 362 Q300 368 250 354 Z" fill="#C2BC55"/>
+  <path d="M430 334 Q480 328 540 336 Q560 350 520 360 Q470 364 430 352 Z" fill="#C2BC55"/>
+
+  <!-- the open sand plaza, where the pads stand -->
+  <path d="M0 410 Q120 360 260 356 Q360 352 460 356 Q600 360 720 408 L720 768 L0 768 Z" fill="url(#plaza)"/>
+  <path d="M60 470 Q360 400 660 470" stroke="#E2C994" stroke-width="3" fill="none" stroke-dasharray="14 12" stroke-opacity="0.7"/>
+  <path d="M0 640 Q360 560 720 640" stroke="#E2C994" stroke-width="3" fill="none" stroke-dasharray="14 12" stroke-opacity="0.7"/>
+
+  <!-- trees and lamps at the left and right edges, clear of the middle -->
+  <use href="#treeCone" x="22" y="372" color="#8DA24A"/>
+  <use href="#treeRound" x="70" y="394" color="#D6A85F"/>
+  <use href="#treeRound" x="640" y="388" color="#C97970"/>
+  <use href="#treeCone" x="694" y="380" color="#8DA24A"/>
+  <use href="#lamp" x="104" y="436"/>
+  <use href="#lamp" x="618" y="432"/>
+  <use href="#treeRound" x="300" y="360" color="#CF9269" transform="translate(0 0) scale(0.6)" />
+  <use href="#treeRound" x="560" y="372" color="#D6A85F" transform="translate(0 0) scale(0.8)" />
+
+  <!-- foreground grass corners with big canopies, framing the scene -->
+  <path d="M0 600 Q70 570 130 612 Q160 700 100 768 L0 768 Z" fill="#B7B14B"/>
+  <path d="M720 560 Q646 540 596 590 Q574 690 640 768 L720 768 Z" fill="#B7B14B"/>
+  <use href="#treeRound" x="46" y="720" color="#C9703F" transform="translate(0 0)"/>
+  <use href="#treeRound" x="672" y="716" color="#D6A85F"/>
+  <use href="#treeRound" x="612" y="760" color="#C97970" transform="translate(0 0) scale(0.8)"/>
+
+  <!-- fallen leaves on the sand -->
+  <g fill="#C9703F" fill-opacity="0.85">
+    <ellipse cx="250" cy="650" rx="9" ry="5" transform="rotate(-24 250 650)"/>
+    <ellipse cx="470" cy="700" rx="9" ry="5" transform="rotate(30 470 700)"/>
+    <ellipse cx="360" cy="560" rx="7" ry="4" transform="rotate(10 360 560)"/>
+  </g>
+  <g fill="#D6A85F" fill-opacity="0.9">
+    <ellipse cx="170" cy="700" rx="8" ry="4.5" transform="rotate(18 170 700)"/>
+    <ellipse cx="540" cy="620" rx="8" ry="4.5" transform="rotate(-30 540 620)"/>
+  </g>
+</svg>
