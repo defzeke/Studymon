@@ -14,13 +14,11 @@ per screen in every `_ready()`.
 | Default font | `JosefinSans-Regular.ttf` |
 | Default font size | 28 (large-text mode: 36) |
 | `Button` font | `JosefinSans-Bold.ttf`, size 32 (large-text: 40) |
-| `Button` font colour | `(0.93, 0.96, 1)` |
-| `Button` normal style | `StyleBoxFlat` fill `(0.11, 0.15, 0.31)`, radius 16 |
-| `PanelContainer` panel | `StyleBoxFlat` fill `(0.04, 0.07, 0.17, 0.85)`, radius 24 |
+| `Button` font colour | Warm Off-White `#F7F5EF` (pressed: Deep Slate) |
+| `Button` styles | `StyleBoxFlat` radius 20, 3 px Warm Off-White border; normal Muted Teal, hover lighter teal, pressed Muted Amber, disabled Slate Gray |
+| `PanelContainer` panel | `StyleBoxFlat` fill Deep Slate at 0.88 alpha, 3 px Warm Off-White border, radius 24 |
 
-There is no hover/pressed/disabled style box — only `normal` — so buttons do not visually react on
-press. Several scenes override sizes and colours inline
-(`theme_override_*`) instead of extending the theme.
+Some scenes still override sizes and colours inline (`theme_override_*`) instead of extending the theme.
 
 ### Color palette
 
@@ -39,9 +37,7 @@ Canonical palette for new UI work. These are sRGB values.
 | Deep Slate | `#29383A` | Text and dark details |
 | Slate Gray | `#687778` | Secondary text |
 
-The shared theme and several inline scene overrides were written before this palette and still use
-the older navy/cyan values. New UI uses the palette above; migrating the existing screens is tracked
-in [`known-issues.md`](known-issues.md) #21.
+The shared theme and every screen use this palette. New UI picks a role from it.
 
 ### Large text
 
@@ -65,12 +61,12 @@ text** checkbox in `settings.tscn` calls `set_large_text()` and saves.
 | `scenes/ui/boot/splash.tscn` | `Control` | `scripts/ui/boot/splash.gd` | white intro, then loading |
 | `scenes/ui/boot/loading.tscn` | `Control` | `scripts/ui/boot/loading.gd` | boot loading bar |
 | `scenes/ui/boot/peek.tscn` | `Node3D` | `scripts/ui/boot/peek.gd`, `scripts/ui/boot/tutorial.gd`, `scripts/ui/home.gd` | 3D Kuiz peeks, runs the tutorial, then the home loop across four rooms; the hub every other screen returns to |
-| `scenes/ui/session_list.tscn` | `Control` | `scripts/ui/session_list.gd` | topic history |
+| `scenes/ui/session_list.tscn` | `Control` | `scripts/ui/session_list.gd` | Worlds hub: saved worlds (play, cards, edit, reset, delete) and New World |
 | `scenes/review_session/categorizer.tscn` | `Control` | `scripts/review_session/categorizer.gd` | upload + question editor |
 | `scenes/overworld/region_map.tscn` | `Node3D` | `scripts/overworld/region_map.gd` (+ `player.gd`, `joystick.gd`) | 3D island: explorer, trainers, gyms, champion |
 | `scenes/battle/battle.tscn` | `Control` | `scripts/battle/battle.gd`, `scripts/battle/arena_stage.gd` | 3D arena behind the battle HUD: intro, strikes, ten SFX cues |
 | `scenes/review_session/flashcards.tscn` | `Control` | `scripts/review_session/flashcards.gd` | Flashcard Sanctuary: untimed card review |
-| `scenes/ui/settings.tscn` | `Control` | `scripts/ui/settings.gd` | music and sound volume, large text, premium + quota debug; Back returns home |
+| `scenes/ui/settings.tscn` | `Control` | `scripts/ui/settings.gd` | two cards, "Sound & display" (music, sounds, large text) and "AI plan" (quota, premium, debug reset); Back returns home |
 
 
 ### `splash.tscn`
@@ -208,7 +204,7 @@ and the middle shows the current room's action:
 | Room | Action | Kuiz |
 |---|---|---|
 | Study Room | **Charge** (`ui/charge.png`, a toggle) turns the lights off: the 3D lights and ambient drop to 30 %, the night art and a dark veil fade in, and the charge sounds play. Arrows, Play and Settings are disabled until it is pressed again | `State_Charging` (loops; its bolt and gem glow in the dark), then `Wake_Up` when the lights come back on |
-| Study Room | **Play** (`ui/campaign.png`) starts a new topic (`topic_<unix%100000>`, like the topic list's Add) and opens the upload screen, `categorizer.tscn` | — |
+| Study Room | **Play** (`ui/campaign.png`) opens the Worlds hub, `session_list.tscn` | — |
 | Study Room | **Settings** (`ui/settings.svg`) opens `settings.tscn` | — |
 | Maintenance Bay | Drag the **screwdriver** from the bar and hold it over Kuiz: it twists, and after 2 s the tune-up is done and it returns to the bar | `State_Sick` (screws working loose) while it is held there, `Celebrate` when done, `Idle` if it is taken away early |
 | Data Kitchen | **Food**: ‹ › pick one of six foods, then drag it onto Kuiz to eat it (one from stock); dropped anywhere else it goes back. An empty food is greyed out and cannot be picked up | `Surprised` (mouth open) when the food reaches it, then `Happy`, or `Pet` (hearts) for Spicy Memory Chips, its favourite |
@@ -249,12 +245,18 @@ subtle), the soft-box reflections, and the page's off-white radial background.
   artifact's exposure.
 - The handoff into this scene measured 9–33 ms on desktop while materials compile; it lands on white.
 
-### `session_list.tscn`
+### `session_list.tscn` — Worlds hub
 
-`Background` (`ColorRect`), `Title`, `EmptyLabel`, `Scroll` → `ListBox`, `AddButton`, `BackButton`.
-Rows are built in code as an `HBoxContainer`: a topic `Button` (`alignment = LEFT`, text
-`  <name>  ·  <N> Qs`, opens the editor) and a 120 px **Cards** `Button` that opens the Flashcard
-Sanctuary (disabled for an empty topic).
+A world is a topic. Same look as `settings.tscn`: the Study Room art, a Deep Slate veil, themed buttons.
+Every menu screen (Worlds, World Builder, Settings) shares one look: Study Room art, Deep Slate veil, a 24 px `MarginContainer`, a Muted Amber bold 44 title and bordered cards with amber section headers.
+`Title`, `SavedPage` (`EmptyLabel`, `Scroll` → `ListBox`), `NewButton` ("+ New World"), `BackButton`, and a shared
+`ConfirmModal` (see Pop-ups below).
+
+Saved cards are built in code (`PanelContainer` → name, "N questions · X/Y trainers cleared", then two
+rows of 64 px buttons): **Play** (straight to `region_map.tscn`), **Cards** (Flashcard Sanctuary), **Edit**
+(`categorizer.tscn`), **Reset progress** and **Delete** (Soft Coral). Play and Cards are disabled for a world
+with no questions. Reset and Delete ask first; Reset keeps the questions, Delete removes the world.
+**+ New World** opens the World Builder directly: upload a file, paste text or add questions by hand there.
 
 ### `flashcards.tscn`
 
@@ -267,10 +269,12 @@ are applied in `_style()` from the canonical palette; every button is at least 5
 
 ### `categorizer.tscn`
 
-Vertical stack: `Title`, `QuotaLabel`, `TopicRow` (label + `TopicName` `LineEdit`), `UploadRow`
-(label + `FileButton`), `PasteLabel`, `PasteArea` (`TextEdit`), `SanityLabel`, `StudyButton`,
-`StatusLabel`, `LoadingBar`, `QuestionsHeader`, `Scroll` → `QuestionsBox` (rows built in code),
-`AddQuestionButton`, `PlayButton`, `BackButton`, plus `FileDialog` and `QuotaDialog`.
+Titled "World Builder", on the Study Room art under a Deep Slate veil (`Veil`, 0.88 alpha) so text stays readable.
+Inside `Margin` → `Content`: `Title` (Muted Amber, bold 44), a `SourceCard` panel ("1 · Your reviewer":
+`TopicName` `LineEdit`, `FileButton` which shows the picked file name, `PasteArea`, `SanityLabel`,
+`StudyButton`, `StatusLabel`, `LoadingBar`; there is no on-screen quota line, Settings shows it), then `QuestionsBlock` ("2 · Questions": `Scroll` → `QuestionsBox`
+with rows built in code, `AddQuestionButton`), `PlayButton` and `BackButton`. `FileDialog` is the native
+OS dialog (`use_native_dialog`) where the platform has one; the weekly-limit notice is a `ConfirmModal`.
 
 Each question row (built in `_make_question_row`) has a header (index, confidence, delete), the
 prompt `TextEdit`, a type row (`Type:` label, type `OptionButton` with Essay / Identification /
@@ -293,7 +297,7 @@ box, although all bytes are kept for the upload call (`categorizer.gd:89-96`).
 `Battle` (`Control`) → `Camera2D`, `Background`, `Margin` → `List`: `TopBar` (flee, title),
 `QuotaLabel`, `EnemyCard` (sprite, name, HP), `PlayerCard` (sprite, name, HP), `QuestionCard`
 (type, text), `AnswerInput` (`TextEdit`), `SubmitButton`, `JudgingLabel`, `ResultLabel`,
-`ResultPanel` (title, XP label, retry/continue), plus `QuotaDialog`.
+`ResultPanel` (title, XP label, retry/continue); the weekly-limit notice is a `ConfirmModal`.
 
 The enemy and player cards sit over `ArenaStage`, the 3D scene that holds the models. For a Multiple Choice question
 `battle.gd` hides `AnswerInput` and `SubmitButton` and builds a `VBoxContainer` of four option
@@ -301,6 +305,10 @@ The enemy and player cards sit over `ArenaStage`, the 3D scene that holds the mo
 
 
 ---
+
+### Pop-ups
+
+`scripts/ui/widgets/confirm_modal.gd` (`ConfirmModal.open(host, title, message, confirm_text, on_confirm, danger, cancel_text)`) is the one pop-up: a dimmed screen, a card that scales in (0.85 → 1, back-ease, 0.28 s) and out (0.14 s), a bold title (coral when `danger`), centred wrapped text and full-width buttons. An empty `cancel_text` makes it a notice. Esc cancels. Tweens ignore `Engine.time_scale`, so battle hit-stop does not freeze it. Callers `preload` the script instead of relying on a `class_name`. Used by the Worlds hub (reset, delete), the World Builder and the battle (weekly limit).
 
 ## 3. Interaction conventions
 

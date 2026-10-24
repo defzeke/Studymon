@@ -1,8 +1,10 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene format=3 uid="uid://cduj2wnn3fx6w"]
 
-[ext_resource type="Script" path="res://scripts/ui/session_list.gd" id="1"]
+[ext_resource type="Script" uid="uid://bfc6d4mtjurhv" path="res://scripts/ui/session_list.gd" id="1"]
+[ext_resource type="Texture2D" uid="uid://cqiyhutvuk0a" path="res://assets/sprites/rooms/study_room.svg" id="2"]
+[ext_resource type="FontFile" uid="uid://rrcw5ky5bnsk" path="res://assets/fonts/JosefinSans-Bold.ttf" id="3"]
 
-[node name="SessionList" type="Control"]
+[node name="SessionList" type="Control" unique_id=1002488718]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -11,60 +13,87 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1")
 
-[node name="Background" type="ColorRect" parent="."]
+[node name="Background" type="TextureRect" parent="." unique_id=1704998733]
+modulate = Color(0.92, 0.92, 0.92, 1)
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0.039, 0.067, 0.157, 1)
+texture = ExtResource("2")
+expand_mode = 1
+stretch_mode = 6
 
-[node name="Content" type="VBoxContainer" parent="."]
+[node name="Veil" type="ColorRect" parent="." unique_id=1545233801]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 32.0
-offset_top = 32.0
-offset_right = -32.0
-offset_bottom = -32.0
 grow_horizontal = 2
 grow_vertical = 2
+mouse_filter = 2
+color = Color(0.1608, 0.2196, 0.2275, 0.8)
+
+[node name="Margin" type="MarginContainer" parent="." unique_id=1380199227]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_top = 24
+theme_override_constants/margin_right = 24
+theme_override_constants/margin_bottom = 24
+
+[node name="Content" type="VBoxContainer" parent="Margin" unique_id=879927006]
+layout_mode = 2
 theme_override_constants/separation = 16
 
-[node name="Title" type="Label" parent="Content"]
+[node name="Title" type="Label" parent="Margin/Content" unique_id=1023709649]
 layout_mode = 2
-text = "Review Sessions"
+theme_override_colors/font_color = Color(0.8392, 0.6588, 0.3725, 1)
+theme_override_fonts/font = ExtResource("3")
+theme_override_font_sizes/font_size = 44
+text = "
+Worlds"
 horizontal_alignment = 1
 
-[node name="EmptyLabel" type="Label" parent="Content"]
+[node name="SavedPage" type="VBoxContainer" parent="Margin/Content" unique_id=251206966]
 unique_name_in_owner = true
 layout_mode = 2
-text = "No topics yet — tap Add New Topic!"
+size_flags_vertical = 3
+theme_override_constants/separation = 12
+
+[node name="EmptyLabel" type="Label" parent="Margin/Content/SavedPage" unique_id=484123151]
+unique_name_in_owner = true
+layout_mode = 2
+text = "
+No saved worlds yet. Tap New World to build one from your reviewer."
 horizontal_alignment = 1
 autowrap_mode = 2
 
-[node name="Scroll" type="ScrollContainer" parent="Content"]
-custom_minimum_size = Vector2(0, 620)
+[node name="Scroll" type="ScrollContainer" parent="Margin/Content/SavedPage" unique_id=1276220468]
 layout_mode = 2
 size_flags_vertical = 3
 horizontal_scroll_mode = 0
 
-[node name="ListBox" type="VBoxContainer" parent="Content/Scroll"]
+[node name="ListBox" type="VBoxContainer" parent="Margin/Content/SavedPage/Scroll" unique_id=1941711682]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_constants/separation = 10
+theme_override_constants/separation = 12
 
-[node name="AddButton" type="Button" parent="Content"]
+[node name="NewButton" type="Button" parent="Margin/Content" unique_id=1221856351]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 72)
+layout_mode = 2
+text = "+ New World"
+
+[node name="BackButton" type="Button" parent="Margin/Content" unique_id=2136132301]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 64)
 layout_mode = 2
-text = "+ Add New Topic"
+text = "Back"
 
-[node name="BackButton" type="Button" parent="Content"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 56)
-layout_mode = 2
-text = "Back to Care Room"

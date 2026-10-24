@@ -8,6 +8,7 @@ extends Control
 ## Phase 9: Juice — Camera2D screen-shake + hit-stop (brief time_scale pause) on strong essay hits.
 ## Phase 10: Quota label + paywall dialog via MonetizationState / Api.quota_exceeded.
 
+const ConfirmModal := preload("res://scripts/ui/widgets/confirm_modal.gd")
 const PLAYER_MAX_HP := 100
 const BOSS_HP := 150
 const CHAMPION_XP_REWARD := 15
@@ -83,7 +84,6 @@ const HIT_STOP_BASE := 0.06
 @onready var xp_label: Label = %XPLabel
 @onready var retry_btn: Button = %RetryButton
 @onready var continue_btn: Button = %ContinueButton
-@onready var quota_dialog: ConfirmationDialog = %QuotaDialog
 
 var _q: Dictionary = {}
 var _qtype: String = "essay"
@@ -251,8 +251,7 @@ func _on_quota_exceeded(_type: String) -> void:
 	_awaiting = false
 	judging_label.visible = false
 	submit_btn.disabled = false
-	quota_dialog.dialog_text = "Weekly AI limit reached. Upgrade to Premium to continue."
-	quota_dialog.popup_centered()
+	ConfirmModal.open(self, "Weekly limit reached", "Your free AI uses are used up for this week. Upgrade to Premium to keep going.", "Got it", Callable(), false, "")
 
 func _on_submit() -> void:
 	if _awaiting or _over:

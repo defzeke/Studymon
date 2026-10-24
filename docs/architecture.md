@@ -154,14 +154,15 @@ peek.tscn  (3D Kuiz over 2D rooms; the hub)
    │  Study Room, Maintenance Bay, Data Kitchen and Playroom. A tap after the last line starts
    │  the home loop; once the tutorial is done this session, the scene opens straight into it.
    ├── ◀ / ▶   walk between the four rooms
-   ├── Play     ─► categorizer.tscn  (new topic id, like the topic list's Add)
+   ├── Play     ─► session_list.tscn  (Worlds hub)
    └── Settings ─► settings.tscn ──► back to peek.tscn
 
 
-session_list.tscn
-   ├── Add New Topic ─► categorizer.tscn  (editing_topic_id = topic_<unix%100000>)
-   ├── Open topic    ─► categorizer.tscn  (loads stored questions)
-   └── Back          ─► peek.tscn (home)
+session_list.tscn  (Worlds hub; home Play opens it)
+   ├── Saved worlds: Play ─► region_map.tscn · Cards ─► flashcards.tscn · Edit ─► categorizer.tscn
+   │                 Reset progress / Delete (confirmed) ─► SessionManager.reset_topic_progress / delete_topic
+   ├── + New World ─► categorizer.tscn (World Builder)  (editing_topic_id = topic_<unix%100000>)
+   └── Back ─► peek.tscn (home)
 
 categorizer.tscn
    └── Confirm & Play ─► confirm_topic() ─► region_generated ─► region_map.tscn

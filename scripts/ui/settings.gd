@@ -4,8 +4,6 @@ extends Control
 
 @onready var premium_check: CheckBox = %PremiumCheck
 @onready var quota_label: Label = %QuotaLabel
-@onready var pdf_label: Label = %PdfQuotaLabel
-@onready var grade_label: Label = %GradeQuotaLabel
 @onready var reset_btn: Button = %ResetButton
 @onready var back_btn: Button = %BackButton
 @onready var status_label: Label = %StatusLabel
@@ -15,6 +13,7 @@ extends Control
 
 func _ready() -> void:
 	theme = load("res://assets/theme/app_theme.tres") as Theme
+	GameState.tutorial_done = true  # only reachable from home, so Back must not replay the intro
 	premium_check.toggled.connect(_on_premium_toggled)
 	reset_btn.pressed.connect(_on_reset_pressed)
 	back_btn.pressed.connect(_on_back)
@@ -45,14 +44,10 @@ func _refresh() -> void:
 		premium_check.set_pressed_no_signal(is_p)
 	if is_p:
 		quota_label.text = "Premium: Unlimited"
-		pdf_label.text = "PDFs: Unlimited (Premium)"
-		grade_label.text = "Grades: Unlimited (Premium)"
 	else:
 		var pdf_rem: int = _ms.get_remaining("pdf")
 		var grade_rem: int = _ms.get_remaining("grade")
 		quota_label.text = "Free AI Uses: PDFs %d/%d | Grades %d/%d" % [pdf_rem, _ms.FREE_PDF_LIMIT, grade_rem, _ms.FREE_GRADE_LIMIT]
-		pdf_label.text = "Free AI Uses: %d/%d PDFs remaining" % [pdf_rem, _ms.FREE_PDF_LIMIT]
-		grade_label.text = "Free AI Uses: %d/%d Grades remaining" % [grade_rem, _ms.FREE_GRADE_LIMIT]
 	premium_check.text = "Premium" if is_p else "Free Tier"
 	status_label.text = "Premium enabled — no limits." if is_p else "Free tier — weekly limits active."
 

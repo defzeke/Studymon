@@ -672,8 +672,3 @@ angular_velocity_min = -360.0
 angular_velocity_max = 360.0
 scale_amount_min = 6.0
 scale_amount_max = 12.0
-color_initial_ramp = SubResource("Gradient_confetti")
-[node name="QuotaDialog" type="ConfirmationDialog" parent="." unique_id=551566539]
-unique_name_in_owner = true
-title = "Quota Reached"
-dialog_text = "Weekly AI limit reached. Upgrade to Premium to continue."

@@ -121,10 +121,10 @@ rows (see [`systems/review-session.md`](systems/review-session.md) §6); a v5 sa
 |---|---|---|
 | `id` | string | `topic_<slug>` from `Api._slug_topic_id`, or `topic_<unix%100000>` for new topics |
 | `name` | string | Player-visible name, defaults to the id |
-| `question_count` | int | Denormalised `questions.size()`; `session_list.gd:38` falls back to the array length |
+| `question_count` | int | Denormalised `questions.size()`; `session_list.gd` reads `questions` when it is 0 |
 | `questions` | question[] | The actual question bank |
 
-Topic ids are **not** guaranteed unique across sessions: `session_list.gd:60` builds
+Topic ids are **not** guaranteed unique across sessions: `session_list.gd:_on_new_world` builds
 `topic_%d % (unix_time % 100000)`, which collides roughly every 27 hours of wall-clock use. The
 saved-topic lookup is a linear scan by id, so a collision overwrites the older topic.
 
@@ -166,7 +166,7 @@ These live only in memory and are lost on quit or scene change:
 | Tap-cap counters (`_action_tap_counts`, `_last_hour_reset`) | `CompanionState` | Relaunching clears the hourly diminishing-returns counter — an easy exploit |
 | `GameState.user_id`, `auth_token` | `GameState` | Never set, never saved (no auth yet) |
 | `GameState.player_name` | `GameState` | Set by the tutorial, never saved; every launch replays the tutorial and asks again |
-| `GameState.tutorial_done` | `GameState` | Set when the tutorial ends; lets screens return to home without replaying it, until the app closes |
+| `GameState.tutorial_done` | `GameState` | Set when the tutorial ends, and by the Worlds hub and Settings on open (they are only reachable from home, so running one on its own still returns to home, not the intro); lets screens return home without replaying it, until the app closes |
 | `GameState.food_stock` | `GameState` | Home's food counts (id → count); a relaunch restocks the starting amounts |
 | Trust/premium receipts | — | `is_premium` is a plain bool the player can flip in Settings |
 

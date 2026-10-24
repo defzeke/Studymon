@@ -1,6 +1,6 @@
 extends CanvasLayer
 ## The home loop after the tutorial: the bottom bar walks Kuiz between the four rooms, and each room
-## has its own care action. Study Room: charge (lights off) / play (upload a reviewer) / settings.
+## has its own care action. Study Room: charge (lights off) / play (opens the Worlds hub) / settings.
 ## Maintenance Bay: hold the screwdriver over Kuiz to tighten its frame. Data Kitchen: drag food to
 ## Kuiz; the fridge restocks it. Playroom: fling the ball; Kuiz watches it.
 ## No stats or currency yet. Contract: docs/ui-and-assets.md §2 Home.
@@ -18,8 +18,8 @@ const FAVORITE_FOOD := "spicy_chips"
 const SCREWDRIVER: Texture2D = preload("res://assets/sprites/props/screwdriver.svg")
 const CHARGE_SFX: AudioStream = preload("res://assets/audio/charge.mp3")
 const CHARGED_SFX: AudioStream = preload("res://assets/audio/charged.mp3")
-const UPLOAD_SCENE := "res://scenes/review_session/categorizer.tscn"
 const SETTINGS_SCENE := "res://scenes/ui/settings.tscn"
+const WORLDS_SCENE := "res://scenes/ui/session_list.tscn"
 const FADE_TIME := 0.35
 const HELD_SIZE := Vector2(120, 120)
 # Screwdriver: seconds of holding it over Kuiz to finish a tune-up, and its twist while working.
@@ -150,8 +150,7 @@ func _on_charge(charging: bool) -> void:
 		peek.act("Wake_Up")
 
 func _on_play() -> void:
-	SessionManager.editing_topic_id = "topic_%d" % (int(Time.get_unix_time_from_system()) % 100000)
-	get_tree().change_scene_to_file(UPLOAD_SCENE)
+	get_tree().change_scene_to_file(WORLDS_SCENE)
 
 # --- Data Kitchen ---
 

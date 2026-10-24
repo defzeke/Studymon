@@ -26,6 +26,7 @@ Terms used throughout this repo, in the sense this repo means them.
 | Term | Meaning |
 |---|---|
 | **Reviewer** | The study material the player uploads or pastes (PDF or text). In mock mode, pasted text is parsed; binary bytes fall back to canned questions. |
+| **World** | The player-facing name for a topic: the Worlds hub lists saved worlds, and a new one is built from a reviewer. |
 | **Topic** | One reviewer's worth of content, identified by a slug (`topic_<name>`, or `topic_001`). Has a name, a question list, mastery records and gym progress. |
 | **Extraction** | Turning a reviewer into questions. `Api.mock_upload_pdf()` is the current implementation; a real endpoint is not wired. |
 | **Question** | `{id, text, type, answer, key_concepts, confidence, source}`. See [`data-model.md`](data-model.md). |

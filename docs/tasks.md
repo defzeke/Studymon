@@ -6,7 +6,7 @@ Where the work stands. Short on purpose — this is a **register**, not a backlo
 > doc that owns it, and **those docs win** if the two disagree. See [`rules.md`](rules.md) §2. Do not
 > let a second status list grow here.
 
-Last updated: 2026-10-24.
+Last updated: 2026-10-25.
 
 ## In flight
 
@@ -73,9 +73,7 @@ Hygiene, after the slice plays:
 |---|---|
 | #13 | Emit `stats_changed` at ~5 Hz or only on change |
 | #14 | Debounce the save instead of one full write per tap |
-| #19 | Phantom "Biology 101" |
 | #20 | Add a headless smoke-test script / CI |
-| #21 | Migrate the shared theme and inline scene colours to the canonical palette |
 
 ## Needs a decision
 

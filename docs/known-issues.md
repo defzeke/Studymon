@@ -19,9 +19,9 @@ Severity: **P0** blocks the core loop · **P1** blocks a feature or silently cor
 | 11 | ~~Large-text accessibility toggle is unreachable~~ — fixed | — |
 | 13 | `stats_changed` fires every frame (no listeners left) | **P2** |
 | 14 | Full save write on every care tap (applies once care input returns) | **P2** |
-| 19 | Fake "Biology 101" topic seeded on every boot | **P3** |
+| 19 | ~~Fake "Biology 101" topic seeded on every boot~~ — fixed | — |
 | 20 | Stale docs, no tests/CI | **P3** |
-| 21 | Theme and scene colours predate the canonical palette | **P3** |
+| 21 | ~~Theme and scene colours predate the canonical palette~~ — migrated | — |
 
 ---
 
@@ -140,13 +140,9 @@ synchronous `FileAccess` write per tap.
 
 ---
 
-## 19. Fake "Biology 101" topic seeded on every boot (P3)
+## 19. Fake "Biology 101" topic — fixed
 
-`Api.mock_get_topics()` returns `Biology 101` with `question_count: 2` but no `questions` array.
-`SessionManager` merges it into the cache, so the session list always shows a phantom topic that,
-when opened, drops the player into the categorizer with whatever `pending_questions` was left over.
-
-**Fix:** return `{"topics": []}` in mock mode, or seed it with real questions.
+`Api.mock_get_topics()` now returns an empty list, so the Worlds hub only shows worlds the player made.
 
 ---
 
@@ -163,22 +159,10 @@ caught).
 
 ---
 
-## 21. Theme and scene colours predate the canonical palette (P3)
+## 21. Theme and scene colours — migrated
 
-**Evidence**
-
-- `assets/theme/app_theme.tres:7,14,23` uses navy button/panel fills (`#1C264F`, `#0A122B`) and `#EDF5FF`
-  button text; none are in the palette in [`ui-and-assets.md`](ui-and-assets.md#color-palette) §1.
-- `scenes/ui/session_list.tscn:21` and `scenes/battle/battle.tscn:28`
-  hard-code other navy/cyan/blue values. (`loading.tscn` has been migrated.)
-- The palette was documented after those files were written.
-
-**Impact:** New screens that follow the palette will visibly clash with the existing theme; the
-shared theme does not represent the intended art direction.
-
-**Fix:** migrate `assets/theme/app_theme.tres` first (button, panel, font colour), then replace the inline
-`Color(...)` overrides in the scenes above with palette roles. Update the token table in
-[`ui-and-assets.md`](ui-and-assets.md) §1 in the same change; leave the art assets alone.
+The shared theme, battle, settings, categorizer, flashcards and the Worlds hub use the canonical palette.
+New inline `Color(...)` overrides should pick a palette role from [`ui-and-assets.md`](ui-and-assets.md) §1.
 
 ---
 
