@@ -211,9 +211,6 @@ Behaviour worth knowing:
 
 | Site | Frequency |
 |---|---|
-| `companion.gd:135` `_on_care` | **every care tap** |
-| `companion.gd:145` on level-up | rare |
-| `companion.gd:196` on campaign ready | once |
 | `settings.gd:49,56,63` premium toggle / quota reset | rare |
 | `SaveManager.save_progress()` after a battle win or loss (`battle.gd`), and after a topic is confirmed (`confirm_topic`) | once per event |
 

@@ -27,10 +27,9 @@ res://
 │   └── sprites/
 │       ├── boot/              # splash sheet (+ its .gif source), loading background, wordmark
 │       ├── effects/           # leaf.svg (loading and autumn weather)
-│       ├── companion/         # idle / blink / sad (SVG)
 │       ├── props/             # temporary foods, fridge, ball, screwdriver
 │       ├── rooms/             # temporary rooms: study_room (+ night), maintenance_bay, data_kitchen, playroom
-│       └── ui/                # campaign, charge, pomodoro, settings, table, top bar, arrow
+│       └── ui/                # campaign, charge, settings, tip bulb, arrow
 │
 ├── scripts/
 │   ├── autoload/              # the 7 autoloads: SaveManager, GameState, Api, CompanionState,

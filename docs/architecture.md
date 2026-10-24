@@ -54,7 +54,7 @@ res://
 ├── project.godot
 ├── icon.svg
 ├── assets/
-│   ├── audio/            charge.mp3, charged.mp3, loading.mp3, main room.mp3
+│   ├── audio/            charge.mp3, charged.mp3, loading.mp3, main room.mp3, sfx/ (ten battle cues)
 │   ├── fonts/            JosefinSans-Regular.ttf, JosefinSans-Bold.ttf
 │   ├── models/           kuiz.glb (peek scene); map.glb + map_0.png, boy_explorer.glb + 2 .jpg
 │   │                     textures (overworld)
@@ -63,30 +63,26 @@ res://
 │       ├── boot/         kuizmon_splash.png (60-frame splash sheet), kuizmon_loading.gif (its
 │       │                 source, not imported), loading.png (background), logo.png (wordmark)
 │       ├── effects/      leaf.svg (loading leaves, autumn weather)
-│       ├── companion/    idle, blink, sad (.svg)
 │       ├── props/        foods, fridge, ball, screwdriver (temporary placeholders)
 │       ├── rooms/        temporary placeholders: study_room.svg (+ _night), maintenance_bay.svg,
 │       │                 data_kitchen.svg, playroom.svg
-│       └── ui/           campaign.png, charge.png, loading_spark.svg, pomodoro.svg,
-│                         settings.svg, table.svg, tip_bulb.svg, top_bar.svg
+│       ├── battle/       battle_backdrop.svg
+│       └── ui/           arrow.svg, campaign.png, charge.png, loading_spark.svg,
+│                         settings.svg, tip_bulb.svg
 ├── scripts/
 │   ├── autoload/         the 7 autoloads: save_manager.gd, game_state.gd, api.gd,
 │   │                     companion_state.gd, session_manager.gd, monetization_state.gd,
 │   │                     music_manager.gd
-│   ├── battle/           battle.gd
-│   ├── companion/        companion.gd, companion_rig.gd
-│   ├── overworld/        region_map.gd, player.gd, joystick.gd, season.gd
-│   ├── review_session/   categorizer.gd
-│   └── ui/               home.gd, main.gd, session_list.gd, settings.gd
-│       ├── boot/         splash.gd, loading.gd, peek.gd, tutorial.gd
-│       └── widgets/      hud_strip.gd, pomodoro.gd, button_juice.gd
-├── scenes/               main, session_list, settings (ui/)
-│   │                     companion_rig (companion/)
-│   │                     region_map (overworld/), categorizer (review_session/)
-│   │                     battle (battle/)
-│   └── ui/
-│       ├── boot/         splash, loading, peek
-│       └── widgets/      hud_strip, pomodoro
+│   ├── battle/           battle.gd, arena_stage.gd
+│   ├── overworld/        region_map.gd, player.gd, joystick.gd, season.gd, encounter_trigger.gd,
+│   │                     gym_slot.gd, map_collision.gd
+│   ├── review_session/   categorizer.gd, flashcards.gd
+│   └── ui/               home.gd, session_list.gd, settings.gd
+│       └── boot/         splash.gd, loading.gd, peek.gd, tutorial.gd
+├── scenes/               session_list, settings (ui/)
+│   │                     encounter_trigger, gym_burst, region_map (overworld/)
+│   │                     categorizer, flashcards (review_session/), battle (battle/)
+│   └── ui/boot/          splash, loading, peek
 ├── backend/              main.py (FastAPI stub), requirements.txt, README.md
 ├── docs/                 ← this folder (includes quizmon-build-plan.md)
 └── README.md
@@ -161,11 +157,6 @@ peek.tscn  (3D Kuiz over 2D rooms; the hub)
    ├── Play     ─► categorizer.tscn  (new topic id, like the topic list's Add)
    └── Settings ─► settings.tscn ──► back to peek.tscn
 
-main.tscn  (old 2D care room — nothing routes here any more; open the scene directly)
-   ├── CampaignButton (enabled only when campaign_unlocked) ─► session_list.tscn
-   ├── PomodoroButton ─► toggles in-scene scenes/ui/widgets/pomodoro.tscn
-   ├── ChargeButton   ─► toggles day/night room art + SFX
-   └── SettingsButton ─► settings.tscn
 
 session_list.tscn
    ├── Add New Topic ─► categorizer.tscn  (editing_topic_id = topic_<unix%100000>)
@@ -176,7 +167,8 @@ categorizer.tscn
    └── Confirm & Play ─► confirm_topic() ─► region_generated ─► region_map.tscn
 
 region_map.tscn
-   ├── walk into Trainer/Gym/Champion Area2D ─► encounter panel
+   ├── walk into a Trainer/Gym/Champion Area3D ─► encounter panel
+   ├── Study button / session-list Cards ─► flashcards.tscn
    └── Fight! ─► battle.tscn
 
 battle.tscn
@@ -222,17 +214,12 @@ which exist precisely so the overworld can pass a question to the battle scene a
 
 | Signal | Emitter | Listeners |
 |---|---|---|
-| `stats_changed` | `CompanionState` (every frame) | `hud_strip.gd`, `pomodoro.gd` |
-| `xp_changed(current_xp, level)` | `CompanionState` | `companion.gd`, `hud_strip.gd` |
-| `leveled_up(new_level)` | `CompanionState` | `companion.gd` |
-| `codex_entry_added(text)` | `CompanionState` | `companion.gd` |
-| `campaign_gate_ready` | `CompanionState` | `companion.gd` |
-| `pomodoro_phase_changed(mode)` | `CompanionState` | `companion.gd` |
-| `large_text_changed(enabled)` | `GameState` | `companion.gd` (no UI emits it) |
+| `stats_changed`, `xp_changed`, `leveled_up`, `codex_entry_added`, `campaign_gate_ready`, `pomodoro_phase_changed` | `CompanionState` | nobody since the care room was removed |
+| `large_text_changed(enabled)` | `GameState` | nobody (settings applies it directly) |
 | `job_status(job_id, status, progress, result)` | `Api` | `SessionManager`, `battle.gd` |
 | `quota_exceeded(type)` | `Api` | `battle.gd`, `categorizer.gd` |
 | `topics_listed`, `extraction_*`, `topic_saved`, `region_generated`, `overworld_progress_changed` | `SessionManager` | `session_list.gd`, `categorizer.gd`, `region_map.gd` |
-| `mastery_changed`, `champion_defeated`, `insight_triggered` | `SessionManager` | `companion.gd`, `region_map.gd` |
+| `mastery_changed`, `champion_defeated`, `insight_triggered` | `SessionManager` | `region_map.gd` (the rest have no listener) |
 | `quota_changed`, `premium_changed` | `MonetizationState` | `settings.gd`, `battle.gd`, `categorizer.gd` |
 
 `Api.job_status` is a **shared bus**: extraction jobs, the `"topics"` listing, and the `"grade"`
@@ -261,9 +248,7 @@ operation must pick a unique `job_id` or it will be consumed by the wrong listen
 6. `home.gd:start()` — `SaveManager.load_once()` reads the save the first time home opens in a
    session (later calls keep the in-memory state, which may be newer), then shows the bar.
 
-**The save is read when home first opens**, not during splash/loading/tutorial. The old care room
-still loads it its own way if opened directly: `main.gd:_ready()` calls `SaveManager.load_game()`,
-and the nested `Room` node's `companion.gd:_ready()` calls it **again** (see known issues). A first-time companion starts from
+**The save is read when home first opens**, not during splash/loading/tutorial. A first-time companion starts from
 `CompanionState`'s own defaults (level 1, energy 80, focus 70, mood 75, first codex line).
 
 There is no login, no token exchange, and no read of `GameState.user_id` anywhere in the codebase —

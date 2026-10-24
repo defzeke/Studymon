@@ -1,6 +1,6 @@
 # Known issues
 
-Verified against the current `dev` working tree (Godot **4.7.2**, headless). Each entry lists the
+Last reviewed 2026-10-24 against the `world-assets` branch (Godot **4.7.2**, headless). Each entry lists the
 evidence, the player/code impact, and a concrete fix.
 
 Severity: **P0** blocks the core loop · **P1** blocks a feature or silently corrupts state ·
@@ -10,18 +10,15 @@ Severity: **P0** blocks the core loop · **P1** blocks a feature or silently cor
 
 | # | Issue | Severity |
 |---|---|---|
-| 8 | No Feed / Pet / Play input in the care room | **P0** |
+| 8 | Nothing on home calls `CompanionState.care()` | **P0** |
 | 2 | Auth header uses `***` instead of `Bearer` | **P1** |
-| 3 | Companion is invisible | **P1** |
-| 4 | `TidbitBubble` is permanently hidden | **P1** |
+| 3, 4, 12, 16 | ~~Hidden rig, hidden TidbitBubble, rig `det == 0` spam, double save load~~ — gone with the care room | — |
 | 5 | Hourly diminishing returns yields **0 XP** | **P1** |
 | 7 | Client/backend endpoint drift | **P1** |
 | 9 | Real grade/extract responses are silently dropped | **P1** |
 | 11 | ~~Large-text accessibility toggle is unreachable~~ — fixed | — |
-| 12 | `Condition "det == 0" is true` spam from the rig | **P2** |
-| 13 | `stats_changed` fires every frame | **P2** |
-| 14 | Full save write on every care tap | **P2** |
-| 16 | Save file loaded twice at boot | **P3** |
+| 13 | `stats_changed` fires every frame (no listeners left) | **P2** |
+| 14 | Full save write on every care tap (applies once care input returns) | **P2** |
 | 19 | Fake "Biology 101" topic seeded on every boot | **P3** |
 | 20 | Stale docs, no tests/CI | **P3** |
 | 21 | Theme and scene colours predate the canonical palette | **P3** |
@@ -40,39 +37,6 @@ A redaction placeholder ended up in source. Any real request carrying a token wi
 
 **Fix:** `"Authorization: Bearer " + GameState.auth_token`, and add the login flow that actually
 sets `GameState.auth_token` (currently `set_user()` has no callers).
-
----
-
-## 3. Companion is invisible (P1)
-
-- `scenes/ui/main.tscn:83` — the `CompanionRig` instance has `visible = false`.
-- `scripts/companion/companion.gd:36-37` — re-forces `rig.visible = false` on `_ready()`.
-- `bot_lv1..5.png` do not exist, so the `bot_sprite` fallback path also has nothing to draw.
-- Running the care room logs: `WARNING: Companion: no bot textures found.`
-- Every animation helper (`_pop_bot`, `_show_level`, `_burst_levelup`, `_show_xp_tick`) early-returns
-  while the rig is hidden.
-
-**Impact:** the room renders an empty table with no pet, and care feedback (pop, level-up burst) is
-invisible. This is the app's core fantasy.
-
-**Fix:** ship the level sprites, then delete the `visible = false` overrides and the early-returns
-guarded by `if rig != null and not rig.visible`. If the skeletal rig is the intended final art, point
-`_show_level()` at rig textures/scales instead of `bot_sprite`.
-
----
-
-## 4. `TidbitBubble` is permanently hidden (P1)
-
-`main.tscn:87-98` sets `TidbitBubble.visible = false`. The only writer is `companion.gd`, which
-assigns `.text` in five places (`_on_tidbit`, `_on_tidbit_current`, `_on_insight`,
-`_show_retention_insight_if_any`, `_on_pomodoro_phase`, `_on_campaign_pressed`) but **never sets
-`.visible = true`**.
-
-**Impact:** all curriculum lines, pomodoro prompts, mastery insights and the "Reach Level 5 first"
-explanation are invisible. The Level-5 gate has no in-game explanation.
-
-**Fix:** set `visible = true` wherever text is assigned (or start visible in the scene and only hide
-when empty). Consider auto-hiding after a few seconds with a tween.
 
 ---
 
@@ -119,11 +83,10 @@ it, and update `backend/README.md`. Add `/extract` to the client when `MOCK` fli
 
 ---
 
-## 8. No Feed / Pet / Play input in the care room (P0)
+## 8. Nothing on home calls `CompanionState.care()` (P0)
 
-`companion.gd:127` defines `_on_care(action)`, and `CompanionState.care()` is complete — but
-`main.tscn` has no buttons wired to any action. `ButtonJuice` is applied only to the four icon
-buttons (campaign / charge / settings / pomodoro).
+`CompanionState.care()` is complete, but the old care room that called it (`main.tscn`, `companion.gd`) was
+deleted. Nothing routes to it now.
 
 The 3D home (`home.gd`) now has care actions (food, screwdriver, ball, charge), but by design they
 do not touch `CompanionState` yet: there are no stats until their design lands.
@@ -131,9 +94,8 @@ do not touch `CompanionState` yet: there are no stats until their design lands.
 **Impact:** the pet loop cannot be played, so Level 5 (and therefore the campaign) is unreachable
 without editing the save file.
 
-**Fix:** add three action buttons (or tap zones on the pet) and connect
-`pressed → _on_care.bind("feed"|"pet"|"play")`, then play the matching reaction
-(`rig.play_reaction(action)`) and SFX.
+**Fix:** once the top-bar design lands, call `CompanionState.care("feed"|"pet"|"play")` from the home
+actions (food drop, screwdriver, ball) and play the matching Kuiz clip and SFX.
 
 ---
 
@@ -157,31 +119,10 @@ toggle.
 
 ---
 
-## 12. `Condition "det == 0" is true` from the rig (P2)
-
-Running `main.tscn` headless prints:
-
-```
-WARNING: No Bone2D children of node EarL. Cannot calculate bone length or angle reliably.
-WARNING: No Bone2D children of node EarR. …
-WARNING: No Bone2D children of node Antenna. …
-ERROR: Condition "det == 0" is true.        (×5)
-```
-
-Cause: leaf bones have zero length, and `companion_rig.gd:59-63` snaps `rest` to the current
-transform while the skeleton contains degenerate bones; the weight painting then feeds a singular
-transform into `Polygon2D` skinning.
-
-**Fix:** give each leaf bone a non-zero rest length (a small child marker or an explicit
-`rest` offset), or skip `_paint_weights()` for vertices dominated by zero-length bones. Harmless
-today only because the rig is hidden.
-
----
-
 ## 13. `stats_changed` fires every frame (P2)
 
-`companion_state.gd:62-67` emits inside `_process`, so `hud_strip.gd:_refresh()` re-reads five nodes
-60×/s, and `pomodoro.gd` re-renders too, on every screen where they exist.
+`companion_state.gd:67` emits inside `_process`. The HUD strip and Pomodoro widget that listened are gone,
+so today it only wastes a signal emit; it matters again once a top bar listens.
 
 **Fix:** accumulate decay and emit at ~5 Hz, or emit only when a value actually changed. Keep the
 signal semantic ("stats changed"), not "a frame passed".
@@ -190,22 +131,12 @@ signal semantic ("stats changed"), not "a frame passed".
 
 ## 14. Full save write on every care tap (P2)
 
-`companion.gd:135` calls `SaveManager.save_game()` after each tap; the save JSON includes every
+The old `companion.gd` saved after each tap, and the next care input will do the same unless debounced; the save JSON includes every
 question in every topic, so it grows with the content the player uploads. On mobile this is a
 synchronous `FileAccess` write per tap.
 
 **Fix:** debounce (e.g. save at most once every 5 s, plus on `NOTIFICATION_WM_CLOSE_REQUEST` /
 `NOTIFICATION_APPLICATION_PAUSED`).
-
----
-
-## 16. Save file loaded twice at boot (P3)
-
-`main.gd:4` calls `SaveManager.load_game()`, then the child `Room` node's `companion.gd:34` calls it
-again. The second load re-emits `stats_changed` / `xp_changed` and re-runs the monetization clamps.
-
-**Fix:** keep only the `main.gd` call (or move the load into `SaveManager._ready()` once, ordered
-after the state autoloads).
 
 ---
 
@@ -238,8 +169,8 @@ caught).
 
 - `assets/theme/app_theme.tres:7,14,23` uses navy button/panel fills (`#1C264F`, `#0A122B`) and `#EDF5FF`
   button text; none are in the palette in [`ui-and-assets.md`](ui-and-assets.md#color-palette) §1.
-- `scenes/ui/widgets/hud_strip.tscn:6-61`, `scenes/ui/session_list.tscn:21`, `scenes/battle/battle.tscn:28`, and
-  `scenes/ui/main.tscn:43` hard-code other navy/cyan/blue values. (`loading.tscn` has been migrated.)
+- `scenes/ui/session_list.tscn:21` and `scenes/battle/battle.tscn:28`
+  hard-code other navy/cyan/blue values. (`loading.tscn` has been migrated.)
 - The palette was documented after those files were written.
 
 **Impact:** New screens that follow the palette will visibly clash with the existing theme; the
@@ -260,7 +191,7 @@ Godot_v4.7.2-stable_win64_console.exe --headless --path . --import
 # individual scene smoke test (catches missing ext_resources)
 Godot_v4.7.2-stable_win64_console.exe --headless --path . res://scenes/battle/battle.tscn --quit-after 20
 Godot_v4.7.2-stable_win64_console.exe --headless --path . res://scenes/overworld/region_map.tscn --quit-after 30
-Godot_v4.7.2-stable_win64_console.exe --headless --path . res://scenes/ui/main.tscn --quit-after 20
+Godot_v4.7.2-stable_win64_console.exe --headless --path . res://scenes/ui/boot/peek.tscn --quit-after 20
 ```
 
 `--import` does **not** catch missing textures inside scenes; the per-scene runs do.

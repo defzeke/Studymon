@@ -88,11 +88,9 @@ uvicorn main:app --port 8000    # GET /health
 2. Root should be a `Control` (full rect) for UI, `Node2D` for a world. Set the shared theme through
    `project.godot`; do not assign a local theme unless the screen genuinely differs.
 3. Wire entry and exit with `get_tree().change_scene_to_file("res://scenes/...")`. Add a back path —
-   every screen reachable from the care room or overworld must be escapable on a phone with no
+   every screen reachable from home or the overworld must be escapable on a phone with no
    keyboard.
-4. Apply `ButtonJuice` to new buttons if the screen is part of the main loop; it is the existing
-   press-feedback helper.
-5. Add the screen to the node-tree table in [`ui-and-assets.md`](ui-and-assets.md) and to the scene
+4. Add the screen to the node-tree table in [`ui-and-assets.md`](ui-and-assets.md) and to the scene
    flow in [`architecture.md`](architecture.md) if it adds a transition.
 
 ## Rebuild the splash sprite sheet
@@ -173,19 +171,16 @@ All companion tuning is in `scripts/autoload/companion_state.gd`:
 4. Re-check the interaction with the hourly cap: `int(2 * 0.3) == 0`, so any multiplier path must
    floor at 1 XP (issue #5). Fix that before adding another multiplier.
 
-## Add companion art
+## Change the pet or foe models
 
-The game looks for `res://assets/sprites/bot_lv1.png` … `bot_lv5.png`.
+Kuiz is `assets/models/kuiz.glb`; the arena foes are the scenes in `ArenaStage.foe_scenes`
+(`battle.tscn`).
 
-1. Export five PNGs at the same canvas size and baseline, transparent background, and drop them in
-   `assets/sprites/`.
-2. Let the editor import them (`.import` files are generated — never hand-write them).
-3. `companion.gd:77-86` auto-loads any that exist. `battle.tscn` references `bot_lv1.png` /
-   `bot_lv5.png` directly, so adding the five files also resolves issue #1 (its parse errors).
-4. Art alone does not make the pet appear. `_show_level()` and every care animation early-return
-   while `rig.visible` is false, and both `main.tscn:83` and `companion.gd:36-37` force it false.
-   Removing those flags is issue #3, and is what actually reveals the art.
-5. Add the files to the asset inventory in [`ui-and-assets.md`](ui-and-assets.md).
+1. Drop the re-exported `.glb` over the old one and let the editor re-import it (never hand-write
+   `.import` files).
+2. `ArenaStage` fits any model to `pet_height` / `foe_height` on its pad, so size does not matter;
+   clip names must still match `idle_clip`, `attack_clip`, `defeat_clip` and the `pet_*_clip` exports.
+3. Add the file to the asset inventory in [`ui-and-assets.md`](ui-and-assets.md).
 
 ## Wire the real backend
 

@@ -34,8 +34,8 @@ stages Kuiz and the foe in a 3D arena (`scripts/battle/arena_stage.gd`: intro, s
 clips, `battle_backdrop.svg`), the overworld gained `encounter_trigger`, `gym_slot`, `map_collision`
 and `gym_burst`, and `battle.gd` plays ten `sfx_*.wav` cues through `MusicManager.play_sfx_layered()`.
 The old 2D care room (`main.tscn`), `hud_strip`, `companion_rig` and their SVGs are deleted. Not yet
-played through end to end after the restructure; `architecture.md`, `ui-and-assets.md` and
-`known-issues.md` still describe the deleted scenes.
+played through end to end after the restructure. The docs were swept for the deleted scenes on
+2026-10-24 (`known-issues.md` #3, #4, #12, #16 are gone with them).
 
 **Flashcard Sanctuary (Phase 4) — committed.** `flashcards.tscn`: untimed review of a topic with
 Again / Hard / Easy. Easy lifts New or Remaster to Learning (never Mastered); each lifted card pays
@@ -60,10 +60,8 @@ P0/P1 first; each item's evidence and fix live in [`known-issues.md`](known-issu
 | Order | Item | Why now |
 |---|---|---|
 | 1 | #8 / #5 Care input that earns XP, once the top-bar design lands | Makes Level 5 reachable and gives the gate back |
-| 2 | #3 Un-hide the companion rig and its animation guards | Core fantasy; `companion_rig.tscn` is deleted, so re-check whether #3 still applies |
-| 3 | #4 Show `TidbitBubble` when text is assigned | Level-5 gate and every curriculum line are currently invisible |
-| 4 | #2 `Bearer` header + a way to set `auth_token` | Required before `MOCK` can flip |
-| 5 | #9 Standardise the job envelope (or add a `grade_result` signal) and handle non-2xx | Real responses are dropped today |
+| 2 | #2 `Bearer` header + a way to set `auth_token` | Required before `MOCK` can flip |
+| 3 | #9 Standardise the job envelope (or add a `grade_result` signal) and handle non-2xx | Real responses are dropped today |
 
 **Future, not started: Phase 5**, the real backend and the App Store / Google Play launch. The game
 stays on mocks until the maintainer decides to begin. The researched plan, store requirements and
@@ -75,8 +73,7 @@ Hygiene, after the slice plays:
 |---|---|
 | #13 | Emit `stats_changed` at ~5 Hz or only on change |
 | #14 | Debounce the save instead of one full write per tap |
-| #12 | Give leaf bones non-zero rest length, or skip degenerate weights |
-| #16, #19 | Double save load, phantom "Biology 101" |
+| #19 | Phantom "Biology 101" |
 | #20 | Add a headless smoke-test script / CI |
 | #21 | Migrate the shared theme and inline scene colours to the canonical palette |
 
