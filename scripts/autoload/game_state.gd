@@ -3,6 +3,7 @@ extends Node
 ## Companion stats live in CompanionState; topics in SessionManager.
 
 signal large_text_changed(enabled: bool)
+signal crystals_changed(amount: int)
 
 var user_id: String = ""
 var auth_token: String = ""
@@ -13,6 +14,8 @@ var tutorial_done: bool = false
 # shortcut: memory only until Kuiz's stats and the shop's currency exist; food id -> count.
 var food_stock: Dictionary = {}
 var campaign_unlocked_flag: bool = false
+# Home's currency (top-right pill); nothing earns or spends it yet.
+var crystals: int = 0
 var active_region_id: String = ""
 
 # --- Phase 9: Accessibility — font-size scaling hooked into app_theme.tres ---
@@ -26,6 +29,10 @@ var large_text_enabled: bool = false
 func set_user(uid: String, token: String) -> void:
 	user_id = uid
 	auth_token = token
+
+func add_crystals(amount: int) -> void:
+	crystals = maxi(0, crystals + amount)
+	crystals_changed.emit(crystals)
 
 func set_campaign_unlocked(value: bool) -> void:
 	if campaign_unlocked_flag == value:

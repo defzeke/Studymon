@@ -52,6 +52,9 @@ extends SubViewportContainer
 ## The foe has no hurt clip, so it flinches with a quick tilt unless a clip with this name exists.
 @export var foe_hurt_clip: StringName = &""
 
+## Foes with sounds, by the name of the glb's root node: the voice fires them on its clips.
+const FOE_VOICES := {"BrokenBot": preload("res://scripts/battle/broken_bot_voice.gd")}
+
 ## The foe has touched down: time for a flash, a shake, a dust burst.
 signal foe_landed
 signal pet_landed
@@ -82,6 +85,11 @@ func setup(big_foe: bool) -> void:
 		_foe_model = _add_model(foe_scenes.pick_random(), foe_spot, foe_height * (big_foe_scale if big_foe else 1.0), Vector3.ZERO)
 		_dress(_foe_model, foe_outline)
 		_foe = _idle(_foe_model)
+		for root_name: String in FOE_VOICES:
+			if _foe_model.find_child(root_name, true, false) != null:
+				var voice: Node = FOE_VOICES[root_name].new()
+				voice.anim = _foe
+				add_child(voice)
 
 ## Gentle floating on both bots. play_intro() starts it when it finishes; call this when skipping the intro.
 func start_hover() -> void:

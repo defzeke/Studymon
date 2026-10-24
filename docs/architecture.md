@@ -67,18 +67,22 @@ res://
 │       ├── rooms/        temporary placeholders: study_room.svg (+ _night), maintenance_bay.svg,
 │       │                 data_kitchen.svg, playroom.svg
 │       ├── battle/       battle_backdrop.svg
-│       └── ui/           arrow.svg, campaign.png, charge.png, loading_spark.svg,
-│                         settings.svg, tip_bulb.svg
+│       └── ui/           arrow.svg, icon_charge.svg, icon_upload.svg, icon_settings.svg,
+│                         crystal.svg, stat_mood.svg, stat_health.svg,
+│                         loading_spark.svg, tip_bulb.svg; campaign.png, charge.png,
+│                         settings.svg (unused)
 ├── scripts/
 │   ├── autoload/         the 7 autoloads: save_manager.gd, game_state.gd, api.gd,
 │   │                     companion_state.gd, session_manager.gd, monetization_state.gd,
 │   │                     music_manager.gd
-│   ├── battle/           battle.gd, arena_stage.gd
+│   ├── audio/            synth.gd, clip_voice.gd (model sounds made in code)
+│   ├── battle/           battle.gd, arena_stage.gd, broken_bot_voice.gd
 │   ├── overworld/        region_map.gd, player.gd, joystick.gd, season.gd, encounter_trigger.gd,
 │   │                     gym_slot.gd, map_collision.gd
 │   ├── review_session/   categorizer.gd, flashcards.gd
 │   └── ui/               home.gd, session_list.gd, settings.gd
-│       └── boot/         splash.gd, loading.gd, peek.gd, tutorial.gd
+│       ├── boot/         splash.gd, loading.gd, peek.gd, tutorial.gd, kuiz_voice.gd
+│       └── widgets/      confirm_modal.gd, stat_gauge.gd
 ├── scenes/               session_list, settings (ui/)
 │   │                     encounter_trigger, gym_burst, region_map (overworld/)
 │   │                     categorizer, flashcards (review_session/), battle (battle/)

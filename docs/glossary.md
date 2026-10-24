@@ -7,9 +7,10 @@ Terms used throughout this repo, in the sense this repo means them.
 | Term | Meaning |
 |---|---|
 | **Studymon** | The project: a study-review game where a companion is raised, then used to fight through a campaign built from reviewer material. |
-| **Companion** | The AI creature on the care-room table. Its state is `CompanionState` (level, XP, energy, focus, mood, bond, codex). |
+| **Companion** | Kuiz, the AI creature in the home rooms. Its state is `CompanionState` (level, XP, hunger, energy, mood, health, focus, bond, codex). |
+| **Crystals** | Home's currency, `GameState.crystals`, shown top right with the logo's forehead gem. Saved; nothing earns or spends it yet. |
 | **Care tap** | One press of Feed, Pet or Play. Grants XP, nudges one stat, increments bond, and is subject to hourly diminishing returns. |
-| **Energy / Focus / Mood** | The three 0–100 stats. Energy drains fastest; Focus and Mood drain at 0.8× and 0.6× of `STAT_DECAY_PER_SEC`. |
+| **Hunger / Energy / Mood / Health** | The four 0–100 stats on home's HUD gauges. Energy drains fastest; Hunger, Mood and Health drain at 0.7×, 0.6× and 0.2× of `STAT_DECAY_PER_SEC`. Focus (0.8×) is also 0–100 but only flashcards use it. |
 | **Bond** | A monotonic tap counter. It is saved, but nothing gates on it yet. |
 | **XP curve** | The cumulative table `XP_PER_LEVEL = [0, 20, 45, 75, 110, 150]`. Level 5 is 150 XP. |
 | **Level gate** | Level 5 unlocks the campaign (`campaign_ready`). Before that, the care loop is the whole game. |

@@ -18,6 +18,12 @@ const XP_PER_LEVEL := [0, 20, 45, 75, 110, 150]  # cumulative
 const STAT_MAX := 100.0
 const STAT_DECAY_PER_SEC := 0.15
 const DAILY_CAP_BASE_XP := 10  # per action per hour before diminishing returns
+# Home care (docs/systems/companion-care.md): food fills hunger, a fix restores health, a ball
+# throw lifts mood, and charging refills energy over time.
+const FEED_HUNGER := 12.0
+const FIX_HEALTH := 25.0
+const PLAY_MOOD := 8.0
+const CHARGE_PER_SEC := 6.0
 
 # Pomodoro (Phase 4)
 const POMODORO_FOCUS_SEC := 25 * 60
@@ -32,12 +38,14 @@ var xp: int = 0
 var energy: float = 80.0
 var focus: float = 70.0
 var mood: float = 75.0
+var hunger: float = 80.0
+var health: float = 100.0
 var bond: int = 0
 var campaign_ready: bool = false
 var codex: Array[String] = []
 
 # XP diminishing returns tracking
-var _action_tap_counts: Dictionary = {"feed": 0, "pet": 0, "play": 0}
+var _action_tap_counts: Dictionary = {"feed": 0, "pet": 0, "play": 0, "fix": 0}
 var _last_hour_reset: int = 0
 
 # Pomodoro state (Phase 4)
@@ -64,13 +72,15 @@ func _process(delta: float) -> void:
 	energy = maxf(0.0, energy - drain)
 	focus = maxf(0.0, focus - drain * 0.8)
 	mood = maxf(0.0, mood - drain * 0.6)
+	hunger = maxf(0.0, hunger - drain * 0.7)
+	health = maxf(0.0, health - drain * 0.2)
 	stats_changed.emit()
 	_maybe_reset_hourly_cap()
 
 func _maybe_reset_hourly_cap() -> void:
 	var now := int(Time.get_unix_time_from_system())
 	if now - _last_hour_reset >= 3600:
-		_action_tap_counts = {"feed": 0, "pet": 0, "play": 0}
+		_action_tap_counts = {"feed": 0, "pet": 0, "play": 0, "fix": 0}
 		_last_hour_reset = now
 
 func add_xp(amount: int) -> void:
@@ -119,23 +129,31 @@ func care(action: String) -> Dictionary:
 
 	match action:
 		"feed":
-			energy = minf(STAT_MAX, energy + 8.0)
-			deltas = {"energy": 8.0}
+			hunger = minf(STAT_MAX, hunger + FEED_HUNGER)
+			deltas = {"hunger": FEED_HUNGER}
 			gained = int(2 * xp_mult)
 		"pet":
 			mood = minf(STAT_MAX, mood + 8.0)
 			deltas = {"mood": 8.0}
 			gained = int(1 * xp_mult)
 		"play":
-			focus = minf(STAT_MAX, focus + 8.0)
+			mood = minf(STAT_MAX, mood + PLAY_MOOD)
 			energy = maxf(0.0, energy - 2.0)
-			deltas = {"focus": 8.0, "energy": -2.0}
+			deltas = {"mood": PLAY_MOOD, "energy": -2.0}
+			gained = int(2 * xp_mult)
+		"fix":
+			health = minf(STAT_MAX, health + FIX_HEALTH)
+			deltas = {"health": FIX_HEALTH}
 			gained = int(2 * xp_mult)
 
 	add_xp(gained)
 	stats_changed.emit()
 	bond += 1
 	return {"xp": gained, "deltas": deltas, "action": action, "tap_count": count + 1}
+
+## Home's Charge toggle: energy refills while Kuiz sleeps on the charger.
+func recharge(delta: float) -> void:
+	energy = minf(STAT_MAX, energy + CHARGE_PER_SEC * delta)
 
 func xp_for_next_level() -> int:
 	if level >= MAX_LEVEL:
@@ -149,6 +167,8 @@ func to_dict() -> Dictionary:
 		"energy": energy,
 		"focus": focus,
 		"mood": mood,
+		"hunger": hunger,
+		"health": health,
 		"bond": bond,
 		"campaign_ready": campaign_ready,
 		"codex": codex,
@@ -160,6 +180,8 @@ func from_dict(data: Dictionary) -> void:
 	energy = float(data.get("energy", 80.0))
 	focus = float(data.get("focus", 70.0))
 	mood = float(data.get("mood", 75.0))
+	hunger = float(data.get("hunger", 80.0))
+	health = float(data.get("health", 100.0))
 	bond = int(data.get("bond", 0))
 	campaign_ready = bool(data.get("campaign_ready", false))
 	codex.clear()

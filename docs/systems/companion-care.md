@@ -17,9 +17,11 @@ curriculum through `CURRICULUM` lines.
 
 | Stat | Start | Range | Decay | Grown by |
 |---|---|---|---|---|
-| `energy` | 80.0 | 0–100 | **0.15 / s** | `feed` +8, rest complete +6, `play` −2, skip focus −3, missed rest −5 |
-| `focus` | 70.0 | 0–100 | **0.12 / s** (0.8×) | `play` +8 |
-| `mood` | 75.0 | 0–100 | **0.09 / s** (0.6×) | `pet` +8, rest complete +6, skip focus −2, missed rest −3 |
+| `hunger` | 80.0 | 0–100 | **0.105 / s** (0.7×) | `feed` +12 |
+| `energy` | 80.0 | 0–100 | **0.15 / s** | charging +6 / s (`recharge()`), rest complete +6, `play` −2, skip focus −3, missed rest −5 |
+| `mood` | 75.0 | 0–100 | **0.09 / s** (0.6×) | `pet` +8, `play` +8, rest complete +6, skip focus −2, missed rest −3 |
+| `health` | 100.0 | 0–100 | **0.03 / s** (0.2×) | `fix` +25 |
+| `focus` | 70.0 | 0–100 | **0.12 / s** (0.8×) | flashcards +2 per card; not on the home HUD |
 | `bond` | 0 | unbounded | — | +1 per care tap; **never read** |
 | `level` | 1 | 1–5 | — | XP thresholds |
 | `xp` | 0 | unbounded | — | care taps + battle rewards |
@@ -39,14 +41,18 @@ so stats bottom out cleanly at zero.
 
 | Action | Effect | Base XP | Notes |
 |---|---|---|---|
-| `"feed"` | `energy += 8` | 2 | |
-| `"pet"` | `mood += 8` | 1 | weakest XP; no side cost |
-| `"play"` | `focus += 8`, `energy -= 2` | 2 | net positive stats, costs energy |
+| `"feed"` | `hunger += 12` | 2 | home: food dropped on Kuiz |
+| `"pet"` | `mood += 8` | 1 | weakest XP; no home action yet |
+| `"play"` | `mood += 8`, `energy -= 2` | 2 | home: a fast ball throw |
+| `"fix"` | `health += 25` | 2 | home: a finished screwdriver tune-up |
+
+Energy has no tap: `recharge(delta)` adds 6 / s while home's Charge toggle is on. Home saves after
+each care action (`SaveManager.save_progress()`).
 
 Returns:
 
 ```gdscript
-{ "xp": int, "deltas": {"energy": 8.0}, "action": "feed", "tap_count": int }
+{ "xp": int, "deltas": {"hunger": 12.0}, "action": "feed", "tap_count": int }
 ```
 
 `bond` increments inside `care()` regardless of action. The UI uses the return value only to render
@@ -58,7 +64,7 @@ the floating `+N XP` tick and an extra `(tired)` suffix once `tap_count > DAILY_
 ```gdscript
 const DAILY_CAP_BASE_XP := 10   # taps of the SAME action per hour
 if count >= 10: xp_mult = 0.3
-gained = int(2 * xp_mult)       # feed / play
+gained = int(2 * xp_mult)       # feed / play / fix
 gained = int(1 * xp_mult)       # pet
 ```
 
@@ -132,11 +138,12 @@ abandoned deliberately.
 
 ---
 
-## 5. Room interactions (removed)
+## 5. Room interactions
 
-The old care room (Campaign, Charge, Pomodoro, Settings buttons and the Feed / Pet / Play taps) was
-deleted. Home's Charge button still plays `charge.mp3` / `charged.mp3`; nothing calls
-`CompanionState.care()` (`known-issues.md` #8).
+The old care room was deleted. The 3D home (`home.gd`) calls `care()` from its room actions —
+food (`feed`), the screwdriver (`fix`), the ball (`play`) — and `recharge()` while charging. Its
+top HUD shows level, XP, the four home stats and crystals. Details in
+[`ui-and-assets.md`](../ui-and-assets.md) §2 Home.
 
 ---
 

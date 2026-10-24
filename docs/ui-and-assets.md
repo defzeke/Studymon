@@ -132,14 +132,23 @@ Peek                Node3D (peek.gd)
 ├── Tutorial          CanvasLayer (tutorial.gd)
 │   └── Speech        bottom: "Kuiz" name tag over the Dialogue box (Text, Continue, NameRow with
 │                     NameInput + NameOk, and a bobbing ▼ Hint)
-├── Top               CanvasLayer: RoomSign, the top-centre pill naming the current room
+├── Voice             Node (kuiz_voice.gd): Kuiz's sounds, made in code, on clip cues and moves
+├── Top               CanvasLayer: RoomSign, the room-name pill under the HUD row
 └── Home              CanvasLayer (home.gd), hidden until the tutorial ends
-    ├── Fridge        TextureButton (props/fridge.svg), Data Kitchen only; opens Shop
-    ├── Bar           bottom Deep Slate bar: Prev / Next arrows and one action group per room
+    ├── Level         top-left pill: teal level badge, "LEVEL" and an amber XP bar
+    ├── Stats         top-centre: four stat gauges (stat_gauge.gd): Hunger, Energy, Mood, Health
+    ├── Crystals      top-right pill: crystal icon and the count
+    ├── RoomPrev/Next outlined arrows either side of the room sign; walk to the previous / next room
+    ├── Bar           bottom Deep Slate bar: one action group per room; every item is a bare
+    │                 icon (no circle), like the screwdriver and foods
     ├── Ball          props/ball.svg, Playroom only
     ├── Held          the food or screwdriver being dragged
     └── Shop          the fridge: one row per food with a Buy button, and Close
 ```
+
+The forehead gem is skinned to the `Antenna_1` bone, which every clip swings and scales, so it
+tipped into the head. Kuiz has no visible antenna, so `peek.gd` disables the `Antenna_*` tracks at
+load and the gem stays on the forehead.
 
 `peek.gd` owns Kuiz and the rooms for both scripts on top: `act()`, the stage moves, `show_room()`,
 `set_lights()`, `look_at_point()` / `look_ahead()`, and `head_point()` / `hits()` for drops.
@@ -181,7 +190,7 @@ player's name.
   blend shapes, and each clip keys only its own. Every frame, before the `AnimationPlayer` runs,
   `peek.gd` zeroes the prop shapes the current clip does not key: an outgoing clip's props fade
   during the 0.18 s blend and then stay hidden, however early a tap cuts the clip.
-- **Unused clips:** `Angry`, `Confused`, `Look_Around`, `Sad`, `Wake_Up`, `State_Mid`,
+- **Unused clips:** `Angry`, `Confused`, `Look_Around`, `Sad`, `State_Mid`,
   `State_Sad`, `State_Tired`.
 - **The name** is kept in `GameState.player_name`, in memory only (no backend yet); it is not saved.
 - **Rooms are temporary.** All four are flat placeholder SVGs in the canonical palette
@@ -197,24 +206,69 @@ player's name.
 
 ### Home (`home.gd`, inside `peek.tscn`)
 
-The game loop after the tutorial. The bottom bar has a ◀ and ▶ arrow at its ends that walk Kuiz
-to the previous or next room (Study Room → Maintenance Bay → Data Kitchen → Playroom, wrapping),
-and the middle shows the current room's action:
+The game loop after the tutorial. A ◀ and ▶ arrow either side of the room sign at the top walk
+Kuiz to the previous or next room (Study Room → Maintenance Bay → Data Kitchen → Playroom,
+wrapping), Pou-style; `home.gd` keeps them hugging the sign, whose width follows the room name. The
+bottom bar shows the current room's actions:
 
 | Room | Action | Kuiz |
 |---|---|---|
-| Study Room | **Charge** (`ui/charge.png`, a toggle) turns the lights off: the 3D lights and ambient drop to 30 %, the night art and a dark veil fade in, and the charge sounds play. Arrows, Play and Settings are disabled until it is pressed again | `State_Charging` (loops; its bolt and gem glow in the dark), then `Wake_Up` when the lights come back on |
-| Study Room | **Play** (`ui/campaign.png`) opens the Worlds hub, `session_list.tscn` | — |
-| Study Room | **Settings** (`ui/settings.svg`) opens `settings.tscn` | — |
-| Maintenance Bay | Drag the **screwdriver** from the bar and hold it over Kuiz: it twists, and after 2 s the tune-up is done and it returns to the bar | `State_Sick` (screws working loose) while it is held there, `Celebrate` when done, `Idle` if it is taken away early |
-| Data Kitchen | **Food**: ‹ › pick one of six foods, then drag it onto Kuiz to eat it (one from stock); dropped anywhere else it goes back. An empty food is greyed out and cannot be picked up | `Surprised` (mouth open) when the food reaches it, then `Happy`, or `Pet` (hearts) for Spicy Memory Chips, its favourite |
-| Data Kitchen | **Fridge** (in the room, left): a list of the six foods with how many you have and a **Buy** button each (+1, free until there is a currency) | — |
-| Playroom | **Ball**: it rests on the floor above the bar; drag and fling it. It falls, bounces off the screen edges, the floor and Kuiz's head, and settles | Turns its head to follow the ball (and anything being dragged), `Happy` on a throw, `Surprised` when hit |
+| Study Room | **Charge** (`ui/icon_charge.svg`, a toggle; the bolt pulses while on) turns the lights off: the 3D lights and ambient drop to 30 %, the night art and a dark veil fade in, and the charge sounds play. Energy refills 6 / s while it is on. Arrows, Play and Settings are disabled until it is pressed again | `State_Charging` (loops; its bolt and gem glow in the dark), then `Wake_Up` when the lights come back on |
+| Study Room | **Play** (`ui/icon_upload.svg`) opens the Worlds hub, `session_list.tscn` | — |
+| Study Room | **Settings** (`ui/icon_settings.svg`) opens `settings.tscn` | — |
+| Maintenance Bay | Drag the **screwdriver** from the bar and hold it over Kuiz: it twists, and after 2 s the tune-up is done (`care("fix")`: health +25) and it returns to the bar | `State_Sick` (screws working loose) while it is held there, `Celebrate` when done, `Idle` if it is taken away early |
+| Data Kitchen | **Food**: ‹ › pick one of six foods, then drag it onto Kuiz to eat it (one from stock; `care("feed")`: hunger +12); dropped anywhere else it goes back. An empty food is greyed out and cannot be picked up | `Surprised` (mouth open) when the food reaches it, then `Happy`, or `Pet` (hearts) for Spicy Memory Chips, its favourite |
+| Data Kitchen | **Fridge** (`props/fridge.svg`, the first item in the kitchen bar): a list of the six foods with how many you have and a **Buy** button each (+1, free until crystals can be earned) | — |
+| Playroom | **Ball**: it rests on the floor above the bar; drag and fling it (a fast throw is `care("play")`: mood +8, energy −2). It falls, bounces off the screen edges, the floor and Kuiz's head, and settles | Turns its head to follow the ball (and anything being dragged), `Happy` on a throw, `Surprised` when hit |
 
 - Foods (`props/*.svg`): Data Chips (3 to start), Spicy Memory Chips (1), Cache Cookie (2), Pi Pie
   (1), Byte Burger (1), Java Juice (2). Stock is kept in `GameState.food_stock`, in memory only.
-- There are no stats, rewards or currency yet, and nothing on the top of the screen except the
-  room sign: those come later.
+### Model sounds (`scripts/audio/`)
+
+The models come from artifact pages that make every sound in JavaScript with WebAudio when it
+plays; the `.glb` files carry no audio (glTF has none). The game does the same in GDScript, so
+there are no sound files for them:
+
+- **`synth.gd`** ports the building blocks: oscillator sweeps with vibrato, the artifacts'
+  exponential envelopes and ramps, RBJ biquad filters and filtered noise, mixed into an
+  `AudioStreamWAV` (22 050 Hz mono).
+- **`clip_voice.gd`** is the shared voice node. Each clip has a cue table (seconds, sound,
+  volume); every frame, the cues the playhead passed since the last frame play, and a looping mood
+  fires them again every loop. Sounds are built once per run on a worker thread (about 1 s for
+  Kuiz's 40) and shared by every instance; one needed before the worker reaches it is built on the
+  spot. Eight players round-robin, each at its cue volume × the Sounds slider. The owner hands it
+  the model's AnimationPlayer (it lives inside the glb).
+- **Kuiz** (`ui/boot/kuiz_voice.gd`, from the "KUIZMON Pet Bot 3D – Rigged" artifact): its 40
+  sounds and `CUES` table, ×2 gain baked in (the artifact leaned on a compressor and had no music
+  under it). Each tutorial line's clip carries its sounds: the peek's eep, ding and hello,
+  `Greetings`' jump and twinkles, `Charging`'s power-up, `State_Charging`'s hum, `Celebrate`'s
+  whee and confetti, `State_Sick`'s wobble and glitch, `State_Hungry`'s rumble, `Pet`'s purr,
+  `Learn_Something_New`'s page and ding. `peek.gd` adds move sounds: a hop on each hop of a walk,
+  jump and land for the tutorial's jump, whee as Kuiz comes close.
+- **Broken Bot** (`battle/broken_bot_voice.gd`, `robot_1.glb`, from the "Broken Bot" artifact):
+  `Attack` plays the rising charge at 0 s and the distorted sonic blast at 0.5 s (while its
+  speaker is out), `Defeat` the power-down with crackles. The artifact's compressor evens the three
+  out, so each is normalised to the same peak. `ArenaStage.FOE_VOICES` attaches it to a foe whose
+  glb has a `BrokenBot` root node.
+- Kuiz has no voice in battle, and `robot_2.glb` has no sounds (no artifact for it yet).
+
+### Home HUD
+
+The top row fades in with the bar. Every piece uses the palette, a Deep Slate 3 px outline and a
+soft drop shadow, like the props.
+
+- **Level** (top left): an Off-White pill with a teal badge holding the level number, "LEVEL" in
+  Slate Gray and an amber bar for the XP between this level and the next (full at Level 5). It
+  follows `CompanionState.xp_changed`.
+- **Stats** (top centre): four round gauges (`scripts/ui/widgets/stat_gauge.gd`): an icon on an
+  Off-White disc, ringed by an arc that fills clockwise from the top. **Hunger** (Data Chips,
+  amber), **Energy** (the charge bolt, teal), **Mood** (`ui/stat_mood.svg`, lavender), **Health**
+  (`ui/stat_health.svg`, coral). Below 25 % the ring turns coral and pulses. They follow
+  `CompanionState.stats_changed`; stats and their sources are in
+  [`companion-care.md`](systems/companion-care.md) §1.
+- **Crystals** (top right): the currency, `GameState.crystals`, with the forehead gem from the
+  logo (`ui/crystal.svg`). It is saved (v8), but nothing earns or spends it yet.
+- Petting is not wired: `care("pet")` has no home action.
 - Every screen that used to return to the old care room (now deleted) (`settings.tscn`, the topic list) now
   returns here, and with `GameState.tutorial_done` set the scene opens straight into the Study
   Room. The save is read the first time home opens in a session (`SaveManager.load_once()`).
@@ -299,7 +353,8 @@ box, although all bytes are kept for the upload call (`categorizer.gd:89-96`).
 (type, text), `AnswerInput` (`TextEdit`), `SubmitButton`, `JudgingLabel`, `ResultLabel`,
 `ResultPanel` (title, XP label, retry/continue); the weekly-limit notice is a `ConfirmModal`.
 
-The enemy and player cards sit over `ArenaStage`, the 3D scene that holds the models. For a Multiple Choice question
+The enemy and player cards sit over `ArenaStage`, the 3D scene that holds the models. The Broken
+Bot foe makes its own sounds on its clips (§2 Model sounds). For a Multiple Choice question
 `battle.gd` hides `AnswerInput` and `SubmitButton` and builds a `VBoxContainer` of four option
 `Button`s (56 px tall) in their place at runtime.
 
@@ -332,6 +387,8 @@ The enemy and player cards sit over `ArenaStage`, the 3D scene that holds the mo
 - `SfxPlayer` — single voice, so overlapping SFX cut each other off; `play_sfx_chain()` serialises a
   list with `await` and cancels itself if another chain starts (guarded by `_sfx_chain_id`).
 
+Kuiz and the Broken Bot make their sounds in code on their own players (§2 Model sounds).
+
 Only the day/night toggle plays a one-shot SFX (`charge.mp3`, then `charged.mp3` when going dark).
 Battles, level-ups, taps and gym clears are silent.
 
@@ -357,19 +414,22 @@ Battles, level-ups, taps and gym clears are silent.
 | `sprites/ui/tip_bulb.svg` | `loading.tscn` tip icon |
 | `models/map.glb`, `models/map_0.png` | `region_map.tscn` island (the PNG is its road texture) |
 | `models/boy_explorer.glb`, `boy_explorer_basecolor_v2.jpg`, `boy_explorer_normal_v2.jpg` | `region_map.tscn` explorer (`Idle`, `Walk`, `Run` used) |
+| `models/robot_1.glb` | battle foe, the Broken Bot (`Idle`, `Attack`, `Defeat`); its sounds are made in code (`broken_bot_voice.gd`) |
+| `models/robot_2.glb` | battle foe (`Idle`, `Attack`, `Defeat`); silent |
 | `models/kuiz.glb` | `peek.tscn` 3D Kuiz head; 21 clips (13 one-shots, `Celebrate`, `Learn_Something_New`, six `State_*` moods), face and props on blend shapes |
 | `sprites/boot/kuizmon_splash.png` | `splash.gd` 60-frame intro sheet (6 × 10 cells, 480 × 264) |
 | `sprites/rooms/study_room.svg` | settings and categorizer background (day); the tutorial's Study Room (temporary placeholder) |
 | `sprites/rooms/study_room_night.svg` | home's lights-off Study Room (temporary placeholder) |
 | `sprites/rooms/maintenance_bay.svg` | tutorial Maintenance Bay (temporary placeholder) |
-| `sprites/rooms/data_kitchen.svg` | tutorial and home Data Kitchen; left floor kept clear for the fridge (temporary placeholder) |
+| `sprites/rooms/data_kitchen.svg` | tutorial and home Data Kitchen (temporary placeholder) |
 | `sprites/rooms/playroom.svg` | tutorial and home Playroom; no painted ball, the real one is flung (temporary placeholder) |
-| `sprites/ui/campaign.png` | home's Play button |
-| `sprites/ui/charge.png` | home's Charge button |
-| `sprites/ui/settings.svg` | home's Settings button |
-| `sprites/ui/arrow.svg` | home bar's room and food arrows (flipped for ◀) |
-| `sprites/props/data_chips.svg`, `spicy_chips.svg`, `cache_cookie.svg`, `pi_pie.svg`, `byte_burger.svg`, `java_juice.svg` | home's six foods (temporary placeholders) |
-| `sprites/props/fridge.svg` | home's Data Kitchen fridge (temporary placeholder) |
+| `sprites/ui/icon_charge.svg`, `icon_upload.svg`, `icon_settings.svg` | home's Charge, Play and Settings buttons (temporary placeholders, same style as the props) |
+| `sprites/ui/campaign.png`, `charge.png`, `settings.svg` | **unused** since home took the icons above; safe to delete |
+| `sprites/ui/arrow.svg` | home's room arrows (top) and food arrows (bar); an Off-White chevron with a Deep Slate outline, flipped for ◀ |
+| `sprites/ui/crystal.svg` | home's crystal (currency) pill: the logo's forehead gem (temporary placeholder) |
+| `sprites/ui/stat_mood.svg`, `stat_health.svg` | home's Mood and Health gauges (temporary placeholders) |
+| `sprites/props/data_chips.svg`, `spicy_chips.svg`, `cache_cookie.svg`, `pi_pie.svg`, `byte_burger.svg`, `java_juice.svg` | home's six foods (temporary placeholders); `data_chips.svg` is also the Hunger gauge icon |
+| `sprites/props/fridge.svg` | home's Data Kitchen fridge button, in the kitchen bar (temporary placeholder) |
 | `sprites/props/ball.svg` | home's Playroom ball (temporary placeholder) |
 | `sprites/props/screwdriver.svg` | home's Maintenance Bay screwdriver (temporary placeholder) |
 | `icon.svg` | project icon |

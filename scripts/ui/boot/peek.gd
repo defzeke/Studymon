@@ -60,6 +60,7 @@ const HEAD_RADIUS := 1.15
 @onready var night: Array[CanvasItem] = [%Night, %Veil]
 @onready var lights: Array[DirectionalLight3D] = [%Key, %Fill, %Rim]
 @onready var env: Environment = %WorldEnvironment.environment
+@onready var voice: Node = %Voice
 
 var room := "White"
 
@@ -75,6 +76,7 @@ var _ambient := 0.0
 
 func _ready() -> void:
 	MusicManager.play_main_room()
+	voice.anim = anim
 	for mesh_instance: MeshInstance3D in kuiz.find_children("*", "MeshInstance3D", true, false):
 		var outline: float = mesh_instance.get_meta("extras", {}).get("outline", 0.0)
 		if outline > 0.0:
@@ -88,6 +90,13 @@ func _ready() -> void:
 			_blend_shapes.append([mesh_instance, i, track])
 	_head = skeleton.find_bone("Head")
 	anim.get_animation(IDLE).loop_mode = Animation.LOOP_LINEAR
+	# The forehead gem is skinned to the Antenna_1 bone, which every clip swings and scales, so the
+	# gem tipped into the head. Kuiz has no visible antenna: keep those bones at rest.
+	for clip in anim.get_animation_list():
+		var a := anim.get_animation(clip)
+		for t in a.get_track_count():
+			if str(a.track_get_path(t)).contains(":Antenna_"):
+				a.track_set_enabled(t, false)
 	for clip in anim.get_animation_list():
 		if clip.begins_with(STATE_PREFIX):
 			anim.get_animation(clip).loop_mode = Animation.LOOP_LINEAR
@@ -154,10 +163,13 @@ func act(clip: String) -> void:
 
 ## Hops up on white; `at_top` swaps the background, and Kuiz lands at room size.
 func jump(at_top: Callable) -> void:
+	voice.play("jump")
 	var t := create_tween()
 	t.tween_property(kuiz, "position:y", JUMP_HEIGHT, 0.32).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	t.tween_callback(at_top)
 	t.tween_property(kuiz, "position:y", 0.0, 0.5).set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
+	# The bounce first touches down about 0.18 s into the fall.
+	t.parallel().tween_callback(voice.play.bind("land")).set_delay(0.18)
 	t.parallel().tween_property(stage, "scale", Vector3.ONE * ROOM_SCALE, 0.4).set_trans(Tween.TRANS_SINE)
 	t.parallel().tween_property(stage, "position:y", ROOM_Y, 0.4).set_trans(Tween.TRANS_SINE)
 	await t.finished
@@ -166,6 +178,7 @@ func jump(at_top: Callable) -> void:
 ## from the other.
 func walk(midway: Callable, dir := 1) -> void:
 	var hops := create_tween().set_loops(4)
+	hops.tween_callback(voice.play.bind("hop", 0.7))
 	hops.tween_property(kuiz, "position:y", HOP, WALK_TIME / 4.0).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 	hops.tween_property(kuiz, "position:y", 0.0, WALK_TIME / 4.0).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
 	var t := create_tween()
@@ -179,6 +192,7 @@ func walk(midway: Callable, dir := 1) -> void:
 
 ## Drifts up to the screen and keeps hovering there.
 func come_close() -> void:
+	voice.play("whee", 0.9)
 	var t := create_tween().set_parallel()
 	t.tween_property(stage, "scale", Vector3.ONE * CLOSE_SCALE, 0.6).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	t.tween_property(stage, "position:y", CLOSE_Y, 0.6).set_trans(Tween.TRANS_SINE)

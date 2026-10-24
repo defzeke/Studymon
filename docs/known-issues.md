@@ -10,15 +10,15 @@ Severity: **P0** blocks the core loop · **P1** blocks a feature or silently cor
 
 | # | Issue | Severity |
 |---|---|---|
-| 8 | Nothing on home calls `CompanionState.care()` | **P0** |
 | 2 | Auth header uses `***` instead of `Bearer` | **P1** |
+| 8 | ~~Nothing on home calls `CompanionState.care()`~~ — fixed | — |
 | 3, 4, 12, 16 | ~~Hidden rig, hidden TidbitBubble, rig `det == 0` spam, double save load~~ — gone with the care room | — |
 | 5 | Hourly diminishing returns yields **0 XP** | **P1** |
 | 7 | Client/backend endpoint drift | **P1** |
 | 9 | Real grade/extract responses are silently dropped | **P1** |
 | 11 | ~~Large-text accessibility toggle is unreachable~~ — fixed | — |
-| 13 | `stats_changed` fires every frame (no listeners left) | **P2** |
-| 14 | Full save write on every care tap (applies once care input returns) | **P2** |
+| 13 | `stats_changed` fires every frame (home's gauges listen) | **P2** |
+| 14 | Full save write on every care action | **P2** |
 | 19 | ~~Fake "Biology 101" topic seeded on every boot~~ — fixed | — |
 | 20 | Stale docs, no tests/CI | **P3** |
 | 21 | ~~Theme and scene colours predate the canonical palette~~ — migrated | — |
@@ -83,19 +83,11 @@ it, and update `backend/README.md`. Add `/extract` to the client when `MOCK` fli
 
 ---
 
-## 8. Nothing on home calls `CompanionState.care()` (P0)
+## 8. Nothing on home calls `CompanionState.care()` — fixed
 
-`CompanionState.care()` is complete, but the old care room that called it (`main.tscn`, `companion.gd`) was
-deleted. Nothing routes to it now.
-
-The 3D home (`home.gd`) now has care actions (food, screwdriver, ball, charge), but by design they
-do not touch `CompanionState` yet: there are no stats until their design lands.
-
-**Impact:** the pet loop cannot be played, so Level 5 (and therefore the campaign) is unreachable
-without editing the save file.
-
-**Fix:** once the top-bar design lands, call `CompanionState.care("feed"|"pet"|"play")` from the home
-actions (food drop, screwdriver, ball) and play the matching Kuiz clip and SFX.
+Home's room actions call it: food → `feed`, a finished screwdriver tune-up → `fix`, a fast ball
+throw → `play`; charging calls `recharge()`. XP and Level 5 are reachable again. Petting has no
+home action yet, so `pet` is unused.
 
 ---
 
@@ -121,8 +113,8 @@ toggle.
 
 ## 13. `stats_changed` fires every frame (P2)
 
-`companion_state.gd:67` emits inside `_process`. The HUD strip and Pomodoro widget that listened are gone,
-so today it only wastes a signal emit; it matters again once a top bar listens.
+`companion_state.gd` emits inside `_process`. Home's four gauges listen, so they re-read the stats
+every frame (each gauge only redraws on a visible change, or while pulsing low).
 
 **Fix:** accumulate decay and emit at ~5 Hz, or emit only when a value actually changed. Keep the
 signal semantic ("stats changed"), not "a frame passed".
@@ -131,7 +123,7 @@ signal semantic ("stats changed"), not "a frame passed".
 
 ## 14. Full save write on every care tap (P2)
 
-The old `companion.gd` saved after each tap, and the next care input will do the same unless debounced; the save JSON includes every
+Home saves after each care action (food, tune-up, ball throw); the save JSON includes every
 question in every topic, so it grows with the content the player uploads. On mobile this is a
 synchronous `FileAccess` write per tap.
 

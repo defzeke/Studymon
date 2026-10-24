@@ -10,6 +10,23 @@ Last updated: 2026-10-25.
 
 ## In flight
 
+**Home HUD, top room arrows — uncommitted.** The top of home has a level pill (badge + XP bar),
+four stat gauges (Hunger, Energy, Mood, Health) and a crystal pill (the currency,
+`GameState.crystals`, saved; nothing earns it yet). `CompanionState` gained `hunger` and `health`;
+food, the screwdriver and the ball now call `care()` (`feed`, `fix`, `play`) and charging refills
+energy. Save v8. The room arrows left the bar for the top, either side of the room sign. Details in
+[`ui-and-assets.md`](ui-and-assets.md) §2 Home HUD.
+
+**Model sounds, gem fix, study icons — uncommitted.** Kuiz's sounds are back, made in code like
+its artifact makes them (`scripts/audio/synth.gd`, `clip_voice.gd`, `kuiz_voice.gd`; no sound
+files): every clip fires the artifact's cues, so each tutorial line's clip carries its sounds, plus
+hop/jump/land/whee on moves. The battle's Broken Bot (`robot_1.glb`) charges, blasts and powers
+down the same way (`broken_bot_voice.gd`). The forehead gem no longer tips into
+the head (`Antenna_*` tracks disabled). The Study Room bar uses new temporary icons
+(`ui/icon_charge|upload|settings.svg`) as bare icons; the fridge moved from the kitchen art into
+the kitchen bar, and the kitchen counter is back. Details in
+[`ui-and-assets.md`](ui-and-assets.md) §2.
+
 **Home loop — committed (`8c11f6e`).** After the tutorial's last line a tap starts `home.gd` (in
 `peek.tscn`): a bottom bar walks Kuiz between the four rooms. Study Room: Charge (lights off,
 `State_Charging`, `Wake_Up` on lights on), Play (new topic → upload screen), Settings (now with
@@ -49,8 +66,7 @@ switches back to `main room.mp3`. `assets/audio/loading.mp3` and its `.import` a
 
 | Work | Blocked by |
 |---|---|
-| Kuiz's stats and the top bar | Waiting on the design: what goes at the top (including the currency), and what feeding, fixing, playing and charging should change |
-| Earning XP and the Level 5 gate | The row above: nothing on home calls `CompanionState.care()` (issue #8), so Play is ungated for now |
+| Earning and spending crystals, and gating Play at Level 5 | Waiting on the design: what pays crystals, what the shop charges, and whether Play waits for Level 5 |
 | Any real backend call | Issue #7 (endpoints disagree) and issue #2 (auth header is a redaction placeholder) |
 
 ## Next

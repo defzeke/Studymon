@@ -1,9 +1,9 @@
 extends CanvasLayer
-## The home loop after the tutorial: the bottom bar walks Kuiz between the four rooms, and each room
-## has its own care action. Study Room: charge (lights off) / play (opens the Worlds hub) / settings.
+## The home loop after the tutorial: the top arrows walk Kuiz between the four rooms, and each room
+## has its own care action in the bottom bar. Study Room: charge (lights off) / play (opens the Worlds hub) / settings.
 ## Maintenance Bay: hold the screwdriver over Kuiz to tighten its frame. Data Kitchen: drag food to
-## Kuiz; the fridge restocks it. Playroom: fling the ball; Kuiz watches it.
-## No stats or currency yet. Contract: docs/ui-and-assets.md §2 Home.
+## Kuiz; the fridge (in the kitchen bar) restocks it. Playroom: fling the ball; Kuiz watches it.
+## The top HUD shows level, the four care stats and crystals. Contract: docs/ui-and-assets.md §2 Home.
 
 const ROOMS: Array[String] = ["StudyRoom", "MaintenanceBay", "DataKitchen", "Playroom"]
 const FOODS: Array[Dictionary] = [
@@ -36,8 +36,13 @@ const SURPRISE_COOLDOWN := 1.0
 @onready var peek: Node3D = owner as Node3D
 @onready var tutorial: CanvasLayer = %Tutorial
 @onready var bar: Control = %Bar
-@onready var prev_btn: BaseButton = %Prev
-@onready var next_btn: BaseButton = %Next
+@onready var prev_btn: BaseButton = %RoomPrev
+@onready var next_btn: BaseButton = %RoomNext
+@onready var room_sign: Control = %RoomSign
+@onready var level_label: Label = %Number
+@onready var xp_bar: ProgressBar = %Xp
+@onready var crystal_label: Label = %CrystalLabel
+@onready var gauges := {"hunger": %Hunger, "energy": %Energy, "mood": %Mood, "health": %Health}
 # Room name (the Rooms/<Name> node in peek.tscn) -> the bar section shown in that room.
 @onready var groups := {
 	"StudyRoom": %Study,
@@ -72,6 +77,7 @@ var _ball_grabbed := false
 var _ball_trail: Array = []
 var _ball_resting := true
 var _surprised_at := -10.0
+var _charge_pulse: Tween
 
 func _ready() -> void:
 	visible = false
@@ -91,19 +97,26 @@ func _ready() -> void:
 	shop_close_btn.pressed.connect(func() -> void: shop.hide())
 	_build_shop()
 	_pick_food(0)
+	CompanionState.stats_changed.connect(_refresh_stats)
+	CompanionState.xp_changed.connect(func(_xp: int, _level: int) -> void: _refresh_level())
+	GameState.crystals_changed.connect(func(amount: int) -> void: crystal_label.text = str(amount))
 	if GameState.tutorial_done:
 		start.call_deferred()
 	else:
 		tutorial.finished.connect(start)
 
-## Shows the bar in the Study Room; the save is read the first time home opens this session.
+## Shows the HUD and bar in the Study Room; the save is read the first time home opens this session.
 func start() -> void:
 	SaveManager.load_once()
 	visible = true
 	_room_i = 0
 	_show_room_props(ROOMS[0])
-	bar.modulate.a = 0.0
-	create_tween().tween_property(bar, "modulate:a", 1.0, FADE_TIME)
+	_refresh_stats()
+	_refresh_level()
+	crystal_label.text = str(GameState.crystals)
+	for c: CanvasItem in get_children():
+		c.modulate.a = 0.0
+		create_tween().tween_property(c, "modulate:a", 1.0, FADE_TIME)
 	await peek.to_room_pose()
 
 func _go(step: int) -> void:
@@ -124,7 +137,6 @@ func _enter(room_name: String) -> void:
 func _show_room_props(room_name: String) -> void:
 	for key: String in groups:
 		groups[key].visible = key == room_name
-	fridge.visible = room_name == "DataKitchen"
 	ball.visible = room_name == "Playroom"
 	shop.hide()
 	_fix = 0.0
@@ -133,6 +145,25 @@ func _show_room_props(room_name: String) -> void:
 		_ball_vel = Vector2.ZERO
 		_ball_resting = true
 		ball.position = Vector2(_view().x / 2.0 - ball.size.x / 2.0, _floor_y())
+
+func _refresh_stats() -> void:
+	for stat: String in gauges:
+		gauges[stat].value = CompanionState.get(stat) / CompanionState.STAT_MAX
+
+func _refresh_level() -> void:
+	var lv := CompanionState.level
+	level_label.text = str(lv)
+	if lv >= CompanionState.MAX_LEVEL:
+		xp_bar.value = 1.0
+		return
+	var floor_xp: int = CompanionState.XP_PER_LEVEL[lv - 1]
+	var next_xp: int = CompanionState.XP_PER_LEVEL[lv]
+	xp_bar.value = float(CompanionState.xp - floor_xp) / (next_xp - floor_xp)
+
+## A care action raises its stat and XP (CompanionState.care) and saves.
+func _care(action: String) -> void:
+	CompanionState.care(action)
+	SaveManager.save_progress()
 
 func _set_bar_enabled(on: bool) -> void:
 	for b: BaseButton in [prev_btn, next_btn, play_btn, settings_btn]:
@@ -143,9 +174,17 @@ func _set_bar_enabled(on: bool) -> void:
 func _on_charge(charging: bool) -> void:
 	peek.set_lights(not charging)
 	_set_bar_enabled(not charging)
+	if _charge_pulse:
+		_charge_pulse.kill()
+	charge_btn.pivot_offset = charge_btn.size / 2.0
+	charge_btn.scale = Vector2.ONE
 	if charging:
 		peek.act("State_Charging")
 		MusicManager.play_sfx_chain([CHARGE_SFX, CHARGED_SFX])
+		# A bare icon has no lit state, so the bolt pulses while Kuiz charges.
+		_charge_pulse = create_tween().set_loops()
+		_charge_pulse.tween_property(charge_btn, "scale", Vector2.ONE * 1.12, 0.5).set_trans(Tween.TRANS_SINE)
+		_charge_pulse.tween_property(charge_btn, "scale", Vector2.ONE, 0.5).set_trans(Tween.TRANS_SINE)
 	else:
 		peek.act("Wake_Up")
 
@@ -210,6 +249,7 @@ func _eat(food: Dictionary) -> void:
 	await t.finished
 	held.hide()
 	held.scale = Vector2.ONE
+	_care("feed")
 	peek.act("Pet" if food["id"] == FAVORITE_FOOD else "Happy")
 
 # --- Dragging food and the screwdriver ---
@@ -275,6 +315,12 @@ func _drop_held() -> void:
 	_refresh_food()
 
 func _process(delta: float) -> void:
+	# The arrows hug the room sign, whose width follows the room name.
+	var sign_rect := room_sign.get_global_rect()
+	prev_btn.position.x = sign_rect.position.x - prev_btn.size.x - 6.0
+	next_btn.position.x = sign_rect.end.x + 6.0
+	if charge_btn.button_pressed:
+		CompanionState.recharge(delta)
 	if _held_kind == "tool" and _over_kuiz:
 		_fix += delta
 		held.rotation = sin(_fix * 14.0) * TWIST
@@ -283,6 +329,7 @@ func _process(delta: float) -> void:
 			_over_kuiz = false
 			_drop_held()
 			peek.look_ahead()
+			_care("fix")
 			peek.act("Celebrate")
 	if ball.visible and not _ball_grabbed and not _ball_resting:
 		_step_ball(delta)
@@ -313,6 +360,7 @@ func _fling_ball() -> void:
 		_ball_vel = ((b[0] as Vector2) - (a[0] as Vector2)) / dt
 	_ball_vel = _ball_vel.limit_length(MAX_FLING)
 	if _ball_vel.length() > 300.0:
+		_care("play")
 		peek.act("Happy")
 
 func _step_ball(delta: float) -> void:

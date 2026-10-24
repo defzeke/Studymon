@@ -6,7 +6,7 @@ no cloud sync.
 - **Path:** `user://studymon_save.json`
 - **Written by:** `SaveManager.save_game()` — `scripts/autoload/save_manager.gd:6`
 - **Read by:** `SaveManager.load_game()` — `scripts/autoload/save_manager.gd:24`
-- **Schema tag:** `"v": 7` (v7 added `player_name` and `food_stock`; older saves load with defaults. The tutorial flag is deliberately not saved, so the intro plays every launch)
+- **Schema tag:** `"v": 8` (v8 added `hunger`, `health` and `crystals`; v7 added `player_name` and `food_stock`; older saves load with defaults. The tutorial flag is deliberately not saved, so the intro plays every launch)
 - **Loaded:** once at boot, deferred from `SaveManager._ready`
 - **Format:** `JSON.stringify` of a single `Dictionary`, pretty-print off
 
@@ -19,7 +19,7 @@ That is fine for the current scope but means there is **no type safety and no au
 
 ```jsonc
 {
-  "v": 7,
+  "v": 8,
 
   // CompanionState.to_dict()
   "level": 1,
@@ -27,6 +27,8 @@ That is fine for the current scope but means there is **no type safety and no au
   "energy": 80.0,
   "focus": 70.0,
   "mood": 75.0,
+  "hunger": 80.0,   // v8; missing loads as 80
+  "health": 100.0,  // v8; missing loads as 100
   "bond": 0,
   "campaign_ready": false,
   "codex": ["I start out knowing NOTHING — like a baby! ..."],
@@ -37,6 +39,7 @@ That is fine for the current scope but means there is **no type safety and no au
   "large_text_enabled": false,
   "player_name": "",
   "food_stock": { "apple": 3 },
+  "crystals": 0,    // v8: home's currency; missing loads as 0
 
   // MusicManager (v5): settings sliders, 0..1; missing keys load as 1.0
   "music_volume": 1.0,

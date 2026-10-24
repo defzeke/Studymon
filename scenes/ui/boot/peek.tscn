@@ -10,13 +10,19 @@
 [ext_resource type="FontFile" uid="uid://rrcw5ky5bnsk" path="res://assets/fonts/JosefinSans-Bold.ttf" id="9_bold"]
 [ext_resource type="Script" path="res://scripts/ui/home.gd" id="10_home"]
 [ext_resource type="Texture2D" uid="uid://i7am4ybv0c52" path="res://assets/sprites/rooms/study_room_night.svg" id="11_night"]
-[ext_resource type="Texture2D" uid="uid://dydlp172mmkf4" path="res://assets/sprites/ui/charge.png" id="12_charge"]
-[ext_resource type="Texture2D" uid="uid://xib03t0vdah" path="res://assets/sprites/ui/campaign.png" id="13_play"]
-[ext_resource type="Texture2D" uid="uid://bsrt0omkxuxvu" path="res://assets/sprites/ui/settings.svg" id="14_settings"]
+[ext_resource type="Texture2D" uid="uid://bp1bawpag5r4l" path="res://assets/sprites/ui/icon_charge.svg" id="12_charge"]
+[ext_resource type="Texture2D" uid="uid://bb5yi7tllfecv" path="res://assets/sprites/ui/icon_upload.svg" id="13_play"]
+[ext_resource type="Texture2D" uid="uid://e0jsrwbta6yu" path="res://assets/sprites/ui/icon_settings.svg" id="14_settings"]
 [ext_resource type="Texture2D" uid="uid://brsehmv02c2wi" path="res://assets/sprites/ui/arrow.svg" id="15_arrow"]
 [ext_resource type="Texture2D" uid="uid://dikx1hxt44uiv" path="res://assets/sprites/props/fridge.svg" id="16_fridge"]
 [ext_resource type="Texture2D" uid="uid://bioxxsfvhs5hg" path="res://assets/sprites/props/ball.svg" id="17_ball"]
 [ext_resource type="Texture2D" uid="uid://vbirq6xlxh8v" path="res://assets/sprites/props/screwdriver.svg" id="18_tool"]
+[ext_resource type="Script" path="res://scripts/ui/boot/kuiz_voice.gd" id="19_voice"]
+[ext_resource type="Script" path="res://scripts/ui/widgets/stat_gauge.gd" id="20_gauge"]
+[ext_resource type="Texture2D" uid="uid://32bvb6rsidmj" path="res://assets/sprites/ui/crystal.svg" id="21_crystal"]
+[ext_resource type="Texture2D" uid="uid://byosiuiimvb77" path="res://assets/sprites/props/data_chips.svg" id="22_chips"]
+[ext_resource type="Texture2D" uid="uid://ex2wav6064of" path="res://assets/sprites/ui/stat_mood.svg" id="23_mood"]
+[ext_resource type="Texture2D" uid="uid://bbgn4w3coakji" path="res://assets/sprites/ui/stat_health.svg" id="24_health"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_studio"]
 sky_top_color = Color(0.99, 1, 0.995, 1)
@@ -54,6 +60,51 @@ albedo_texture = SubResource("GradientTexture2D_shadow")
 [sub_resource type="PlaneMesh" id="PlaneMesh_shadow"]
 material = SubResource("StandardMaterial3D_shadow")
 size = Vector2(2.9, 2.1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_pill"]
+content_margin_left = 6.0
+content_margin_top = 6.0
+content_margin_right = 16.0
+content_margin_bottom = 6.0
+bg_color = Color(0.9686, 0.9608, 0.9373, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.1608, 0.2196, 0.2275, 1)
+corner_radius_top_left = 32
+corner_radius_top_right = 32
+corner_radius_bottom_right = 32
+corner_radius_bottom_left = 32
+shadow_color = Color(0.1608, 0.2196, 0.2275, 0.25)
+shadow_size = 6
+shadow_offset = Vector2(0, 3)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_badge"]
+bg_color = Color(0.3098, 0.5608, 0.5373, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.1608, 0.2196, 0.2275, 1)
+corner_radius_top_left = 26
+corner_radius_top_right = 26
+corner_radius_bottom_right = 26
+corner_radius_bottom_left = 26
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_xp_bg"]
+bg_color = Color(0.1608, 0.2196, 0.2275, 0.15)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_xp_fill"]
+bg_color = Color(0.8392, 0.6588, 0.3725, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_sign"]
 content_margin_left = 28.0
@@ -189,49 +240,6 @@ corner_radius_top_right = 32
 corner_radius_bottom_right = 32
 corner_radius_bottom_left = 32
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_round"]
-content_margin_left = 20.0
-content_margin_top = 20.0
-content_margin_right = 20.0
-content_margin_bottom = 20.0
-bg_color = Color(0.3098, 0.5608, 0.5373, 1)
-border_width_left = 3
-border_width_top = 3
-border_width_right = 3
-border_width_bottom = 3
-border_color = Color(0.9686, 0.9608, 0.9373, 0.9)
-corner_radius_top_left = 60
-corner_radius_top_right = 60
-corner_radius_bottom_right = 60
-corner_radius_bottom_left = 60
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_round_on"]
-content_margin_left = 20.0
-content_margin_top = 20.0
-content_margin_right = 20.0
-content_margin_bottom = 20.0
-bg_color = Color(0.8392, 0.6588, 0.3725, 1)
-border_width_left = 3
-border_width_top = 3
-border_width_right = 3
-border_width_bottom = 3
-border_color = Color(0.9686, 0.9608, 0.9373, 0.9)
-corner_radius_top_left = 60
-corner_radius_top_right = 60
-corner_radius_bottom_right = 60
-corner_radius_bottom_left = 60
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_round_off"]
-content_margin_left = 20.0
-content_margin_top = 20.0
-content_margin_right = 20.0
-content_margin_bottom = 20.0
-bg_color = Color(0.4078, 0.4667, 0.4706, 0.6)
-corner_radius_top_left = 60
-corner_radius_top_right = 60
-corner_radius_bottom_right = 60
-corner_radius_bottom_left = 60
-
 [node name="Peek" type="Node3D"]
 script = ExtResource("1_peek")
 
@@ -273,6 +281,10 @@ mesh = SubResource("PlaneMesh_shadow")
 
 [node name="Kuiz" parent="Stage" instance=ExtResource("2_kuiz")]
 unique_name_in_owner = true
+
+[node name="Voice" type="Node" parent="."]
+unique_name_in_owner = true
+script = ExtResource("19_voice")
 
 [node name="Rooms" type="CanvasLayer" parent="."]
 unique_name_in_owner = true
@@ -382,7 +394,7 @@ modulate = Color(1, 1, 1, 0)
 anchors_preset = 5
 anchor_left = 0.5
 anchor_right = 0.5
-offset_top = 56.0
+offset_top = 96.0
 grow_horizontal = 2
 mouse_filter = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_sign")
@@ -521,18 +533,160 @@ polygon = PackedVector2Array(0, 0, 24, 0, 12, 16)
 visible = false
 script = ExtResource("10_home")
 
-[node name="Fridge" type="TextureButton" parent="Home"]
-unique_name_in_owner = true
-visible = false
-anchors_preset = 4
-anchor_top = 0.5
-anchor_bottom = 0.5
+[node name="Level" type="PanelContainer" parent="Home"]
 offset_left = 16.0
-offset_top = -40.0
-offset_right = 166.0
-offset_bottom = 245.0
-grow_vertical = 2
-texture_normal = ExtResource("16_fridge")
+offset_top = 12.0
+offset_right = 180.0
+offset_bottom = 76.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_pill")
+
+[node name="Row" type="HBoxContainer" parent="Home/Level"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 10
+
+[node name="Badge" type="PanelContainer" parent="Home/Level/Row"]
+custom_minimum_size = Vector2(52, 52)
+layout_mode = 2
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_badge")
+
+[node name="Number" type="Label" parent="Home/Level/Row/Badge"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_fonts/font = ExtResource("9_bold")
+theme_override_font_sizes/font_size = 26
+text = "1"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Box" type="VBoxContainer" parent="Home/Level/Row"]
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+theme_override_constants/separation = 4
+
+[node name="Title" type="Label" parent="Home/Level/Row/Box"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.4078, 0.4667, 0.4706, 1)
+theme_override_fonts/font = ExtResource("9_bold")
+theme_override_font_sizes/font_size = 15
+text = "LEVEL"
+
+[node name="Xp" type="ProgressBar" parent="Home/Level/Row/Box"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(80, 12)
+layout_mode = 2
+mouse_filter = 2
+theme_override_styles/background = SubResource("StyleBoxFlat_xp_bg")
+theme_override_styles/fill = SubResource("StyleBoxFlat_xp_fill")
+max_value = 1.0
+show_percentage = false
+
+[node name="Stats" type="HBoxContainer" parent="Home"]
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -140.0
+offset_top = 12.0
+offset_right = 140.0
+offset_bottom = 76.0
+grow_horizontal = 2
+mouse_filter = 2
+theme_override_constants/separation = 8
+
+[node name="Hunger" type="Control" parent="Home/Stats"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(64, 64)
+layout_mode = 2
+mouse_filter = 2
+script = ExtResource("20_gauge")
+icon = ExtResource("22_chips")
+color = Color(0.8392, 0.6588, 0.3725, 1)
+
+[node name="Energy" type="Control" parent="Home/Stats"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(64, 64)
+layout_mode = 2
+mouse_filter = 2
+script = ExtResource("20_gauge")
+icon = ExtResource("12_charge")
+color = Color(0.3098, 0.5608, 0.5373, 1)
+
+[node name="Mood" type="Control" parent="Home/Stats"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(64, 64)
+layout_mode = 2
+mouse_filter = 2
+script = ExtResource("20_gauge")
+icon = ExtResource("23_mood")
+color = Color(0.5529, 0.5098, 0.6588, 1)
+
+[node name="Health" type="Control" parent="Home/Stats"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(64, 64)
+layout_mode = 2
+mouse_filter = 2
+script = ExtResource("20_gauge")
+icon = ExtResource("24_health")
+color = Color(0.7882, 0.4745, 0.4392, 1)
+
+[node name="Crystals" type="PanelContainer" parent="Home"]
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -150.0
+offset_top = 12.0
+offset_right = -16.0
+offset_bottom = 76.0
+grow_horizontal = 0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_pill")
+
+[node name="Row" type="HBoxContainer" parent="Home/Crystals"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 6
+
+[node name="Icon" type="TextureRect" parent="Home/Crystals/Row"]
+custom_minimum_size = Vector2(48, 48)
+layout_mode = 2
+mouse_filter = 2
+texture = ExtResource("21_crystal")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="CrystalLabel" type="Label" parent="Home/Crystals/Row"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.1608, 0.2196, 0.2275, 1)
+theme_override_fonts/font = ExtResource("9_bold")
+theme_override_font_sizes/font_size = 28
+text = "0"
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="RoomPrev" type="TextureButton" parent="Home"]
+unique_name_in_owner = true
+offset_left = 160.0
+offset_top = 91.0
+offset_right = 216.0
+offset_bottom = 147.0
+texture_normal = ExtResource("15_arrow")
+ignore_texture_size = true
+stretch_mode = 5
+flip_h = true
+
+[node name="RoomNext" type="TextureButton" parent="Home"]
+unique_name_in_owner = true
+offset_left = 504.0
+offset_top = 91.0
+offset_right = 560.0
+offset_bottom = 147.0
+texture_normal = ExtResource("15_arrow")
 ignore_texture_size = true
 stretch_mode = 5
 
@@ -554,16 +708,6 @@ theme_override_styles/panel = SubResource("StyleBoxFlat_bar")
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="Prev" type="TextureButton" parent="Home/Bar/Row"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(88, 120)
-layout_mode = 2
-size_flags_vertical = 4
-texture_normal = ExtResource("15_arrow")
-ignore_texture_size = true
-stretch_mode = 5
-flip_h = true
-
 [node name="Study" type="HBoxContainer" parent="Home/Bar/Row"]
 unique_name_in_owner = true
 layout_mode = 2
@@ -576,11 +720,13 @@ unique_name_in_owner = true
 custom_minimum_size = Vector2(120, 120)
 layout_mode = 2
 size_flags_vertical = 4
-theme_override_styles/normal = SubResource("StyleBoxFlat_round")
-theme_override_styles/hover = SubResource("StyleBoxFlat_round")
-theme_override_styles/pressed = SubResource("StyleBoxFlat_round_on")
-theme_override_styles/hover_pressed = SubResource("StyleBoxFlat_round_on")
-theme_override_styles/disabled = SubResource("StyleBoxFlat_round_off")
+theme_override_styles/normal = SubResource("StyleBoxEmpty_focus")
+theme_override_styles/hover = SubResource("StyleBoxEmpty_focus")
+theme_override_styles/pressed = SubResource("StyleBoxEmpty_focus")
+theme_override_styles/hover_pressed = SubResource("StyleBoxEmpty_focus")
+theme_override_styles/disabled = SubResource("StyleBoxEmpty_focus")
+theme_override_colors/icon_pressed_color = Color(0.75, 0.75, 0.75, 1)
+theme_override_colors/icon_disabled_color = Color(1, 1, 1, 0.35)
 theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
 toggle_mode = true
 icon = ExtResource("12_charge")
@@ -592,11 +738,13 @@ unique_name_in_owner = true
 custom_minimum_size = Vector2(120, 120)
 layout_mode = 2
 size_flags_vertical = 4
-theme_override_styles/normal = SubResource("StyleBoxFlat_round")
-theme_override_styles/hover = SubResource("StyleBoxFlat_round")
-theme_override_styles/pressed = SubResource("StyleBoxFlat_round_on")
-theme_override_styles/hover_pressed = SubResource("StyleBoxFlat_round_on")
-theme_override_styles/disabled = SubResource("StyleBoxFlat_round_off")
+theme_override_styles/normal = SubResource("StyleBoxEmpty_focus")
+theme_override_styles/hover = SubResource("StyleBoxEmpty_focus")
+theme_override_styles/pressed = SubResource("StyleBoxEmpty_focus")
+theme_override_styles/hover_pressed = SubResource("StyleBoxEmpty_focus")
+theme_override_styles/disabled = SubResource("StyleBoxEmpty_focus")
+theme_override_colors/icon_pressed_color = Color(0.75, 0.75, 0.75, 1)
+theme_override_colors/icon_disabled_color = Color(1, 1, 1, 0.35)
 theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
 icon = ExtResource("13_play")
 icon_alignment = 1
@@ -607,11 +755,13 @@ unique_name_in_owner = true
 custom_minimum_size = Vector2(120, 120)
 layout_mode = 2
 size_flags_vertical = 4
-theme_override_styles/normal = SubResource("StyleBoxFlat_round")
-theme_override_styles/hover = SubResource("StyleBoxFlat_round")
-theme_override_styles/pressed = SubResource("StyleBoxFlat_round_on")
-theme_override_styles/hover_pressed = SubResource("StyleBoxFlat_round_on")
-theme_override_styles/disabled = SubResource("StyleBoxFlat_round_off")
+theme_override_styles/normal = SubResource("StyleBoxEmpty_focus")
+theme_override_styles/hover = SubResource("StyleBoxEmpty_focus")
+theme_override_styles/pressed = SubResource("StyleBoxEmpty_focus")
+theme_override_styles/hover_pressed = SubResource("StyleBoxEmpty_focus")
+theme_override_styles/disabled = SubResource("StyleBoxEmpty_focus")
+theme_override_colors/icon_pressed_color = Color(0.75, 0.75, 0.75, 1)
+theme_override_colors/icon_disabled_color = Color(1, 1, 1, 0.35)
 theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
 icon = ExtResource("14_settings")
 icon_alignment = 1
@@ -639,6 +789,21 @@ size_flags_horizontal = 3
 theme_override_constants/separation = 6
 alignment = 1
 
+[node name="Fridge" type="Button" parent="Home/Bar/Row/Kitchen"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(110, 120)
+layout_mode = 2
+size_flags_vertical = 4
+theme_override_styles/normal = SubResource("StyleBoxEmpty_focus")
+theme_override_styles/hover = SubResource("StyleBoxEmpty_focus")
+theme_override_styles/pressed = SubResource("StyleBoxEmpty_focus")
+theme_override_styles/hover_pressed = SubResource("StyleBoxEmpty_focus")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
+theme_override_colors/icon_pressed_color = Color(0.75, 0.75, 0.75, 1)
+icon = ExtResource("16_fridge")
+icon_alignment = 1
+expand_icon = true
+
 [node name="FoodPrev" type="TextureButton" parent="Home/Bar/Row/Kitchen"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(56, 120)
@@ -650,7 +815,7 @@ stretch_mode = 5
 flip_h = true
 
 [node name="Food" type="VBoxContainer" parent="Home/Bar/Row/Kitchen"]
-custom_minimum_size = Vector2(270, 0)
+custom_minimum_size = Vector2(220, 0)
 layout_mode = 2
 theme_override_constants/separation = 2
 
@@ -666,7 +831,7 @@ unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.9686, 0.9608, 0.9373, 1)
 theme_override_fonts/font = ExtResource("9_bold")
-theme_override_font_sizes/font_size = 22
+theme_override_font_sizes/font_size = 19
 horizontal_alignment = 1
 
 [node name="FoodNext" type="TextureButton" parent="Home/Bar/Row/Kitchen"]
@@ -692,16 +857,6 @@ theme_override_fonts/font = ExtResource("9_bold")
 theme_override_font_sizes/font_size = 26
 horizontal_alignment = 1
 text = "Fling the ball!"
-
-[node name="Next" type="TextureButton" parent="Home/Bar/Row"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(88, 120)
-layout_mode = 2
-size_flags_vertical = 4
-texture_normal = ExtResource("15_arrow")
-ignore_texture_size = true
-stretch_mode = 5
-flip_h = false
 
 [node name="Ball" type="TextureRect" parent="Home"]
 unique_name_in_owner = true

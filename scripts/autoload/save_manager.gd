@@ -19,12 +19,13 @@ func load_once() -> void:
 
 func save_game() -> bool:
 	var data := CompanionState.to_dict()
-	data["v"] = 7
+	data["v"] = 8
 	data["campaign_unlocked_flag"] = GameState.campaign_unlocked_flag
 	data["active_region_id"] = GameState.active_region_id
 	data["large_text_enabled"] = GameState.large_text_enabled
 	data["player_name"] = GameState.player_name
 	data["food_stock"] = GameState.food_stock
+	data["crystals"] = GameState.crystals
 	data["music_volume"] = MusicManager.music_volume
 	data["sfx_volume"] = MusicManager.sfx_volume
 	data["session"] = SessionManager.to_dict()
@@ -64,6 +65,8 @@ func load_game() -> bool:
 	if typeof(stock) == TYPE_DICTIONARY:
 		for id in stock:
 			GameState.food_stock[str(id)] = int(stock[id])
+	GameState.crystals = maxi(0, int(parsed.get("crystals", 0)))
+	GameState.crystals_changed.emit(GameState.crystals)
 	if parsed.has("large_text_enabled"):
 		GameState.large_text_enabled = bool(parsed["large_text_enabled"])
 		GameState._apply_theme_font_size()
