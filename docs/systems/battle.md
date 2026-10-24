@@ -214,10 +214,8 @@ locally and are free. Consequences:
 
 | Gap | Detail |
 |---|---|
-| No enemy/player art | both sprite cards are empty until new art exists |
 | Grading is local | no Claude call; `/battle/grade` only fires when `MOCK == false` |
 | Essay quota drains when mocked | the free-tier counter drops without any API cost |
 | No true/false | only Multiple Choice, `identification` and `essay` are understood |
 | Boss is not the Hard tier | the boss is the gym's hardest question, not necessarily Hard; it always has 150 HP |
-| No audio | no SFX or music cues for hits, victory, defeat |
 | `Camera2D` in a `Control` | workaround-heavy; a `CanvasLayer` or pure-UI shake would be simpler |

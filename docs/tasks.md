@@ -6,7 +6,7 @@ Where the work stands. Short on purpose — this is a **register**, not a backlo
 > doc that owns it, and **those docs win** if the two disagree. See [`rules.md`](rules.md) §2. Do not
 > let a second status list grow here.
 
-Last updated: 2026-10-21.
+Last updated: 2026-10-24.
 
 ## In flight
 
@@ -29,11 +29,19 @@ question and stays locked until its trainers are beaten, gyms clear only through
 the Champion falls back to every question, Easy to Hard (#6). Contract:
 [`systems/gameplay-structure.md`](systems/gameplay-structure.md).
 
-**Flashcard Sanctuary (Phase 4) — uncommitted.** `flashcards.tscn`: untimed review of a topic with
+**3D battle arena, encounters and battle SFX — committed (`c3d3688`–`b87b51c`).** `battle.tscn` now
+stages Kuiz and the foe in a 3D arena (`scripts/battle/arena_stage.gd`: intro, strikes, hurt/win
+clips, `battle_backdrop.svg`), the overworld gained `encounter_trigger`, `gym_slot`, `map_collision`
+and `gym_burst`, and `battle.gd` plays ten `sfx_*.wav` cues through `MusicManager.play_sfx_layered()`.
+The old 2D care room (`main.tscn`), `hud_strip`, `companion_rig` and their SVGs are deleted. Not yet
+played through end to end after the restructure; `architecture.md`, `ui-and-assets.md` and
+`known-issues.md` still describe the deleted scenes.
+
+**Flashcard Sanctuary (Phase 4) — committed.** `flashcards.tscn`: untimed review of a topic with
 Again / Hard / Easy. Easy lifts New or Remaster to Learning (never Mastered); each lifted card pays
 +1 XP and +2 focus once, a finished deck +3 mood. Opened from the island's Study button and from a
 Cards button on each session-list row. Details in [`ui-and-assets.md`](ui-and-assets.md).
-**Loading music — uncommitted.** `splash.tscn` starts `MusicManager.play_loading()`, which begins
+**Loading music — committed.** `splash.tscn` starts `MusicManager.play_loading()`, which begins
 `loading.mp3` at 1 s and fades it in over 1 s; it runs through `loading.tscn`, and `peek.tscn`
 switches back to `main room.mp3`. `assets/audio/loading.mp3` and its `.import` are untracked.
 
@@ -52,7 +60,7 @@ P0/P1 first; each item's evidence and fix live in [`known-issues.md`](known-issu
 | Order | Item | Why now |
 |---|---|---|
 | 1 | #8 / #5 Care input that earns XP, once the top-bar design lands | Makes Level 5 reachable and gives the gate back |
-| 2 | #3 Un-hide the companion rig and its animation guards | Core fantasy |
+| 2 | #3 Un-hide the companion rig and its animation guards | Core fantasy; `companion_rig.tscn` is deleted, so re-check whether #3 still applies |
 | 3 | #4 Show `TidbitBubble` when text is assigned | Level-5 gate and every curriculum line are currently invisible |
 | 4 | #2 `Bearer` header + a way to set `auth_token` | Required before `MOCK` can flip |
 | 5 | #9 Standardise the job envelope (or add a `grade_result` signal) and handle non-2xx | Real responses are dropped today |
