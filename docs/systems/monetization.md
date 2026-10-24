@@ -87,8 +87,7 @@ Note the asymmetry: the PDF gate fires *after* the categorizer has already switc
 | Control | Behaviour |
 |---|---|
 | `PremiumCheck` | Toggles `set_premium()` and saves immediately |
-| `QuotaLabel` | `Premium: Unlimited` or `Free AI Uses: PDFs r/3 \| Grades r/10` |
-| `PdfQuotaLabel` / `GradeQuotaLabel` | Per-type remaining counts |
+| `QuotaLabel` | Settings only: `Premium: Unlimited` or `Free AI Uses: PDFs r/3 | Grades r/10` |
 | `ResetButton` | `reset_quota()` — labelled as a simulated weekly rollover (a debug affordance) |
 | `StatusLabel` | "Premium enabled — no limits." / "Free tier — weekly limits active." |
 
@@ -97,8 +96,8 @@ opens standalone in the editor without autoloads.
 
 ### Elsewhere
 
-- Categorizer: `QuotaLabel` in the header.
-- Battle: `QuotaLabel` under the top bar, refreshed on `quota_changed` / `premium_changed`.
+- Categorizer: no label; hitting the limit opens a `ConfirmModal` notice.
+- Battle: `QuotaLabel` under the top bar, refreshed on `quota_changed` / `premium_changed`; the limit notice is a `ConfirmModal`.
 - Both re-render on `premium_changed`, so toggling in Settings updates the next screen you open.
 
 ---

@@ -14,8 +14,9 @@ const GROUND_LAYER := 1
 
 @export var joystick: Control
 
-@onready var boy: Node3D = $Boy
-@onready var anim: AnimationPlayer = $Boy/AnimationPlayer
+@onready var boy: Node3D = %Boy
+# Inside the boy_explorer glb, so found by type rather than by a path a re-export could change.
+@onready var anim: AnimationPlayer = boy.find_child("AnimationPlayer", true, false)
 
 ## Set while an encounter panel is open.
 var locked := false

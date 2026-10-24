@@ -5,7 +5,7 @@ consumes.
 
 - **State / pipeline:** `scripts/autoload/session_manager.gd` (autoload `SessionManager`)
 - **Extraction (mock):** `scripts/autoload/api.gd` — `mock_upload_pdf()`, `_build_questions_from_text()`
-- **Topic list screen:** `scripts/ui/session_list.gd` → `scenes/ui/session_list.tscn`
+- **Worlds hub (topic list):** `scripts/ui/session_list.gd` → `scenes/ui/session_list.tscn`
 - **Upload / edit screen:** `scripts/review_session/categorizer.gd` → `scenes/review_session/categorizer.tscn`
 
 Status: **Implemented, fully mocked.** No PDF text is ever really parsed and no network call is made.
@@ -15,8 +15,8 @@ Status: **Implemented, fully mocked.** No PDF text is ever really parsed and no 
 ## 1. Flow
 
 ```text
-session_list.tscn
-   │  + Add New Topic                     Open existing topic
+session_list.tscn  (Worlds hub: reached from home Play)
+   │  + New World                             Edit a saved world
    ▼                                        │
 categorizer.tscn  ◄─────────────────────────┘
    │  1. name the topic
@@ -46,27 +46,20 @@ SessionManager.confirm_topic(name)
 Returns `{ok, words, chars}` or `{ok: false, error}`. The categorizer renders this live under the
 paste box as a green ✓ or a red warning (`categorizer.gd:103-117`).
 
-The gate is **bypassed when a real file was picked** (`categorizer.gd:127-132`): the bytes are what
-get sent, so the text check would be meaningless for a binary PDF. Consequence: any file, including
-a 12-byte empty one, is allowed through the file path.
+The gate always runs. A picked file is decoded as UTF-8 in `_on_file_selected` and its full text goes
+into the paste box, so it is validated like pasted text. A file that does not decode as text (a PDF)
+is refused with a status message and the box is left untouched.
 
 ---
 
 ## 3. Upload precedence
 
-`start_upload(topic_name, pdf_bytes, source_hint)` (`session_manager.gd:66-81`) picks the source
-text in this order:
+The categorizer always calls `start_upload_from_text()`, which validates, sets `last_source_text`,
+and delegates to `start_upload()`. That emits `extraction_started`, then hands off to
+`Api.mock_upload_pdf()`.
 
-1. `source_hint` — the paste box contents when it passes validation
-2. `pdf_bytes.get_string_from_utf8()` — only if it decodes **and** contains no `�`
-3. `""` — binary/unreadable input, which makes the extractor fall back to canned questions
-
-`start_upload_from_text()` validates first, then delegates. Both paths emit
-`extraction_started`, then hand off to `Api.mock_upload_pdf()`.
-
-Binary detection is literally `decoded.contains("�")` — the U+FFFD replacement character. A real
-PDF will almost always trip this, so **file uploads currently always produce fallback questions**
-unless the file happens to be plain text.
+Binary detection is literally `decoded.contains("�")` — the U+FFFD replacement character
+(`categorizer.gd`, `_on_file_selected`). A real PDF will almost always trip it and is refused.
 
 ---
 
@@ -205,16 +198,13 @@ reading the map data.
 
 ---
 
-## 8. Session list
+## 8. Worlds hub
 
-`session_list.gd` renders `SessionManager.get_topics_cache()` as one `Button` per topic
-(`"  <name>  ·  N Qs"`). Empty state: "No topics yet — tap Add New Topic to turn a PDF into gyms!".
-
-`_ready()` connects `topics_listed`, renders the cache immediately, then calls
-`SessionManager.list_topics()` which returns canned data (`Biology 101`, 2 questions) from
-`Api.mock_get_topics()`. That mock topic gets merged into the cache, so **a fresh install always
-shows a fake "Biology 101" entry** that has no questions attached — opening it goes to the
-categorizer with the previous `pending_questions` still loaded.
+`session_list.gd` renders `SessionManager.get_topics_cache()` as one card per world (see
+[`ui-and-assets.md`](../ui-and-assets.md) §2 Worlds hub). `SessionManager.reset_topic_progress()` wipes a
+world's mastery, cleared trainers/gyms and Champion (keys starting `<topic_id>:`) and keeps its questions;
+`delete_topic()` also removes the world and clears the active ids if they pointed at it. Both save.
+`list_topics()` merges `Api.mock_get_topics()`, which is now an empty list.
 
 ---
 
@@ -222,9 +212,7 @@ categorizer with the previous `pending_questions` still loaded.
 
 | Gap | Detail |
 |---|---|
-| No real PDF parsing | Binary bytes are discarded; extraction falls back to canned questions |
+| No real PDF parsing | Files that do not decode as UTF-8 text are refused with a status message |
 | No real extraction | `Api.MOCK = true`; `/extract` is not called |
-| Fake topic injection | `mock_get_topics()` seeds "Biology 101" every boot |
 | Source text not persisted | Re-opening a topic later cannot re-run extraction on the original reviewer |
 | Topic id collisions | `topic_<unix%100000>` repeats every ~27.8 hours |
-| No quota feedback on file path | PDF quota is consumed inside `Api`, after the UI already started the "studying" state |

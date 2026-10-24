@@ -14,13 +14,11 @@ per screen in every `_ready()`.
 | Default font | `JosefinSans-Regular.ttf` |
 | Default font size | 28 (large-text mode: 36) |
 | `Button` font | `JosefinSans-Bold.ttf`, size 32 (large-text: 40) |
-| `Button` font colour | `(0.93, 0.96, 1)` |
-| `Button` normal style | `StyleBoxFlat` fill `(0.11, 0.15, 0.31)`, radius 16 |
-| `PanelContainer` panel | `StyleBoxFlat` fill `(0.04, 0.07, 0.17, 0.85)`, radius 24 |
+| `Button` font colour | Warm Off-White `#F7F5EF` (pressed: Deep Slate) |
+| `Button` styles | `StyleBoxFlat` radius 20, 3 px Warm Off-White border; normal Muted Teal, hover lighter teal, pressed Muted Amber, disabled Slate Gray |
+| `PanelContainer` panel | `StyleBoxFlat` fill Deep Slate at 0.88 alpha, 3 px Warm Off-White border, radius 24 |
 
-There is no hover/pressed/disabled style box — only `normal` — so buttons do not visually react on
-press beyond the `ButtonJuice` scale tween. Several scenes override sizes and colours inline
-(`theme_override_*`) instead of extending the theme.
+Some scenes still override sizes and colours inline (`theme_override_*`) instead of extending the theme.
 
 ### Color palette
 
@@ -39,9 +37,7 @@ Canonical palette for new UI work. These are sRGB values.
 | Deep Slate | `#29383A` | Text and dark details |
 | Slate Gray | `#687778` | Secondary text |
 
-The shared theme and several inline scene overrides were written before this palette and still use
-the older navy/cyan values. New UI uses the palette above; migrating the existing screens is tracked
-in [`known-issues.md`](known-issues.md) #21.
+The shared theme and every screen use this palette. New UI picks a role from it.
 
 ### Large text
 
@@ -53,7 +49,7 @@ const BUTTON_FONT_STANDARD := 32   const BUTTON_FONT_LARGE := 40
 func set_large_text(enabled)        # mutates the loaded Theme + assigns it to root
 ```
 
-It is saved, applied on load, and `companion.gd` listens for `large_text_changed`. The **Large
+It is saved and applied on load. The **Large
 text** checkbox in `settings.tscn` calls `set_large_text()` and saves.
 
 ---
@@ -65,39 +61,13 @@ text** checkbox in `settings.tscn` calls `set_large_text()` and saves.
 | `scenes/ui/boot/splash.tscn` | `Control` | `scripts/ui/boot/splash.gd` | white intro, then loading |
 | `scenes/ui/boot/loading.tscn` | `Control` | `scripts/ui/boot/loading.gd` | boot loading bar |
 | `scenes/ui/boot/peek.tscn` | `Node3D` | `scripts/ui/boot/peek.gd`, `scripts/ui/boot/tutorial.gd`, `scripts/ui/home.gd` | 3D Kuiz peeks, runs the tutorial, then the home loop across four rooms; the hub every other screen returns to |
-| `scenes/ui/main.tscn` | `Control` | `scripts/ui/main.gd` (+ `companion.gd` on child) | care room |
-| `scenes/ui/session_list.tscn` | `Control` | `scripts/ui/session_list.gd` | topic history |
+| `scenes/ui/session_list.tscn` | `Control` | `scripts/ui/session_list.gd` | Worlds hub: saved worlds (play, cards, edit, reset, delete) and New World |
 | `scenes/review_session/categorizer.tscn` | `Control` | `scripts/review_session/categorizer.gd` | upload + question editor |
 | `scenes/overworld/region_map.tscn` | `Node3D` | `scripts/overworld/region_map.gd` (+ `player.gd`, `joystick.gd`) | 3D island: explorer, trainers, gyms, champion |
-| `scenes/battle/battle.tscn` | `Control` | `scripts/battle/battle.gd` | arena |
+| `scenes/battle/battle.tscn` | `Control` | `scripts/battle/battle.gd`, `scripts/battle/arena_stage.gd` | 3D arena behind the battle HUD: intro, strikes, ten SFX cues |
 | `scenes/review_session/flashcards.tscn` | `Control` | `scripts/review_session/flashcards.gd` | Flashcard Sanctuary: untimed card review |
-| `scenes/ui/settings.tscn` | `Control` | `scripts/ui/settings.gd` | music and sound volume, large text, premium + quota debug; Back returns home |
-| `scenes/ui/widgets/hud_strip.tscn` | `VBoxContainer` | `scripts/ui/widgets/hud_strip.gd` | status strip (instanced) |
-| `scenes/ui/widgets/pomodoro.tscn` | `VBoxContainer` | `scripts/ui/widgets/pomodoro.gd` | timer panel (instanced) |
-| `scenes/companion/companion_rig.tscn` | `Node2D` | `scripts/companion/companion_rig.gd` | skeletal pet (hidden) |
+| `scenes/ui/settings.tscn` | `Control` | `scripts/ui/settings.gd` | two cards, "Sound & display" (music, sounds, large text) and "AI plan" (quota, premium, debug reset); Back returns home |
 
-### `main.tscn` — care room
-
-```text
-Main                      (main.gd)  — only calls SaveManager.load_game()
-└── Room                  (companion.gd)
-    ├── BgFill            ColorRect, sky blue fallback
-    ├── Background        TextureRect, rooms/study_room.svg (study_room_night.svg at night)
-    ├── TopBanner         TextureRect, AtlasTexture slice of ui/top_bar.svg (0, 79.5, 866, 130.4)
-    ├── Table             TextureRect, ui/table.svg, pinned to bottom (−516 px height)
-    ├── CompanionRig      instance of companion_rig.tscn — visible = false
-    ├── TidbitBubble      Label — visible = false  (never re-shown)
-    ├── XPTick            floating "+N XP" label, alpha 0
-    ├── CampaignButton    90×90 flat icon, bottom-right, disabled until campaign unlock
-    ├── ChargeButton      160×160 flat icon, bottom-centre — day/night toggle
-    ├── HudStrip          instance of scenes/ui/widgets/hud_strip.tscn
-    ├── Pomodoro          instance of scenes/ui/widgets/pomodoro.tscn — visible = false
-    ├── SettingsButton    64×64 flat icon, top-left
-    ├── PomodoroButton    64×64 flat icon, under settings
-    └── NightVeil         ColorRect, rgba(0,0,0,0.35), visible = false
-```
-
-Note there is **no Feed / Pet / Play button** — the care loop has no trigger in this scene.
 
 ### `splash.tscn`
 
@@ -215,7 +185,7 @@ player's name.
   `State_Sad`, `State_Tired`.
 - **The name** is kept in `GameState.player_name`, in memory only (no backend yet); it is not saved.
 - **Rooms are temporary.** All four are flat placeholder SVGs in the canonical palette
-  (`study_room.svg`, also the care room's background, `maintenance_bay.svg`, `data_kitchen.svg`,
+  (`study_room.svg`, `maintenance_bay.svg`, `data_kitchen.svg`,
   `playroom.svg`), drawn with empty space in the middle for Kuiz. The Study Room's charging arch
   and floor ring sit where Kuiz stands, so it docks in its cradle. They are
   backdrops only: nothing in them is interactive.
@@ -234,7 +204,7 @@ and the middle shows the current room's action:
 | Room | Action | Kuiz |
 |---|---|---|
 | Study Room | **Charge** (`ui/charge.png`, a toggle) turns the lights off: the 3D lights and ambient drop to 30 %, the night art and a dark veil fade in, and the charge sounds play. Arrows, Play and Settings are disabled until it is pressed again | `State_Charging` (loops; its bolt and gem glow in the dark), then `Wake_Up` when the lights come back on |
-| Study Room | **Play** (`ui/campaign.png`) starts a new topic (`topic_<unix%100000>`, like the topic list's Add) and opens the upload screen, `categorizer.tscn` | — |
+| Study Room | **Play** (`ui/campaign.png`) opens the Worlds hub, `session_list.tscn` | — |
 | Study Room | **Settings** (`ui/settings.svg`) opens `settings.tscn` | — |
 | Maintenance Bay | Drag the **screwdriver** from the bar and hold it over Kuiz: it twists, and after 2 s the tune-up is done and it returns to the bar | `State_Sick` (screws working loose) while it is held there, `Celebrate` when done, `Idle` if it is taken away early |
 | Data Kitchen | **Food**: ‹ › pick one of six foods, then drag it onto Kuiz to eat it (one from stock); dropped anywhere else it goes back. An empty food is greyed out and cannot be picked up | `Surprised` (mouth open) when the food reaches it, then `Happy`, or `Pet` (hearts) for Spicy Memory Chips, its favourite |
@@ -245,7 +215,7 @@ and the middle shows the current room's action:
   (1), Byte Burger (1), Java Juice (2). Stock is kept in `GameState.food_stock`, in memory only.
 - There are no stats, rewards or currency yet, and nothing on the top of the screen except the
   room sign: those come later.
-- Every screen that used to return to the old care room (`settings.tscn`, the topic list) now
+- Every screen that used to return to the old care room (now deleted) (`settings.tscn`, the topic list) now
   returns here, and with `GameState.tutorial_done` set the scene opens straight into the Study
   Room. The save is read the first time home opens in a session (`SaveManager.load_once()`).
 
@@ -275,12 +245,18 @@ subtle), the soft-box reflections, and the page's off-white radial background.
   artifact's exposure.
 - The handoff into this scene measured 9–33 ms on desktop while materials compile; it lands on white.
 
-### `session_list.tscn`
+### `session_list.tscn` — Worlds hub
 
-`Background` (`ColorRect`), `Title`, `EmptyLabel`, `Scroll` → `ListBox`, `AddButton`, `BackButton`.
-Rows are built in code as an `HBoxContainer`: a topic `Button` (`alignment = LEFT`, text
-`  <name>  ·  <N> Qs`, opens the editor) and a 120 px **Cards** `Button` that opens the Flashcard
-Sanctuary (disabled for an empty topic).
+A world is a topic. Same look as `settings.tscn`: the Study Room art, a Deep Slate veil, themed buttons.
+Every menu screen (Worlds, World Builder, Settings) shares one look: Study Room art, Deep Slate veil, a 24 px `MarginContainer`, a Muted Amber bold 44 title and bordered cards with amber section headers.
+`Title`, `SavedPage` (`EmptyLabel`, `Scroll` → `ListBox`), `NewButton` ("+ New World"), `BackButton`, and a shared
+`ConfirmModal` (see Pop-ups below).
+
+Saved cards are built in code (`PanelContainer` → name, "N questions · X/Y trainers cleared", then two
+rows of 64 px buttons): **Play** (straight to `region_map.tscn`), **Cards** (Flashcard Sanctuary), **Edit**
+(`categorizer.tscn`), **Reset progress** and **Delete** (Soft Coral). Play and Cards are disabled for a world
+with no questions. Reset and Delete ask first; Reset keeps the questions, Delete removes the world.
+**+ New World** opens the World Builder directly: upload a file, paste text or add questions by hand there.
 
 ### `flashcards.tscn`
 
@@ -293,10 +269,12 @@ are applied in `_style()` from the canonical palette; every button is at least 5
 
 ### `categorizer.tscn`
 
-Vertical stack: `Title`, `QuotaLabel`, `TopicRow` (label + `TopicName` `LineEdit`), `UploadRow`
-(label + `FileButton`), `PasteLabel`, `PasteArea` (`TextEdit`), `SanityLabel`, `StudyButton`,
-`StatusLabel`, `LoadingBar`, `QuestionsHeader`, `Scroll` → `QuestionsBox` (rows built in code),
-`AddQuestionButton`, `PlayButton`, `BackButton`, plus `FileDialog` and `QuotaDialog`.
+Titled "World Builder", on the Study Room art under a Deep Slate veil (`Veil`, 0.88 alpha) so text stays readable.
+Inside `Margin` → `Content`: `Title` (Muted Amber, bold 44), a `SourceCard` panel ("1 · Your reviewer":
+`TopicName` `LineEdit`, `FileButton` which shows the picked file name, `PasteArea`, `SanityLabel`,
+`StudyButton`, `StatusLabel`, `LoadingBar`; there is no on-screen quota line, Settings shows it), then `QuestionsBlock` ("2 · Questions": `Scroll` → `QuestionsBox`
+with rows built in code, `AddQuestionButton`), `PlayButton` and `BackButton`. `FileDialog` is the native
+OS dialog (`use_native_dialog`) where the platform has one; the weekly-limit notice is a `ConfirmModal`.
 
 Each question row (built in `_make_question_row`) has a header (index, confidence, delete), the
 prompt `TextEdit`, a type row (`Type:` label, type `OptionButton` with Essay / Identification /
@@ -319,39 +297,23 @@ box, although all bytes are kept for the upload call (`categorizer.gd:89-96`).
 `Battle` (`Control`) → `Camera2D`, `Background`, `Margin` → `List`: `TopBar` (flee, title),
 `QuotaLabel`, `EnemyCard` (sprite, name, HP), `PlayerCard` (sprite, name, HP), `QuestionCard`
 (type, text), `AnswerInput` (`TextEdit`), `SubmitButton`, `JudgingLabel`, `ResultLabel`,
-`ResultPanel` (title, XP label, retry/continue), plus `QuotaDialog`.
+`ResultPanel` (title, XP label, retry/continue); the weekly-limit notice is a `ConfirmModal`.
 
-Both sprite slots (`EnemySprite`, `PlayerSprite`) have no texture. For a Multiple Choice question
+The enemy and player cards sit over `ArenaStage`, the 3D scene that holds the models. For a Multiple Choice question
 `battle.gd` hides `AnswerInput` and `SubmitButton` and builds a `VBoxContainer` of four option
 `Button`s (56 px tall) in their place at runtime.
 
-### `hud_strip.tscn`
-
-`VBoxContainer` with `StatusRow` (`LevelLabel`, `EnergyCell`, `FocusCell`, `MoodCell`, `PomoBadge`)
-and `XPRow` (`XPLabel`, `XPBar`). The three stat bars are *vertical* (`fill_mode = 3`) 24×44
-capsules with nub caps and two segment lines, styled per-stat (energy teal, focus amber, mood red).
-`PomoBadge` is hidden unless a timer is running.
-
-### `pomodoro.tscn`
-
-`ModeLabel`, `TimerLabel`, `StartButton`, `SkipButton` (hidden unless a phase is active). Purely a
-renderer — all logic is in `CompanionState`.
-
-### `companion_rig.tscn`
-
-`Node2D` → `Mesh` → `Skeleton2D` (`Root` → `Body` → `EarL`, `EarR`, `Antenna`), `Art` (`Polygon2D`),
-`SadArt` (`Polygon2D`, alpha 0), `Face` (`AnimatedSprite2D`, hidden until a blink). Weights are
-painted at runtime; see `systems/companion-care.md` §7.
 
 ---
+
+### Pop-ups
+
+`scripts/ui/widgets/confirm_modal.gd` (`ConfirmModal.open(host, title, message, confirm_text, on_confirm, danger, cancel_text)`) is the one pop-up: a dimmed screen, a card that scales in (0.85 → 1, back-ease, 0.28 s) and out (0.14 s), a bold title (coral when `danger`), centred wrapped text and full-width buttons. An empty `cancel_text` makes it a notice. Esc cancels. Tweens ignore `Engine.time_scale`, so battle hit-stop does not freeze it. Callers `preload` the script instead of relying on a `class_name`. Used by the Worlds hub (reset, delete), the World Builder and the battle (weekly limit).
 
 ## 3. Interaction conventions
 
 - **Buttons:** flat icon buttons (`flat = true`, `icon_alignment = CENTER`, `expand_icon = true`)
   for room actions, full-width text buttons for flow actions.
-- **`ButtonJuice.wire(button)`** (`scripts/ui/widgets/button_juice.gd`) adds hover 1.06× / press 0.96× scale
-  via a tween stored in the button's metadata; disabled buttons never pop. Currently wired only to
-  the four care-room icon buttons.
 - **Input:** movement uses the built-in `ui_left` / `ui_right` / `ui_up` / `ui_down` actions, so
   arrows **and** WASD work with no custom `InputMap`. Everything else is mouse/touch on `Control`s.
 - **No on-screen touch controls** — the overworld is currently desktop/keyboard-only in practice.
@@ -381,9 +343,11 @@ Battles, level-ups, taps and gym clears are silent.
 
 | Asset | Used by |
 |---|---|
+| `audio/sfx/sfx_*.wav` (ten) | `battle.gd` exports, assigned in `battle.tscn`; played through `MusicManager.play_sfx_layered()` |
+| `sprites/battle/battle_backdrop.svg` | `battle.tscn` arena backdrop |
 | `audio/main room.mp3` | `music_manager.gd` (looping BGM for the hub/gameplay) |
 | `audio/loading.mp3` | `MusicManager.play_loading()` from `splash.tscn` through `loading.tscn` (starts at 1 s, 1 s fade-in) |
-| `audio/charge.mp3`, `audio/charged.mp3` | `companion.gd` day/night toggle; home's Charge button |
+| `audio/charge.mp3`, `audio/charged.mp3` | home's Charge button |
 | `fonts/JosefinSans-Regular.ttf` | theme default font |
 | `fonts/JosefinSans-Bold.ttf` | theme button font; `loading.tscn` title and tip labels |
 | `sprites/boot/loading.png` | `loading.tscn` background |
@@ -395,25 +359,19 @@ Battles, level-ups, taps and gym clears are silent.
 | `models/boy_explorer.glb`, `boy_explorer_basecolor_v2.jpg`, `boy_explorer_normal_v2.jpg` | `region_map.tscn` explorer (`Idle`, `Walk`, `Run` used) |
 | `models/kuiz.glb` | `peek.tscn` 3D Kuiz head; 21 clips (13 one-shots, `Celebrate`, `Learn_Something_New`, six `State_*` moods), face and props on blend shapes |
 | `sprites/boot/kuizmon_splash.png` | `splash.gd` 60-frame intro sheet (6 × 10 cells, 480 × 264) |
-| `sprites/rooms/study_room.svg` | care-room, settings and categorizer background (day); the tutorial's Study Room (temporary placeholder) |
-| `sprites/rooms/study_room_night.svg` | care-room background at night; home's lights-off Study Room (temporary placeholder) |
+| `sprites/rooms/study_room.svg` | settings and categorizer background (day); the tutorial's Study Room (temporary placeholder) |
+| `sprites/rooms/study_room_night.svg` | home's lights-off Study Room (temporary placeholder) |
 | `sprites/rooms/maintenance_bay.svg` | tutorial Maintenance Bay (temporary placeholder) |
 | `sprites/rooms/data_kitchen.svg` | tutorial and home Data Kitchen; left floor kept clear for the fridge (temporary placeholder) |
 | `sprites/rooms/playroom.svg` | tutorial and home Playroom; no painted ball, the real one is flung (temporary placeholder) |
-| `sprites/ui/campaign.png` | CampaignButton icon; home's Play button |
-| `sprites/ui/charge.png` | ChargeButton icon; home's Charge button |
-| `sprites/ui/pomodoro.svg` | PomodoroButton icon |
-| `sprites/ui/settings.svg` | SettingsButton icon; home's Settings button |
+| `sprites/ui/campaign.png` | home's Play button |
+| `sprites/ui/charge.png` | home's Charge button |
+| `sprites/ui/settings.svg` | home's Settings button |
 | `sprites/ui/arrow.svg` | home bar's room and food arrows (flipped for ◀) |
 | `sprites/props/data_chips.svg`, `spicy_chips.svg`, `cache_cookie.svg`, `pi_pie.svg`, `byte_burger.svg`, `java_juice.svg` | home's six foods (temporary placeholders) |
 | `sprites/props/fridge.svg` | home's Data Kitchen fridge (temporary placeholder) |
 | `sprites/props/ball.svg` | home's Playroom ball (temporary placeholder) |
 | `sprites/props/screwdriver.svg` | home's Maintenance Bay screwdriver (temporary placeholder) |
-| `sprites/ui/table.svg` | care-room table |
-| `sprites/ui/top_bar.svg` | HUD banner (atlas slice) |
-| `sprites/companion/idle_companion.svg` | rig body + blink idle frames |
-| `sprites/companion/blink_companion.svg` | rig blink frame |
-| `sprites/companion/sad_companion.svg` | rig `SadArt` layer |
 | `icon.svg` | project icon |
 
 ### Source / not imported
@@ -422,20 +380,16 @@ Battles, level-ups, taps and gym clears are silent.
 |---|---|
 | `sprites/boot/kuizmon_loading.gif` | source for `kuizmon_splash.png`; Godot has no GIF importer |
 
-### Referenced but **missing** (breaks scenes)
+### Referenced but **missing**
 
-| Asset | Referenced by | Effect |
-|---|---|---|
-| `sprites/bot_lv1..5.png` | `companion.gd:80` (loaded by path at runtime) | runtime warning "no bot textures found", pet invisible |
-
-`battle.tscn` and `region_map.tscn` no longer reference these files, so both scenes load.
+None known. `bot_lv1..5.png` was only read by the deleted `companion.gd`.
 
 ---
 
 ## 6. Layout notes
 
 - Art is authored for 720 × 1280 and positioned with absolute offsets inside anchored containers;
-  anything wider than 9:16 will reflow but not re-layout the care-room props.
+  anything wider than 9:16 will reflow but not re-layout the room props.
 - Several nodes still use `layout_mode = 0` with raw offsets (legacy from the first room), so they
   ignore container sizing.
 - `unique_id` attributes appear on nodes in the newer scenes (4.7 scene format); they are editor

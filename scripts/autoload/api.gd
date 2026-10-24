@@ -375,7 +375,7 @@ func _mock_grade_done(data: Dictionary) -> void:
 	job_status.emit("grade", "completed", 1.0, data)
 
 func mock_get_topics() -> void:
-	call_deferred("_mock_topics_done", {"topics": [{"id": "topic_001", "name": "Biology 101", "question_count": 2}]})
+	call_deferred("_mock_topics_done", {"topics": []})
 
 func _mock_topics_done(data: Dictionary) -> void:
 	job_status.emit("topics", "completed", 1.0, data)

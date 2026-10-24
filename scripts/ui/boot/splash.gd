@@ -10,7 +10,7 @@ const HOLD_TIME: float = 0.5
 const FADE_TIME: float = 0.25
 const NEXT_SCENE := "res://scenes/ui/boot/loading.tscn"
 
-@onready var logo: TextureRect = $Logo
+@onready var logo: TextureRect = %Logo
 
 var _frames: Array[AtlasTexture] = []
 var _elapsed: float = 0.0
@@ -18,8 +18,7 @@ var _frame: int = 0
 var _done: bool = false
 
 func _ready() -> void:
-	if has_node("/root/MusicManager"):
-		(get_node("/root/MusicManager") as Node).call("play_loading")
+	MusicManager.play_loading()
 	ResourceLoader.load_threaded_request(NEXT_SCENE)
 	for i in FRAME_COUNT:
 		var frame := AtlasTexture.new()

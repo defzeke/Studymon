@@ -1,7 +1,8 @@
-[gd_scene format=3]
+[gd_scene load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://scripts/ui/settings.gd" id="1"]
 [ext_resource type="Texture2D" path="res://assets/sprites/rooms/study_room.svg" id="2"]
+[ext_resource type="FontFile" path="res://assets/fonts/JosefinSans-Bold.ttf" id="3"]
 
 [node name="Settings" type="Control"]
 layout_mode = 3
@@ -19,10 +20,10 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+modulate = Color(0.92, 0.92, 0.92, 1)
 texture = ExtResource("2")
 expand_mode = 1
 stretch_mode = 6
-modulate = Color(0.92, 0.92, 0.92, 1)
 
 [node name="Veil" type="ColorRect" parent="."]
 layout_mode = 1
@@ -32,36 +33,63 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-color = Color(0.1608, 0.2196, 0.2275, 0.8)
+color = Color(0.1608, 0.2196, 0.2275, 0.88)
 
-[node name="Content" type="VBoxContainer" parent="."]
+[node name="Margin" type="MarginContainer" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 32.0
-offset_top = 32.0
-offset_right = -32.0
-offset_bottom = -32.0
 grow_horizontal = 2
 grow_vertical = 2
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_top = 24
+theme_override_constants/margin_right = 24
+theme_override_constants/margin_bottom = 24
+
+[node name="Content" type="VBoxContainer" parent="Margin"]
+layout_mode = 2
 theme_override_constants/separation = 16
 
-[node name="Title" type="Label" parent="Content"]
+[node name="Title" type="Label" parent="Margin/Content"]
 layout_mode = 2
+theme_override_colors/font_color = Color(0.8392, 0.6588, 0.3725, 1)
+theme_override_fonts/font = ExtResource("3")
+theme_override_font_sizes/font_size = 44
 text = "Settings"
 horizontal_alignment = 1
 
-[node name="MusicRow" type="HBoxContainer" parent="Content"]
+[node name="SoundCard" type="PanelContainer" parent="Margin/Content"]
+layout_mode = 2
+
+[node name="Pad" type="MarginContainer" parent="Margin/Content/SoundCard"]
+layout_mode = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 16
+
+[node name="Sound" type="VBoxContainer" parent="Margin/Content/SoundCard/Pad"]
 layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="MusicLabel" type="Label" parent="Content/MusicRow"]
+[node name="SoundHeader" type="Label" parent="Margin/Content/SoundCard/Pad/Sound"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.8392, 0.6588, 0.3725, 1)
+theme_override_fonts/font = ExtResource("3")
+text = "Sound & display"
+
+[node name="MusicRow" type="HBoxContainer" parent="Margin/Content/SoundCard/Pad/Sound"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="MusicLabel" type="Label" parent="Margin/Content/SoundCard/Pad/Sound/MusicRow"]
 custom_minimum_size = Vector2(140, 0)
 layout_mode = 2
 text = "Music"
 
-[node name="MusicSlider" type="HSlider" parent="Content/MusicRow"]
+[node name="MusicSlider" type="HSlider" parent="Margin/Content/SoundCard/Pad/Sound/MusicRow"]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -70,16 +98,17 @@ max_value = 1.0
 step = 0.05
 value = 1.0
 
-[node name="SoundsRow" type="HBoxContainer" parent="Content"]
+[node name="SoundsRow" type="HBoxContainer" parent="Margin/Content/SoundCard/Pad/Sound"]
 layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="SoundsLabel" type="Label" parent="Content/SoundsRow"]
+[node name="SoundsLabel" type="Label" parent="Margin/Content/SoundCard/Pad/Sound/SoundsRow"]
 custom_minimum_size = Vector2(140, 0)
 layout_mode = 2
 text = "Sounds"
 
-[node name="SoundsSlider" type="HSlider" parent="Content/SoundsRow"]
+[node name="SoundsSlider" type="HSlider" parent="Margin/Content/SoundCard/Pad/Sound/SoundsRow"]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -88,56 +117,63 @@ max_value = 1.0
 step = 0.05
 value = 1.0
 
-[node name="LargeTextCheck" type="CheckBox" parent="Content"]
-custom_minimum_size = Vector2(0, 48)
+[node name="LargeTextCheck" type="CheckBox" parent="Margin/Content/SoundCard/Pad/Sound"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 52)
 layout_mode = 2
 text = "Large text"
 
-[node name="QuotaLabel" type="Label" parent="Content"]
+[node name="PlanCard" type="PanelContainer" parent="Margin/Content"]
 layout_mode = 2
-horizontal_alignment = 1
-text = "Free AI Uses: PDFs 3/3 | Grades 10/10"
-autowrap_mode = 2
 
-[node name="PdfQuotaLabel" type="Label" parent="Content"]
+[node name="Pad" type="MarginContainer" parent="Margin/Content/PlanCard"]
 layout_mode = 2
-horizontal_alignment = 1
-text = "Free AI Uses: 3/3 PDFs remaining"
-autowrap_mode = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 16
 
-[node name="GradeQuotaLabel" type="Label" parent="Content"]
-layout_mode = 2
-horizontal_alignment = 1
-text = "Free AI Uses: 10/10 Grades remaining"
-autowrap_mode = 2
-
-[node name="PremiumRow" type="HBoxContainer" parent="Content"]
+[node name="Plan" type="VBoxContainer" parent="Margin/Content/PlanCard/Pad"]
 layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="PremiumLabel" type="Label" parent="Content/PremiumRow"]
-custom_minimum_size = Vector2(140, 0)
+[node name="PlanHeader" type="Label" parent="Margin/Content/PlanCard/Pad/Plan"]
 layout_mode = 2
-text = "Toggle Premium:"
+theme_override_colors/font_color = Color(0.8392, 0.6588, 0.3725, 1)
+theme_override_fonts/font = ExtResource("3")
+text = "AI plan"
 
-[node name="PremiumCheck" type="CheckBox" parent="Content/PremiumRow"]
-custom_minimum_size = Vector2(0, 48)
+[node name="QuotaLabel" type="Label" parent="Margin/Content/PlanCard/Pad/Plan"]
+unique_name_in_owner = true
 layout_mode = 2
-size_flags_horizontal = 3
+text = "Free AI Uses: PDFs 3/3 | Grades 10/10"
+autowrap_mode = 2
+
+[node name="PremiumCheck" type="CheckBox" parent="Margin/Content/PlanCard/Pad/Plan"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 52)
+layout_mode = 2
 text = "Free Tier"
 
-[node name="ResetButton" type="Button" parent="Content"]
-custom_minimum_size = Vector2(0, 64)
+[node name="ResetButton" type="Button" parent="Margin/Content/PlanCard/Pad/Plan"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 60)
 layout_mode = 2
-text = "Reset Quota (Debug: Weekly Rollover)"
+text = "Reset weekly quota (debug)"
 
-[node name="StatusLabel" type="Label" parent="Content"]
+[node name="StatusLabel" type="Label" parent="Margin/Content/PlanCard/Pad/Plan"]
+unique_name_in_owner = true
+modulate = Color(1, 1, 1, 0.75)
 layout_mode = 2
-horizontal_alignment = 1
+theme_override_font_sizes/font_size = 22
 autowrap_mode = 2
-text = ""
 
-[node name="BackButton" type="Button" parent="Content"]
-custom_minimum_size = Vector2(0, 56)
+[node name="Spacer" type="Control" parent="Margin/Content"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="BackButton" type="Button" parent="Margin/Content"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 64)
 layout_mode = 2
 text = "Back"

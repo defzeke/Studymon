@@ -6,6 +6,11 @@ const SAVE_PATH := "user://studymon_save.json"
 
 var _loaded := false
 
+# Deferred so every autoload exists first. Loading at boot means the first scene already sees the
+# saved name, tutorial flag and food, and a scene run on its own still cannot overwrite the save.
+func _ready() -> void:
+	load_once.call_deferred()
+
 ## Loads the save once per session; later calls keep the in-memory state (it may be newer).
 func load_once() -> void:
 	if not _loaded:
@@ -14,10 +19,12 @@ func load_once() -> void:
 
 func save_game() -> bool:
 	var data := CompanionState.to_dict()
-	data["v"] = 6
+	data["v"] = 7
 	data["campaign_unlocked_flag"] = GameState.campaign_unlocked_flag
 	data["active_region_id"] = GameState.active_region_id
 	data["large_text_enabled"] = GameState.large_text_enabled
+	data["player_name"] = GameState.player_name
+	data["food_stock"] = GameState.food_stock
 	data["music_volume"] = MusicManager.music_volume
 	data["sfx_volume"] = MusicManager.sfx_volume
 	data["session"] = SessionManager.to_dict()
@@ -52,6 +59,11 @@ func load_game() -> bool:
 	if CompanionState.campaign_ready:
 		GameState.set_campaign_unlocked(true)
 	GameState.active_region_id = str(parsed.get("active_region_id", ""))
+	GameState.player_name = str(parsed.get("player_name", ""))
+	var stock: Variant = parsed.get("food_stock", {})
+	if typeof(stock) == TYPE_DICTIONARY:
+		for id in stock:
+			GameState.food_stock[str(id)] = int(stock[id])
 	if parsed.has("large_text_enabled"):
 		GameState.large_text_enabled = bool(parsed["large_text_enabled"])
 		GameState._apply_theme_font_size()

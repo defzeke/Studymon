@@ -74,6 +74,18 @@ func play_sfx(stream: AudioStream) -> void:
 	_sfx.stream = stream
 	_sfx.play()
 
+## Plays on its own throwaway player, so effects overlap instead of cutting each other off.
+func play_sfx_layered(stream: AudioStream, pitch := 1.0, gain := 1.0) -> void:
+	if stream == null:
+		return
+	var p := AudioStreamPlayer.new()
+	p.stream = stream
+	p.pitch_scale = pitch
+	p.volume_linear = sfx_volume * gain
+	add_child(p)
+	p.finished.connect(p.queue_free)
+	p.play()
+
 func play_sfx_chain(streams: Array) -> void:
 	_sfx_chain_id += 1
 	var my_id := _sfx_chain_id

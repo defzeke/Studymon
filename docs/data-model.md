@@ -6,7 +6,8 @@ no cloud sync.
 - **Path:** `user://studymon_save.json`
 - **Written by:** `SaveManager.save_game()` — `scripts/autoload/save_manager.gd:6`
 - **Read by:** `SaveManager.load_game()` — `scripts/autoload/save_manager.gd:24`
-- **Schema tag:** `"v": 6`
+- **Schema tag:** `"v": 7` (v7 added `player_name` and `food_stock`; older saves load with defaults. The tutorial flag is deliberately not saved, so the intro plays every launch)
+- **Loaded:** once at boot, deferred from `SaveManager._ready`
 - **Format:** `JSON.stringify` of a single `Dictionary`, pretty-print off
 
 The build plan originally proposed `Resource`-based saves; the implementation uses JSON instead.
@@ -18,7 +19,7 @@ That is fine for the current scope but means there is **no type safety and no au
 
 ```jsonc
 {
-  "v": 6,
+  "v": 7,
 
   // CompanionState.to_dict()
   "level": 1,
@@ -34,6 +35,8 @@ That is fine for the current scope but means there is **no type safety and no au
   "campaign_unlocked_flag": false,
   "active_region_id": "",
   "large_text_enabled": false,
+  "player_name": "",
+  "food_stock": { "apple": 3 },
 
   // MusicManager (v5): settings sliders, 0..1; missing keys load as 1.0
   "music_volume": 1.0,
@@ -69,7 +72,7 @@ Field-by-field:
 
 | Field | Type | Written from | Notes |
 |---|---|---|---|
-| `v` | int | literal `4` | Never compared on load — see §6 |
+| `v` | int | literal `7` | Never compared on load — see §6 |
 | `level` | int | `CompanionState.level` | 1–5 |
 | `xp` | int | `CompanionState.xp` | Lifetime XP, not per-level |
 | `energy` / `focus` / `mood` | float | `CompanionState` | 0–100, clamped on mutation |
@@ -118,10 +121,10 @@ rows (see [`systems/review-session.md`](systems/review-session.md) §6); a v5 sa
 |---|---|---|
 | `id` | string | `topic_<slug>` from `Api._slug_topic_id`, or `topic_<unix%100000>` for new topics |
 | `name` | string | Player-visible name, defaults to the id |
-| `question_count` | int | Denormalised `questions.size()`; `session_list.gd:38` falls back to the array length |
+| `question_count` | int | Denormalised `questions.size()`; `session_list.gd` reads `questions` when it is 0 |
 | `questions` | question[] | The actual question bank |
 
-Topic ids are **not** guaranteed unique across sessions: `session_list.gd:60` builds
+Topic ids are **not** guaranteed unique across sessions: `session_list.gd:_on_new_world` builds
 `topic_%d % (unix_time % 100000)`, which collides roughly every 27 hours of wall-clock use. The
 saved-topic lookup is a linear scan by id, so a collision overwrites the older topic.
 
@@ -163,7 +166,7 @@ These live only in memory and are lost on quit or scene change:
 | Tap-cap counters (`_action_tap_counts`, `_last_hour_reset`) | `CompanionState` | Relaunching clears the hourly diminishing-returns counter — an easy exploit |
 | `GameState.user_id`, `auth_token` | `GameState` | Never set, never saved (no auth yet) |
 | `GameState.player_name` | `GameState` | Set by the tutorial, never saved; every launch replays the tutorial and asks again |
-| `GameState.tutorial_done` | `GameState` | Set when the tutorial ends; lets screens return to home without replaying it, until the app closes |
+| `GameState.tutorial_done` | `GameState` | Set when the tutorial ends, and by the Worlds hub and Settings on open (they are only reachable from home, so running one on its own still returns to home, not the intro); lets screens return home without replaying it, until the app closes |
 | `GameState.food_stock` | `GameState` | Home's food counts (id → count); a relaunch restocks the starting amounts |
 | Trust/premium receipts | — | `is_premium` is a plain bool the player can flip in Settings |
 
@@ -208,9 +211,6 @@ Behaviour worth knowing:
 
 | Site | Frequency |
 |---|---|
-| `companion.gd:135` `_on_care` | **every care tap** |
-| `companion.gd:145` on level-up | rare |
-| `companion.gd:196` on campaign ready | once |
 | `settings.gd:49,56,63` premium toggle / quota reset | rare |
 | `SaveManager.save_progress()` after a battle win or loss (`battle.gd`), and after a topic is confirmed (`confirm_topic`) | once per event |
 

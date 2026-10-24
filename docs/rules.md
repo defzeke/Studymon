@@ -92,7 +92,7 @@ and [`data-model.md`](data-model.md) in the same change.
 build paths by string concatenation.
 
 **Save changes are versioned.** Additive fields get a default in the loader; a semantic change bumps
-the version literal (`data["v"] = 5` in `save_manager.gd`) and documents the migration in
+the version literal (`data["v"] = 7` in `save_manager.gd`) and documents the migration in
 [`data-model.md`](data-model.md). Never silently reinterpret an existing field.
 
 **Mock mode stays working.** `Api.MOCK = true` is the only path the game actually runs today. When
@@ -126,7 +126,7 @@ Godot runs. `$GODOT` is the 4.7.2 **console** binary — its path on the current
 
 # every scene you touched (and the main scene)
 & $GODOT --headless --path . res://scenes/ui/boot/splash.tscn --quit-after 10
-& $GODOT --headless --path . res://scenes/ui/main.tscn --quit-after 20
+& $GODOT --headless --path . res://scenes/ui/boot/peek.tscn --quit-after 30
 & $GODOT --headless --path . res://scenes/battle/battle.tscn --quit-after 20
 & $GODOT --headless --path . res://scenes/overworld/region_map.tscn --quit-after 30
 ```

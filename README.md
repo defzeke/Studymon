@@ -27,21 +27,18 @@ res://
 │   └── sprites/
 │       ├── boot/              # splash sheet (+ its .gif source), loading background, wordmark
 │       ├── effects/           # leaf.svg (loading and autumn weather)
-│       ├── companion/         # idle / blink / sad (SVG)
 │       ├── props/             # temporary foods, fridge, ball, screwdriver
 │       ├── rooms/             # temporary rooms: study_room (+ night), maintenance_bay, data_kitchen, playroom
-│       └── ui/                # campaign, charge, pomodoro, settings, table, top bar, arrow
+│       └── ui/                # campaign, charge, settings, tip bulb, arrow
 │
 ├── scripts/
 │   ├── autoload/              # the 7 autoloads: SaveManager, GameState, Api, CompanionState,
 │   │                          # SessionManager, MonetizationState, MusicManager
 │   ├── battle/                # battle.gd — turn resolution, damage, juice
-│   ├── companion/             # care room, skeletal rig
 │   ├── overworld/             # region map generation, player movement
 │   ├── review_session/        # upload + editable question list
-│   └── ui/                    # home (the hub), old care room root, session list, settings
-│       ├── boot/              # splash, loading, peek + tutorial
-│       └── widgets/           # pomodoro, HUD strip, button feedback
+│   └── ui/                    # home (the hub), session list, settings
+│       └── boot/              # splash, loading, peek + tutorial
 │
 ├── scenes/                    # .tscn files mirroring scripts/<feature>/
 │   ├── battle/                ├── companion/      ├── overworld/

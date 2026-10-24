@@ -6,12 +6,10 @@ curriculum through `CURRICULUM` lines.
 
 - **State / logic:** `scripts/autoload/companion_state.gd` (autoload `CompanionState`)
 > The 3D home in `peek.tscn` (`home.gd`, see `ui-and-assets.md` §2 Home) is now where the player
-> cares for Kuiz; nothing routes to the 2D care room below any more. It has no stats yet.
-
-- **Care room UI:** `scripts/companion/companion.gd` → `scenes/ui/main.tscn`
-- **Status strip:** `scripts/ui/widgets/hud_strip.gd` → `scenes/ui/widgets/hud_strip.tscn` (instanced on `main.tscn`)
-- **Pomodoro UI:** `scripts/ui/widgets/pomodoro.gd` → `scenes/ui/widgets/pomodoro.tscn`
-- **Skeletal rig (disabled):** `scripts/companion/companion_rig.gd` → `scenes/companion/companion_rig.tscn`
+> cares for Kuiz. **The old 2D care room was removed** (`main.tscn`, `companion.gd`, the HUD strip,
+> the Pomodoro panel and the skeletal rig). `CompanionState` keeps its care and Pomodoro logic with no
+> UI attached, and its save fields are unchanged. Sections below that describe the room, the strip,
+> the Pomodoro panel and the rig are historical.
 
 ---
 
@@ -27,7 +25,7 @@ curriculum through `CURRICULUM` lines.
 | `xp` | 0 | unbounded | — | care taps + battle rewards |
 
 Decay is applied in `_process` (`companion_state.gd:62-67`), i.e. it runs whenever the game is
-running, on every screen — decaying stats are global, not just in the care room. With `energy`
+running, on every screen. With `energy`
 decaying 0.15/s, a full bar drains in ~11 minutes of real time.
 
 `stats_changed` is emitted **every frame** from the same `_process`. All decay writes are `maxf(0, …)`
@@ -53,7 +51,7 @@ Returns:
 
 `bond` increments inside `care()` regardless of action. The UI uses the return value only to render
 the floating `+N XP` tick and an extra `(tired)` suffix once `tap_count > DAILY_CAP_BASE_XP`
-(`companion.gd:127-135`).
+(the removed `companion.gd`).
 
 ### Diminishing returns
 
@@ -94,20 +92,17 @@ Pacing as designed (source comment `companion_state.gd:12-16`): at 1–2 XP per 
 actions, ~90 taps ≈ 2.5–4 minutes.
 
 Once `campaign_ready` is true and level is 5, `add_xp()` returns early — battle rewards stop being
-applied, but the XP bar is displayed with `hi = lo + 1` so it sits full (`companion.gd:243`).
+applied.
 
-The gate reaches `GameState` through two paths:
+The gate reaches `GameState` on load only:
 
 ```text
-CompanionState.leveled_up(5) ─► campaign_gate_ready ─► companion.gd:_on_campaign_ready()
-                                                        └─ GameState.set_campaign_unlocked(true)
+CompanionState.leveled_up(5) ─► campaign_gate_ready ─► (no listener since companion.gd was removed)
 
-main.tscn boot ─► companion.gd: if CompanionState.campaign_ready:
-                                    GameState.set_campaign_unlocked(true)
 ```
 
-`campaign_unlocked_flag` is what actually enables `CampaignButton`; `CompanionState.campaign_ready`
-is what gets saved. They can drift if a save is hand-edited.
+`SaveManager.load_game()` sets `campaign_unlocked_flag` from `CompanionState.campaign_ready`, which
+is what gets saved. With no care input, Level 5 is unreachable without editing the save.
 
 ### Other XP and stat sources
 
@@ -131,31 +126,23 @@ and backfilled on load for older saves:
 | 4 | "Playing is **PRACTICE** — I try, fail, and try again…" |
 | 5 | "I can **GENERALIZE** now! Show me your PDF reviewer…" |
 
-There is **no Codex screen** — entries only appear as the `TidbitBubble` label, which is hidden
-(see `known-issues.md` #4). A `feat/remove-codex` branch exists on `origin`, suggesting this was
+There is **no Codex screen** and the `TidbitBubble` that showed entries was deleted with the care room.
+A `feat/remove-codex` branch exists on `origin`, suggesting the codex was abandoned deliberately.
 abandoned deliberately.
 
 ---
 
-## 5. Room interactions (`main.tscn`)
+## 5. Room interactions (removed)
 
-| Control | Node | Behaviour |
-|---|---|---|
-| Campaign | `Room/CampaignButton` | Disabled until `GameState.campaign_unlocked_flag`; otherwise shows "Locked! Reach Level 5 first. (N XP to next level)" in the tidbit bubble |
-| Charge | `Room/ChargeButton` | Toggles day ↔ night room texture (`rooms/study_room.svg` / `study_room_night.svg`), shows `NightVeil`, dims every other child to 70 % via `_base_modulate`, plays `charge.mp3` then `charged.mp3` when switching to night |
-| Pomodoro | `Room/PomodoroButton` | Toggles the in-scene `Pomodoro` panel visibility |
-| Settings | `Room/SettingsButton` | `change_scene_to_file("res://scenes/ui/settings.tscn")` |
-| Pet | *(none)* | **There are no Feed / Pet / Play buttons in the scene.** `_on_care()` exists in `companion.gd:127` but nothing connects a button to it. |
-
-That last row matters: the care loop's *state machine* is complete and saveable, but the current
-care-room scene has no way to trigger it. The `bot_lv*.png` sprites the scene expects are also
-missing, so the room renders without a pet (`known-issues.md` #3).
+The old care room (Campaign, Charge, Pomodoro, Settings buttons and the Feed / Pet / Play taps) was
+deleted. Home's Charge button still plays `charge.mp3` / `charged.mp3`; nothing calls
+`CompanionState.care()` (`known-issues.md` #8).
 
 ---
 
 ## 6. Pomodoro (Phase 4)
 
-Logic lives in `CompanionState`, UI in `scenes/ui/widgets/pomodoro.tscn`. One timer drives both phases.
+Logic lives in `CompanionState`; the Pomodoro panel was deleted, so nothing starts it. One timer drives both phases.
 
 ```
                  start_pomodoro()
@@ -180,30 +167,17 @@ Logic lives in `CompanionState`, UI in `scenes/ui/widgets/pomodoro.tscn`. One ti
 
 Skipping **focus** applies a soft −3 energy / −2 mood and jumps straight to rest (no
 missed-rest penalty). Only the focus timer auto-advances to rest; there is no notification when a
-phase ends — the companion just changes its bubble line (`companion.gd:177-187`).
-
-Badge: `HudStrip` shows `FOCUS mm:ss` / `REST mm:ss` in `PomoBadge` while a phase is active.
+phase ends.
 
 The timer is a real `Timer` node with 1 s ticks, so it is affected by `Engine.time_scale`
 (used by battle hit-stop) and by scene tree pauses; it is not a wall-clock countdown.
 
 ---
 
-## 7. Companion rig (`companion_rig.gd`)
+## 7. Companion rig (removed)
 
-A hand-built skeletal setup used for squash/breathe/blink instead of frame animation:
-
-- `Polygon2D` body + `Skeleton2D` with bones `Root/Body/{EarL,EarR,Antenna}`.
-- Vertex weights are painted **at runtime** with Gaussian falloff around each bone plus hard
-  spatial gates (`_gate()`), normalised per vertex (`_paint_weights`, `companion_rig.gd:110`).
-- Idle = bob tween + 1.6 s breathe scale + antenna sway; blink = an `AnimatedSprite2D` overlay using
-  `blink_companion.svg` on a random 2.4–4.8 s timer.
-- Public API: `play_reaction(action)`, `celebrate()`, `set_mood("sad"|"sleepy"|…)`.
-
-It is **switched off**: `companion.gd:36-37` forces `rig.visible = false`, and `main.tscn:83` sets
-`visible = false` on the instance. Every rig call in `companion.gd` early-returns while hidden.
-Running `main.tscn` headless also logs `Condition "det == 0" is true` several times from the
-degenerate bone rests (`known-issues.md` #12).
+The 2D skeletal rig (`companion_rig.gd`, its scene and the idle/blink/sad SVGs) was deleted. Kuiz is the
+3D `kuiz.glb` in `peek.tscn` and the battle arena.
 
 ---
 

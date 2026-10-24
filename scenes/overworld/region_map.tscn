@@ -1,11 +1,15 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://b828lbp32suaj"]
 
-[ext_resource type="Script" path="res://scripts/overworld/region_map.gd" id="1"]
-[ext_resource type="Script" path="res://scripts/overworld/player.gd" id="2"]
+[ext_resource type="Script" uid="uid://bno08ho0mrduj" path="res://scripts/overworld/region_map.gd" id="1"]
+[ext_resource type="Script" uid="uid://s13f86rj5yfa" path="res://scripts/overworld/player.gd" id="2"]
 [ext_resource type="PackedScene" uid="uid://druo0njokh4g4" path="res://assets/models/map.glb" id="3_map"]
 [ext_resource type="PackedScene" uid="uid://yjyho2qlkvpo" path="res://assets/models/boy_explorer.glb" id="4_boy"]
-[ext_resource type="Script" path="res://scripts/overworld/joystick.gd" id="5_stick"]
-[ext_resource type="Script" path="res://scripts/overworld/season.gd" id="6_season"]
+[ext_resource type="Script" uid="uid://fhnue17kcwx2" path="res://scripts/overworld/joystick.gd" id="5_stick"]
+[ext_resource type="Script" uid="uid://r7eum1000fmp" path="res://scripts/overworld/season.gd" id="6_season"]
+[ext_resource type="Script" path="res://scripts/overworld/gym_slot.gd" id="7_slot"]
+[ext_resource type="Script" path="res://scripts/overworld/map_collision.gd" id="8_collision"]
+[ext_resource type="PackedScene" path="res://scenes/overworld/encounter_trigger.tscn" id="9_trigger"]
+[ext_resource type="PackedScene" path="res://scenes/overworld/gym_burst.tscn" id="10_burst"]
 
 [sub_resource type="Environment" id="Environment_island"]
 background_mode = 1
@@ -18,125 +22,208 @@ ambient_light_energy = 0.7
 radius = 0.22
 height = 0.9
 
-[node name="RegionMap" type="Node3D"]
-script = ExtResource("1")
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_hud_plate"]
+bg_color = Color(0.1608, 0.2196, 0.2275, 0.78)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.9686, 0.9608, 0.9373, 0.9)
+corner_radius_top_left = 22
+corner_radius_top_right = 22
+corner_radius_bottom_right = 22
+corner_radius_bottom_left = 22
 
-[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+[node name="RegionMap" type="Node3D" unique_id=542269348 node_paths=PackedStringArray("gym_slots", "champion_slot")]
+script = ExtResource("1")
+gym_slots = [NodePath("GymSlot1"), NodePath("GymSlot2"), NodePath("GymSlot3")]
+champion_slot = NodePath("ChampionSlot")
+trigger_scene = ExtResource("9_trigger")
+burst_scene = ExtResource("10_burst")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1627825419]
 environment = SubResource("Environment_island")
 
-[node name="Sun" type="DirectionalLight3D" parent="."]
+[node name="Sun" type="DirectionalLight3D" parent="." unique_id=1234885312]
 transform = Transform3D(0.8192, -0.4698, 0.329, 0, 0.5736, 0.8192, -0.5736, -0.671, 0.4698, 0, 10, 0)
 light_energy = 1.1
 shadow_enabled = true
 directional_shadow_max_distance = 30.0
 
-[node name="Map" parent="." instance=ExtResource("3_map")]
+[node name="Map" parent="." unique_id=1053476088 instance=ExtResource("3_map")]
+unique_name_in_owner = true
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.006829977, -0.014840841, 0.0026807785)
 
-[node name="Season" type="Node3D" parent="." node_paths=PackedStringArray("sun", "world", "map", "follow")]
+[node name="Season" type="Node3D" parent="." unique_id=1744681616 node_paths=PackedStringArray("sun", "world", "map", "follow")]
 script = ExtResource("6_season")
 sun = NodePath("../Sun")
 world = NodePath("../WorldEnvironment")
 map = NodePath("../Map")
 follow = NodePath("../Player")
 
-[node name="Spawn" type="Marker3D" parent="."]
+[node name="MapCollision" type="Node" parent="." node_paths=PackedStringArray("map")]
+script = ExtResource("8_collision")
+map = NodePath("../Map")
+
+[node name="Spawn" type="Marker3D" parent="." unique_id=388998130]
+unique_name_in_owner = true
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 0, 9)
 
-[node name="Trainers1" type="Node3D" parent="."]
+[node name="GymSlot1" type="Node3D" parent="." node_paths=PackedStringArray("entrance", "trainers_from", "trainers_to")]
+script = ExtResource("7_slot")
+entrance = NodePath("Entrance")
+trainers_from = NodePath("From")
+trainers_to = NodePath("To")
+door_open_clip = &"Gym2_Door_Open"
+door_close_clip = &"Gym2_Door_Close"
 
-[node name="From" type="Marker3D" parent="Trainers1"]
+[node name="Entrance" type="Marker3D" parent="GymSlot1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13.54317, 0, 5.032681)
+
+[node name="From" type="Marker3D" parent="GymSlot1" unique_id=2133143354]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 0, 9)
 
-[node name="To" type="Marker3D" parent="Trainers1"]
+[node name="To" type="Marker3D" parent="GymSlot1" unique_id=226954458]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12.5, 0, 9)
 
-[node name="Trainers2" type="Node3D" parent="."]
+[node name="GymSlot2" type="Node3D" parent="." node_paths=PackedStringArray("entrance", "trainers_from", "trainers_to")]
+script = ExtResource("7_slot")
+entrance = NodePath("Entrance")
+trainers_from = NodePath("From")
+trainers_to = NodePath("To")
+door_open_clip = &"Gym3_Door_Open"
+door_close_clip = &"Gym3_Door_Close"
 
-[node name="From" type="Marker3D" parent="Trainers2"]
+[node name="Entrance" type="Marker3D" parent="GymSlot2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14.15683, 0, -5.717319)
+
+[node name="From" type="Marker3D" parent="GymSlot2" unique_id=970512045]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9, 0, 7.5)
 
-[node name="To" type="Marker3D" parent="Trainers2"]
+[node name="To" type="Marker3D" parent="GymSlot2" unique_id=135207920]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9, 0, -0.5)
 
-[node name="Trainers3" type="Node3D" parent="."]
+[node name="GymSlot3" type="Node3D" parent="." node_paths=PackedStringArray("entrance", "trainers_from", "trainers_to")]
+script = ExtResource("7_slot")
+entrance = NodePath("Entrance")
+trainers_from = NodePath("From")
+trainers_to = NodePath("To")
 
-[node name="From" type="Marker3D" parent="Trainers3"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 0, 9)
-
-[node name="To" type="Marker3D" parent="Trainers3"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12, 0, 9)
-
-[node name="GymSpot3" type="Marker3D" parent="."]
+[node name="Entrance" type="Marker3D" parent="GymSlot3" unique_id=1445727592]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -15, 0, 9)
 
-[node name="Trainers" type="Node3D" parent="."]
+[node name="From" type="Marker3D" parent="GymSlot3" unique_id=1833472821]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 0, 9)
 
-[node name="Gyms" type="Node3D" parent="."]
+[node name="To" type="Marker3D" parent="GymSlot3" unique_id=1830030275]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12, 0, 9)
 
-[node name="Player" type="CharacterBody3D" parent="." node_paths=PackedStringArray("joystick")]
+[node name="ChampionSlot" type="Node3D" parent="." node_paths=PackedStringArray("entrance")]
+script = ExtResource("7_slot")
+entrance = NodePath("Entrance")
+door_open_clip = &"Gym_Door_Open"
+door_close_clip = &"Gym_Door_Close"
+
+[node name="Entrance" type="Marker3D" parent="ChampionSlot"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.15608, 0, -6.842329)
+
+[node name="Trainers" type="Node3D" parent="." unique_id=91714387]
+unique_name_in_owner = true
+
+[node name="Gyms" type="Node3D" parent="." unique_id=783169552]
+unique_name_in_owner = true
+
+[node name="Player" type="CharacterBody3D" parent="." unique_id=1215678201 node_paths=PackedStringArray("joystick")]
+unique_name_in_owner = true
 collision_layer = 4
 collision_mask = 2
 motion_mode = 1
 script = ExtResource("2")
 joystick = NodePath("../HUD/Joystick")
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Player"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Player" unique_id=1765135691]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.55, 0)
 shape = SubResource("CapsuleShape3D_player")
 
-[node name="Boy" parent="Player" instance=ExtResource("4_boy")]
+[node name="Boy" parent="Player" unique_id=404921186 instance=ExtResource("4_boy")]
+unique_name_in_owner = true
 
-[node name="Camera3D" type="Camera3D" parent="Player"]
+[node name="Camera3D" type="Camera3D" parent="Player" unique_id=1679490285]
 transform = Transform3D(1, 0, 0, 0, 0.5855, 0.8107, 0, -0.8107, 0.5855, 0, 7, 4.7)
 keep_aspect = 0
 fov = 40.0
 
-[node name="HUD" type="CanvasLayer" parent="."]
+[node name="HUD" type="CanvasLayer" parent="." unique_id=1690847508]
 
-[node name="TopBar" type="HBoxContainer" parent="HUD"]
+[node name="TopPlate" type="Panel" parent="HUD" unique_id=841144670]
 anchors_preset = 10
 anchor_right = 1.0
-offset_left = 12.0
-offset_top = 12.0
-offset_right = -12.0
-offset_bottom = 64.0
+offset_left = 8.0
+offset_top = 8.0
+offset_right = -8.0
+offset_bottom = 72.0
+grow_horizontal = 2
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_hud_plate")
+
+[node name="HintPlate" type="Panel" parent="HUD" unique_id=861856828]
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 8.0
+offset_top = 78.0
+offset_right = -8.0
+offset_bottom = 122.0
+grow_horizontal = 2
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_hud_plate")
+
+[node name="TopBar" type="HBoxContainer" parent="HUD" unique_id=1412665202]
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 20.0
+offset_top = 14.0
+offset_right = -20.0
+offset_bottom = 66.0
 grow_horizontal = 2
 theme_override_constants/separation = 12
 
-[node name="BackButton" type="Button" parent="HUD/TopBar"]
+[node name="BackButton" type="Button" parent="HUD/TopBar" unique_id=305496791]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(90, 44)
 layout_mode = 2
 text = "←"
 
-[node name="ProgressLabel" type="Label" parent="HUD/TopBar"]
+[node name="ProgressLabel" type="Label" parent="HUD/TopBar" unique_id=2145721824]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_colors/font_outline_color = Color(0.1608, 0.2196, 0.2275, 1)
-theme_override_constants/outline_size = 8
+theme_override_colors/font_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_font_sizes/font_size = 22
 text = "Trainers 0/0"
 
-[node name="BadgesLabel" type="Label" parent="HUD/TopBar"]
+[node name="BadgesLabel" type="Label" parent="HUD/TopBar" unique_id=439163356]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_colors/font_outline_color = Color(0.1608, 0.2196, 0.2275, 1)
-theme_override_constants/outline_size = 8
+theme_override_colors/font_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_font_sizes/font_size = 22
 text = "Gyms 0/0"
 horizontal_alignment = 2
 
-[node name="HintLabel" type="Label" parent="HUD"]
+[node name="HintLabel" type="Label" parent="HUD" unique_id=449441669]
 anchors_preset = 10
 anchor_right = 1.0
-offset_left = 12.0
-offset_top = 68.0
-offset_right = -12.0
-offset_bottom = 100.0
+offset_left = 20.0
+offset_top = 84.0
+offset_right = -20.0
+offset_bottom = 116.0
 grow_horizontal = 2
-theme_override_colors/font_outline_color = Color(0.1608, 0.2196, 0.2275, 1)
-theme_override_constants/outline_size = 8
+theme_override_colors/font_color = Color(0.9686, 0.9608, 0.9373, 1)
 text = "Use the joystick to walk into a trainer or gym"
 horizontal_alignment = 1
 
-[node name="Joystick" type="Control" parent="HUD"]
+[node name="Joystick" type="Control" parent="HUD" unique_id=1796400796]
+layout_mode = 3
 anchors_preset = 2
 anchor_top = 1.0
 anchor_bottom = 1.0
@@ -147,7 +234,8 @@ offset_bottom = -24.0
 grow_vertical = 0
 script = ExtResource("5_stick")
 
-[node name="StudyButton" type="Button" parent="HUD"]
+[node name="StudyButton" type="Button" parent="HUD" unique_id=683791150]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(150, 64)
 anchors_preset = 3
 anchor_left = 1.0
@@ -162,7 +250,8 @@ grow_horizontal = 0
 grow_vertical = 0
 text = "Study"
 
-[node name="EncounterPanel" type="PanelContainer" parent="HUD"]
+[node name="EncounterPanel" type="PanelContainer" parent="HUD" unique_id=500261068]
+unique_name_in_owner = true
 visible = false
 anchors_preset = 8
 anchor_left = 0.5
@@ -176,35 +265,39 @@ offset_bottom = 220.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="Margin" type="MarginContainer" parent="HUD/EncounterPanel"]
+[node name="Margin" type="MarginContainer" parent="HUD/EncounterPanel" unique_id=1865631271]
 layout_mode = 2
 theme_override_constants/margin_left = 20
 theme_override_constants/margin_top = 20
 theme_override_constants/margin_right = 20
 theme_override_constants/margin_bottom = 20
 
-[node name="List" type="VBoxContainer" parent="HUD/EncounterPanel/Margin"]
+[node name="List" type="VBoxContainer" parent="HUD/EncounterPanel/Margin" unique_id=1024841232]
 layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="EncounterTitle" type="Label" parent="HUD/EncounterPanel/Margin/List"]
+[node name="EncounterTitle" type="Label" parent="HUD/EncounterPanel/Margin/List" unique_id=1807080742]
+unique_name_in_owner = true
 layout_mode = 2
 text = "Trainer wants to battle!"
 horizontal_alignment = 1
 autowrap_mode = 2
 
-[node name="EncounterQuestion" type="Label" parent="HUD/EncounterPanel/Margin/List"]
+[node name="EncounterQuestion" type="Label" parent="HUD/EncounterPanel/Margin/List" unique_id=1470408147]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 3
 text = "Question..."
 autowrap_mode = 2
 
-[node name="EncounterClearButton" type="Button" parent="HUD/EncounterPanel/Margin/List"]
+[node name="EncounterClearButton" type="Button" parent="HUD/EncounterPanel/Margin/List" unique_id=653982167]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 52)
 layout_mode = 2
 text = "Mark Cleared (stub)"
 
-[node name="EncounterCloseButton" type="Button" parent="HUD/EncounterPanel/Margin/List"]
+[node name="EncounterCloseButton" type="Button" parent="HUD/EncounterPanel/Margin/List" unique_id=1573527758]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
 text = "Close"

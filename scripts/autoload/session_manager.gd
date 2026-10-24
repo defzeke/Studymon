@@ -61,12 +61,65 @@ func list_topics() -> void:
 func get_topics_cache() -> Array[Dictionary]:
 	return _topics.duplicate(true)
 
-func add_topic_to_history(topic_id: String, name: String, questions: Array[Dictionary]) -> void:
+func add_topic_to_history(topic_id: String, topic_label: String, questions: Array[Dictionary]) -> void:
 	for i in _topics.size():
 		if _topics[i].get("id", "") == topic_id:
-			_topics[i] = {"id": topic_id, "name": name, "question_count": questions.size(), "questions": questions.duplicate(true)}
+			_topics[i] = {"id": topic_id, "name": topic_label, "question_count": questions.size(), "questions": questions.duplicate(true)}
 			return
-	_topics.append({"id": topic_id, "name": name, "question_count": questions.size(), "questions": questions.duplicate(true)})
+	_topics.append({"id": topic_id, "name": topic_label, "question_count": questions.size(), "questions": questions.duplicate(true)})
+
+
+func world_name(topic_id: String) -> String:
+	for t in _topics:
+		if str(t.get("id", "")) == topic_id:
+			return str(t.get("name", topic_id))
+	return ""
+
+## Trainers cleared out of the world's stored questions (get_progress only reads pending_questions).
+func topic_progress(topic_id: String) -> Dictionary:
+	var total := _questions_for_topic(topic_id).size()
+	var done := 0
+	for i in total:
+		if is_trainer_cleared(topic_id, i):
+			done += 1
+	return {"cleared": done, "total": total}
+
+func _questions_for_topic(topic_id: String) -> Array:
+	for t in _topics:
+		if str(t.get("id", "")) == topic_id:
+			return t.get("questions", [])
+	return []
+
+func _erase_prefixed(d: Dictionary, prefix: String) -> void:
+	for k in d.keys():
+		if str(k).begins_with(prefix):
+			d.erase(k)
+
+## Clears a world's cleared trainers/gyms, mastery and Champion; its questions stay.
+func reset_topic_progress(topic_id: String) -> void:
+	var prefix := topic_id + ":"
+	_erase_prefixed(_mastery, prefix)
+	_erase_prefixed(_cleared_trainers, prefix)
+	_erase_prefixed(_cleared_gyms, prefix)
+	_champion_defeated.erase(topic_id)
+	overworld_progress_changed.emit()
+	mastery_changed.emit()
+	SaveManager.save_progress()
+
+func delete_topic(topic_id: String) -> void:
+	reset_topic_progress(topic_id)
+	for i in range(_topics.size() - 1, -1, -1):
+		if str(_topics[i].get("id", "")) == topic_id:
+			_topics.remove_at(i)
+	if editing_topic_id == topic_id:
+		editing_topic_id = ""
+		pending_questions = []
+	if current_topic_id == topic_id:
+		current_topic_id = ""
+	if GameState.active_region_id == topic_id:
+		GameState.set_active_region("")
+	topics_listed.emit(_topics.duplicate(true))
+	SaveManager.save_progress()
 
 # --- Upload & extraction ---
 
@@ -169,8 +222,8 @@ func update_question(index: int, data: Dictionary) -> void:
 func confirm_topic(topic_name: String = "") -> void:
 	if editing_topic_id == "" or pending_questions.size() == 0:
 		return
-	var name := topic_name if topic_name != "" else editing_topic_id
-	add_topic_to_history(editing_topic_id, name, pending_questions)
+	var topic_label := topic_name if topic_name != "" else editing_topic_id
+	add_topic_to_history(editing_topic_id, topic_label, pending_questions)
 	Api.save_topic(editing_topic_id, pending_questions)
 	SaveManager.save_progress()
 	topic_saved.emit(editing_topic_id)

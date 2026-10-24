@@ -26,14 +26,15 @@ const LINES: Array[Dictionary] = [
 ]
 signal finished
 
-@onready var peek: Node3D = get_parent()
-@onready var speech: Control = $Speech
-@onready var text: Label = $Speech/Dialogue/Body/Text
-@onready var continue_button: Button = $Speech/Dialogue/Body/Continue
-@onready var name_row: Control = $Speech/Dialogue/Body/NameRow
-@onready var name_input: LineEdit = $Speech/Dialogue/Body/NameRow/NameInput
-@onready var name_ok: Button = $Speech/Dialogue/Body/NameRow/NameOk
-@onready var hint: Control = $Speech/Dialogue/Body/Hint
+@onready var peek: Node3D = owner as Node3D
+@onready var speech: Control = %Speech
+@onready var text: Label = %Text
+@onready var continue_button: Button = %Continue
+@onready var name_row: Control = %NameRow
+@onready var name_input: LineEdit = %NameInput
+@onready var name_ok: Button = %NameOk
+@onready var hint: Control = %Hint
+@onready var hint_arrow: Polygon2D = %Arrow
 
 var _line := -1
 var _typing: Tween
@@ -48,8 +49,8 @@ func _ready() -> void:
 	name_input.text_submitted.connect(func(_t: String) -> void: _submit_name())
 	name_ok.pressed.connect(_submit_name)
 	var bob := create_tween().set_loops()
-	bob.tween_property($Speech/Dialogue/Body/Hint/Arrow, "position:y", 5.0, 0.45).set_trans(Tween.TRANS_SINE)
-	bob.tween_property($Speech/Dialogue/Body/Hint/Arrow, "position:y", 0.0, 0.45).set_trans(Tween.TRANS_SINE)
+	bob.tween_property(hint_arrow, "position:y", 5.0, 0.45).set_trans(Tween.TRANS_SINE)
+	bob.tween_property(hint_arrow, "position:y", 0.0, 0.45).set_trans(Tween.TRANS_SINE)
 	await peek.peeked
 	_fade(speech, 1.0)
 	_next()
@@ -113,6 +114,7 @@ func _submit_name() -> void:
 	if player_name.is_empty():
 		return
 	GameState.player_name = player_name
+	SaveManager.save_progress()
 	name_input.release_focus()
 	_next()
 

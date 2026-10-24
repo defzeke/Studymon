@@ -3,10 +3,10 @@ extends Control
 ## Slow fill to 96%, pause, then a slow crawl to 100, fade to white and hand off to the peek scene.
 ## Tips rotate every few seconds while loading.
 
-@onready var load_bar: ProgressBar = $Content/BarTrack/LoadBar
-@onready var tip_label: Label = $Content/TipRow/TipLabel
-@onready var fade: ColorRect = $Fade
-@onready var logo: TextureRect = $Logo
+@onready var load_bar: ProgressBar = %LoadBar
+@onready var tip_label: Label = %TipLabel
+@onready var fade: ColorRect = %Fade
+@onready var logo: TextureRect = %Logo
 
 const TIPS: Array[String] = [
 	"Your AI starts out knowing nothing — you train it!",
@@ -39,8 +39,7 @@ func _ready() -> void:
 	load_bar.value = 0.0
 	_tip_index = randi() % TIPS.size()
 	tip_label.text = TIPS[_tip_index]
-	if has_node("/root/MusicManager"):
-		(get_node("/root/MusicManager") as Node).call("play_loading")
+	MusicManager.play_loading()
 	_fade_in()
 	_bob_logo()
 	_start_tip_cycle()

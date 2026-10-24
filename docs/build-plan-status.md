@@ -19,9 +19,9 @@ until their trainers are beaten, and the Champion always has a moveset.
 |---|---|---|---|
 | **0** | Project skeleton, folder structure, autoloads, theme, backend health | **Implemented** (layout differs) | `project.godot`, 7 autoloads, `assets/theme/app_theme.tres`, `backend/main.py` |
 | **1** | Accounts, first login, meet-your-companion cutscene | **Partial** — 3D peek + tutorial on mocks | `scenes/ui/boot/peek.tscn`, `tutorial.gd`; no auth, name not saved, `GameState.set_user()` unused |
-| **2** | Pet-care loop: Pet/Feed/Play, stats, XP, decay, level gate, HUD strip | **Partial** — logic yes, input/art no | `companion_state.gd`, `companion.gd`, `hud_strip.tscn`; see #3, #5, #8 |
-| **3** | AI Codex + optional pop-quiz reuse | **Partial** — data only | `CURRICULUM` + `codex` array; no screen, bubble hidden (#4) |
-| **4** | Scheduler / Pomodoro with missed-rest penalty, HUD badge | **Implemented** | `companion_state.gd:168-241`, `pomodoro.tscn`, `PomoBadge` |
+| **2** | Pet-care loop: Pet/Feed/Play, stats, XP, decay, level gate, HUD strip | **Partial** — logic only; the care room, HUD strip and rig were removed, home has no stats yet | `companion_state.gd`; see #5, #8 |
+| **3** | AI Codex + optional pop-quiz reuse | **Partial** — data only | `CURRICULUM` + `codex` array; no screen, bubble deleted with the care room |
+| **4** | Scheduler / Pomodoro with missed-rest penalty, HUD badge | **Logic only** — the panel and badge were removed | `companion_state.gd:168-241` |
 | **5** | Upload PDF → extraction → editable list → region | **Implemented (mock)** | `categorizer.gd`, `session_manager.gd`, `api.gd:98-269` |
 | **6** | Overworld + gym structure + trainer encounters | **Implemented (mock)** | 3D island `region_map.tscn`, `player.gd`, `joystick.gd`; three gyms (one at a marker, no building) |
 | **7** | Battle per question type, one judging pipeline | **Implemented (mock)** | `battle.gd`: Identification, Essay and Multiple Choice, per-tier HP/counter/thresholds |
