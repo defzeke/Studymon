@@ -35,6 +35,8 @@ var _queue: Array = []
 var _banked: int = 0
 
 func _ready() -> void:
+	# Review is calm: the home loop, crossfading from the route theme when opened from the map.
+	MusicManager.play_main_room()
 	_topic_id = SessionManager.current_topic_id
 	if _topic_id == "":
 		_topic_id = SessionManager.editing_topic_id

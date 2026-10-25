@@ -24,12 +24,21 @@ const FADE_IN_TIME: float = 0.4
 const FADE_OUT_TIME: float = 0.4
 const LOGO_BOB: float = 12.0
 const LOGO_BOB_TIME: float = 1.6
+# The animated logo (loading_screen_logo.gif, its white backdrop keyed out) as a sheet of 60 frames,
+# six per row, played on a loop at the GIF's 25 fps.
+const LOGO_SHEET: Texture2D = preload("res://assets/sprites/boot/loading_screen_logo.png")
+const LOGO_FRAME := Vector2i(638, 207)
+const LOGO_COLUMNS := 6
+const LOGO_FRAMES := 60
+const LOGO_FRAME_TIME := 0.04
 const NEXT_SCENE := "res://scenes/ui/boot/peek.tscn"
 
 var _tip_index: int = 0
 var _tip_timer: Timer
 var _tip_fade: Tween
 var _done: bool = false
+var _logo_frames: Array[AtlasTexture] = []
+var _logo_time := 0.0
 
 func _ready() -> void:
 	theme = load("res://assets/theme/app_theme.tres") as Theme
@@ -40,10 +49,21 @@ func _ready() -> void:
 	_tip_index = randi() % TIPS.size()
 	tip_label.text = TIPS[_tip_index]
 	MusicManager.play_loading()
+	for i in LOGO_FRAMES:
+		var frame := AtlasTexture.new()
+		frame.atlas = LOGO_SHEET
+		frame.region = Rect2(Vector2((i % LOGO_COLUMNS) * LOGO_FRAME.x, int(i / float(LOGO_COLUMNS)) * LOGO_FRAME.y), LOGO_FRAME)
+		frame.filter_clip = true
+		_logo_frames.append(frame)
+	logo.texture = _logo_frames[0]
 	_fade_in()
 	_bob_logo()
 	_start_tip_cycle()
 	_start_load_sequence()
+
+func _process(delta: float) -> void:
+	_logo_time += delta
+	logo.texture = _logo_frames[int(_logo_time / LOGO_FRAME_TIME) % LOGO_FRAMES]
 
 func _bob_logo() -> void:
 	var rest := logo.position.y

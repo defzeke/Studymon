@@ -6,9 +6,48 @@ Where the work stands. Short on purpose — this is a **register**, not a backlo
 > doc that owns it, and **those docs win** if the two disagree. See [`rules.md`](rules.md) §2. Do not
 > let a second status list grow here.
 
-Last updated: 2026-10-25.
+Last updated: 2026-10-26.
 
 ## In flight
+
+**Animated logo, detailed rooms, map music, stat cards — uncommitted.** The loading logo is the
+animated `loading_screen_logo.gif`, decoded into a keyed sprite sheet (the old `logo.png` is gone). The four rooms have
+more detail. The region map has its own route theme (`overworld.wav`), crossfading in and out and
+playing through battles. Tapping a stat gauge shows its numbers like the level card. Details in
+[`ui-and-assets.md`](ui-and-assets.md) §1, §2 and §4.
+
+**Dirt decals, room art, level card, music crossfade, smooth logo — uncommitted.** Kuiz's dirt is
+projected onto its shell (decals) instead of floating stickers. Settings drops the AI plan card.
+The Study Room's bookshelf is even and its desk stands behind the charging arch; the Maintenance
+Bay's wrench is a proper open-end wrench. Tapping the level pill shows the level's numbers. The
+loading music crossfades into the home loop, and the loading logo is rebuilt at 2× with smooth
+edges. Details in [`ui-and-assets.md`](ui-and-assets.md) §1, §2 and §4.
+
+**Battery health, closet tabs, endless levels, happier music — uncommitted.** The check-up tablet
+shows battery health (capacity, worn by charging; a worn battery drains energy faster) and sells a
+new battery for 30 crystals, which minigame rounds now earn. The closet has Head, Face and Body tabs,
+one costume worn per tab (five new costumes). Levels never cap (Level 5 still unlocks the campaign).
+A tired Kuiz only dozes in the Study Room. The Study Room's items keep their look while Kuiz walks
+out, the Playroom ball sits in the middle of the dock, and the home music is a bright, bouncy loop.
+Save v10. Details in [`ui-and-assets.md`](ui-and-assets.md) §2 and
+[`companion-care.md`](systems/companion-care.md).
+
+**Petting, dirt, costumes, own audio — uncommitted.** Hold or stroke Kuiz to pet it. The
+Maintenance Bay dock adds a check-up tablet (battery, frame, cleanliness, fuel) and a towel: Kuiz
+now gets dirty over time (spots and scratches on its head, `CompanionState.dirt`) and is scrubbed
+clean. The Playroom dock adds a closet of six costumes worn on Kuiz's head (`kuiz_look.gd`). The
+kitchen arrows skip foods with none left. All music and sound effects are our own (synthesised
+offline). Save v9. Details in [`ui-and-assets.md`](ui-and-assets.md) §2 and §4.
+
+**Minigames, moods, dock, landscape map — uncommitted.** The Playroom dock has a Games button with
+two minigames: Kuiz Keeper (swipe penalties past Kuiz in goal) and Sky Jump (bounce Kuiz up
+platforms through Sky, Space, Galaxy and Deep Space, with trampolines, rockets, timed and moving
+platforms and meteors), each round counting as play care. The Playroom ball waits in the dock.
+Kuiz rests in a mood when a stat is low (sick, hungry, tired, sad), and a dozing Kuiz stays in its
+room until tapped awake. The dock is a table the items stand on, and the dock/HUD icons are drawn
+at 2.5× so they stay sharp. The region map is landscape 16:9 with a top-down minimap and asks the
+player to turn the phone each way. Details in [`ui-and-assets.md`](ui-and-assets.md) §2 and
+[`overworld.md`](systems/overworld.md).
 
 **Home HUD, top room arrows — uncommitted.** The top of home has a level pill (badge + XP bar),
 four stat gauges (Hunger, Energy, Mood, Health) and a crystal pill (the currency,
@@ -66,7 +105,7 @@ switches back to `main room.mp3`. `assets/audio/loading.mp3` and its `.import` a
 
 | Work | Blocked by |
 |---|---|
-| Earning and spending crystals, and gating Play at Level 5 | Waiting on the design: what pays crystals, what the shop charges, and whether Play waits for Level 5 |
+| Pricing the fridge, and gating Play at Level 5 | Waiting on the design: what the shop charges (minigames earn crystals and a new battery costs 30 for now), and whether Play waits for Level 5 |
 | Any real backend call | Issue #7 (endpoints disagree) and issue #2 (auth header is a redaction placeholder) |
 
 ## Next

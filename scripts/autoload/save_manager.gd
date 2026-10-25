@@ -19,13 +19,14 @@ func load_once() -> void:
 
 func save_game() -> bool:
 	var data := CompanionState.to_dict()
-	data["v"] = 8
+	data["v"] = 10
 	data["campaign_unlocked_flag"] = GameState.campaign_unlocked_flag
 	data["active_region_id"] = GameState.active_region_id
 	data["large_text_enabled"] = GameState.large_text_enabled
 	data["player_name"] = GameState.player_name
 	data["food_stock"] = GameState.food_stock
 	data["crystals"] = GameState.crystals
+	data["outfit"] = GameState.outfit
 	data["music_volume"] = MusicManager.music_volume
 	data["sfx_volume"] = MusicManager.sfx_volume
 	data["session"] = SessionManager.to_dict()
@@ -67,6 +68,15 @@ func load_game() -> bool:
 			GameState.food_stock[str(id)] = int(stock[id])
 	GameState.crystals = maxi(0, int(parsed.get("crystals", 0)))
 	GameState.crystals_changed.emit(GameState.crystals)
+	GameState.outfit = {}
+	var outfit: Variant = parsed.get("outfit", {})
+	if typeof(outfit) == TYPE_DICTIONARY:
+		for slot in outfit:
+			GameState.outfit[str(slot)] = str(outfit[slot])
+	# v9 kept one costume; of those six only the glasses are a face item, the rest sit on the head.
+	var costume := str(parsed.get("costume", ""))
+	if costume != "":
+		GameState.outfit["face" if costume == "glasses" else "head"] = costume
 	if parsed.has("large_text_enabled"):
 		GameState.large_text_enabled = bool(parsed["large_text_enabled"])
 		GameState._apply_theme_font_size()

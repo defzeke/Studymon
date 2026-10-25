@@ -6,7 +6,7 @@ no cloud sync.
 - **Path:** `user://studymon_save.json`
 - **Written by:** `SaveManager.save_game()` — `scripts/autoload/save_manager.gd:6`
 - **Read by:** `SaveManager.load_game()` — `scripts/autoload/save_manager.gd:24`
-- **Schema tag:** `"v": 8` (v8 added `hunger`, `health` and `crystals`; v7 added `player_name` and `food_stock`; older saves load with defaults. The tutorial flag is deliberately not saved, so the intro plays every launch)
+- **Schema tag:** `"v": 10` (v10 added `battery_health` and replaced `costume` with `outfit`; a v9 `costume` loads into its slot; v9 added `dirt` and `costume`; v8 added `hunger`, `health` and `crystals`; v7 added `player_name` and `food_stock`; older saves load with defaults. The tutorial flag is deliberately not saved, so the intro plays every launch)
 - **Loaded:** once at boot, deferred from `SaveManager._ready`
 - **Format:** `JSON.stringify` of a single `Dictionary`, pretty-print off
 
@@ -19,7 +19,7 @@ That is fine for the current scope but means there is **no type safety and no au
 
 ```jsonc
 {
-  "v": 8,
+  "v": 10,
 
   // CompanionState.to_dict()
   "level": 1,
@@ -29,6 +29,8 @@ That is fine for the current scope but means there is **no type safety and no au
   "mood": 75.0,
   "hunger": 80.0,   // v8; missing loads as 80
   "health": 100.0,  // v8; missing loads as 100
+  "dirt": 0.0,      // v9; missing loads as 0 (clean)
+  "battery_health": 100.0, // v10; missing loads as 100 (new)
   "bond": 0,
   "campaign_ready": false,
   "codex": ["I start out knowing NOTHING — like a baby! ..."],
@@ -40,6 +42,7 @@ That is fine for the current scope but means there is **no type safety and no au
   "player_name": "",
   "food_stock": { "apple": 3 },
   "crystals": 0,    // v8: home's currency; missing loads as 0
+  "outfit": { "head": "crown", "body": "scarf" }, // v10: closet slot -> kuiz_look.gd COSTUMES id; a missing slot is bare
 
   // MusicManager (v5): settings sliders, 0..1; missing keys load as 1.0
   "music_volume": 1.0,
@@ -76,7 +79,7 @@ Field-by-field:
 | Field | Type | Written from | Notes |
 |---|---|---|---|
 | `v` | int | literal `7` | Never compared on load — see §6 |
-| `level` | int | `CompanionState.level` | 1–5 |
+| `level` | int | `CompanionState.level` | 1 and up, no cap |
 | `xp` | int | `CompanionState.xp` | Lifetime XP, not per-level |
 | `energy` / `focus` / `mood` | float | `CompanionState` | 0–100, clamped on mutation |
 | `bond` | int | `CompanionState.bond` | Increments per care tap, **never read anywhere** |
@@ -171,7 +174,7 @@ These live only in memory and are lost on quit or scene change:
 | `GameState.player_name` | `GameState` | Set by the tutorial, never saved; every launch replays the tutorial and asks again |
 | `GameState.tutorial_done` | `GameState` | Set when the tutorial ends, and by the Worlds hub and Settings on open (they are only reachable from home, so running one on its own still returns to home, not the intro); lets screens return home without replaying it, until the app closes |
 | `GameState.food_stock` | `GameState` | Home's food counts (id → count); a relaunch restocks the starting amounts |
-| Trust/premium receipts | — | `is_premium` is a plain bool the player can flip in Settings |
+| Trust/premium receipts | — | `is_premium` is a plain bool in the save (no in-game toggle since the Settings card was removed) |
 
 ---
 
@@ -214,7 +217,6 @@ Behaviour worth knowing:
 
 | Site | Frequency |
 |---|---|
-| `settings.gd:49,56,63` premium toggle / quota reset | rare |
 | `SaveManager.save_progress()` after a battle win or loss (`battle.gd`), and after a topic is confirmed (`confirm_topic`) | once per event |
 
 `save_progress()` writes only when a save has already been loaded this session (`load_game()` /

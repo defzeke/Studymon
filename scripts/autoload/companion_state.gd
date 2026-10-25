@@ -8,13 +8,13 @@ signal codex_entry_added(text: String)
 signal campaign_gate_ready
 signal pomodoro_phase_changed(mode: String)
 
-const MAX_LEVEL := 5
-# Phase 9 verified pacing: cumulative 150 XP to Lv5.
-# Deltas: Lv1->2=20, 2->3=25, 3->4=30, 4->5=35.
-# At 1-2 XP per tap (feed 2, pet 1, play 2; avg ~1.66 cycling), ~90 taps to Lv5.
-# At ~1.5s per tap+feedback => ~2.5-4 min, plus diminishing after 10 same-action/hour.
-# Meets GDD "minutes, not hours" for Levels 1-5; no curve change needed in Phase 9.
-const XP_PER_LEVEL := [0, 20, 45, 75, 110, 150]  # cumulative
+# Levels never cap; reaching CAMPAIGN_LEVEL unlocks the campaign. See xp_to_reach().
+const CAMPAIGN_LEVEL := 5
+# Each level costs 5 XP more than the one before: Lv1->2=20, 2->3=25, 3->4=30, 4->5=35, 5->6=40...
+# At 1-2 XP per tap (feed 2, pet 1, play 2; avg ~1.66 cycling), ~65 taps to Lv5, a few minutes;
+# meets GDD "minutes, not hours" for Levels 1-5.
+const FIRST_LEVEL_XP := 20
+const LEVEL_XP_STEP := 5
 const STAT_MAX := 100.0
 const STAT_DECAY_PER_SEC := 0.15
 const DAILY_CAP_BASE_XP := 10  # per action per hour before diminishing returns
@@ -24,6 +24,16 @@ const FEED_HUNGER := 12.0
 const FIX_HEALTH := 25.0
 const PLAY_MOOD := 8.0
 const CHARGE_PER_SEC := 6.0
+# Dirt builds up slowly (and a little with each meal and throw); the towel scrubs it off.
+const DIRT_PER_SEC := 0.06
+const MESS := 3.0
+const CLEAN_MOOD := 5.0
+# Battery health wears like a phone's: every point of energy charged costs BATTERY_WEAR health, and
+# a worn battery drains faster (energy drain x 1 + (100 - health) / BATTERY_DRAIN_SPAN, so x2 at 50%).
+# A new battery (crystals, the check-up tablet) restores 100%.
+const BATTERY_WEAR := 0.02
+const BATTERY_DRAIN_SPAN := 50.0
+const BATTERY_PRICE := 30
 
 # Pomodoro (Phase 4)
 const POMODORO_FOCUS_SEC := 25 * 60
@@ -40,12 +50,16 @@ var focus: float = 70.0
 var mood: float = 75.0
 var hunger: float = 80.0
 var health: float = 100.0
+## 0 = spotless, 100 = filthy: shown as spots and scratches on Kuiz, cleaned with the towel.
+var dirt: float = 0.0
+## The battery's capacity left, 100 = new; lower drains energy faster.
+var battery_health: float = 100.0
 var bond: int = 0
 var campaign_ready: bool = false
 var codex: Array[String] = []
 
 # XP diminishing returns tracking
-var _action_tap_counts: Dictionary = {"feed": 0, "pet": 0, "play": 0, "fix": 0}
+var _action_tap_counts: Dictionary = {"feed": 0, "pet": 0, "play": 0, "fix": 0, "clean": 0}
 var _last_hour_reset: int = 0
 
 # Pomodoro state (Phase 4)
@@ -69,23 +83,22 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	var drain := STAT_DECAY_PER_SEC * delta
-	energy = maxf(0.0, energy - drain)
+	energy = maxf(0.0, energy - drain * battery_drain())
 	focus = maxf(0.0, focus - drain * 0.8)
 	mood = maxf(0.0, mood - drain * 0.6)
 	hunger = maxf(0.0, hunger - drain * 0.7)
 	health = maxf(0.0, health - drain * 0.2)
+	dirt = minf(STAT_MAX, dirt + DIRT_PER_SEC * delta)
 	stats_changed.emit()
 	_maybe_reset_hourly_cap()
 
 func _maybe_reset_hourly_cap() -> void:
 	var now := int(Time.get_unix_time_from_system())
 	if now - _last_hour_reset >= 3600:
-		_action_tap_counts = {"feed": 0, "pet": 0, "play": 0, "fix": 0}
+		_action_tap_counts = {"feed": 0, "pet": 0, "play": 0, "fix": 0, "clean": 0}
 		_last_hour_reset = now
 
 func add_xp(amount: int) -> void:
-	if campaign_ready and level >= MAX_LEVEL:
-		return
 	xp += amount
 	_check_level_up()
 	xp_changed.emit(xp, level)
@@ -100,13 +113,18 @@ func reward_deck_done() -> void:
 	mood = minf(STAT_MAX, mood + 3.0)
 
 func _check_level_up() -> void:
-	while level < MAX_LEVEL and xp >= XP_PER_LEVEL[level]:
+	while xp >= xp_to_reach(level + 1):
 		level += 1
 		_unlock_tidbit(level)
 		leveled_up.emit(level)
-		if level >= MAX_LEVEL:
+		if level >= CAMPAIGN_LEVEL and not campaign_ready:
 			campaign_ready = true
 			campaign_gate_ready.emit()
+
+## Cumulative XP at which `lv` is reached (Lv1 = 0, Lv2 = 20, Lv5 = 110, Lv6 = 150...).
+static func xp_to_reach(lv: int) -> int:
+	var n := lv - 1
+	return FIRST_LEVEL_XP * n + LEVEL_XP_STEP * n * (n - 1) / 2
 
 func _unlock_tidbit(lv: int) -> void:
 	if CURRICULUM.has(lv):
@@ -145,6 +163,11 @@ func care(action: String) -> Dictionary:
 			health = minf(STAT_MAX, health + FIX_HEALTH)
 			deltas = {"health": FIX_HEALTH}
 			gained = int(2 * xp_mult)
+		"clean":
+			# A finished scrub (the towel already took the dirt off): a happy, fresh Kuiz.
+			mood = minf(STAT_MAX, mood + CLEAN_MOOD)
+			deltas = {"mood": CLEAN_MOOD}
+			gained = int(2 * xp_mult)
 
 	add_xp(gained)
 	stats_changed.emit()
@@ -152,13 +175,34 @@ func care(action: String) -> Dictionary:
 	return {"xp": gained, "deltas": deltas, "action": action, "tap_count": count + 1}
 
 ## Home's Charge toggle: energy refills while Kuiz sleeps on the charger.
+## The towel: scrubbing takes dirt off a little at a time.
+func scrub(amount: float) -> void:
+	dirt = maxf(0.0, dirt - amount)
+
+## Meals and play leave a little mess.
+func soil(amount := MESS) -> void:
+	dirt = minf(STAT_MAX, dirt + amount)
+
 func recharge(delta: float) -> void:
-	energy = minf(STAT_MAX, energy + CHARGE_PER_SEC * delta)
+	var gained := minf(STAT_MAX - energy, CHARGE_PER_SEC * delta)
+	energy += gained
+	battery_health = maxf(0.0, battery_health - gained * BATTERY_WEAR)
+
+## How much faster than new the battery drains (1 at 100% health).
+func battery_drain() -> float:
+	return 1.0 + (STAT_MAX - battery_health) / BATTERY_DRAIN_SPAN
+
+## The check-up tablet's battery swap: false (nothing spent) without enough crystals.
+func replace_battery() -> bool:
+	if GameState.crystals < BATTERY_PRICE:
+		return false
+	GameState.add_crystals(-BATTERY_PRICE)
+	battery_health = STAT_MAX
+	stats_changed.emit()
+	return true
 
 func xp_for_next_level() -> int:
-	if level >= MAX_LEVEL:
-		return -1
-	return XP_PER_LEVEL[level] - xp
+	return xp_to_reach(level + 1) - xp
 
 func to_dict() -> Dictionary:
 	return {
@@ -169,6 +213,8 @@ func to_dict() -> Dictionary:
 		"mood": mood,
 		"hunger": hunger,
 		"health": health,
+		"dirt": dirt,
+		"battery_health": battery_health,
 		"bond": bond,
 		"campaign_ready": campaign_ready,
 		"codex": codex,
@@ -182,6 +228,8 @@ func from_dict(data: Dictionary) -> void:
 	mood = float(data.get("mood", 75.0))
 	hunger = float(data.get("hunger", 80.0))
 	health = float(data.get("health", 100.0))
+	dirt = float(data.get("dirt", 0.0))
+	battery_health = float(data.get("battery_health", 100.0))
 	bond = int(data.get("bond", 0))
 	campaign_ready = bool(data.get("campaign_ready", false))
 	codex.clear()
@@ -190,9 +238,12 @@ func from_dict(data: Dictionary) -> void:
 	# Backfill: fresh games and older saves may miss early tidbits.
 	for lv in range(1, level + 1):
 		_unlock_tidbit(lv)
-	# Reconcile: saves written at max level (or by older versions) may lack the flag.
-	if level >= MAX_LEVEL and not campaign_ready:
+	# Reconcile: saves written at the campaign level (or by older versions) may lack the flag.
+	if level >= CAMPAIGN_LEVEL and not campaign_ready:
 		campaign_ready = true
+	# Saves from the capped curve (Lv5 max) may hold XP past Lv5: catch the levels up silently.
+	while xp >= xp_to_reach(level + 1):
+		level += 1
 	stats_changed.emit()
 	xp_changed.emit(xp, level)
 

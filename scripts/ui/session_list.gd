@@ -15,6 +15,8 @@ const BUILDER_SCENE := "res://scenes/review_session/categorizer.tscn"
 func _ready() -> void:
 	theme = load("res://assets/theme/app_theme.tres") as Theme
 	GameState.tutorial_done = true  # only reachable from home, so Back must not replay the intro
+	# Coming back from the region map, the route theme crossfades back to the home loop.
+	MusicManager.play_main_room()
 	new_btn.pressed.connect(_on_new_world)
 	back_btn.pressed.connect(_on_back)
 	SessionManager.topics_listed.connect(_on_topics_listed)

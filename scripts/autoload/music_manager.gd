@@ -1,10 +1,16 @@
 extends Node
 ## Persistent background music. Autoloaded; the player survives scene changes and swaps tracks.
 
-const MAIN_ROOM_TRACK: AudioStream = preload("res://assets/audio/main room.mp3")
-const LOADING_TRACK: AudioStream = preload("res://assets/audio/loading.mp3")
+# Studymon's own loops (composed in code, see docs/ui-and-assets.md §4): each WAV is written so its
+# end flows into its start, and is looped here at runtime.
+const MAIN_ROOM_TRACK: AudioStream = preload("res://assets/audio/music/home_room.wav")
+const LOADING_TRACK: AudioStream = preload("res://assets/audio/music/loading.wav")
+const OVERWORLD_TRACK: AudioStream = preload("res://assets/audio/music/overworld.wav")
 const LOADING_OFFSET := 1.0
 const LOADING_FADE := 1.0
+# Swapping to the home loop or the region map's route theme: the old track fades out while the new
+# one fades in over this long.
+const CROSSFADE := 2.5
 # The track's mix level at full music volume (-6 dB).
 const MUSIC_LEVEL := 0.5
 
@@ -30,17 +36,35 @@ func play_loading() -> void:
 	_play_track(LOADING_TRACK, LOADING_OFFSET, LOADING_FADE)
 
 func play_main_room() -> void:
-	_play_track(MAIN_ROOM_TRACK)
+	_play_track(MAIN_ROOM_TRACK, 0.0, CROSSFADE, true)
 
-func _play_track(track: AudioStream, from_position := 0.0, fade_in := 0.0) -> void:
+## The region map's route theme; it keeps playing through battles, which have no music of their own.
+func play_overworld() -> void:
+	_play_track(OVERWORLD_TRACK, 0.0, CROSSFADE, true)
+
+## With `crossfade`, a track already playing fades out over `fade_in` on its own player (freed
+## after) while the new one fades in.
+func _play_track(track: AudioStream, from_position := 0.0, fade_in := 0.0, crossfade := false) -> void:
 	if not is_instance_valid(_player):
 		return
 	if _player.stream == track and _player.playing:
 		return
 	_kill_music_fade()
+	if crossfade and fade_in > 0.0 and _player.playing:
+		var old := _player
+		old.name = "MusicFadingOut"
+		_player = AudioStreamPlayer.new()
+		_player.name = "MusicPlayer"
+		add_child(_player)
+		var out := create_tween()
+		out.tween_property(old, "volume_linear", 0.0, fade_in)
+		out.tween_callback(old.queue_free)
 	_player.stream = track
-	if _player.stream is AudioStreamMP3:
-		(_player.stream as AudioStreamMP3).loop = true
+	if _player.stream is AudioStreamWAV:
+		var wav := _player.stream as AudioStreamWAV
+		wav.loop_mode = AudioStreamWAV.LOOP_FORWARD
+		wav.loop_begin = 0
+		wav.loop_end = int(round(wav.get_length() * wav.mix_rate))
 	var target := MUSIC_LEVEL * music_volume
 	if fade_in > 0.0:
 		_player.volume_linear = 0.0

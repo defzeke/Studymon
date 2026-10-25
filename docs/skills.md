@@ -158,14 +158,14 @@ All companion tuning is in `scripts/autoload/companion_state.gd`:
 
 | Constant | Current | Effect |
 |---|---|---|
-| `XP_PER_LEVEL` | `[0, 20, 45, 75, 110, 150]` | Cumulative XP per level (Lv5 at 150) |
+| `FIRST_LEVEL_XP` / `LEVEL_XP_STEP` | `20` / `5` | XP for Lv2, then 5 more per level (`xp_to_reach()`: Lv5 at 110); no cap |
 | `DAILY_CAP_BASE_XP` | `10` | Same-action taps per hour before diminishing returns |
 | `STAT_DECAY_PER_SEC` | `0.15` | Energy drain per second (focus ×0.8, mood ×0.6) |
 | `POMODORO_FOCUS_SEC` / `REST_SEC` | `1500` / `300` | Focus and rest lengths |
 | `care()` | `feed +2`, `pet +1`, `play +2` | XP per tap; also ±8 to a stat |
 
 1. Change the constant, not the caller.
-2. Recompute the pacing note in the comment block above `XP_PER_LEVEL` if the level budget moved.
+2. Recompute the pacing note in the comment block above `FIRST_LEVEL_XP` if the level budget moved.
    That note is the only tuning comment allowed to be long — it is a formula, not narration.
 3. Update the table in [`systems/companion-care.md`](systems/companion-care.md).
 4. Re-check the interaction with the hourly cap: `int(2 * 0.3) == 0`, so any multiplier path must
@@ -209,8 +209,8 @@ The save is `user://studymon_save.json`, which on Windows is:
 
 Delete it to start again at Level 1. Boot reads the save when home first opens after the tutorial;
 the old 2D care room has been removed. To test the campaign
-without earning 150 XP, set `"level": 5`, `"xp": 150`, `"campaign_ready": true` in the JSON, or call
-`CompanionState.add_xp(150)` from a temporary debug line. Do not commit debug lines or edited saves.
+without earning 110 XP, set `"level": 5`, `"xp": 110`, `"campaign_ready": true` in the JSON, or call
+`CompanionState.add_xp(110)` from a temporary debug line. Do not commit debug lines or edited saves.
 
 ## Clean up comments
 

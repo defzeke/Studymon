@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="650" viewBox="0 0 720 260">
+<ellipse cx="360" cy="252" rx="330" ry="14" fill="#29383A" fill-opacity="0.18"/>
+<path d="M70 160 H126 L120 262 H76 Z" fill="#A9793C" stroke="#29383A" stroke-width="6" stroke-linejoin="round" stroke-linecap="round"/><path d="M594 160 H650 L644 262 H600 Z" fill="#A9793C" stroke="#29383A" stroke-width="6" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M44 34 H676 L712 118 H8 Z" fill="#D6A85F" stroke="#29383A" stroke-width="6" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M180 38 L150 116" stroke="#A9793C" stroke-width="3" stroke-opacity="0.45"/><path d="M360 38 L360 116" stroke="#A9793C" stroke-width="3" stroke-opacity="0.45"/><path d="M540 38 L570 116" stroke="#A9793C" stroke-width="3" stroke-opacity="0.45"/><path d="M30 76 H690" stroke="#A9793C" stroke-width="3" stroke-opacity="0.3"/>
+<path d="M58 44 H420" stroke="#F7F5EF" stroke-width="5" stroke-linecap="round" stroke-opacity="0.45"/>
+<rect x="4" y="112" width="712" height="22" rx="8" fill="#C9984F" stroke="#29383A" stroke-width="6" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M0 124 H720 V164 q-24 18 -48 0 q-24 18 -48 0 q-24 18 -48 0 q-24 18 -48 0 q-24 18 -48 0 q-24 18 -48 0 q-24 18 -48 0 q-24 18 -48 0 q-24 18 -48 0 q-24 18 -48 0 q-24 18 -48 0 q-24 18 -48 0 q-24 18 -48 0 q-24 18 -48 0 q-24 18 -48 0 V124 Z" fill="#4F8F89" stroke="#29383A" stroke-width="6" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M14 134 H706" stroke="#F7F5EF" stroke-width="3" stroke-dasharray="10 9" stroke-linecap="round" stroke-opacity="0.8"/>
+</svg>

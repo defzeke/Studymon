@@ -19,6 +19,10 @@ extends Node3D
 @export var map_anim: AnimationPlayer
 @export var trigger_radius := 0.7
 @export var trainer_radius := 0.45
+## The map is played in landscape at exactly 16:9; the rest of the game stays portrait.
+@export var landscape_size := Vector2i(1280, 720)
+
+const RotatePrompt := preload("res://scripts/ui/widgets/rotate_prompt.gd")
 
 @onready var map: Node3D = %Map
 @onready var player: CharacterBody3D = %Player
@@ -39,6 +43,44 @@ var _topic_id: String = ""
 var _pending_encounter: Dictionary = {}
 var _gym_positions: Dictionary = {}
 var _prev_cleared_gyms: Dictionary = {}
+# The portrait setup to put back on leaving: content size, aspect, orientation.
+var _portrait := {}
+
+# Turned before the HUD lays out, and turned back however the scene is left (battle, Study, back),
+# so every other screen opens portrait.
+func _enter_tree() -> void:
+	var win := get_window()
+	_portrait = {"size": win.content_scale_size, "aspect": win.content_scale_aspect,
+		"orientation": DisplayServer.screen_get_orientation()}
+	win.content_scale_size = landscape_size
+	win.content_scale_aspect = Window.CONTENT_SCALE_ASPECT_KEEP
+	_orient(DisplayServer.SCREEN_SENSOR_LANDSCAPE, true)
+	RotatePrompt.open(get_tree(), true)
+	MusicManager.play_overworld()
+
+func _exit_tree() -> void:
+	var win := get_window()
+	win.content_scale_size = _portrait["size"]
+	win.content_scale_aspect = _portrait["aspect"]
+	_orient(_portrait["orientation"], false)
+
+# Phones rotate the screen; a desktop window is turned by swapping its sides, kept on screen.
+func _orient(orientation: DisplayServer.ScreenOrientation, wide: bool) -> void:
+	if OS.has_feature("mobile"):
+		DisplayServer.screen_set_orientation(orientation)
+		return
+	var win := get_window()
+	# shortcut: the editor's embedded Game view owns its window (it can be neither resized nor moved),
+	# so the map letterboxes there; play in a separate window or on a phone to see it turn.
+	if Engine.is_embedded_in_editor():
+		return
+	if DisplayServer.get_name() == "headless" or win.mode != Window.MODE_WINDOWED or (win.size.x > win.size.y) == wide:
+		return
+	var screen := DisplayServer.screen_get_usable_rect(win.current_screen)
+	var size := Vector2i(win.size.y, win.size.x)
+	var fit := minf(1.0, minf(float(screen.size.x) / size.x, float(screen.size.y) / size.y))
+	win.size = Vector2i(Vector2(size) * fit)
+	win.position = screen.position + (screen.size - win.size) / 2
 
 func _ready() -> void:
 	_topic_id = SessionManager.current_topic_id
@@ -260,7 +302,7 @@ func _on_encounter_cleared() -> void:
 		return
 	_show_encounter(false)
 	_pending_encounter = {}
-	get_tree().change_scene_to_file("res://scenes/battle/battle.tscn")
+	_leave("res://scenes/battle/battle.tscn")
 
 func _refresh_progress() -> void:
 	var p := SessionManager.get_progress(_topic_id)
@@ -281,8 +323,13 @@ func _refresh_progress() -> void:
 	badges_label.text = "Gyms %d/%d %s" % [int(p["gyms_cleared"]), int(p["gyms_total"]), badges]
 
 func _on_back() -> void:
-	get_tree().change_scene_to_file("res://scenes/ui/session_list.tscn")
+	_leave("res://scenes/ui/session_list.tscn")
 
 func _on_study() -> void:
 	SessionManager.flashcards_return = "res://scenes/overworld/region_map.tscn"
-	get_tree().change_scene_to_file("res://scenes/review_session/flashcards.tscn")
+	_leave("res://scenes/review_session/flashcards.tscn")
+
+# Every way off the map goes portrait again, so the player is asked to turn the phone back.
+func _leave(scene: String) -> void:
+	RotatePrompt.open(get_tree(), false)
+	get_tree().change_scene_to_file(scene)

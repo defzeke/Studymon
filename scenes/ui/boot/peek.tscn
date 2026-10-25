@@ -23,6 +23,20 @@
 [ext_resource type="Texture2D" uid="uid://byosiuiimvb77" path="res://assets/sprites/props/data_chips.svg" id="22_chips"]
 [ext_resource type="Texture2D" uid="uid://ex2wav6064of" path="res://assets/sprites/ui/stat_mood.svg" id="23_mood"]
 [ext_resource type="Texture2D" uid="uid://bbgn4w3coakji" path="res://assets/sprites/ui/stat_health.svg" id="24_health"]
+[ext_resource type="Texture2D" uid="uid://plr6n42n6bw5" path="res://assets/sprites/rooms/soccer_field.svg" id="25_field"]
+[ext_resource type="Texture2D" uid="uid://dwf6b64llf0qd" path="res://assets/sprites/rooms/sky_jump.svg" id="26_sky"]
+[ext_resource type="Texture2D" uid="uid://che761a1i5mfp" path="res://assets/sprites/props/ground.svg" id="27_ground"]
+[ext_resource type="Texture2D" uid="uid://bgh83nge033tk" path="res://assets/sprites/props/soccer_ball.svg" id="28_soccer_ball"]
+[ext_resource type="Texture2D" uid="uid://dqq3vd1x1li1g" path="res://assets/sprites/ui/icon_games.svg" id="29_games"]
+[ext_resource type="Texture2D" uid="uid://cixngtt1avaog" path="res://assets/sprites/ui/game_soccer.svg" id="30_game_soccer"]
+[ext_resource type="Texture2D" uid="uid://yjrgfij58e6d" path="res://assets/sprites/ui/game_jump.svg" id="31_game_jump"]
+[ext_resource type="Script" path="res://scripts/ui/minigames/soccer.gd" id="32_soccer"]
+[ext_resource type="Script" path="res://scripts/ui/minigames/sky_jump.gd" id="33_sky_jump"]
+[ext_resource type="Texture2D" uid="uid://cgrv81fnvmq7w" path="res://assets/sprites/ui/dock_table.svg" id="34_table"]
+[ext_resource type="Script" path="res://scripts/ui/boot/kuiz_look.gd" id="35_look"]
+[ext_resource type="Texture2D" uid="uid://cmuicehkvq3q5" path="res://assets/sprites/props/tablet.svg" id="36_tablet"]
+[ext_resource type="Texture2D" uid="uid://drtu6hu4051ya" path="res://assets/sprites/props/towel.svg" id="37_towel"]
+[ext_resource type="Texture2D" uid="uid://dqflo2jklkyca" path="res://assets/sprites/props/closet.svg" id="38_closet"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_studio"]
 sky_top_color = Color(0.99, 1, 0.995, 1)
@@ -60,6 +74,24 @@ albedo_texture = SubResource("GradientTexture2D_shadow")
 [sub_resource type="PlaneMesh" id="PlaneMesh_shadow"]
 material = SubResource("StandardMaterial3D_shadow")
 size = Vector2(2.9, 2.1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_card"]
+content_margin_left = 22.0
+content_margin_top = 12.0
+content_margin_right = 22.0
+content_margin_bottom = 14.0
+bg_color = Color(0.9686, 0.9608, 0.9373, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.1608, 0.2196, 0.2275, 1)
+corner_radius_top_left = 24
+corner_radius_top_right = 24
+corner_radius_bottom_right = 24
+corner_radius_bottom_left = 24
+shadow_color = Color(0.1608, 0.2196, 0.2275, 0.25)
+shadow_size = 6
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_pill"]
 content_margin_left = 6.0
@@ -105,6 +137,68 @@ corner_radius_top_left = 6
 corner_radius_top_right = 6
 corner_radius_bottom_right = 6
 corner_radius_bottom_left = 6
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_game"]
+content_margin_left = 16.0
+content_margin_top = 12.0
+content_margin_right = 16.0
+content_margin_bottom = 12.0
+bg_color = Color(0.9098, 0.9412, 0.9176, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.1608, 0.2196, 0.2275, 1)
+corner_radius_top_left = 22
+corner_radius_top_right = 22
+corner_radius_bottom_right = 22
+corner_radius_bottom_left = 22
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_game_pressed"]
+content_margin_left = 16.0
+content_margin_top = 12.0
+content_margin_right = 16.0
+content_margin_bottom = 12.0
+bg_color = Color(0.3098, 0.5608, 0.5373, 0.35)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.1608, 0.2196, 0.2275, 1)
+corner_radius_top_left = 22
+corner_radius_top_right = 22
+corner_radius_bottom_right = 22
+corner_radius_bottom_left = 22
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_dock"]
+content_margin_left = 22.0
+content_margin_right = 22.0
+content_margin_bottom = 86.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bezel"]
+content_margin_left = 22.0
+content_margin_top = 22.0
+content_margin_right = 22.0
+content_margin_bottom = 18.0
+bg_color = Color(0.1608, 0.2196, 0.2275, 1)
+corner_radius_top_left = 36
+corner_radius_top_right = 36
+corner_radius_bottom_right = 36
+corner_radius_bottom_left = 36
+shadow_color = Color(0.1608, 0.2196, 0.2275, 0.3)
+shadow_size = 10
+shadow_offset = Vector2(0, 6)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_screen"]
+content_margin_left = 24.0
+content_margin_top = 20.0
+content_margin_right = 24.0
+content_margin_bottom = 20.0
+bg_color = Color(0.3098, 0.5608, 0.5373, 1)
+corner_radius_top_left = 20
+corner_radius_top_right = 20
+corner_radius_bottom_right = 20
+corner_radius_bottom_left = 20
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_sign"]
 content_margin_left = 28.0
@@ -224,22 +318,6 @@ corner_radius_top_right = 16
 corner_radius_bottom_right = 16
 corner_radius_bottom_left = 16
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bar"]
-content_margin_left = 12.0
-content_margin_top = 12.0
-content_margin_right = 12.0
-content_margin_bottom = 12.0
-bg_color = Color(0.1608, 0.2196, 0.2275, 0.88)
-border_width_left = 3
-border_width_top = 3
-border_width_right = 3
-border_width_bottom = 3
-border_color = Color(0.9686, 0.9608, 0.9373, 0.9)
-corner_radius_top_left = 32
-corner_radius_top_right = 32
-corner_radius_bottom_right = 32
-corner_radius_bottom_left = 32
-
 [node name="Peek" type="Node3D"]
 script = ExtResource("1_peek")
 
@@ -281,6 +359,10 @@ mesh = SubResource("PlaneMesh_shadow")
 
 [node name="Kuiz" parent="Stage" instance=ExtResource("2_kuiz")]
 unique_name_in_owner = true
+
+[node name="Look" type="Node" parent="."]
+unique_name_in_owner = true
+script = ExtResource("35_look")
 
 [node name="Voice" type="Node" parent="."]
 unique_name_in_owner = true
@@ -381,6 +463,56 @@ mouse_filter = 2
 texture = ExtResource("8_play")
 expand_mode = 1
 stretch_mode = 6
+
+[node name="SoccerField" type="TextureRect" parent="Rooms"]
+modulate = Color(1, 1, 1, 0)
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("25_field")
+expand_mode = 1
+stretch_mode = 6
+
+[node name="SkyJump" type="Control" parent="Rooms"]
+modulate = Color(1, 1, 1, 0)
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Sky" type="TextureRect" parent="Rooms/SkyJump"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("26_sky")
+expand_mode = 1
+stretch_mode = 6
+
+[node name="JumpWorld" type="Control" parent="Rooms/SkyJump"]
+unique_name_in_owner = true
+layout_mode = 3
+anchors_preset = 0
+mouse_filter = 2
+
+[node name="Ground" type="TextureRect" parent="Rooms/SkyJump/JumpWorld"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_right = 720.0
+offset_bottom = 400.0
+mouse_filter = 2
+texture = ExtResource("27_ground")
+expand_mode = 1
+stretch_mode = 0
 
 [node name="Tutorial" type="CanvasLayer" parent="."]
 unique_name_in_owner = true
@@ -534,11 +666,11 @@ visible = false
 script = ExtResource("10_home")
 
 [node name="Level" type="PanelContainer" parent="Home"]
+unique_name_in_owner = true
 offset_left = 16.0
 offset_top = 12.0
 offset_right = 180.0
 offset_bottom = 76.0
-mouse_filter = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_pill")
 
 [node name="Row" type="HBoxContainer" parent="Home/Level"]
@@ -601,7 +733,6 @@ theme_override_constants/separation = 8
 unique_name_in_owner = true
 custom_minimum_size = Vector2(64, 64)
 layout_mode = 2
-mouse_filter = 2
 script = ExtResource("20_gauge")
 icon = ExtResource("22_chips")
 color = Color(0.8392, 0.6588, 0.3725, 1)
@@ -610,7 +741,6 @@ color = Color(0.8392, 0.6588, 0.3725, 1)
 unique_name_in_owner = true
 custom_minimum_size = Vector2(64, 64)
 layout_mode = 2
-mouse_filter = 2
 script = ExtResource("20_gauge")
 icon = ExtResource("12_charge")
 color = Color(0.3098, 0.5608, 0.5373, 1)
@@ -619,7 +749,6 @@ color = Color(0.3098, 0.5608, 0.5373, 1)
 unique_name_in_owner = true
 custom_minimum_size = Vector2(64, 64)
 layout_mode = 2
-mouse_filter = 2
 script = ExtResource("20_gauge")
 icon = ExtResource("23_mood")
 color = Color(0.5529, 0.5098, 0.6588, 1)
@@ -628,7 +757,6 @@ color = Color(0.5529, 0.5098, 0.6588, 1)
 unique_name_in_owner = true
 custom_minimum_size = Vector2(64, 64)
 layout_mode = 2
-mouse_filter = 2
 script = ExtResource("20_gauge")
 icon = ExtResource("24_health")
 color = Color(0.7882, 0.4745, 0.4392, 1)
@@ -690,19 +818,31 @@ texture_normal = ExtResource("15_arrow")
 ignore_texture_size = true
 stretch_mode = 5
 
+[node name="Table" type="TextureRect" parent="Home"]
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -260.0
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 2
+texture = ExtResource("34_table")
+expand_mode = 1
+
 [node name="Bar" type="PanelContainer" parent="Home"]
 unique_name_in_owner = true
 anchors_preset = 12
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 16.0
-offset_top = -184.0
-offset_right = -16.0
-offset_bottom = -16.0
+offset_left = 0.0
+offset_top = -260.0
+offset_right = 0.0
+offset_bottom = 0.0
 grow_horizontal = 2
 grow_vertical = 0
-theme_override_styles/panel = SubResource("StyleBoxFlat_bar")
+theme_override_styles/panel = SubResource("StyleBoxEmpty_dock")
 
 [node name="Row" type="HBoxContainer" parent="Home/Bar"]
 layout_mode = 2
@@ -717,8 +857,16 @@ alignment = 1
 
 [node name="Charge" type="Button" parent="Home/Bar/Row/Study"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(120, 120)
+custom_minimum_size = Vector2(124, 146)
 layout_mode = 2
+theme_override_colors/font_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_colors/font_hover_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_colors/font_pressed_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_colors/font_hover_pressed_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_colors/font_focus_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_colors/font_disabled_color = Color(0.9686, 0.9608, 0.9373, 0.4)
+theme_override_fonts/font = ExtResource("9_bold")
+theme_override_font_sizes/font_size = 19
 size_flags_vertical = 4
 theme_override_styles/normal = SubResource("StyleBoxEmpty_focus")
 theme_override_styles/hover = SubResource("StyleBoxEmpty_focus")
@@ -730,13 +878,23 @@ theme_override_colors/icon_disabled_color = Color(1, 1, 1, 0.35)
 theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
 toggle_mode = true
 icon = ExtResource("12_charge")
+text = "Charge"
 icon_alignment = 1
+vertical_icon_alignment = 0
 expand_icon = true
 
 [node name="Play" type="Button" parent="Home/Bar/Row/Study"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(120, 120)
+custom_minimum_size = Vector2(124, 146)
 layout_mode = 2
+theme_override_colors/font_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_colors/font_hover_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_colors/font_pressed_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_colors/font_hover_pressed_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_colors/font_focus_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_colors/font_disabled_color = Color(0.9686, 0.9608, 0.9373, 0.4)
+theme_override_fonts/font = ExtResource("9_bold")
+theme_override_font_sizes/font_size = 19
 size_flags_vertical = 4
 theme_override_styles/normal = SubResource("StyleBoxEmpty_focus")
 theme_override_styles/hover = SubResource("StyleBoxEmpty_focus")
@@ -747,13 +905,23 @@ theme_override_colors/icon_pressed_color = Color(0.75, 0.75, 0.75, 1)
 theme_override_colors/icon_disabled_color = Color(1, 1, 1, 0.35)
 theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
 icon = ExtResource("13_play")
+text = "Study"
 icon_alignment = 1
+vertical_icon_alignment = 0
 expand_icon = true
 
 [node name="Settings" type="Button" parent="Home/Bar/Row/Study"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(120, 120)
+custom_minimum_size = Vector2(124, 146)
 layout_mode = 2
+theme_override_colors/font_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_colors/font_hover_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_colors/font_pressed_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_colors/font_hover_pressed_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_colors/font_focus_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_colors/font_disabled_color = Color(0.9686, 0.9608, 0.9373, 0.4)
+theme_override_fonts/font = ExtResource("9_bold")
+theme_override_font_sizes/font_size = 19
 size_flags_vertical = 4
 theme_override_styles/normal = SubResource("StyleBoxEmpty_focus")
 theme_override_styles/hover = SubResource("StyleBoxEmpty_focus")
@@ -764,7 +932,9 @@ theme_override_colors/icon_pressed_color = Color(0.75, 0.75, 0.75, 1)
 theme_override_colors/icon_disabled_color = Color(1, 1, 1, 0.35)
 theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
 icon = ExtResource("14_settings")
+text = "Settings"
 icon_alignment = 1
+vertical_icon_alignment = 0
 expand_icon = true
 
 [node name="Bay" type="CenterContainer" parent="Home/Bar/Row"]
@@ -773,14 +943,78 @@ visible = false
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="Tool" type="TextureRect" parent="Home/Bar/Row/Bay"]
+[node name="BayRow" type="HBoxContainer" parent="Home/Bar/Row/Bay"]
+layout_mode = 2
+theme_override_constants/separation = 30
+
+[node name="Checkup" type="Button" parent="Home/Bar/Row/Bay/BayRow"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(130, 130)
+custom_minimum_size = Vector2(124, 146)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_colors/font_hover_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_colors/font_pressed_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_colors/font_hover_pressed_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_colors/font_focus_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_colors/font_disabled_color = Color(0.9686, 0.9608, 0.9373, 0.4)
+theme_override_fonts/font = ExtResource("9_bold")
+theme_override_font_sizes/font_size = 19
+size_flags_vertical = 4
+theme_override_styles/normal = SubResource("StyleBoxEmpty_focus")
+theme_override_styles/hover = SubResource("StyleBoxEmpty_focus")
+theme_override_styles/pressed = SubResource("StyleBoxEmpty_focus")
+theme_override_styles/hover_pressed = SubResource("StyleBoxEmpty_focus")
+theme_override_styles/disabled = SubResource("StyleBoxEmpty_focus")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
+theme_override_colors/icon_pressed_color = Color(0.75, 0.75, 0.75, 1)
+text = "Check-up"
+icon = ExtResource("36_tablet")
+icon_alignment = 1
+vertical_icon_alignment = 0
+expand_icon = true
+
+[node name="Col" type="VBoxContainer" parent="Home/Bar/Row/Bay/BayRow"]
+layout_mode = 2
+theme_override_constants/separation = 0
+alignment = 2
+
+[node name="Tool" type="TextureRect" parent="Home/Bar/Row/Bay/BayRow/Col"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(124, 118)
 layout_mode = 2
 texture = ExtResource("18_tool")
 expand_mode = 1
 stretch_mode = 5
 
+
+[node name="ToolCaption" type="Label" parent="Home/Bar/Row/Bay/BayRow/Col"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_fonts/font = ExtResource("9_bold")
+theme_override_font_sizes/font_size = 19
+text = "Tighten"
+horizontal_alignment = 1
+
+[node name="TowelCol" type="VBoxContainer" parent="Home/Bar/Row/Bay/BayRow"]
+layout_mode = 2
+theme_override_constants/separation = 0
+alignment = 2
+
+[node name="Towel" type="TextureRect" parent="Home/Bar/Row/Bay/BayRow/TowelCol"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(124, 118)
+layout_mode = 2
+texture = ExtResource("37_towel")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="TowelCaption" type="Label" parent="Home/Bar/Row/Bay/BayRow/TowelCol"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_fonts/font = ExtResource("9_bold")
+theme_override_font_sizes/font_size = 19
+text = "Clean"
+horizontal_alignment = 1
 [node name="Kitchen" type="HBoxContainer" parent="Home/Bar/Row"]
 unique_name_in_owner = true
 visible = false
@@ -791,8 +1025,16 @@ alignment = 1
 
 [node name="Fridge" type="Button" parent="Home/Bar/Row/Kitchen"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(110, 120)
+custom_minimum_size = Vector2(110, 146)
 layout_mode = 2
+theme_override_colors/font_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_colors/font_hover_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_colors/font_pressed_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_colors/font_hover_pressed_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_colors/font_focus_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_colors/font_disabled_color = Color(0.9686, 0.9608, 0.9373, 0.4)
+theme_override_fonts/font = ExtResource("9_bold")
+theme_override_font_sizes/font_size = 19
 size_flags_vertical = 4
 theme_override_styles/normal = SubResource("StyleBoxEmpty_focus")
 theme_override_styles/hover = SubResource("StyleBoxEmpty_focus")
@@ -801,7 +1043,9 @@ theme_override_styles/hover_pressed = SubResource("StyleBoxEmpty_focus")
 theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
 theme_override_colors/icon_pressed_color = Color(0.75, 0.75, 0.75, 1)
 icon = ExtResource("16_fridge")
+text = "Fridge"
 icon_alignment = 1
+vertical_icon_alignment = 0
 expand_icon = true
 
 [node name="FoodPrev" type="TextureButton" parent="Home/Bar/Row/Kitchen"]
@@ -817,11 +1061,12 @@ flip_h = true
 [node name="Food" type="VBoxContainer" parent="Home/Bar/Row/Kitchen"]
 custom_minimum_size = Vector2(220, 0)
 layout_mode = 2
+size_flags_vertical = 4
 theme_override_constants/separation = 2
 
 [node name="FoodIcon" type="TextureRect" parent="Home/Bar/Row/Kitchen/Food"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 104)
+custom_minimum_size = Vector2(0, 118)
 layout_mode = 2
 expand_mode = 1
 stretch_mode = 5
@@ -850,14 +1095,84 @@ visible = false
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="Hint" type="Label" parent="Home/Bar/Row/PlayBar"]
+
+[node name="PlayRow" type="HBoxContainer" parent="Home/Bar/Row/PlayBar"]
+layout_mode = 2
+theme_override_constants/separation = 26
+alignment = 1
+
+[node name="Closet" type="Button" parent="Home/Bar/Row/PlayBar/PlayRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(124, 146)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_colors/font_hover_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_colors/font_pressed_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_colors/font_hover_pressed_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_colors/font_focus_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_colors/font_disabled_color = Color(0.9686, 0.9608, 0.9373, 0.4)
+theme_override_fonts/font = ExtResource("9_bold")
+theme_override_font_sizes/font_size = 19
+size_flags_vertical = 4
+theme_override_styles/normal = SubResource("StyleBoxEmpty_focus")
+theme_override_styles/hover = SubResource("StyleBoxEmpty_focus")
+theme_override_styles/pressed = SubResource("StyleBoxEmpty_focus")
+theme_override_styles/hover_pressed = SubResource("StyleBoxEmpty_focus")
+theme_override_styles/disabled = SubResource("StyleBoxEmpty_focus")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
+theme_override_colors/icon_pressed_color = Color(0.75, 0.75, 0.75, 1)
+text = "Closet"
+icon = ExtResource("38_closet")
+icon_alignment = 1
+vertical_icon_alignment = 0
+expand_icon = true
+
+[node name="BallCol" type="VBoxContainer" parent="Home/Bar/Row/PlayBar/PlayRow"]
+layout_mode = 2
+size_flags_vertical = 4
+theme_override_constants/separation = 0
+
+[node name="BallSlot" type="TextureRect" parent="Home/Bar/Row/PlayBar/PlayRow/BallCol"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(124, 118)
+layout_mode = 2
+texture = ExtResource("17_ball")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="BallCaption" type="Label" parent="Home/Bar/Row/PlayBar/PlayRow/BallCol"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.9686, 0.9608, 0.9373, 1)
 theme_override_fonts/font = ExtResource("9_bold")
-theme_override_font_sizes/font_size = 26
+theme_override_font_sizes/font_size = 19
+text = "Ball"
 horizontal_alignment = 1
-text = "Fling the ball!"
 
+[node name="Games" type="Button" parent="Home/Bar/Row/PlayBar/PlayRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(124, 146)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_colors/font_hover_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_colors/font_pressed_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_colors/font_hover_pressed_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_colors/font_focus_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_colors/font_disabled_color = Color(0.9686, 0.9608, 0.9373, 0.4)
+theme_override_fonts/font = ExtResource("9_bold")
+theme_override_font_sizes/font_size = 19
+size_flags_vertical = 4
+theme_override_styles/normal = SubResource("StyleBoxEmpty_focus")
+theme_override_styles/hover = SubResource("StyleBoxEmpty_focus")
+theme_override_styles/pressed = SubResource("StyleBoxEmpty_focus")
+theme_override_styles/hover_pressed = SubResource("StyleBoxEmpty_focus")
+theme_override_styles/disabled = SubResource("StyleBoxEmpty_focus")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
+theme_override_colors/icon_pressed_color = Color(0.75, 0.75, 0.75, 1)
+text = "Games"
+icon = ExtResource("29_games")
+icon_alignment = 1
+vertical_icon_alignment = 0
+expand_icon = true
 [node name="Ball" type="TextureRect" parent="Home"]
 unique_name_in_owner = true
 visible = false
@@ -867,6 +1182,339 @@ pivot_offset = Vector2(48, 48)
 texture = ExtResource("17_ball")
 expand_mode = 1
 stretch_mode = 5
+
+[node name="Picker" type="PanelContainer" parent="Home"]
+unique_name_in_owner = true
+visible = false
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -310.0
+offset_top = -300.0
+offset_right = 310.0
+offset_bottom = 260.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_box")
+
+[node name="Body" type="VBoxContainer" parent="Home/Picker"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="Title" type="Label" parent="Home/Picker/Body"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.1608, 0.2196, 0.2275, 1)
+theme_override_fonts/font = ExtResource("9_bold")
+theme_override_font_sizes/font_size = 36
+text = "Minigames"
+horizontal_alignment = 1
+
+[node name="PlaySoccer" type="Button" parent="Home/Picker/Body"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 150)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.1608, 0.2196, 0.2275, 1)
+theme_override_colors/font_hover_color = Color(0.1608, 0.2196, 0.2275, 1)
+theme_override_colors/font_pressed_color = Color(0.1608, 0.2196, 0.2275, 1)
+theme_override_colors/font_focus_color = Color(0.1608, 0.2196, 0.2275, 1)
+theme_override_fonts/font = ExtResource("9_bold")
+theme_override_font_sizes/font_size = 26
+theme_override_constants/h_separation = 18
+theme_override_constants/icon_max_width = 118
+theme_override_styles/normal = SubResource("StyleBoxFlat_game")
+theme_override_styles/hover = SubResource("StyleBoxFlat_game")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_game_pressed")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
+text = "Kuiz Keeper\nSwipe the ball past Kuiz"
+icon = ExtResource("30_game_soccer")
+alignment = 0
+
+[node name="PlayJump" type="Button" parent="Home/Picker/Body"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 150)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.1608, 0.2196, 0.2275, 1)
+theme_override_colors/font_hover_color = Color(0.1608, 0.2196, 0.2275, 1)
+theme_override_colors/font_pressed_color = Color(0.1608, 0.2196, 0.2275, 1)
+theme_override_colors/font_focus_color = Color(0.1608, 0.2196, 0.2275, 1)
+theme_override_fonts/font = ExtResource("9_bold")
+theme_override_font_sizes/font_size = 26
+theme_override_constants/h_separation = 18
+theme_override_constants/icon_max_width = 118
+theme_override_styles/normal = SubResource("StyleBoxFlat_game")
+theme_override_styles/hover = SubResource("StyleBoxFlat_game")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_game_pressed")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
+text = "Sky Jump\nBounce Kuiz up high"
+icon = ExtResource("31_game_jump")
+alignment = 0
+
+[node name="PickerClose" type="Button" parent="Home/Picker/Body"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 64)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_colors/font_hover_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_colors/font_pressed_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_fonts/font = ExtResource("9_bold")
+theme_override_font_sizes/font_size = 28
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn")
+theme_override_styles/hover = SubResource("StyleBoxFlat_btn")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_btn_pressed")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
+text = "Close"
+
+[node name="CheckPanel" type="PanelContainer" parent="Home"]
+unique_name_in_owner = true
+visible = false
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -300.0
+offset_top = -300.0
+offset_right = 300.0
+offset_bottom = 250.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_bezel")
+
+[node name="Body" type="VBoxContainer" parent="Home/CheckPanel"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="Screen" type="PanelContainer" parent="Home/CheckPanel/Body"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_styles/panel = SubResource("StyleBoxFlat_screen")
+
+[node name="List" type="VBoxContainer" parent="Home/CheckPanel/Body/Screen"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="Title" type="Label" parent="Home/CheckPanel/Body/Screen/List"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_fonts/font = ExtResource("9_bold")
+theme_override_font_sizes/font_size = 32
+text = "Kuiz check-up"
+horizontal_alignment = 1
+
+[node name="CheckRows" type="VBoxContainer" parent="Home/CheckPanel/Body/Screen/List"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="CheckHint" type="Label" parent="Home/CheckPanel/Body/Screen/List"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 64)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_fonts/font = ExtResource("9_bold")
+theme_override_font_sizes/font_size = 22
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
+
+[node name="NewBattery" type="Button" parent="Home/CheckPanel/Body"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 72)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_colors/font_hover_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_colors/font_pressed_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_colors/font_disabled_color = Color(0.9686, 0.9608, 0.9373, 0.45)
+theme_override_colors/icon_disabled_color = Color(1, 1, 1, 0.45)
+theme_override_constants/icon_max_width = 40
+theme_override_fonts/font = ExtResource("9_bold")
+theme_override_font_sizes/font_size = 28
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn")
+theme_override_styles/hover = SubResource("StyleBoxFlat_btn")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_btn_pressed")
+theme_override_styles/disabled = SubResource("StyleBoxFlat_btn")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
+text = "New battery"
+icon = ExtResource("21_crystal")
+expand_icon = true
+
+[node name="CheckClose" type="Button" parent="Home/CheckPanel/Body"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 64)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_colors/font_hover_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_colors/font_pressed_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_fonts/font = ExtResource("9_bold")
+theme_override_font_sizes/font_size = 28
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn")
+theme_override_styles/hover = SubResource("StyleBoxFlat_btn")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_btn_pressed")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
+text = "Close"
+
+[node name="Wardrobe" type="PanelContainer" parent="Home"]
+unique_name_in_owner = true
+visible = false
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -300.0
+offset_top = -360.0
+offset_right = 300.0
+offset_bottom = 300.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_box")
+
+[node name="Body" type="VBoxContainer" parent="Home/Wardrobe"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="Title" type="Label" parent="Home/Wardrobe/Body"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.1608, 0.2196, 0.2275, 1)
+theme_override_fonts/font = ExtResource("9_bold")
+theme_override_font_sizes/font_size = 36
+text = "Closet"
+horizontal_alignment = 1
+
+[node name="WardrobeTabs" type="HBoxContainer" parent="Home/Wardrobe/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="WardrobeGrid" type="GridContainer" parent="Home/Wardrobe/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/h_separation = 12
+theme_override_constants/v_separation = 12
+columns = 3
+
+[node name="WardrobeClose" type="Button" parent="Home/Wardrobe/Body"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 64)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_colors/font_hover_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_colors/font_pressed_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_fonts/font = ExtResource("9_bold")
+theme_override_font_sizes/font_size = 28
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn")
+theme_override_styles/hover = SubResource("StyleBoxFlat_btn")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_btn_pressed")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
+text = "Close"
+
+[node name="LevelInfo" type="PanelContainer" parent="Home"]
+unique_name_in_owner = true
+visible = false
+offset_left = 16.0
+offset_top = 84.0
+offset_right = 236.0
+offset_bottom = 184.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_card")
+
+[node name="Box" type="VBoxContainer" parent="Home/LevelInfo"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 2
+
+[node name="LevelName" type="Label" parent="Home/LevelInfo/Box"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.1608, 0.2196, 0.2275, 1)
+theme_override_fonts/font = ExtResource("9_bold")
+theme_override_font_sizes/font_size = 26
+text = "Level 1"
+
+[node name="LevelXp" type="Label" parent="Home/LevelInfo/Box"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.3098, 0.5608, 0.5373, 1)
+theme_override_fonts/font = ExtResource("9_bold")
+theme_override_font_sizes/font_size = 22
+text = "0 / 20 XP"
+
+[node name="LevelNext" type="Label" parent="Home/LevelInfo/Box"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.4078, 0.4667, 0.4706, 1)
+theme_override_fonts/font = ExtResource("9_bold")
+theme_override_font_sizes/font_size = 17
+text = "20 XP to Level 2"
+
+[node name="StatInfo" type="PanelContainer" parent="Home"]
+unique_name_in_owner = true
+visible = false
+offset_left = 16.0
+offset_top = 84.0
+offset_right = 236.0
+offset_bottom = 184.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_card")
+
+[node name="Box" type="VBoxContainer" parent="Home/StatInfo"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 2
+
+[node name="StatName" type="Label" parent="Home/StatInfo/Box"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.1608, 0.2196, 0.2275, 1)
+theme_override_fonts/font = ExtResource("9_bold")
+theme_override_font_sizes/font_size = 26
+text = "Energy"
+
+[node name="StatValue" type="Label" parent="Home/StatInfo/Box"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.3098, 0.5608, 0.5373, 1)
+theme_override_fonts/font = ExtResource("9_bold")
+theme_override_font_sizes/font_size = 22
+text = "80 / 100"
+
+[node name="StatHint" type="Label" parent="Home/StatInfo/Box"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.4078, 0.4667, 0.4706, 1)
+theme_override_fonts/font = ExtResource("9_bold")
+theme_override_font_sizes/font_size = 17
+text = "Charge Kuiz in the Study Room"
+
+[node name="Toast" type="PanelContainer" parent="Home"]
+unique_name_in_owner = true
+visible = false
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -300.0
+offset_top = -360.0
+offset_right = 300.0
+offset_bottom = -300.0
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_pill")
+
+[node name="ToastLabel" type="Label" parent="Home/Toast"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.1608, 0.2196, 0.2275, 1)
+theme_override_fonts/font = ExtResource("9_bold")
+theme_override_font_sizes/font_size = 22
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
 
 [node name="Held" type="TextureRect" parent="Home"]
 unique_name_in_owner = true
@@ -941,3 +1589,84 @@ theme_override_styles/hover = SubResource("StyleBoxFlat_btn")
 theme_override_styles/pressed = SubResource("StyleBoxFlat_btn_pressed")
 theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
 text = "Close"
+
+[node name="Soccer" type="CanvasLayer" parent="."]
+visible = false
+script = ExtResource("32_soccer")
+
+[node name="SoccerScore" type="PanelContainer" parent="Soccer"]
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -150.0
+offset_top = 16.0
+offset_right = 150.0
+offset_bottom = 76.0
+grow_horizontal = 2
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_pill")
+
+[node name="SoccerLabel" type="Label" parent="Soccer/SoccerScore"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.1608, 0.2196, 0.2275, 1)
+theme_override_fonts/font = ExtResource("9_bold")
+theme_override_font_sizes/font_size = 26
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="SoccerQuit" type="TextureButton" parent="Soccer"]
+unique_name_in_owner = true
+offset_left = 16.0
+offset_top = 18.0
+offset_right = 72.0
+offset_bottom = 74.0
+texture_normal = ExtResource("15_arrow")
+ignore_texture_size = true
+stretch_mode = 5
+flip_h = true
+
+[node name="SoccerBall" type="TextureRect" parent="Soccer"]
+unique_name_in_owner = true
+offset_right = 120.0
+offset_bottom = 120.0
+pivot_offset = Vector2(60, 60)
+texture = ExtResource("28_soccer_ball")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="SkyJumpHud" type="CanvasLayer" parent="."]
+visible = false
+script = ExtResource("33_sky_jump")
+
+[node name="JumpScore" type="PanelContainer" parent="SkyJumpHud"]
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -150.0
+offset_top = 16.0
+offset_right = 150.0
+offset_bottom = 76.0
+grow_horizontal = 2
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_pill")
+
+[node name="JumpLabel" type="Label" parent="SkyJumpHud/JumpScore"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.1608, 0.2196, 0.2275, 1)
+theme_override_fonts/font = ExtResource("9_bold")
+theme_override_font_sizes/font_size = 26
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="JumpQuit" type="TextureButton" parent="SkyJumpHud"]
+unique_name_in_owner = true
+offset_left = 16.0
+offset_top = 18.0
+offset_right = 72.0
+offset_bottom = 74.0
+texture_normal = ExtResource("15_arrow")
+ignore_texture_size = true
+stretch_mode = 5
+flip_h = true

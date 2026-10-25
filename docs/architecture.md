@@ -54,21 +54,30 @@ res://
 ├── project.godot
 ├── icon.svg
 ├── assets/
-│   ├── audio/            charge.mp3, charged.mp3, loading.mp3, main room.mp3, sfx/ (ten battle cues)
+│   ├── audio/            music/ (home_room.wav, loading.wav, overworld.wav), sfx/ (ten battle cues, sfx_charge,
+│   │                     sfx_charged); all our own, synthesised offline
 │   ├── fonts/            JosefinSans-Regular.ttf, JosefinSans-Bold.ttf
 │   ├── models/           kuiz.glb (peek scene); map.glb + map_0.png, boy_explorer.glb + 2 .jpg
 │   │                     textures (overworld)
 │   ├── theme/            app_theme.tres (the one shared Theme)
 │   └── sprites/
 │       ├── boot/         kuizmon_splash.png (60-frame splash sheet), kuizmon_loading.gif (its
-│       │                 source, not imported), loading.png (background), logo.png (wordmark)
+│       │                 source, not imported), loading.png (background), loading_screen_logo.gif (logo animation source, not imported) and
+│       │                 loading_screen_logo.png (its frames, keyed, as a sheet)
 │       ├── effects/      leaf.svg (loading leaves, autumn weather)
-│       ├── props/        foods, fridge, ball, screwdriver (temporary placeholders)
+│       ├── props/        foods, fridge, ball, screwdriver, soccer_ball, platform, ground,
+│       │                 platform_timed, trampoline, rocket, platform_space|galaxy|deep,
+│       │                 stars, meteor, tablet, towel, closet, dirt_spot_1-3, scratch_1-2,
+│       │                 costume_* (11)
+│       │                 (temporary placeholders)
 │       ├── rooms/        temporary placeholders: study_room.svg (+ _night), maintenance_bay.svg,
-│       │                 data_kitchen.svg, playroom.svg
+│       │                 data_kitchen.svg, playroom.svg; soccer_field.svg, sky_jump.svg,
+│       │                 sky_space.svg, sky_galaxy.svg, sky_deep.svg
 │       ├── battle/       battle_backdrop.svg
 │       └── ui/           arrow.svg, icon_charge.svg, icon_upload.svg, icon_settings.svg,
-│                         crystal.svg, stat_mood.svg, stat_health.svg,
+│                         crystal.svg, stat_mood.svg, stat_health.svg, icon_games.svg,
+│                         game_soccer.svg, game_jump.svg, dock_table.svg, icon_phone.svg,
+│                         icon_turn.svg,
 │                         loading_spark.svg, tip_bulb.svg; campaign.png, charge.png,
 │                         settings.svg (unused)
 ├── scripts/
@@ -78,11 +87,12 @@ res://
 │   ├── audio/            synth.gd, clip_voice.gd (model sounds made in code)
 │   ├── battle/           battle.gd, arena_stage.gd, broken_bot_voice.gd
 │   ├── overworld/        region_map.gd, player.gd, joystick.gd, season.gd, encounter_trigger.gd,
-│   │                     gym_slot.gd, map_collision.gd
+│   │                     gym_slot.gd, map_collision.gd, minimap.gd
 │   ├── review_session/   categorizer.gd, flashcards.gd
 │   └── ui/               home.gd, session_list.gd, settings.gd
-│       ├── boot/         splash.gd, loading.gd, peek.gd, tutorial.gd, kuiz_voice.gd
-│       └── widgets/      confirm_modal.gd, stat_gauge.gd
+│       ├── boot/         splash.gd, loading.gd, peek.gd, tutorial.gd, kuiz_voice.gd, kuiz_look.gd
+│       ├── minigames/    minigame.gd, soccer.gd, sky_jump.gd (Playroom games)
+│       └── widgets/      confirm_modal.gd, stat_gauge.gd, rotate_prompt.gd
 ├── scenes/               session_list, settings (ui/)
 │   │                     encounter_trigger, gym_burst, region_map (overworld/)
 │   │                     categorizer, flashcards (review_session/), battle (battle/)
@@ -225,7 +235,7 @@ which exist precisely so the overworld can pass a question to the battle scene a
 | `quota_exceeded(type)` | `Api` | `battle.gd`, `categorizer.gd` |
 | `topics_listed`, `extraction_*`, `topic_saved`, `region_generated`, `overworld_progress_changed` | `SessionManager` | `session_list.gd`, `categorizer.gd`, `region_map.gd` |
 | `mastery_changed`, `champion_defeated`, `insight_triggered` | `SessionManager` | `region_map.gd` (the rest have no listener) |
-| `quota_changed`, `premium_changed` | `MonetizationState` | `settings.gd`, `battle.gd`, `categorizer.gd` |
+| `quota_changed`, `premium_changed` | `MonetizationState` | `battle.gd`, `categorizer.gd` |
 
 `Api.job_status` is a **shared bus**: extraction jobs, the `"topics"` listing, and the `"grade"`
 result all arrive on the same signal and are disambiguated by `job_id` string. Any new async

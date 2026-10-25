@@ -10,6 +10,7 @@
 [ext_resource type="Script" path="res://scripts/overworld/map_collision.gd" id="8_collision"]
 [ext_resource type="PackedScene" path="res://scenes/overworld/encounter_trigger.tscn" id="9_trigger"]
 [ext_resource type="PackedScene" path="res://scenes/overworld/gym_burst.tscn" id="10_burst"]
+[ext_resource type="Script" path="res://scripts/overworld/minimap.gd" id="11_minimap"]
 
 [sub_resource type="Environment" id="Environment_island"]
 background_mode = 1
@@ -33,6 +34,25 @@ corner_radius_top_left = 22
 corner_radius_top_right = 22
 corner_radius_bottom_right = 22
 corner_radius_bottom_left = 22
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_minimap"]
+content_margin_left = 7.0
+content_margin_top = 7.0
+content_margin_right = 7.0
+content_margin_bottom = 7.0
+bg_color = Color(0.9686, 0.9608, 0.9373, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.1608, 0.2196, 0.2275, 1)
+corner_radius_top_left = 14
+corner_radius_top_right = 14
+corner_radius_bottom_right = 14
+corner_radius_bottom_left = 14
+shadow_color = Color(0.1608, 0.2196, 0.2275, 0.25)
+shadow_size = 6
+shadow_offset = Vector2(0, 3)
 
 [node name="RegionMap" type="Node3D" unique_id=542269348 node_paths=PackedStringArray("gym_slots", "champion_slot")]
 script = ExtResource("1")
@@ -150,18 +170,17 @@ unique_name_in_owner = true
 
 [node name="Camera3D" type="Camera3D" parent="Player" unique_id=1679490285]
 transform = Transform3D(1, 0, 0, 0, 0.5855, 0.8107, 0, -0.8107, 0.5855, 0, 7, 4.7)
-keep_aspect = 0
-fov = 40.0
+fov = 45.0
 
 [node name="HUD" type="CanvasLayer" parent="." unique_id=1690847508]
 
 [node name="TopPlate" type="Panel" parent="HUD" unique_id=841144670]
 anchors_preset = 10
 anchor_right = 1.0
-offset_left = 8.0
-offset_top = 8.0
-offset_right = -8.0
-offset_bottom = 72.0
+offset_left = 252.0
+offset_top = 16.0
+offset_right = -16.0
+offset_bottom = 78.0
 grow_horizontal = 2
 mouse_filter = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_hud_plate")
@@ -169,10 +188,10 @@ theme_override_styles/panel = SubResource("StyleBoxFlat_hud_plate")
 [node name="HintPlate" type="Panel" parent="HUD" unique_id=861856828]
 anchors_preset = 10
 anchor_right = 1.0
-offset_left = 8.0
-offset_top = 78.0
-offset_right = -8.0
-offset_bottom = 122.0
+offset_left = 252.0
+offset_top = 84.0
+offset_right = -16.0
+offset_bottom = 128.0
 grow_horizontal = 2
 mouse_filter = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_hud_plate")
@@ -180,10 +199,10 @@ theme_override_styles/panel = SubResource("StyleBoxFlat_hud_plate")
 [node name="TopBar" type="HBoxContainer" parent="HUD" unique_id=1412665202]
 anchors_preset = 10
 anchor_right = 1.0
-offset_left = 20.0
-offset_top = 14.0
-offset_right = -20.0
-offset_bottom = 66.0
+offset_left = 264.0
+offset_top = 22.0
+offset_right = -28.0
+offset_bottom = 72.0
 grow_horizontal = 2
 theme_override_constants/separation = 12
 
@@ -213,14 +232,44 @@ horizontal_alignment = 2
 [node name="HintLabel" type="Label" parent="HUD" unique_id=449441669]
 anchors_preset = 10
 anchor_right = 1.0
-offset_left = 20.0
-offset_top = 84.0
-offset_right = -20.0
-offset_bottom = 116.0
+offset_left = 264.0
+offset_top = 90.0
+offset_right = -28.0
+offset_bottom = 122.0
 grow_horizontal = 2
 theme_override_colors/font_color = Color(0.9686, 0.9608, 0.9373, 1)
 text = "Use the joystick to walk into a trainer or gym"
 horizontal_alignment = 1
+
+[node name="Minimap" type="PanelContainer" parent="HUD"]
+offset_left = 16.0
+offset_top = 16.0
+offset_right = 236.0
+offset_bottom = 236.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_minimap")
+script = ExtResource("11_minimap")
+
+[node name="View" type="SubViewportContainer" parent="HUD/Minimap"]
+layout_mode = 2
+mouse_filter = 2
+stretch = true
+
+[node name="MinimapViewport" type="SubViewport" parent="HUD/Minimap/View"]
+unique_name_in_owner = true
+handle_input_locally = false
+size = Vector2i(206, 206)
+render_target_update_mode = 1
+
+[node name="MinimapCamera" type="Camera3D" parent="HUD/Minimap/View/MinimapViewport"]
+unique_name_in_owner = true
+projection = 1
+current = true
+
+[node name="MinimapDots" type="Control" parent="HUD/Minimap"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
 
 [node name="Joystick" type="Control" parent="HUD" unique_id=1796400796]
 layout_mode = 3

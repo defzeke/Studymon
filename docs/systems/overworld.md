@@ -74,9 +74,10 @@ RegionMap            Node3D (region_map.gd)
 ├── Trainers, Gyms    filled at runtime
 ├── Player            CharacterBody3D (player.gd), floating motion, capsule r 0.22 h 0.9
 │   ├── Boy           instance of assets/models/boy_explorer.glb (Idle / Walk / Run looped)
-│   └── Camera3D      (0, 7, 4.7), pitched −54°, fov 40 across the width
-└── HUD               TopBar, HintLabel, Joystick (bottom-left), StudyButton (bottom-right,
-                      opens the Flashcard Sanctuary and returns here), EncounterPanel
+│   └── Camera3D      (0, 7, 4.7), pitched −54°, fov 45 vertical (keep height, for the wide view)
+└── HUD               Minimap (top-left, minimap.gd), TopBar and HintLabel right of it, Joystick
+                      (bottom-left), StudyButton (bottom-right, opens the Flashcard Sanctuary and
+                      returns here), EncounterPanel
 ```
 
 **Where things go.** Every gym is a `GymSlot` node in `region_map.tscn`, listed in the root's
@@ -138,6 +139,36 @@ anything spawned higher only crosses the view right at the lens. Particle colour
 (`vertex_color_is_srgb`). Foliage is tinted on duplicated materials, because the imported ones are shared
 with every later load. The `Environment` resource is also shared, so every field is set every time.
 To drop a season, remove it from `Season` and `LOOKS`.
+
+**Landscape** (`region_map.gd`). The map is the one landscape screen. `_enter_tree()` (before the
+HUD lays out) saves the window's content size, aspect and screen orientation, then sets a
+1280×720 base with `CONTENT_SCALE_ASPECT_KEEP`, so the view is exactly 16:9 (letterboxed on other
+shapes), and turns the screen: phones get `SCREEN_SENSOR_LANDSCAPE`; a desktop window swaps its
+width and height, scaled to fit and centred on its screen (fullscreen windows are left alone).
+`_exit_tree()` puts all three back, so however the map is left — a battle, Study, the back button —
+the next screen opens in the project's 720×1280 portrait. The size is the `landscape_size` export.
+Entering shows the "Turn your phone sideways" card and every way off the map (`_leave()`: battle,
+Study, back) shows "Turn your phone upright" (`widgets/rotate_prompt.gd`). Outside the map the app
+is portrait on phones (`display/window/handheld/orientation` = portrait).
+**Music:** entering the map crossfades to its own route theme (`MusicManager.play_overworld()`,
+`music/overworld.wav`), which keeps playing through battles; the session list, flashcards and home
+crossfade back to the home loop.
+**Known limit:** the editor's embedded Game view owns its window, so the map neither resizes nor
+moves it (`Engine.is_embedded_in_editor()`) and shows letterboxed inside the portrait frame. Turn
+off *Embed Game on Next Play* in the Game workspace to play in a separate window that turns
+landscape; phones rotate (an iOS export must also list landscape among its supported
+orientations).
+
+**Minimap** (`minimap.gd`). A 220 px Warm Off-White frame at the top-left (Deep Slate 3 px
+outline, rounded, soft shadow, like home's HUD pills) showing the whole island from straight above.
+A 206 px `SubViewport` shares the map's `World3D`; its orthographic camera sees only layer 11,
+which `_ready()` adds to every mesh in `Map`, so the explorer, trigger labels and weather stay out.
+It is framed on the island's bounds, leaving out the water and seabed planes (wider than 150 units,
+they run to the horizon but are still drawn). The picture is rendered **once**
+(`UPDATE_ONCE`), so it costs one small extra render per visit; it keeps the season's lighting from
+that moment. Dots are drawn in 2D every frame on top: the explorer (teal on off-white), trainers
+(small off-white on slate), gyms (amber) and the Champion (coral), placed with the minimap
+camera's `unproject_position()`.
 
 **Joystick** (`joystick.gd`). A 320 px square at the bottom-left; base radius 120, knob 52, dead zone
 15 %. Touch reaches it as emulated mouse events, so one finger drives it; the knob springs back on
@@ -269,7 +300,7 @@ replay the effect.
 
 | Gap | Detail |
 |---|---|
-| No mini-map / gym tracker | The plan called for one; the HUD badge row is the only progress view |
+| Minimap is a still picture | Rendered once per visit, so door animations and later light changes do not show in it; only the dots move |
 | No region regeneration | The map is rebuilt from `pending_questions`; editing a saved topic changes the live map silently |
 | Fixed layout | Three gyms at most (a fourth type needs a fourth `GymSlot`); the third has no building, and the slot markers are hand-placed for this map only |
 | One-finger joystick | Touch is read as emulated mouse, so the stick and a second finger cannot act at once |

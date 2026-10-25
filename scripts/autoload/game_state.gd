@@ -14,8 +14,11 @@ var tutorial_done: bool = false
 # shortcut: memory only until Kuiz's stats and the shop's currency exist; food id -> count.
 var food_stock: Dictionary = {}
 var campaign_unlocked_flag: bool = false
-# Home's currency (top-right pill); nothing earns or spends it yet.
+# Home's currency (top-right pill): minigame rounds earn it, a new battery spends it.
 var crystals: int = 0
+## What Kuiz wears: closet slot ("head", "face", "body") -> an id from kuiz_look.gd's COSTUMES; a
+## missing slot is bare.
+var outfit: Dictionary = {}
 var active_region_id: String = ""
 
 # --- Phase 9: Accessibility — font-size scaling hooked into app_theme.tres ---

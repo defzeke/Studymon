@@ -8,11 +8,14 @@ Terms used throughout this repo, in the sense this repo means them.
 |---|---|
 | **Studymon** | The project: a study-review game where a companion is raised, then used to fight through a campaign built from reviewer material. |
 | **Companion** | Kuiz, the AI creature in the home rooms. Its state is `CompanionState` (level, XP, hunger, energy, mood, health, focus, bond, codex). |
-| **Crystals** | Home's currency, `GameState.crystals`, shown top right with the logo's forehead gem. Saved; nothing earns or spends it yet. |
+| **Dirt** | `CompanionState.dirt`, 0 (clean) to 100: builds up over time and with meals and play, shows as spots and scratches on Kuiz, scrubbed off with the towel. |
+| **Outfit** | What Kuiz wears from the Playroom closet, `GameState.outfit`: one costume per slot (head, face, body), each a sticker on its head. |
+| **Battery health** | `CompanionState.battery_health`: the battery's capacity, like a phone's. Charging wears it, a worn battery drains energy faster, and a new one (30 crystals, the check-up tablet) restores 100 %. |
+| **Crystals** | Home's currency, `GameState.crystals`, shown top right with the logo's forehead gem. Saved; minigame rounds earn it, a new battery spends it. |
 | **Care tap** | One press of Feed, Pet or Play. Grants XP, nudges one stat, increments bond, and is subject to hourly diminishing returns. |
 | **Hunger / Energy / Mood / Health** | The four 0–100 stats on home's HUD gauges. Energy drains fastest; Hunger, Mood and Health drain at 0.7×, 0.6× and 0.2× of `STAT_DECAY_PER_SEC`. Focus (0.8×) is also 0–100 but only flashcards use it. |
 | **Bond** | A monotonic tap counter. It is saved, but nothing gates on it yet. |
-| **XP curve** | The cumulative table `XP_PER_LEVEL = [0, 20, 45, 75, 110, 150]`. Level 5 is 150 XP. |
+| **XP curve** | `CompanionState.xp_to_reach(lv)`: 20 XP for Level 2, then 5 more per level (Level 5 at 110, Level 6 at 150); no cap. |
 | **Level gate** | Level 5 unlocks the campaign (`campaign_ready`). Before that, the care loop is the whole game. |
 | **Curriculum** | The five AI-literacy lines in `CompanionState.CURRICULUM`, one unlocked per level. |
 | **Tidbit** | A curriculum line or other short prompt shown in the speech bubble. The bubble is currently always hidden (issue #4). |
@@ -61,7 +64,7 @@ Terms used throughout this repo, in the sense this repo means them.
 |---|---|
 | **Free tier** | The default: 3 PDF uploads and 10 gradings per week (`FREE_PDF_LIMIT`, `FREE_GRADE_LIMIT`). |
 | **Quota unit** | `"pdf"` (upload/extract) or `"grade"` (battle grading). Counted in `MonetizationState`, reset every 7 days. |
-| **Premium** | `MonetizationState.is_premium`, persisted. Removes both limits; no purchase flow exists (the Settings toggle is the stub). |
+| **Premium** | `MonetizationState.is_premium`, persisted. Removes both limits; no purchase flow exists, and no in-game control sets it (the Settings toggle was removed). |
 | **Paywall dialog** | The `quota_exceeded` response: a modal saying the weekly AI limit was reached. |
 
 ## Engine and project

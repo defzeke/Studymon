@@ -1,6 +1,6 @@
 # Companion care (pet loop)
 
-The pre-campaign gate. Three tap actions raise the companion from Level 1 to Level 5, unlocking
+The pre-campaign gate. Care raises the companion level by level, with no cap; Level 5 unlocks
 the review campaign. This is the loop that carries the "raise an AI" fantasy and teaches the
 curriculum through `CURRICULUM` lines.
 
@@ -18,12 +18,14 @@ curriculum through `CURRICULUM` lines.
 | Stat | Start | Range | Decay | Grown by |
 |---|---|---|---|---|
 | `hunger` | 80.0 | 0–100 | **0.105 / s** (0.7×) | `feed` +12 |
-| `energy` | 80.0 | 0–100 | **0.15 / s** | charging +6 / s (`recharge()`), rest complete +6, `play` −2, skip focus −3, missed rest −5 |
+| `energy` | 80.0 | 0–100 | **0.15 / s** × battery wear (`battery_drain()`: 1 + (100 − battery health) / 50, so ×2 at 50 %) | charging +6 / s (`recharge()`), rest complete +6, `play` −2, skip focus −3, missed rest −5 |
 | `mood` | 75.0 | 0–100 | **0.09 / s** (0.6×) | `pet` +8, `play` +8, rest complete +6, skip focus −2, missed rest −3 |
 | `health` | 100.0 | 0–100 | **0.03 / s** (0.2×) | `fix` +25 |
+| `battery_health` | 100.0 | 0–100 | **−0.02 per energy point charged** (a full 0→100 charge costs 2 %) | a new battery (`replace_battery()`, 30 crystals) back to 100 |
+| `dirt` | 0.0 | 0–100 | **builds up 0.06 / s** | meals +3, fast throws +1.5, minigame rounds +4; the towel scrubs it off (`scrub()`) |
 | `focus` | 70.0 | 0–100 | **0.12 / s** (0.8×) | flashcards +2 per card; not on the home HUD |
 | `bond` | 0 | unbounded | — | +1 per care tap; **never read** |
-| `level` | 1 | 1–5 | — | XP thresholds |
+| `level` | 1 | 1 and up, no cap | — | XP thresholds (§3) |
 | `xp` | 0 | unbounded | — | care taps + battle rewards |
 
 Decay is applied in `_process` (`companion_state.gd:62-67`), i.e. it runs whenever the game is
@@ -42,9 +44,10 @@ so stats bottom out cleanly at zero.
 | Action | Effect | Base XP | Notes |
 |---|---|---|---|
 | `"feed"` | `hunger += 12` | 2 | home: food dropped on Kuiz |
-| `"pet"` | `mood += 8` | 1 | weakest XP; no home action yet |
+| `"pet"` | `mood += 8` | 1 | home: holding or stroking Kuiz (at most every 3 s) |
 | `"play"` | `mood += 8`, `energy -= 2` | 2 | home: a fast ball throw |
 | `"fix"` | `health += 25` | 2 | home: a finished screwdriver tune-up |
+| `"clean"` | `mood += 5` | 2 | home: the towel got Kuiz spotless (the scrubbing itself lowers `dirt`) |
 
 Energy has no tap: `recharge(delta)` adds 6 / s while home's Charge toggle is on. Home saves after
 each care action (`SaveManager.save_progress()`).
@@ -79,9 +82,13 @@ Counter resets hourly via `_maybe_reset_hourly_cap()` (`companion_state.gd:70-74
 ## 3. XP curve and the Level 5 gate
 
 ```gdscript
-const MAX_LEVEL := 5
-const XP_PER_LEVEL := [0, 20, 45, 75, 110, 150]   # cumulative
+const CAMPAIGN_LEVEL := 5
+const FIRST_LEVEL_XP := 20   # Lv1 -> 2
+const LEVEL_XP_STEP := 5     # each level costs this much more than the one before
+static func xp_to_reach(lv)  # cumulative: 20 * (lv - 1) + 5 * (lv - 1) * (lv - 2) / 2
 ```
+
+Levels never cap.
 
 | Level | Cumulative XP needed | Delta from previous |
 |---|---|---|
@@ -89,16 +96,18 @@ const XP_PER_LEVEL := [0, 20, 45, 75, 110, 150]   # cumulative
 | 2 | 20 | 20 |
 | 3 | 45 | 25 |
 | 4 | 75 | 30 |
-| 5 | 150 | 35 |
+| 5 | 110 | 35 |
+| 6 | 150 | 40 |
+| 7 | 195 | 45 |
+| n | `xp_to_reach(n)` | 5 more each level |
 
-`_check_level_up()` loops while `xp >= XP_PER_LEVEL[level]`, so a single large XP grant can cross
-multiple levels. At 5 it sets `campaign_ready = true` and emits `campaign_gate_ready`.
+`_check_level_up()` loops while `xp >= xp_to_reach(level + 1)`, so a single large XP grant can
+cross several levels. Reaching 5 sets `campaign_ready = true` and emits `campaign_gate_ready` (once).
+Levels 1–5 match the old capped table (Lv5 at 110 XP), so older saves keep their level; on load any
+XP past the next threshold (from the capped days) levels Kuiz up silently.
 
-Pacing as designed (source comment `companion_state.gd:12-16`): at 1–2 XP per tap with cycling
-actions, ~90 taps ≈ 2.5–4 minutes.
-
-Once `campaign_ready` is true and level is 5, `add_xp()` returns early — battle rewards stop being
-applied.
+Pacing: at 1–2 XP per tap with cycling actions, ~65 taps to Level 5, a few minutes. XP always
+counts now, battle rewards included.
 
 The gate reaches `GameState` on load only:
 
@@ -141,8 +150,12 @@ abandoned deliberately.
 ## 5. Room interactions
 
 The old care room was deleted. The 3D home (`home.gd`) calls `care()` from its room actions —
-food (`feed`), the screwdriver (`fix`), the ball (`play`) — and `recharge()` while charging. Its
-top HUD shows level, XP, the four home stats and crystals. Details in
+food (`feed`), the screwdriver (`fix`), the towel (`clean`), petting (`pet`), the ball and each
+finished minigame round (`play`) — and
+`recharge()` while charging. Its top HUD shows level, XP, the four home stats and crystals, and the
+first stat below 25 % shows on Kuiz as a resting mood (sick, hungry, tired, sad; it only dozes
+in the Study Room). Minigame rounds pay crystals, and the Maintenance Bay's tablet spends them on a
+new battery. Details in
 [`ui-and-assets.md`](../ui-and-assets.md) §2 Home.
 
 ---
@@ -194,7 +207,8 @@ If you want to change pacing, these are the only knobs that matter:
 
 | Goal | Constant(s) |
 |---|---|
-| Faster/slower leveling | `XP_PER_LEVEL` (remember it's cumulative) |
+| Faster/slower leveling | `FIRST_LEVEL_XP`, `LEVEL_XP_STEP` |
+| Battery wear | `BATTERY_WEAR`, `BATTERY_DRAIN_SPAN`, `BATTERY_PRICE` |
 | Faster/slower stat pressure | `STAT_DECAY_PER_SEC` |
 | Softer tap spam | `DAILY_CAP_BASE_XP` **and** fix the `int()` truncation |
 | Longer sessions | `POMODORO_FOCUS_SEC` / `POMODORO_REST_SEC` |

@@ -63,6 +63,8 @@ const HEAD_RADIUS := 1.15
 @onready var voice: Node = %Voice
 
 var room := "White"
+## The clip Kuiz settles into between one-shots: Idle, or the mood home picks from its stats.
+var rest := IDLE
 
 var _head := -1
 # Prop blend shapes (hearts, confetti, screws, bubbles…) not keyed by the current clip.
@@ -77,6 +79,7 @@ var _ambient := 0.0
 func _ready() -> void:
 	MusicManager.play_main_room()
 	voice.anim = anim
+	%Look.attach(kuiz)
 	for mesh_instance: MeshInstance3D in kuiz.find_children("*", "MeshInstance3D", true, false):
 		var outline: float = mesh_instance.get_meta("extras", {}).get("outline", 0.0)
 		if outline > 0.0:
@@ -154,12 +157,43 @@ func _hide_props() -> void:
 	for shape: Array in _props:
 		(shape[0] as MeshInstance3D).set_blend_shape_value(shape[1], 0.0)
 
-## Plays a clip: a one-shot falls back into Idle, a State_* mood keeps looping.
+## Plays a clip: a one-shot falls back into the resting clip, a State_* mood keeps looping.
+## Asking for Idle means "rest".
 func act(clip: String) -> void:
+	if clip == IDLE:
+		clip = rest
 	anim.clear_queue()
 	anim.play(clip)
 	if not clip.begins_with(STATE_PREFIX):
-		anim.queue(IDLE)
+		anim.queue(rest)
+
+## Changes the resting clip. If Kuiz is resting (or about to), it switches; any other clip, such as
+## charging, plays on undisturbed.
+func set_rest(clip: String) -> void:
+	if clip == rest:
+		return
+	var old := rest
+	rest = clip
+	var queued := anim.get_queue()
+	if not queued.is_empty():
+		if queued[-1] == old:
+			anim.clear_queue()
+			anim.queue(clip)
+	elif anim.current_animation == old:
+		anim.play(clip)
+
+## Puts Kuiz's head centre on a screen point at stage scale `size`; the minigames move Kuiz this way.
+func place(point: Vector2, size: float) -> void:
+	stage.scale = Vector3.ONE * size
+	stage.position = camera.project_position(point, camera.global_position.z) - Vector3.UP * HEAD_CENTRE * size
+	stage.position.z = 0.0
+
+## Back to standing in the middle of a room (after a minigame).
+func home_pose() -> void:
+	stage.position = Vector3(0.0, ROOM_Y, 0.0)
+	stage.scale = Vector3.ONE * ROOM_SCALE
+	stage.rotation.z = 0.0
+	shadow.visible = true
 
 ## Hops up on white; `at_top` swaps the background, and Kuiz lands at room size.
 func jump(at_top: Callable) -> void:
@@ -212,7 +246,7 @@ func to_room_pose() -> void:
 	t.tween_property(kuiz, "position:y", 0.0, 0.5)
 	await t.finished
 
-## Cross-fades to a room and names it on the sign.
+## Cross-fades to a room and names it on the sign (a minigame backdrop has no sign).
 func show_room(room_name: String, instant := false) -> void:
 	var next: CanvasItem = rooms.get_node(room_name)
 	var old: CanvasItem = rooms.get_node(room)
@@ -222,16 +256,17 @@ func show_room(room_name: String, instant := false) -> void:
 		next.modulate.a = 1.0
 		if old != next:
 			old.modulate.a = 0.0
-		room_label.text = ROOM_NAMES[room_name]
-		room_sign.modulate.a = 1.0
+		room_label.text = ROOM_NAMES.get(room_name, "")
+		room_sign.modulate.a = 1.0 if ROOM_NAMES.has(room_name) else 0.0
 		return
 	_fade(next, 1.0).finished.connect(func() -> void:
 		if old != next:
 			old.modulate.a = 0.0)
 	var t := create_tween()
 	t.tween_property(room_sign, "modulate:a", 0.0, FADE_TIME * room_sign.modulate.a)
-	t.tween_callback(func() -> void: room_label.text = ROOM_NAMES[room_name])
-	t.tween_property(room_sign, "modulate:a", 1.0, FADE_TIME)
+	if ROOM_NAMES.has(room_name):
+		t.tween_callback(func() -> void: room_label.text = ROOM_NAMES[room_name])
+		t.tween_property(room_sign, "modulate:a", 1.0, FADE_TIME)
 
 ## Study Room lights: off dims the 3D lights and fades in the night art, so only Kuiz's self-lit
 ## face (and its charging bolt) glows.

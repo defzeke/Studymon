@@ -84,21 +84,15 @@ Note the asymmetry: the PDF gate fires *after* the categorizer has already switc
 
 ### Settings (`settings.tscn`)
 
-| Control | Behaviour |
-|---|---|
-| `PremiumCheck` | Toggles `set_premium()` and saves immediately |
-| `QuotaLabel` | Settings only: `Premium: Unlimited` or `Free AI Uses: PDFs r/3 | Grades r/10` |
-| `ResetButton` | `reset_quota()` — labelled as a simulated weekly rollover (a debug affordance) |
-| `StatusLabel` | "Premium enabled — no limits." / "Free tier — weekly limits active." |
-
-`settings.gd` guards every access with `get_node_or_null("/root/MonetizationState")`, so the scene
-opens standalone in the editor without autoloads.
+The "AI plan" card (premium toggle, quota line, debug reset) was removed from Settings. Nothing in
+the game flips `is_premium` or resets the quota now; for testing, edit the `monetization` block in
+the save (see [`data-model.md`](../data-model.md)).
 
 ### Elsewhere
 
 - Categorizer: no label; hitting the limit opens a `ConfirmModal` notice.
 - Battle: `QuotaLabel` under the top bar, refreshed on `quota_changed` / `premium_changed`; the limit notice is a `ConfirmModal`.
-- Both re-render on `premium_changed`, so toggling in Settings updates the next screen you open.
+- Both re-render on `premium_changed`.
 
 ---
 
