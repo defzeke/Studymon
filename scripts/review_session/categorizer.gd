@@ -1,10 +1,8 @@
 extends Control
 ## Phase 5: Categorizer — Upload → AI is studying... → editable question list → Confirm → Play
 ## Implements build-plan P5: word-count sanity, confidence badges, CRUD list, region generation.
-## Phase 10: Quota label + paywall dialog via MonetizationState / Api.quota_exceeded.
 
 # Order matches the type OptionButton; contract: docs/systems/gameplay-structure.md.
-const ConfirmModal := preload("res://scripts/ui/widgets/confirm_modal.gd")
 const QUESTION_TYPES: Array[String] = ["essay", "identification", "multiple_choice"]
 
 @onready var topic_name_field: LineEdit = %TopicName
@@ -40,8 +38,6 @@ func _ready() -> void:
 	SessionManager.extraction_completed.connect(_on_extraction_completed)
 	SessionManager.extraction_failed.connect(_on_extraction_failed)
 	SessionManager.region_generated.connect(_on_region_generated)
-	# Phase 10: paywall
-	Api.quota_exceeded.connect(_on_quota_exceeded)
 	loading_bar.visible = false
 	_update_sanity()
 	# If we arrived with pending questions (resume or after extraction), render them
@@ -49,13 +45,6 @@ func _ready() -> void:
 		_render_questions()
 		status_label.text = "Loaded %d question(s) — edit before you Play." % SessionManager.pending_questions.size()
 	_update_play_enabled()
-
-func _on_quota_exceeded(_type: String) -> void:
-	_studying = false
-	study_btn.disabled = false
-	loading_bar.visible = false
-	status_label.text = "Weekly limit reached."
-	ConfirmModal.open(self, "Weekly limit reached", "Your free AI uses are used up for this week. Upgrade to Premium to keep going.", "Got it", Callable(), false, "")
 
 func _on_pick_file() -> void:
 	file_dialog.popup_centered(Vector2i(640, 760))

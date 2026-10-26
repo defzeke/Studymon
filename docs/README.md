@@ -26,7 +26,7 @@ Where the two disagree, the docs say so explicitly.
 | Work on battles and answer grading | [`systems/battle.md`](systems/battle.md) |
 | See the target gyms / difficulty / flashcard design | [`systems/gameplay-structure.md`](systems/gameplay-structure.md) |
 | Plan the real backend and the App Store / Google Play launch (future) | [`launch-plan.md`](launch-plan.md) |
-| Work on free-tier limits / paywall | [`systems/monetization.md`](systems/monetization.md) |
+| Work on crystals, purchases or usage limits | [`systems/monetization.md`](systems/monetization.md) |
 | Change a screen or add art | [`ui-and-assets.md`](ui-and-assets.md) |
 | Wire the real backend | [`api-backend.md`](api-backend.md) |
 | **Fix something that is broken** | [`known-issues.md`](known-issues.md) |
@@ -46,7 +46,7 @@ Where the two disagree, the docs say so explicitly.
 | Scenes | 12 (`.tscn`) |
 | Autoloads | 7 |
 | Backend | FastAPI stub, `/health` only — client runs on `Api.MOCK = true` |
-| Persistence | Single JSON file `user://studymon_save.json`, schema `"v": 10` |
+| Persistence | Single JSON file `user://studymon_save.json`, schema `"v": 12` |
 | Tests / CI | None |
 
 ---

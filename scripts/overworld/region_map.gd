@@ -19,18 +19,30 @@ extends Node3D
 @export var map_anim: AnimationPlayer
 @export var trigger_radius := 0.7
 @export var trainer_radius := 0.45
-## The map is played in landscape at exactly 16:9; the rest of the game stays portrait.
-@export var landscape_size := Vector2i(1280, 720)
 
-const RotatePrompt := preload("res://scripts/ui/widgets/rotate_prompt.gd")
+const ExplorerPicker := preload("res://scripts/overworld/explorer_picker.gd")
+const BOLD: Font = preload("res://assets/fonts/JosefinSans-Bold.ttf")
+const ICON_TRAINER: Texture2D = preload("res://assets/sprites/ui/icon_trainer.svg")
+const ICON_BADGE: Texture2D = preload("res://assets/sprites/ui/icon_badge.svg")
+const ICON_CROWN: Texture2D = preload("res://assets/sprites/ui/icon_crown.svg")
+const ICON_LOCK: Texture2D = preload("res://assets/sprites/ui/icon_lock.svg")
+const SLATE := Color("29383A")
+const GRAY := Color("687778")
+const TEAL := Color("4F8F89")
+const OFF := Color("F7F5EF")
+const AMBER := Color("D6A85F")
+## How many upcoming objectives the list beside the minimap shows.
+const OBJECTIVES_SHOWN := 3
 
 @onready var map: Node3D = %Map
 @onready var player: CharacterBody3D = %Player
+@onready var kuiz: Node3D = %Kuiz
 @onready var spawn: Marker3D = %Spawn
 @onready var trainers_root: Node3D = %Trainers
 @onready var gyms_root: Node3D = %Gyms
-@onready var progress_label: Label = %ProgressLabel
-@onready var badges_label: Label = %BadgesLabel
+@onready var quest_tasks: HBoxContainer = %QuestTasks
+@onready var quest_count: Label = %QuestCount
+@onready var objectives: VBoxContainer = %Objectives
 @onready var back_btn: Button = %BackButton
 @onready var study_btn: Button = %StudyButton
 @onready var encounter_panel: PanelContainer = %EncounterPanel
@@ -43,44 +55,9 @@ var _topic_id: String = ""
 var _pending_encounter: Dictionary = {}
 var _gym_positions: Dictionary = {}
 var _prev_cleared_gyms: Dictionary = {}
-# The portrait setup to put back on leaving: content size, aspect, orientation.
-var _portrait := {}
 
-# Turned before the HUD lays out, and turned back however the scene is left (battle, Study, back),
-# so every other screen opens portrait.
 func _enter_tree() -> void:
-	var win := get_window()
-	_portrait = {"size": win.content_scale_size, "aspect": win.content_scale_aspect,
-		"orientation": DisplayServer.screen_get_orientation()}
-	win.content_scale_size = landscape_size
-	win.content_scale_aspect = Window.CONTENT_SCALE_ASPECT_KEEP
-	_orient(DisplayServer.SCREEN_SENSOR_LANDSCAPE, true)
-	RotatePrompt.open(get_tree(), true)
 	MusicManager.play_overworld()
-
-func _exit_tree() -> void:
-	var win := get_window()
-	win.content_scale_size = _portrait["size"]
-	win.content_scale_aspect = _portrait["aspect"]
-	_orient(_portrait["orientation"], false)
-
-# Phones rotate the screen; a desktop window is turned by swapping its sides, kept on screen.
-func _orient(orientation: DisplayServer.ScreenOrientation, wide: bool) -> void:
-	if OS.has_feature("mobile"):
-		DisplayServer.screen_set_orientation(orientation)
-		return
-	var win := get_window()
-	# shortcut: the editor's embedded Game view owns its window (it can be neither resized nor moved),
-	# so the map letterboxes there; play in a separate window or on a phone to see it turn.
-	if Engine.is_embedded_in_editor():
-		return
-	if DisplayServer.get_name() == "headless" or win.mode != Window.MODE_WINDOWED or (win.size.x > win.size.y) == wide:
-		return
-	var screen := DisplayServer.screen_get_usable_rect(win.current_screen)
-	var size := Vector2i(win.size.y, win.size.x)
-	var fit := minf(1.0, minf(float(screen.size.x) / size.x, float(screen.size.y) / size.y))
-	win.size = Vector2i(Vector2(size) * fit)
-	win.position = screen.position + (screen.size - win.size) / 2
 
 func _ready() -> void:
 	_topic_id = SessionManager.current_topic_id
@@ -107,8 +84,24 @@ func _ready() -> void:
 	SessionManager.overworld_progress_changed.connect(_refresh_progress)
 	if spawn != null:
 		player.global_position = spawn.global_position
+	kuiz.place_behind()
 	_build_route()
 	_refresh_progress()
+	player.set_explorer(GameState.explorer)
+	# Each visit from the worlds list starts with picking the explorer; coming back from a battle or
+	# flashcards keeps the one picked.
+	if not GameState.explorer_picked:
+		player.locked = true
+		var picker := ExplorerPicker.new()
+		picker.picked.connect(_on_explorer_picked)
+		add_child(picker)
+
+func _on_explorer_picked(id: String) -> void:
+	GameState.explorer = id
+	GameState.explorer_picked = true
+	SaveManager.save_progress()
+	player.set_explorer(id)
+	player.locked = encounter_panel.visible
 
 func _build_route() -> void:
 	for c in trainers_root.get_children():
@@ -304,23 +297,145 @@ func _on_encounter_cleared() -> void:
 	_pending_encounter = {}
 	_leave("res://scenes/battle/battle.tscn")
 
+# The quest card: Trainers (cleared of all, with a bar), a badge per gym (lit once cleared) and the
+# Champion (locked, ready or crowned), the count of all of them done, and the next objective.
 func _refresh_progress() -> void:
-	var p := SessionManager.get_progress(_topic_id)
-	var crown := "CROWNED" if SessionManager.is_champion_defeated(_topic_id) else ("CHAMP-READY" if SessionManager.is_champion_available(_topic_id) else "CHAMP-LOCKED")
-	progress_label.text = "Trainers %d/%d  %s" % [int(p["cleared"]), int(p["total"]), crown]
 	var gyms := SessionManager.get_gym_structure()
-	var badges := ""
+	var trainers_done := 0
+	var trainers_total := 0
+	var gyms_done := 0
+	var badges: Array[bool] = []
 	for g in gyms:
 		var t: String = str(g["type"])
+		for qi in g["trainer_indices"]:
+			trainers_total += 1
+			trainers_done += 1 if SessionManager.is_trainer_cleared(_topic_id, int(qi)) else 0
 		var now_cleared := SessionManager.is_gym_cleared(_topic_id, t)
 		if now_cleared and not _prev_cleared_gyms.has(t):
 			# Fresh clear → burst at gym position.
 			_spawn_gym_burst(_gym_positions.get(t, player.global_position))
+		if now_cleared:
 			_prev_cleared_gyms[t] = true
-		elif now_cleared:
-			_prev_cleared_gyms[t] = true
-		badges += "[X]" if now_cleared else "[ ]"
-	badges_label.text = "Gyms %d/%d %s" % [int(p["gyms_cleared"]), int(p["gyms_total"]), badges]
+			gyms_done += 1
+		badges.append(now_cleared)
+	var crowned := SessionManager.is_champion_defeated(_topic_id)
+	var champion_ready := SessionManager.is_champion_available(_topic_id)
+	for c in quest_tasks.get_children():
+		quest_tasks.remove_child(c)
+		c.queue_free()
+	var trainers := _task(ICON_TRAINER, "Trainers", "%d / %d" % [trainers_done, trainers_total])
+	var bar := ProgressBar.new()
+	bar.custom_minimum_size = Vector2(0, 8)
+	bar.show_percentage = false
+	bar.max_value = maxi(trainers_total, 1)
+	bar.value = trainers_done
+	bar.add_theme_stylebox_override("background", _flat(Color(SLATE, 0.15), 4))
+	bar.add_theme_stylebox_override("fill", _flat(TEAL, 4))
+	trainers.get_child(1).add_child(bar)
+	quest_tasks.add_child(trainers)
+	var gym_task := _task(null, "Gyms", "%d / %d" % [gyms_done, gyms.size()])
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 2)
+	for lit in badges:
+		row.add_child(_icon(ICON_BADGE, 30, 1.0 if lit else 0.28))
+	gym_task.add_child(row)
+	gym_task.move_child(row, 0)
+	quest_tasks.add_child(gym_task)
+	quest_tasks.add_child(_task(ICON_CROWN if champion_ready or crowned else ICON_LOCK, "Champion", "Crowned" if crowned else ("Ready!" if champion_ready else "Locked")))
+	quest_count.text = "%d / %d done" % [trainers_done + gyms_done + (1 if crowned else 0), trainers_total + gyms.size() + 1]
+	_show_objectives(_objectives(gyms))
+
+# Every step still to do, in order: each uncleared gym's unbeaten trainers (easiest first, the
+# order they stand on its road), then its boss; then the Champion.
+func _objectives(gyms: Array[Dictionary]) -> Array[String]:
+	var steps: Array[String] = []
+	if SessionManager.is_champion_defeated(_topic_id):
+		steps.append("Region complete! You are the Champion.")
+		return steps
+	var questions := SessionManager.get_pending_questions()
+	for g in gyms:
+		var t: String = str(g["type"])
+		if SessionManager.is_gym_cleared(_topic_id, t):
+			continue
+		var gym_name := t.capitalize().replace("_", " ")
+		for qi in g["trainer_indices"]:
+			if not SessionManager.is_trainer_cleared(_topic_id, int(qi)):
+				var tier := str((questions[int(qi)] as Dictionary).get("difficulty", "medium")).capitalize()
+				steps.append("Beat Trainer %d (%s) on the %s road" % [int(qi) + 1, tier, gym_name])
+		steps.append("Challenge the %s gym boss" % gym_name)
+	steps.append("Challenge the Champion" if not gyms.is_empty() else "Walk into a trainer or gym")
+	return steps
+
+# A bare bullet list beside the minimap (no panel): Off-White text with a Deep Slate outline so it
+# reads over the map; the current step has an amber bullet, the later ones are dimmer.
+func _show_objectives(steps: Array[String]) -> void:
+	for c in objectives.get_children():
+		objectives.remove_child(c)
+		c.queue_free()
+	for i in mini(steps.size(), OBJECTIVES_SHOWN):
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 8)
+		row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var dot := _outlined("●", 22, AMBER if i == 0 else OFF)
+		dot.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+		row.add_child(dot)
+		var text := _outlined(steps[i], 22 if i == 0 else 19, OFF)
+		text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		row.add_child(text)
+		row.modulate.a = 1.0 if i == 0 else 0.85
+		objectives.add_child(row)
+	if steps.size() > OBJECTIVES_SHOWN:
+		var more := _outlined("+%d more" % (steps.size() - OBJECTIVES_SHOWN), 17, OFF)
+		more.modulate.a = 0.75
+		objectives.add_child(more)
+
+func _outlined(text: String, size: int, color: Color) -> Label:
+	var l := _text(text, size, color)
+	l.add_theme_color_override("font_outline_color", SLATE)
+	l.add_theme_constant_override("outline_size", 7)
+	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return l
+
+# One task chip: an icon (when given), the task's name and its value, stacked beside it.
+func _task(icon: Texture2D, title: String, value: String) -> HBoxContainer:
+	var chip := HBoxContainer.new()
+	chip.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	chip.add_theme_constant_override("separation", 8)
+	chip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	if icon != null:
+		chip.add_child(_icon(icon, 44, 1.0))
+	var text := VBoxContainer.new()
+	text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	text.add_theme_constant_override("separation", 0)
+	text.add_child(_text(title, 15, GRAY))
+	text.add_child(_text(value, 22, SLATE))
+	chip.add_child(text)
+	return chip
+
+func _icon(tex: Texture2D, size: float, alpha: float) -> TextureRect:
+	var r := TextureRect.new()
+	r.texture = tex
+	r.custom_minimum_size = Vector2(size, size)
+	r.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	r.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	r.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	r.modulate.a = alpha
+	return r
+
+func _text(text: String, size: int, color: Color) -> Label:
+	var l := Label.new()
+	l.text = text
+	l.add_theme_font_override("font", BOLD)
+	l.add_theme_font_size_override("font_size", size)
+	l.add_theme_color_override("font_color", color)
+	return l
+
+func _flat(color: Color, radius: int) -> StyleBoxFlat:
+	var b := StyleBoxFlat.new()
+	b.bg_color = color
+	b.set_corner_radius_all(radius)
+	return b
 
 func _on_back() -> void:
 	_leave("res://scenes/ui/session_list.tscn")
@@ -329,7 +444,5 @@ func _on_study() -> void:
 	SessionManager.flashcards_return = "res://scenes/overworld/region_map.tscn"
 	_leave("res://scenes/review_session/flashcards.tscn")
 
-# Every way off the map goes portrait again, so the player is asked to turn the phone back.
 func _leave(scene: String) -> void:
-	RotatePrompt.open(get_tree(), false)
 	get_tree().change_scene_to_file(scene)

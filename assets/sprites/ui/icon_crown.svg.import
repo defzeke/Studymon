@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://xrxlsu3kvvxu"
-path="res://.godot/imported/icon_turn.svg-0a3edbbcaa9d222a96009a7e2fdc590f.ctex"
+uid="uid://bolp3wg1yjl2a"
+path="res://.godot/imported/icon_crown.svg-33600dd9a09e84a07b1ab5cfb9c0d281.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/sprites/ui/icon_turn.svg"
-dest_files=["res://.godot/imported/icon_turn.svg-0a3edbbcaa9d222a96009a7e2fdc590f.ctex"]
+source_file="res://assets/sprites/ui/icon_crown.svg"
+dest_files=["res://.godot/imported/icon_crown.svg-33600dd9a09e84a07b1ab5cfb9c0d281.ctex"]
 
 [params]
 

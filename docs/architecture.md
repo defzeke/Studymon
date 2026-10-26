@@ -57,7 +57,8 @@ res://
 │   ├── audio/            music/ (home_room.wav, loading.wav, overworld.wav), sfx/ (ten battle cues, sfx_charge,
 │   │                     sfx_charged); all our own, synthesised offline
 │   ├── fonts/            JosefinSans-Regular.ttf, JosefinSans-Bold.ttf
-│   ├── models/           kuiz.glb (peek scene); map.glb + map_0.png, boy_explorer.glb + 2 .jpg
+│   ├── models/           kuiz.glb (peek scene); map.glb + map_0.png, boy_explorer.glb + 2 .jpg,
+│   │                     explorer_girl.glb + 2 .jpg
 │   │                     textures (overworld)
 │   ├── theme/            app_theme.tres (the one shared Theme)
 │   └── sprites/
@@ -76,23 +77,24 @@ res://
 │       ├── battle/       battle_backdrop.svg
 │       └── ui/           arrow.svg, icon_charge.svg, icon_upload.svg, icon_settings.svg,
 │                         crystal.svg, stat_mood.svg, stat_health.svg, icon_games.svg,
-│                         game_soccer.svg, game_jump.svg, dock_table.svg, icon_phone.svg,
-│                         icon_turn.svg,
+│                         game_soccer.svg, game_jump.svg, dock_table.svg,
+│                         icon_back.svg, icon_trainer.svg, icon_badge.svg, icon_crown.svg,
+│                         icon_lock.svg, icon_study.svg (region map HUD),
 │                         loading_spark.svg, tip_bulb.svg; campaign.png, charge.png,
 │                         settings.svg (unused)
 ├── scripts/
-│   ├── autoload/         the 7 autoloads: save_manager.gd, game_state.gd, api.gd,
-│   │                     companion_state.gd, session_manager.gd, monetization_state.gd,
-│   │                     music_manager.gd
+│   ├── autoload/         the 6 autoloads: save_manager.gd, game_state.gd, api.gd,
+│   │                     companion_state.gd, session_manager.gd, music_manager.gd
 │   ├── audio/            synth.gd, clip_voice.gd (model sounds made in code)
 │   ├── battle/           battle.gd, arena_stage.gd, broken_bot_voice.gd
 │   ├── overworld/        region_map.gd, player.gd, joystick.gd, season.gd, encounter_trigger.gd,
-│   │                     gym_slot.gd, map_collision.gd, minimap.gd
+│   │                     gym_slot.gd, map_collision.gd, minimap.gd, explorer_picker.gd,
+│   │                     kuiz_follower.gd
 │   ├── review_session/   categorizer.gd, flashcards.gd
 │   └── ui/               home.gd, session_list.gd, settings.gd
 │       ├── boot/         splash.gd, loading.gd, peek.gd, tutorial.gd, kuiz_voice.gd, kuiz_look.gd
 │       ├── minigames/    minigame.gd, soccer.gd, sky_jump.gd (Playroom games)
-│       └── widgets/      confirm_modal.gd, stat_gauge.gd, rotate_prompt.gd
+│       └── widgets/      confirm_modal.gd, stat_gauge.gd
 ├── scenes/               session_list, settings (ui/)
 │   │                     encounter_trigger, gym_burst, region_map (overworld/)
 │   │                     categorizer, flashcards (review_session/), battle (battle/)
@@ -122,32 +124,29 @@ Declared in this order (Godot instantiates top-down, so earlier autoloads are `_
 | 3 | `Api` | `scripts/autoload/api.gd` | HTTP wrapper **and** the whole mock backend |
 | 4 | `CompanionState` | `scripts/autoload/companion_state.gd` | stats, XP/level, codex, pomodoro |
 | 5 | `SessionManager` | `scripts/autoload/session_manager.gd` | topics, extraction, gyms, mastery, champion, battle handoff |
-| 6 | `MonetizationState` | `scripts/autoload/monetization_state.gd` | weekly quotas, premium flag |
-| 7 | `MusicManager` | `scripts/autoload/music_manager.gd` | main-room + loading BGM, one-shot SFX |
+| 6 | `MusicManager` | `scripts/autoload/music_manager.gd` | main-room + loading BGM, one-shot SFX |
 
 ```text
                         ┌──────────────┐
-                        │  SaveManager │  serialises 4 → 5 → 6
+                        │  SaveManager │  serialises 2, 4, 5 and 6
                         └──────┬───────┘
                                │ reads/writes
    ┌───────────┐   ┌───────────▼────┐   ┌──────────────┐
    │ GameState │◄──┤ CompanionState │──►│ MusicManager │
    └─────┬─────┘   └───────┬────────┘   └──────────────┘
          │                 │
-         │           ┌─────▼─────────┐      ┌──────────────────┐
-         └──────────►│ SessionManager│◄────►│ MonetizationState│
-                     └─────┬─────────┘      └────────┬─────────┘
-                           │                         │
-                     ┌─────▼─────┐                   │
-                     │    Api    │◄──────────────────┘ (quota gate)
+         │           ┌─────▼─────────┐
+         └──────────►│ SessionManager│
+                     └─────┬─────────┘
+                           │
+                     ┌─────▼─────┐
+                     │    Api    │
                      └───────────┘
 ```
 
 Dependency notes:
 
 - `SessionManager` reaches into `Api` directly (`Api.job_status.connect(...)` in `_ready`).
-- `Api` and the UI reach into `MonetizationState` **defensively** via
-  `get_node_or_null("/root/MonetizationState")`, so scenes can run standalone in the editor.
 - `CompanionState`, `GameState`, `SessionManager` are used as bare globals everywhere else —
   adding a new autoload with the same name as a `class_name` will break that.
 - `SessionManager.current_topic_id` is the only current-topic field.
@@ -213,7 +212,6 @@ thread-load the next scene while they play, so those changes hit the resource ca
 | Which trainer/gym is cleared? | `SessionManager._cleared_trainers` / `_cleared_gyms` |
 | Mastery per question? | `SessionManager._mastery` |
 | Which battle am I in? | `SessionManager.battle_topic_id` / `battle_q_index` / `battle_is_boss` / `battle_is_champion` |
-| Free-tier usage? | `MonetizationState` |
 | Auth token / user id? | `GameState.auth_token` / `user_id` — **never set today** |
 | Player's name? | `GameState.player_name`, set by the tutorial; memory only, never saved |
 | Tutorial seen / food in stock? | `GameState.tutorial_done` / `food_stock`; memory only, never saved |
@@ -232,10 +230,8 @@ which exist precisely so the overworld can pass a question to the battle scene a
 | `stats_changed`, `xp_changed`, `leveled_up`, `codex_entry_added`, `campaign_gate_ready`, `pomodoro_phase_changed` | `CompanionState` | nobody since the care room was removed |
 | `large_text_changed(enabled)` | `GameState` | nobody (settings applies it directly) |
 | `job_status(job_id, status, progress, result)` | `Api` | `SessionManager`, `battle.gd` |
-| `quota_exceeded(type)` | `Api` | `battle.gd`, `categorizer.gd` |
 | `topics_listed`, `extraction_*`, `topic_saved`, `region_generated`, `overworld_progress_changed` | `SessionManager` | `session_list.gd`, `categorizer.gd`, `region_map.gd` |
 | `mastery_changed`, `champion_defeated`, `insight_triggered` | `SessionManager` | `region_map.gd` (the rest have no listener) |
-| `quota_changed`, `premium_changed` | `MonetizationState` | `battle.gd`, `categorizer.gd` |
 
 `Api.job_status` is a **shared bus**: extraction jobs, the `"topics"` listing, and the `"grade"`
 result all arrive on the same signal and are disambiguated by `job_id` string. Any new async

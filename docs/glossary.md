@@ -11,7 +11,7 @@ Terms used throughout this repo, in the sense this repo means them.
 | **Dirt** | `CompanionState.dirt`, 0 (clean) to 100: builds up over time and with meals and play, shows as spots and scratches on Kuiz, scrubbed off with the towel. |
 | **Outfit** | What Kuiz wears from the Playroom closet, `GameState.outfit`: one costume per slot (head, face, body), each a sticker on its head. |
 | **Battery health** | `CompanionState.battery_health`: the battery's capacity, like a phone's. Charging wears it, a worn battery drains energy faster, and a new one (30 crystals, the check-up tablet) restores 100 %. |
-| **Crystals** | Home's currency, `GameState.crystals`, shown top right with the logo's forehead gem. Saved; minigame rounds earn it, a new battery spends it. |
+| **Crystals** | Home's currency, `GameState.crystals`, shown top right with the logo's forehead gem. Saved; minigame rounds earn it, a new battery spends it. Buying it with real money is "Coming soon" in the Crystal Shop. |
 | **Care tap** | One press of Feed, Pet or Play. Grants XP, nudges one stat, increments bond, and is subject to hourly diminishing returns. |
 | **Hunger / Energy / Mood / Health** | The four 0–100 stats on home's HUD gauges. Energy drains fastest; Hunger, Mood and Health drain at 0.7×, 0.6× and 0.2× of `STAT_DECAY_PER_SEC`. Focus (0.8×) is also 0–100 but only flashcards use it. |
 | **Bond** | A monotonic tap counter. It is saved, but nothing gates on it yet. |
@@ -62,16 +62,13 @@ Terms used throughout this repo, in the sense this repo means them.
 
 | Term | Meaning |
 |---|---|
-| **Free tier** | The default: 3 PDF uploads and 10 gradings per week (`FREE_PDF_LIMIT`, `FREE_GRADE_LIMIT`). |
-| **Quota unit** | `"pdf"` (upload/extract) or `"grade"` (battle grading). Counted in `MonetizationState`, reset every 7 days. |
-| **Premium** | `MonetizationState.is_premium`, persisted. Removes both limits; no purchase flow exists, and no in-game control sets it (the Settings toggle was removed). |
-| **Paywall dialog** | The `quota_exceeded` response: a modal saying the weekly AI limit was reached. |
+| **Weekly limit** | Removed. The free tier's weekly PDF and grading quota, the premium flag and the "Weekly limit reached" pop-up are gone; every AI use is unlimited. See [`systems/monetization.md`](systems/monetization.md). |
 
 ## Engine and project
 
 | Term | Meaning |
 |---|---|
-| **Autoload** | A singleton registered in `[autoload]` in `project.godot`. Seven exist: `SaveManager`, `GameState`, `Api`, `CompanionState`, `SessionManager`, `MonetizationState`, `MusicManager`. |
+| **Autoload** | A singleton registered in `[autoload]` in `project.godot`. Six exist: `SaveManager`, `GameState`, `Api`, `CompanionState`, `SessionManager`, `MusicManager`. |
 | **Splash** | The white intro screen (`splash.tscn`) that plays the 60-frame Kuizmon animation, then loads the loading screen. |
 | **Main scene** | `res://scenes/ui/boot/splash.tscn`. It hands off to `loading.tscn`, then `peek.tscn` (tutorial, then home). |
 | **Peek** | `peek.tscn`: the 3D Kuiz head (`assets/models/kuiz.glb`) peeking up on white after the loading screen. The tutorial then runs in the same scene. |

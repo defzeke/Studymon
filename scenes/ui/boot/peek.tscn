@@ -93,6 +93,25 @@ corner_radius_bottom_left = 24
 shadow_color = Color(0.1608, 0.2196, 0.2275, 0.25)
 shadow_size = 6
 
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_plus"]
+content_margin_top = 2.0
+bg_color = Color(0.3098, 0.5608, 0.5373, 1)
+corner_radius_top_left = 15
+corner_radius_top_right = 15
+corner_radius_bottom_right = 15
+corner_radius_bottom_left = 15
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_soon"]
+content_margin_left = 18.0
+content_margin_top = 6.0
+content_margin_right = 18.0
+content_margin_bottom = 4.0
+bg_color = Color(0.8392, 0.6588, 0.3725, 1)
+corner_radius_top_left = 18
+corner_radius_top_right = 18
+corner_radius_bottom_right = 18
+corner_radius_bottom_left = 18
+
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_pill"]
 content_margin_left = 6.0
 content_margin_top = 6.0
@@ -762,15 +781,15 @@ icon = ExtResource("24_health")
 color = Color(0.7882, 0.4745, 0.4392, 1)
 
 [node name="Crystals" type="PanelContainer" parent="Home"]
+unique_name_in_owner = true
 anchors_preset = 1
 anchor_left = 1.0
 anchor_right = 1.0
-offset_left = -150.0
+offset_left = -178.0
 offset_top = 12.0
 offset_right = -16.0
 offset_bottom = 76.0
 grow_horizontal = 0
-mouse_filter = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_pill")
 
 [node name="Row" type="HBoxContainer" parent="Home/Crystals"]
@@ -797,6 +816,18 @@ text = "0"
 horizontal_alignment = 2
 vertical_alignment = 1
 
+
+[node name="Plus" type="Label" parent="Home/Crystals/Row"]
+custom_minimum_size = Vector2(30, 30)
+layout_mode = 2
+size_flags_vertical = 4
+theme_override_colors/font_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_fonts/font = ExtResource("9_bold")
+theme_override_font_sizes/font_size = 26
+theme_override_styles/normal = SubResource("StyleBoxFlat_plus")
+text = "+"
+horizontal_alignment = 1
+vertical_alignment = 1
 [node name="RoomPrev" type="TextureButton" parent="Home"]
 unique_name_in_owner = true
 offset_left = 160.0
@@ -1397,6 +1428,75 @@ theme_override_constants/v_separation = 12
 columns = 3
 
 [node name="WardrobeClose" type="Button" parent="Home/Wardrobe/Body"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 64)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_colors/font_hover_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_colors/font_pressed_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_fonts/font = ExtResource("9_bold")
+theme_override_font_sizes/font_size = 28
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn")
+theme_override_styles/hover = SubResource("StyleBoxFlat_btn")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_btn_pressed")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
+text = "Close"
+
+[node name="CrystalShop" type="PanelContainer" parent="Home"]
+unique_name_in_owner = true
+visible = false
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -300.0
+offset_top = -330.0
+offset_right = 300.0
+offset_bottom = 300.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_box")
+
+[node name="Body" type="VBoxContainer" parent="Home/CrystalShop"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="Title" type="Label" parent="Home/CrystalShop/Body"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.1608, 0.2196, 0.2275, 1)
+theme_override_fonts/font = ExtResource("9_bold")
+theme_override_font_sizes/font_size = 36
+text = "Crystal Shop"
+horizontal_alignment = 1
+
+[node name="Soon" type="Label" parent="Home/CrystalShop/Body"]
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_colors/font_color = Color(0.1608, 0.2196, 0.2275, 1)
+theme_override_fonts/font = ExtResource("9_bold")
+theme_override_font_sizes/font_size = 22
+theme_override_styles/normal = SubResource("StyleBoxFlat_soon")
+text = "COMING SOON"
+horizontal_alignment = 1
+
+[node name="Note" type="Label" parent="Home/CrystalShop/Body"]
+custom_minimum_size = Vector2(500, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.4078, 0.4667, 0.4706, 1)
+theme_override_fonts/font = ExtResource("9_bold")
+theme_override_font_sizes/font_size = 20
+text = "Buying crystals with real money isn't open yet. For now, earn them by playing minigames in the Playroom."
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="CrystalPacks" type="VBoxContainer" parent="Home/CrystalShop/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 12
+
+[node name="CrystalClose" type="Button" parent="Home/CrystalShop/Body"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 64)
 layout_mode = 2

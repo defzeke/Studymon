@@ -65,7 +65,7 @@ Binary detection is literally `decoded.contains("�")` — the U+FFFD replaceme
 
 ## 4. Mock extraction
 
-`Api.mock_upload_pdf()` → quota gate → `_execute_mock_upload()`:
+`Api.mock_upload_pdf()` → `_execute_mock_upload()`:
 
 ```text
 job_status("job_001", "processing", 0.0)     immediately

@@ -6,7 +6,7 @@ no cloud sync.
 - **Path:** `user://studymon_save.json`
 - **Written by:** `SaveManager.save_game()` — `scripts/autoload/save_manager.gd:6`
 - **Read by:** `SaveManager.load_game()` — `scripts/autoload/save_manager.gd:24`
-- **Schema tag:** `"v": 10` (v10 added `battery_health` and replaced `costume` with `outfit`; a v9 `costume` loads into its slot; v9 added `dirt` and `costume`; v8 added `hunger`, `health` and `crystals`; v7 added `player_name` and `food_stock`; older saves load with defaults. The tutorial flag is deliberately not saved, so the intro plays every launch)
+- **Schema tag:** `"v": 12` (v12 dropped the `monetization` block with the weekly AI limit; an older save's block is ignored; v11 added `explorer`; v10 added `battery_health` and replaced `costume` with `outfit`; a v9 `costume` loads into its slot; v9 added `dirt` and `costume`; v8 added `hunger`, `health` and `crystals`; v7 added `player_name` and `food_stock`; older saves load with defaults. The tutorial flag is deliberately not saved, so the intro plays every launch)
 - **Loaded:** once at boot, deferred from `SaveManager._ready`
 - **Format:** `JSON.stringify` of a single `Dictionary`, pretty-print off
 
@@ -19,7 +19,7 @@ That is fine for the current scope but means there is **no type safety and no au
 
 ```jsonc
 {
-  "v": 10,
+  "v": 12,
 
   // CompanionState.to_dict()
   "level": 1,
@@ -43,6 +43,7 @@ That is fine for the current scope but means there is **no type safety and no au
   "food_stock": { "apple": 3 },
   "crystals": 0,    // v8: home's currency; missing loads as 0
   "outfit": { "head": "crown", "body": "scarf" }, // v10: closet slot -> kuiz_look.gd COSTUMES id; a missing slot is bare
+  "explorer": "boy", // v11: the region map's explorer, "boy" or "girl"; missing loads as "boy"
 
   // MusicManager (v5): settings sliders, 0..1; missing keys load as 1.0
   "music_volume": 1.0,
@@ -62,14 +63,6 @@ That is fine for the current scope but means there is **no type safety and no au
         "questions": [ /* see §3 */ ]
       }
     ]
-  },
-
-  // MonetizationState.to_dict()
-  "monetization": {
-    "is_premium": false,
-    "pdf_used_this_week": 0,
-    "grades_used_this_week": 0,
-    "week_start_unix": 1760000000
   }
 }
 ```
@@ -93,7 +86,6 @@ Field-by-field:
 | `session.cleared_gyms` | string[] | keys of `_cleared_gyms` | `"<topic_id>:<gym_type>"` |
 | `session.champion_defeated` | string[] | keys of `_champion_defeated` | Just `topic_id`s |
 | `session.topics` | dict[] | `SessionManager._topics` | Full question banks — this is the bulk of the file |
-| `monetization.*` | mixed | `MonetizationState` | Weekly quota counters |
 
 ---
 
@@ -174,7 +166,6 @@ These live only in memory and are lost on quit or scene change:
 | `GameState.player_name` | `GameState` | Set by the tutorial, never saved; every launch replays the tutorial and asks again |
 | `GameState.tutorial_done` | `GameState` | Set when the tutorial ends, and by the Worlds hub and Settings on open (they are only reachable from home, so running one on its own still returns to home, not the intro); lets screens return home without replaying it, until the app closes |
 | `GameState.food_stock` | `GameState` | Home's food counts (id → count); a relaunch restocks the starting amounts |
-| Trust/premium receipts | — | `is_premium` is a plain bool in the save (no in-game toggle since the Settings card was removed) |
 
 ---
 
@@ -190,7 +181,6 @@ if level >= 5: campaign_ready = true  # reconcile old saves
 GameState.active_region_id  = parsed.get("active_region_id", "")
 if has large_text_enabled:  set it + reapply theme
 SessionManager.from_dict(parsed.get("session", {}))
-if has monetization:        MonetizationState.from_dict(...)
 → return true
 ```
 
@@ -201,11 +191,6 @@ Behaviour worth knowing:
   migration for anything that is not purely additive.
 - `CompanionState.from_dict()` backfills curriculum entries for every level up to the saved level
   (`companion_state.gd:160`), so old saves regain missing codex lines.
-- `MonetizationState.from_dict()` **clamps** counters to the free-tier limits
-  (`monetization_state.gd:108-109`) — a tampered save can't grant extra usage, but it also means a
-  future premium-limit change will rewrite existing counters.
-- Quota counters ignore elapsed time on load; rollover only happens on the next
-  `can_consume`/`get_remaining` call.
 - `GameState.large_text_enabled` is applied by calling `_apply_theme_font_size()` directly on load,
   bypassing `set_large_text()` (so no signal is emitted and no scene re-layouts).
 

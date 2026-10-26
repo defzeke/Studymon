@@ -5,7 +5,8 @@ with one gym per question type in the map's gym buildings, a trainer per questio
 leading to its gym, and a Champion fight in the big gym that closes the region.
 
 - **Map logic:** `scripts/overworld/region_map.gd` → `scenes/overworld/region_map.tscn`
-- **Player:** `scripts/overworld/player.gd` (the explorer, `assets/models/boy_explorer.glb`)
+- **Player:** `scripts/overworld/player.gd` (the explorer: `assets/models/boy_explorer.glb` or
+  `explorer_girl.glb`, picked in `explorer_picker.gd`)
 - **Joystick:** `scripts/overworld/joystick.gd`
 - **Progress + mastery state:** `scripts/autoload/session_manager.gd`
 - **Question data:** `SessionManager.pending_questions` (see `review-session.md`)
@@ -72,12 +73,15 @@ RegionMap            Node3D (region_map.gd)
 ├── GymSlot3          gyms[2]: Entrance (−15, 0, 9), no door; From (−4, 0, 9) → To (−12, 0, 9), walking toward the gym
 ├── ChampionSlot      GymSlot: Entrance (−5.2, 0, −6.8), the big `Gym` door clips
 ├── Trainers, Gyms    filled at runtime
+├── Kuiz              Node3D (kuiz_follower.gd): kuiz.glb, 0.6 tall, following the Player
 ├── Player            CharacterBody3D (player.gd), floating motion, capsule r 0.22 h 0.9
-│   ├── Boy           instance of assets/models/boy_explorer.glb (Idle / Walk / Run looped)
-│   └── Camera3D      (0, 7, 4.7), pitched −54°, fov 45 vertical (keep height, for the wide view)
-└── HUD               Minimap (top-left, minimap.gd), TopBar and HintLabel right of it, Joystick
-                      (bottom-left), StudyButton (bottom-right, opens the Flashcard Sanctuary and
-                      returns here), EncounterPanel
+│   ├── Explorer      instance of assets/models/boy_explorer.glb (Idle / Walk / Run looped);
+│   │                 player.gd swaps in explorer_girl.glb when she is picked
+│   └── Camera3D      (0, 7, 4.7), pitched −54°, fov 40 horizontal (keep width, portrait)
+└── HUD               BackButton (round, top-left), QuestCard (task chips built in code), Minimap
+                      (minimap.gd), Objectives (bullet list beside it), Joystick (bottom-left), StudyButton
+                      (bottom-right icon card, opens the Flashcard Sanctuary and returns here),
+                      EncounterPanel
 ```
 
 **Where things go.** Every gym is a `GymSlot` node in `region_map.tscn`, listed in the root's
@@ -107,12 +111,30 @@ both roots first.
 | none | water, seabed, foam, roofs, chimneys, flags, domes, lamp glow, court lines, the gym door leaves | — |
 
 **Movement** (`player.gd`). The joystick (or arrows/WASD through `ui_*`) gives a direction in screen
-axes, mapped to the ground plane (up is −z). Below 75 % deflection the explorer walks at 2.2 u/s
-with `Walk`; beyond it, runs at 4.2 u/s with `Run`; at rest, `Idle` (0.15 s blends). The body moves
+axes, mapped to the ground plane (up is −z). Below 75 % deflection the explorer walks at 1.8 u/s
+with `Walk`; beyond it, runs at 2.8 u/s with `Run` (the clips were timed for 2.2 / 4.2, so they
+play at 0.82× / 0.67× to keep the feet in step); at rest, `Idle` (0.15 s blends). The body moves
 flat against layer 2 only, then a ray onto layer 1 sets its height, so the 0.15 grass curbs and
 plinths never block it. A step whose ground is missing or below −0.05 (the water surface is −0.07)
-is undone, so the beach stops at the waterline. The `Boy` model turns smoothly to face the way it
-moves. `locked` freezes it while an encounter panel is open.
+is undone, so the beach stops at the waterline. The `Explorer` model turns smoothly to face the way
+it moves. `locked` freezes it while an encounter panel or the explorer picker is open.
+
+**Kuiz** (`kuiz_follower.gd`). Kuiz follows the explorer like a partner in a Pokémon game: a
+0.6-unit `kuiz.glb` dressed as at home and in battle (ink outline, thicker at this size, vertex
+colours, self-lit parts; `Antenna_*` tracks off), playing `Idle` and floating 0.32 above the
+ground with a gentle bob. The explorer drops a breadcrumb every 0.08 units it moves; Kuiz heads for
+the point 0.85 back along that trail, so it rounds corners the way the explorer did instead of
+cutting through walls, catching up smoothly (it trails a little further while running). It faces
+where it is going and, once the explorer stops, turns to face them. It has no collision and stays
+off the minimap. `region_map.gd` places it just behind the explorer at the spawn.
+
+**Explorer** (`explorer_picker.gd`). Each visit to the map from the worlds list starts with a
+"Choose your explorer" card over the map: a live 3D preview of each explorer (its own small
+world, idling; the chosen one cheers and gets a teal border) and **Let's go!**. The pick is
+`GameState.explorer` (`"boy"` or `"girl"`, saved, v11) and `player.set_explorer()` swaps the
+model; both share the same rig, size (about 1 unit tall) and clips. `GameState.explorer_picked`
+(memory only) skips the card when coming back from a battle or flashcards; opening the worlds
+list clears it.
 
 **Seasons** (`season.gd`). The island follows the real-world season, from the device's local date,
 on a Northern Hemisphere calendar (`season_for(month, day)`), so a season lasts for months and the
@@ -140,26 +162,13 @@ anything spawned higher only crosses the view right at the lens. Particle colour
 with every later load. The `Environment` resource is also shared, so every field is set every time.
 To drop a season, remove it from `Season` and `LOOKS`.
 
-**Landscape** (`region_map.gd`). The map is the one landscape screen. `_enter_tree()` (before the
-HUD lays out) saves the window's content size, aspect and screen orientation, then sets a
-1280×720 base with `CONTENT_SCALE_ASPECT_KEEP`, so the view is exactly 16:9 (letterboxed on other
-shapes), and turns the screen: phones get `SCREEN_SENSOR_LANDSCAPE`; a desktop window swaps its
-width and height, scaled to fit and centred on its screen (fullscreen windows are left alone).
-`_exit_tree()` puts all three back, so however the map is left — a battle, Study, the back button —
-the next screen opens in the project's 720×1280 portrait. The size is the `landscape_size` export.
-Entering shows the "Turn your phone sideways" card and every way off the map (`_leave()`: battle,
-Study, back) shows "Turn your phone upright" (`widgets/rotate_prompt.gd`). Outside the map the app
-is portrait on phones (`display/window/handheld/orientation` = portrait).
+**Portrait.** The map is portrait like every other screen (720×1280; the camera keeps the width,
+`keep_aspect` = width, fov 40). The landscape mode, its rotate-your-phone cards
+(`rotate_prompt.gd`) and the minimap beside the top bar were removed.
 **Music:** entering the map crossfades to its own route theme (`MusicManager.play_overworld()`,
 `music/overworld.wav`), which keeps playing through battles; the session list, flashcards and home
 crossfade back to the home loop.
-**Known limit:** the editor's embedded Game view owns its window, so the map neither resizes nor
-moves it (`Engine.is_embedded_in_editor()`) and shows letterboxed inside the portrait frame. Turn
-off *Embed Game on Next Play* in the Game workspace to play in a separate window that turns
-landscape; phones rotate (an iOS export must also list landscape among its supported
-orientations).
-
-**Minimap** (`minimap.gd`). A 220 px Warm Off-White frame at the top-left (Deep Slate 3 px
+**Minimap** (`minimap.gd`). A 200 px Warm Off-White frame at the left, under the quest card and next pill, (Deep Slate 3 px
 outline, rounded, soft shadow, like home's HUD pills) showing the whole island from straight above.
 A 206 px `SubViewport` shares the map's `World3D`; its orthographic camera sees only layer 11,
 which `_ready()` adds to every mesh in `Map`, so the explorer, trigger labels and weather stay out.
@@ -225,10 +234,11 @@ trainers were) keep their cleared gyms.
 `total` is `pending_questions.size()` — **all** questions in the topic, not just the ones in the
 current gym.
 
-HUD strings (`_refresh_progress`):
-
-- `progress_label`: `Trainers c/t  CROWNED | CHAMP-READY | CHAMP-LOCKED`
-- `badges_label`: `Gyms g/G [X][ ]`
+The HUD's quest card (`_refresh_progress`) counts trainers from the gyms' `trainer_indices` (bosses
+are not trainers), lights a badge per cleared gym, shows the Champion as Locked / Ready! / Crowned,
+and the bullet list beside the minimap shows the next three steps (`_objectives()`): every
+uncleared gym's unbeaten trainers (easiest first), then its boss, then the Champion. Layout in
+[`ui-and-assets.md`](../ui-and-assets.md) §2 `region_map.tscn`.
 
 ---
 

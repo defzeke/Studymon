@@ -27,7 +27,7 @@ until their trainers are beaten, and the Champion always has a moveset.
 | **7** | Battle per question type, one judging pipeline | **Implemented (mock)** | `battle.gd`: Identification, Essay and Multiple Choice, per-tier HP/counter/thresholds |
 | **8** | Mastery states + 7-day decay + Champion recap | **Implemented** | `session_manager.gd`; Champion falls back to every question |
 | **9** | Polish: insights, juice, accessibility, pacing | **Partial** | particles/shake/hit-stop/colourblind badges and the large-text toggle done; bubble hidden (#4) |
-| **10** | Monetization quota + stretch | **Partial (mock)** | `monetization_state.gd` + gates; no store, no deck sharing |
+| **10** | Monetization quota + stretch | **Partial (mock)** | the client-side quota was removed; Crystal Shop placeholder ("Coming soon"); no store, no deck sharing |
 
 ---
 
@@ -116,7 +116,7 @@ Missing versus the plan: a mini-map. Clear state now saves the moment a battle e
 
 Done: one judging pipeline that branches on `type`, Multiple Choice tapped and graded locally,
 Identification one-hit-KO and counter, Essay damage from score with an enemy counter formula, boss
-HP, hit-stop and camera shake, essay-only quota gating, and enemy HP, counters, XP and thresholds
+HP, hit-stop and camera shake, and enemy HP, counters, XP and thresholds
 from the question's difficulty tier.
 
 Gaps: no enemy or player art (the missing `bot_lv*.png` references were removed). Grading is the
@@ -146,12 +146,12 @@ onboarding pacing verification on device, and any accessibility options beyond t
 
 ### Phase 10 — Monetization & stretch ⚠️
 
-Done: free-tier PDF (3/week) and grading (10/week) quotas, lazily computed weekly rollover,
-premium flag that bypasses limits, quota labels in three screens, paywall dialog wired to
-`quota_exceeded`, quota block persisted and clamped.
+Removed: the free-tier PDF (3/week) and grading (10/week) quotas, the premium flag, the quota
+labels and the "Weekly limit reached" pop-up (`MonetizationState`). Every AI use is unlimited. Home
+has a Crystal Shop placeholder: real-money crystal packs marked "Coming soon".
 
-Missing: a real store/IAP, server-side entitlement, async topic-deck sharing, cosmetic or story
-progression past Level 5.
+Missing: a real store/IAP, server-side entitlement, async topic-deck sharing, and rewards for
+levels past 5 (levels no longer cap, but nothing new unlocks after the campaign).
 
 ---
 

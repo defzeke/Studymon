@@ -72,17 +72,16 @@ _ready()
   Multiple Choice: build four option buttons (answer + wrong options, shuffled), hide the text
     input and Attack button. A MC row with no answer or no wrong option is played as Identification.
   reset HP bars, hide result panel
-  connect Api.job_status, Api.quota_exceeded, MonetizationState signals
+  connect Api.job_status
 
-multiple choice tap (local, no Api call, no quota)
+multiple choice tap (local, no Api call)
   correct ─► enemy HP = 0, "ONE-HIT KO!" + light shake
   wrong   ─► that button greys out, player HP -= tier counter
 
 submit (Identification / Essay)
-  empty answer ─► "Type an answer first." (no quota consumed)
+  empty answer ─► "Type an answer first."
   otherwise:
      judge → Api.grade_battle_question(q, answer)
-              ├─ essay and quota exhausted ─► Api.quota_exceeded("grade") ─► paywall dialog
               └─ MOCK ─► _execute_mock_grade() ─► call_deferred
                           job_status("grade", "completed", 1.0, {score, feedback, damage, type})
 
@@ -197,16 +196,10 @@ The camera is a child of the `Battle` Control, not of a 2D world — everything 
 
 ---
 
-## 8. Quota interaction
+## 8. Usage limits
 
-`Api.grade_battle_question()` checks `MonetizationState.can_consume("grade")` **before** grading
-and consumes one unit on success — **for essays only**. Identification and Multiple Choice grade
-locally and are free. Consequences:
-
-- A failed/empty submit is blocked earlier by `battle.gd`, so it does not consume quota.
-- When exhausted, `quota_exceeded.emit("grade")` fires, `_awaiting` is reset, the submit button
-  re-enables, and a `ConfirmationDialog` offers "Upgrade to Premium" (which is a mock flag in
-  Settings, not a purchase).
+None. The weekly grading quota (and its "Weekly limit reached" pop-up and `QuotaLabel`) was removed;
+every essay is graded. Identification and Multiple Choice grade locally either way.
 
 ---
 
@@ -215,7 +208,6 @@ locally and are free. Consequences:
 | Gap | Detail |
 |---|---|
 | Grading is local | no Claude call; `/battle/grade` only fires when `MOCK == false` |
-| Essay quota drains when mocked | the free-tier counter drops without any API cost |
 | No true/false | only Multiple Choice, `identification` and `essay` are understood |
 | Boss is not the Hard tier | the boss is the gym's hardest question, not necessarily Hard; it always has 150 HP |
 | `Camera2D` in a `Control` | workaround-heavy; a `CanvasLayer` or pure-UI shake would be simpler |

@@ -10,20 +10,41 @@ Last updated: 2026-10-26.
 
 ## In flight
 
-**Animated logo, detailed rooms, map music, stat cards — uncommitted.** The loading logo is the
+**Kuiz follows the explorer, objective bullets, Study screen — uncommitted.** Kuiz floats after
+the explorer on the region map like a Pokémon partner (`kuiz_follower.gd`). The "Next" pill became a
+bullet list of the next three objectives beside the minimap, with no panel. The Study (flashcards)
+screen is restyled: the Study Room behind a veil, a round Back button, a progress bar, a card with
+tag pills and labelled question / answer, bold palette buttons. Details in
+[`overworld.md`](systems/overworld.md) §3 and [`ui-and-assets.md`](ui-and-assets.md) §2.
+
+**Weekly AI limit removed, quest card, Study icon, slower run — uncommitted.** The free-tier weekly
+limit on PDF uploads and essay grading (and its "Weekly limit reached" pop-up, the battle's quota
+line and `MonetizationState`) is gone; save v12 drops its block. The region map's top is a quest
+card (Trainers with a bar, a badge per gym, the Champion, tasks done) with a "Next" objective pill
+and a round Back button; Study is an icon card. The explorer runs at 2.8 u/s (was 3.4). Details in
+[`ui-and-assets.md`](ui-and-assets.md) §2 and [`overworld.md`](systems/overworld.md).
+
+**Crystal Shop, explorer picker, portrait map, slower explorer — uncommitted.** Tapping the crystal
+pill opens a Crystal Shop of real-money packs marked "Coming soon" (nothing can be bought). The
+region map is portrait again (landscape mode and the rotate prompt removed) and opens with a
+"Choose your explorer" card: the boy or the new girl (`explorer_girl.glb`), saved (v11). The
+explorer walks at 1.8 and runs at 3.4 u/s (was 2.2 / 4.2). Details in
+[`overworld.md`](systems/overworld.md) §3 and [`ui-and-assets.md`](ui-and-assets.md) §2.
+
+**Animated logo, detailed rooms, map music, stat cards — committed (`3be1f49`).** The loading logo is the
 animated `loading_screen_logo.gif`, decoded into a keyed sprite sheet (the old `logo.png` is gone). The four rooms have
 more detail. The region map has its own route theme (`overworld.wav`), crossfading in and out and
 playing through battles. Tapping a stat gauge shows its numbers like the level card. Details in
 [`ui-and-assets.md`](ui-and-assets.md) §1, §2 and §4.
 
-**Dirt decals, room art, level card, music crossfade, smooth logo — uncommitted.** Kuiz's dirt is
+**Dirt decals, room art, level card, music crossfade, smooth logo — committed (`3be1f49`).** Kuiz's dirt is
 projected onto its shell (decals) instead of floating stickers. Settings drops the AI plan card.
 The Study Room's bookshelf is even and its desk stands behind the charging arch; the Maintenance
 Bay's wrench is a proper open-end wrench. Tapping the level pill shows the level's numbers. The
 loading music crossfades into the home loop, and the loading logo is rebuilt at 2× with smooth
 edges. Details in [`ui-and-assets.md`](ui-and-assets.md) §1, §2 and §4.
 
-**Battery health, closet tabs, endless levels, happier music — uncommitted.** The check-up tablet
+**Battery health, closet tabs, endless levels, happier music — committed (`3be1f49`).** The check-up tablet
 shows battery health (capacity, worn by charging; a worn battery drains energy faster) and sells a
 new battery for 30 crystals, which minigame rounds now earn. The closet has Head, Face and Body tabs,
 one costume worn per tab (five new costumes). Levels never cap (Level 5 still unlocks the campaign).
@@ -32,31 +53,31 @@ out, the Playroom ball sits in the middle of the dock, and the home music is a b
 Save v10. Details in [`ui-and-assets.md`](ui-and-assets.md) §2 and
 [`companion-care.md`](systems/companion-care.md).
 
-**Petting, dirt, costumes, own audio — uncommitted.** Hold or stroke Kuiz to pet it. The
+**Petting, dirt, costumes, own audio — committed (`3be1f49`).** Hold or stroke Kuiz to pet it. The
 Maintenance Bay dock adds a check-up tablet (battery, frame, cleanliness, fuel) and a towel: Kuiz
 now gets dirty over time (spots and scratches on its head, `CompanionState.dirt`) and is scrubbed
 clean. The Playroom dock adds a closet of six costumes worn on Kuiz's head (`kuiz_look.gd`). The
 kitchen arrows skip foods with none left. All music and sound effects are our own (synthesised
 offline). Save v9. Details in [`ui-and-assets.md`](ui-and-assets.md) §2 and §4.
 
-**Minigames, moods, dock, landscape map — uncommitted.** The Playroom dock has a Games button with
+**Minigames, moods, dock, landscape map — committed (`3be1f49`).** The Playroom dock has a Games button with
 two minigames: Kuiz Keeper (swipe penalties past Kuiz in goal) and Sky Jump (bounce Kuiz up
 platforms through Sky, Space, Galaxy and Deep Space, with trampolines, rockets, timed and moving
 platforms and meteors), each round counting as play care. The Playroom ball waits in the dock.
 Kuiz rests in a mood when a stat is low (sick, hungry, tired, sad), and a dozing Kuiz stays in its
 room until tapped awake. The dock is a table the items stand on, and the dock/HUD icons are drawn
-at 2.5× so they stay sharp. The region map is landscape 16:9 with a top-down minimap and asks the
+at 2.5× so they stay sharp. The region map was landscape 16:9 (portrait again since) with a top-down minimap and asked the
 player to turn the phone each way. Details in [`ui-and-assets.md`](ui-and-assets.md) §2 and
 [`overworld.md`](systems/overworld.md).
 
-**Home HUD, top room arrows — uncommitted.** The top of home has a level pill (badge + XP bar),
+**Home HUD, top room arrows — committed (`3f1a39f`).** The top of home has a level pill (badge + XP bar),
 four stat gauges (Hunger, Energy, Mood, Health) and a crystal pill (the currency,
 `GameState.crystals`, saved; nothing earns it yet). `CompanionState` gained `hunger` and `health`;
 food, the screwdriver and the ball now call `care()` (`feed`, `fix`, `play`) and charging refills
 energy. Save v8. The room arrows left the bar for the top, either side of the room sign. Details in
 [`ui-and-assets.md`](ui-and-assets.md) §2 Home HUD.
 
-**Model sounds, gem fix, study icons — uncommitted.** Kuiz's sounds are back, made in code like
+**Model sounds, gem fix, study icons — committed (`3f1a39f`).** Kuiz's sounds are back, made in code like
 its artifact makes them (`scripts/audio/synth.gd`, `clip_voice.gd`, `kuiz_voice.gd`; no sound
 files): every clip fires the artifact's cues, so each tutorial line's clip carries its sounds, plus
 hop/jump/land/whee on moves. The battle's Broken Bot (`robot_1.glb`) charges, blasts and powers

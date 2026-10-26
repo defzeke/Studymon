@@ -6,9 +6,7 @@ extends Control
 ## Phase 8: Champion gauntlet — back-to-back battles over the moveset, final
 ## step at boss HP; clearing the last one completes the region.
 ## Phase 9: Juice — Camera2D screen-shake + hit-stop (brief time_scale pause) on strong essay hits.
-## Phase 10: Quota label + paywall dialog via MonetizationState / Api.quota_exceeded.
 
-const ConfirmModal := preload("res://scripts/ui/widgets/confirm_modal.gd")
 const PLAYER_MAX_HP := 100
 const BOSS_HP := 150
 const CHAMPION_XP_REWARD := 15
@@ -64,7 +62,6 @@ const HIT_STOP_BASE := 0.06
 @onready var mc_template: Button = %McTemplate
 @onready var flee_btn: Button = %FleeButton
 @onready var title_label: Label = %TitleLabel
-@onready var quota_label: Label = %QuotaLabel
 @onready var enemy_name: Label = %EnemyName
 @onready var enemy_level: Label = %EnemyLevel
 @onready var enemy_hp_bar: ProgressBar = %EnemyHP
@@ -149,13 +146,6 @@ func _ready() -> void:
 	retry_btn.pressed.connect(_on_retry)
 	continue_btn.pressed.connect(_on_continue)
 	Api.job_status.connect(_on_job_status)
-	# Phase 10: quota display + paywall
-	_update_quota_label()
-	var _ms := get_node_or_null("/root/MonetizationState")
-	if _ms != null:
-		_ms.quota_changed.connect(_update_quota_label)
-		_ms.premium_changed.connect(_on_premium_changed)
-	Api.quota_exceeded.connect(_on_quota_exceeded)
 	if play_intro:
 		_play_intro(foe)
 	else:
@@ -229,29 +219,6 @@ func _set_inputs(on: bool) -> void:
 	submit_btn.disabled = not on
 	answer_input.editable = on
 	_set_mc_enabled(on)
-
-func _update_quota_label() -> void:
-	if quota_label == null:
-		return
-	var _ms := get_node_or_null("/root/MonetizationState")
-	# Null-guard: the arena also runs standalone, without autoloads.
-	if _ms == null:
-		return
-	if _ms.is_premium:
-		quota_label.text = "Premium: Unlimited"
-	else:
-		var rem: int = _ms.get_remaining("grade")
-		quota_label.text = "Free AI Uses: %d/%d" % [rem, _ms.FREE_GRADE_LIMIT]
-
-func _on_premium_changed(_is_premium: bool) -> void:
-	_update_quota_label()
-
-func _on_quota_exceeded(_type: String) -> void:
-	_update_quota_label()
-	_awaiting = false
-	judging_label.visible = false
-	submit_btn.disabled = false
-	ConfirmModal.open(self, "Weekly limit reached", "Your free AI uses are used up for this week. Upgrade to Premium to keep going.", "Got it", Callable(), false, "")
 
 func _on_submit() -> void:
 	if _awaiting or _over:
@@ -374,7 +341,6 @@ func _finish_turn() -> void:
 		_land_hit(true, player_loss)
 		await stage.strike_finished
 	blocker.visible = false
-	_update_quota_label()
 	if _enemy_hp <= 0:
 		_win()
 	elif _player_hp <= 0:

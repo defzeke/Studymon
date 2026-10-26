@@ -315,7 +315,10 @@ soft drop shadow, like the props.
   [`companion-care.md`](systems/companion-care.md) §1.
 - **Crystals** (top right): the currency, `GameState.crystals`, with the forehead gem from the
   logo (`ui/crystal.svg`), saved (v8). Minigame rounds earn it (Kuiz Keeper 1 per goal, Sky Jump
-  1 per 50 m) and a new battery spends it (30); the fridge is still free.
+  1 per 50 m) and a new battery spends it (30); the fridge is still free. The pill has a teal "+"
+  and opens the **Crystal Shop** (`CrystalShop`): four real-money packs (100 / 550 / 1200 / 2500
+  crystals at $0.99 / $4.99 / $9.99 / $19.99, `CRYSTAL_PACKS`, placeholder prices) under an amber
+  "COMING SOON" badge; the price buttons are greyed out and nothing can be bought yet.
 
 ### Kuiz's look (`kuiz_look.gd`)
 
@@ -440,19 +443,24 @@ with no questions. Reset and Delete ask first; Reset keeps the questions, Delete
 
 ### `flashcards.tscn`
 
-`Flashcards` (`Control`) → `Background` (`ColorRect`, Soft Sage), `Margin` → `List`: `TopBar`
-(`BackButton`, `ProgressLabel` "N left · M banked"), `CardPanel` → `CardBox` (`BadgeLabel`,
-`FrontLabel` 36 px, `Sep`, `AnswerLabel`, `SourceLabel`), `FlipButton` ("Show answer"), `RateRow`
-(`AgainButton` Soft Coral, `HardButton` Muted Amber, `EasyButton` Soft Green) and `DoneLabel`.
-The answer, source and rate row are hidden until the card is flipped. Colours and button styles
-are applied in `_style()` from the canonical palette; every button is at least 56 px tall.
+`Flashcards` (`Control`) → `Background` (`rooms/study_room.svg`, covering) under a Deep Slate 60 %
+`Veil`, `Margin` → `List`: `TopBar` (a 72 px round Off-White `BackButton` with `ui/icon_back.svg`,
+then "Flashcards" bold 34 px Off-White over `ProgressLabel` "N left · M banked"), `Progress` (a
+teal bar of the cards banked out of the deck), `CardPanel` (Off-White, Deep Slate 3 px outline,
+radius 32, soft shadow) → `CardBox`: `Tags` (rounded pills built in code: the mastery state in its
+badge colour, the type in teal, the tier green / amber / coral), "QUESTION", `FrontLabel` (bold
+34 px), `Back` (hidden until flipped: a soft line, "ANSWER", `AnswerLabel` bold 28 px teal,
+`SourceLabel`) and `DoneLabel` (the closing message, shown inside the card). Under the card:
+`FlipButton` ("Show answer", teal) or `RateRow` (`AgainButton` Soft Coral, `HardButton` Muted
+Amber, `EasyButton` Soft Green), all 84 px tall with bold Off-White text and a Deep Slate outline.
+Styles are applied in `_style()` from the canonical palette.
 
 ### `categorizer.tscn`
 
 Titled "World Builder", on the Study Room art under a Deep Slate veil (`Veil`, 0.88 alpha) so text stays readable.
 Inside `Margin` → `Content`: `Title` (Muted Amber, bold 44), a `SourceCard` panel ("1 · Your reviewer":
 `TopicName` `LineEdit`, `FileButton` which shows the picked file name, `PasteArea`, `SanityLabel`,
-`StudyButton`, `StatusLabel`, `LoadingBar`; there is no on-screen quota line, Settings shows it), then `QuestionsBlock` ("2 · Questions": `Scroll` → `QuestionsBox`
+`StudyButton`, `StatusLabel`, `LoadingBar`), then `QuestionsBlock` ("2 · Questions": `Scroll` → `QuestionsBox`
 with rows built in code, `AddQuestionButton`), `PlayButton` and `BackButton`. `FileDialog` is the native
 OS dialog (`use_native_dialog`) where the platform has one; the weekly-limit notice is a `ConfirmModal`.
 
@@ -467,23 +475,34 @@ box, although all bytes are kept for the upload call (`categorizer.gd:89-96`).
 
 ### `region_map.tscn`
 
-The 3D island overworld; structure and rules in [`overworld.md`](systems/overworld.md). It is the
-one landscape screen: while it is open the window is a 1280×720 base at exactly 16:9
-(`CONTENT_SCALE_ASPECT_KEEP`), the phone turns to landscape (a desktop window swaps its sides; the
-editor's embedded Game view cannot, so it letterboxes there), and
-leaving the map in any way restores 720×1280 portrait (`region_map.gd` `_enter_tree` /
-`_exit_tree`). Each switch shows a "Turn your phone sideways / upright" card
-(`widgets/rotate_prompt.gd`: a phone turning a quarter with an amber arrow, on dimmed Deep Slate),
-which fades after 2.2 s or on a tap. The rest of the game is portrait on phones
-(`display/window/handheld/orientation` = portrait). A 220 px minimap at the top left (`minimap.gd`; Off-White frame, Deep Slate outline,
-like home's HUD pills) shows the whole island from straight above, rendered once into a small
-SubViewport, with live dots for the explorer (teal), trainers, gyms (amber) and the Champion
-(coral). The top bar and hint sit to its right, the joystick bottom-left and Study bottom-right.
+The 3D island overworld; structure and rules in [`overworld.md`](systems/overworld.md). It is
+portrait like the rest of the game. Each visit from the worlds list opens with the "Choose your
+explorer" card (`explorer_picker.gd`: live 3D previews of the boy and the girl, **Let's go!**).
+The HUD, top to bottom, in the home HUD's look (Off-White, Deep Slate 3 px outline, soft shadow):
+
+- **Back** (top left): a 72 px round button with a slate chevron (`ui/icon_back.svg`); back to the
+  worlds list.
+- **Quest card** (`QuestCard`, beside it): "Region quest" and how many of the region's tasks are
+  done ("1 / 6 done": every trainer, every gym and the Champion), then three task chips built in
+  `region_map.gd` `_refresh_progress()`: **Trainers** (`ui/icon_trainer.svg`, beaten / total and
+  a teal bar), **Gyms** (one `ui/icon_badge.svg` per gym, lit once cleared, faint until then, and
+  the count) and **Champion** (`ui/icon_lock.svg` "Locked" until every gym is cleared, then
+  `ui/icon_crown.svg` "Ready!", "Crowned" once beaten).
+- **Minimap** (under the card, at the left; `minimap.gd`, 200 px): the whole island from straight
+  above, rendered once into a small SubViewport, with live dots for the explorer (teal),
+  trainers, gyms (amber) and the Champion (coral).
+- **Objectives** (`Objectives`, beside the minimap, no panel): a bullet list of the next three
+  steps, in order: each unfinished gym's unbeaten trainers, easiest first ("Beat Trainer 3 (Easy)
+  on the Essay road"), then its boss, then the Champion; "+N more" when there are more, and
+  "Region complete!" at the end. Off-White bold text with a Deep Slate outline so it reads over
+  the map; the current step is larger with an amber bullet, the rest slightly dimmer.
+- **Joystick** (bottom left) and **Study** (bottom right): a 124 px Off-White card with a stack of
+  flashcards (`ui/icon_study.svg`) over "Study"; opens the Flashcard Sanctuary.
 
 ### `battle.tscn`
 
 `Battle` (`Control`) → `Camera2D`, `Background`, `Margin` → `List`: `TopBar` (flee, title),
-`QuotaLabel`, `EnemyCard` (sprite, name, HP), `PlayerCard` (sprite, name, HP), `QuestionCard`
+`EnemyCard` (sprite, name, HP), `PlayerCard` (sprite, name, HP), `QuestionCard`
 (type, text), `AnswerInput` (`TextEdit`), `SubmitButton`, `JudgingLabel`, `ResultLabel`,
 `ResultPanel` (title, XP label, retry/continue); the weekly-limit notice is a `ConfirmModal`.
 
@@ -497,7 +516,7 @@ Bot foe makes its own sounds on its clips (§2 Model sounds). For a Multiple Cho
 
 ### Pop-ups
 
-`scripts/ui/widgets/confirm_modal.gd` (`ConfirmModal.open(host, title, message, confirm_text, on_confirm, danger, cancel_text)`) is the one pop-up: a dimmed screen, a card that scales in (0.85 → 1, back-ease, 0.28 s) and out (0.14 s), a bold title (coral when `danger`), centred wrapped text and full-width buttons. An empty `cancel_text` makes it a notice. Esc cancels. Tweens ignore `Engine.time_scale`, so battle hit-stop does not freeze it. Callers `preload` the script instead of relying on a `class_name`. Used by the Worlds hub (reset, delete), the World Builder and the battle (weekly limit).
+`scripts/ui/widgets/confirm_modal.gd` (`ConfirmModal.open(host, title, message, confirm_text, on_confirm, danger, cancel_text)`) is the one pop-up: a dimmed screen, a card that scales in (0.85 → 1, back-ease, 0.28 s) and out (0.14 s), a bold title (coral when `danger`), centred wrapped text and full-width buttons. An empty `cancel_text` makes it a notice. Esc cancels. Tweens ignore `Engine.time_scale`, so battle hit-stop does not freeze it. Callers `preload` the script instead of relying on a `class_name`. Used by the Worlds hub (reset, delete), the World Builder and the minigames' end screen.
 
 ## 3. Interaction conventions
 
@@ -590,7 +609,8 @@ rasterises them sharp on high-density phones; the drawing itself is unchanged.
 | `sprites/ui/loading_spark.svg` | `loading.tscn` sparks either side of "Loading..." |
 | `sprites/ui/tip_bulb.svg` | `loading.tscn` tip icon |
 | `models/map.glb`, `models/map_0.png` | `region_map.tscn` island (the PNG is its road texture) |
-| `models/boy_explorer.glb`, `boy_explorer_basecolor_v2.jpg`, `boy_explorer_normal_v2.jpg` | `region_map.tscn` explorer (`Idle`, `Walk`, `Run` used) |
+| `models/boy_explorer.glb`, `boy_explorer_basecolor_v2.jpg`, `boy_explorer_normal_v2.jpg` | `region_map.tscn` explorer, the boy (`Idle`, `Walk`, `Run`; `Celebrate` in the picker) |
+| `models/explorer_girl.glb`, `explorer_girl_basecolor.jpg`, `explorer_girl_normal.jpg` | `region_map.tscn` explorer, the girl (same clips and rig size as the boy) |
 | `models/robot_1.glb` | battle foe, the Broken Bot (`Idle`, `Attack`, `Defeat`); its sounds are made in code (`broken_bot_voice.gd`) |
 | `models/robot_2.glb` | battle foe (`Idle`, `Attack`, `Defeat`); silent |
 | `models/kuiz.glb` | `peek.tscn` 3D Kuiz head; 21 clips (13 one-shots, `Celebrate`, `Learn_Something_New`, six `State_*` moods), face and props on blend shapes |
@@ -603,6 +623,9 @@ rasterises them sharp on high-density phones; the drawing itself is unchanged.
 | `sprites/ui/icon_charge.svg`, `icon_upload.svg`, `icon_settings.svg` | home's Charge, Play and Settings buttons (temporary placeholders, same style as the props) |
 | `sprites/ui/campaign.png`, `charge.png`, `settings.svg` | **unused** since home took the icons above; safe to delete |
 | `sprites/ui/arrow.svg` | home's room arrows (top) and food arrows (bar); an Off-White chevron with a Deep Slate outline, flipped for ◀ |
+| `sprites/ui/icon_back.svg` | region map's round Back button (a Deep Slate chevron) |
+| `sprites/ui/icon_trainer.svg`, `icon_badge.svg`, `icon_crown.svg`, `icon_lock.svg` | region map's quest card: Trainers, gym badges, the Champion ready / locked (temporary placeholders) |
+| `sprites/ui/icon_study.svg` | region map's Study button: a stack of flashcards with an amber star (temporary placeholder) |
 | `sprites/ui/crystal.svg` | home's crystal (currency) pill: the logo's forehead gem (temporary placeholder) |
 | `sprites/ui/stat_mood.svg`, `stat_health.svg` | home's Mood and Health gauges (temporary placeholders) |
 | `sprites/props/data_chips.svg`, `spicy_chips.svg`, `cache_cookie.svg`, `pi_pie.svg`, `byte_burger.svg`, `java_juice.svg` | home's six foods (temporary placeholders); `data_chips.svg` is also the Hunger gauge icon |
@@ -615,7 +638,6 @@ rasterises them sharp on high-density phones; the drawing itself is unchanged.
 | `sprites/props/platform_space.svg`, `platform_galaxy.svg`, `platform_deep.svg` | Sky Jump's platforms in Space, Galaxy and Deep Space (temporary placeholders) |
 | `sprites/props/meteor.svg` | Sky Jump's meteor hazard (temporary placeholder) |
 | `sprites/ui/dock_table.svg` | home's dock: the table the room items stand on (temporary placeholder) |
-| `sprites/ui/icon_phone.svg`, `icon_turn.svg` | the rotate-your-phone card (`rotate_prompt.gd`) |
 | `sprites/rooms/soccer_field.svg`, `sky_jump.svg` | the minigame backdrops, behind Kuiz (temporary placeholders) |
 | `sprites/ui/icon_games.svg`, `game_soccer.svg`, `game_jump.svg` | the Playroom's Games button and the Minigames card (temporary placeholders) |
 | `sprites/props/screwdriver.svg` | home's Maintenance Bay screwdriver (temporary placeholder) |

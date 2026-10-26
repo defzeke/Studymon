@@ -22,7 +22,6 @@ GameState="*res://scripts/autoload/game_state.gd"
 Api="*res://scripts/autoload/api.gd"
 CompanionState="*res://scripts/autoload/companion_state.gd"
 SessionManager="*res://scripts/autoload/session_manager.gd"
-MonetizationState="*res://scripts/autoload/monetization_state.gd"
 MusicManager="*res://scripts/autoload/music_manager.gd"
 
 [display]

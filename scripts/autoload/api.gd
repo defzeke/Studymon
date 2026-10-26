@@ -6,7 +6,6 @@ extends Node
 ## would collide with Object's `_get(StringName)` virtual.
 
 signal job_status(job_id: String, status: String, progress: float, result: Variant)
-signal quota_exceeded(type: String)
 
 const MOCK := true
 const BASE_URL := "http://localhost:8000"
@@ -35,15 +34,7 @@ func save_topic(topic_id: String, questions: Array[Dictionary]) -> void:
 	_put("/topics/" + topic_id, {"questions": questions})
 
 ## Canonical Phase 7 entry: grade a full question dict (carries expected answer + key_concepts).
-## Quota-gated (Phase 10): free tier limits gradings per week, and only essays use the AI.
 func grade_battle_question(q: Dictionary, answer: String) -> void:
-	var _ms := get_node_or_null("/root/MonetizationState")
-	var uses_ai: bool = str(q.get("type", "essay")).to_lower() == "essay"
-	if uses_ai and _ms != null and not _ms.can_consume("grade"):
-		quota_exceeded.emit("grade")
-		return
-	if uses_ai and _ms != null:
-		_ms.consume("grade")
 	if MOCK:
 		_execute_mock_grade(q, answer)
 		return
@@ -80,17 +71,9 @@ func _put(endpoint: String, data: Dictionary) -> void:
 
 ## MOCKS — replaced by real calls when backend lands (Phase 5+)
 
-# Phase 10: quota-gated mock upload. Emits quota_exceeded("pdf") on limit.
 func mock_upload_pdf(topic_name: String, source_text: String = "") -> void:
-	var _ms := get_node_or_null("/root/MonetizationState")
-	if _ms != null and not _ms.can_consume("pdf"):
-		quota_exceeded.emit("pdf")
-		return
-	if _ms != null:
-		_ms.consume("pdf")
 	_execute_mock_upload(topic_name, source_text)
 
-# Internal helper: executes mock extraction without quota check (called after gate).
 func _execute_mock_upload(topic_name: String, source_text: String) -> void:
 	# Simulate short processing beat like GDD §5.2 "AI is studying..."
 	call_deferred("_mock_upload_done", {"job_id": "job_001", "status": "processing"})
@@ -292,7 +275,6 @@ func _mock_poll_done(data: Dictionary) -> void:
 ## judgment proxy (length/effort), so mock grading has a deterministic floor
 ## instead of hardcoded answers. Real Claude grading replaces this server-side.
 
-# Internal helper: executes mock grading without quota check (called after gate).
 func _execute_mock_grade(q: Dictionary, answer: String) -> void:
 	var qtype: String = str(q.get("type", "essay")).to_lower()
 	var tier: String = str(q.get("difficulty", "medium")).to_lower()

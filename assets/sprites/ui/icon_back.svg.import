@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://takyyynotark"
-path="res://.godot/imported/icon_phone.svg-83957fbcd0c6835c3de1b068bae183b2.ctex"
+uid="uid://cuqgkq5b6rled"
+path="res://.godot/imported/icon_back.svg-70fbcddf54cd5d96e4dfa7f7e299c8e2.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/sprites/ui/icon_phone.svg"
-dest_files=["res://.godot/imported/icon_phone.svg-83957fbcd0c6835c3de1b068bae183b2.ctex"]
+source_file="res://assets/sprites/ui/icon_back.svg"
+dest_files=["res://.godot/imported/icon_back.svg-70fbcddf54cd5d96e4dfa7f7e299c8e2.ctex"]
 
 [params]
 
