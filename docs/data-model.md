@@ -6,7 +6,7 @@ no cloud sync.
 - **Path:** `user://studymon_save.json`
 - **Written by:** `SaveManager.save_game()` — `scripts/autoload/save_manager.gd:6`
 - **Read by:** `SaveManager.load_game()` — `scripts/autoload/save_manager.gd:24`
-- **Schema tag:** `"v": 12` (v12 dropped the `monetization` block with the weekly AI limit; an older save's block is ignored; v11 added `explorer`; v10 added `battery_health` and replaced `costume` with `outfit`; a v9 `costume` loads into its slot; v9 added `dirt` and `costume`; v8 added `hunger`, `health` and `crystals`; v7 added `player_name` and `food_stock`; older saves load with defaults. The tutorial flag is deliberately not saved, so the intro plays every launch)
+- **Schema tag:** `"v": 14` (v14 keys `cleared_houses` per house, `"topic_id:gym_type#house_id"`, and `best_stars` house runs `"house:topic_id:gym_type#house_id"`; a v13 house key without an id still counts toward its type; v13 replaced `session.cleared_trainers` with `cleared_houses` and added `best_stars`; a gym cleared before counts as its house cleared; v12 dropped the `monetization` block with the weekly AI limit; an older save's block is ignored; v11 added `explorer`; v10 added `battery_health` and replaced `costume` with `outfit`; a v9 `costume` loads into its slot; v9 added `dirt` and `costume`; v8 added `hunger`, `health` and `crystals`; v7 added `player_name` and `food_stock`; older saves load with defaults. The tutorial flag is deliberately not saved, so the intro plays every launch)
 - **Loaded:** once at boot, deferred from `SaveManager._ready`
 - **Format:** `JSON.stringify` of a single `Dictionary`, pretty-print off
 
@@ -19,7 +19,7 @@ That is fine for the current scope but means there is **no type safety and no au
 
 ```jsonc
 {
-  "v": 12,
+  "v": 14,
 
   // CompanionState.to_dict()
   "level": 1,
@@ -52,7 +52,8 @@ That is fine for the current scope but means there is **no type safety and no au
   // SessionManager.to_dict()
   "session": {
     "mastery": { "topic_001:0": { "state": 1, "attempts": 2, "correct": 1, "last_correct": 1760000000 } },
-    "cleared_trainers": ["topic_001:0"],
+    "cleared_houses": ["topic_001:essay#h4"],
+    "best_stars": {"house:topic_001:essay#h4": 3},
     "cleared_gyms": ["topic_001:identification"],
     "champion_defeated": [],
     "topics": [
@@ -82,7 +83,8 @@ Field-by-field:
 | `active_region_id` | string | `GameState` | `topic_id` of the region being played |
 | `large_text_enabled` | bool | `GameState` | Applied to the Theme on load |
 | `session.mastery` | dict | `SessionManager._mastery` | Keyed `"<topic_id>:<q_index>"` |
-| `session.cleared_trainers` | string[] | keys of `_cleared_trainers` | Same key shape |
+| `session.cleared_houses` | string[] | keys of `_cleared_houses` | `"topic_id:gym_type#house_id"`; house ids `h1`..`h15` come from `MapHouses.find()` |
+| `session.best_stars` | object | `_best_stars` | `"kind:topic_id:run_key"` → 0–3; run key is the type, or `type#house_id` for a house |
 | `session.cleared_gyms` | string[] | keys of `_cleared_gyms` | `"<topic_id>:<gym_type>"` |
 | `session.champion_defeated` | string[] | keys of `_champion_defeated` | Just `topic_id`s |
 | `session.topics` | dict[] | `SessionManager._topics` | Full question banks — this is the bulk of the file |

@@ -213,3 +213,16 @@ If you want to change pacing, these are the only knobs that matter:
 | Softer tap spam | `DAILY_CAP_BASE_XP` **and** fix the `int()` truncation |
 | Longer sessions | `POMODORO_FOCUS_SEC` / `POMODORO_REST_SEC` |
 | Harsher missed rest | `MISSED_REST_*_PENALTY` |
+
+---
+
+## 9. Stats in battle runs
+
+Each care stat has one job in a battle run ([`battle.md`](battle.md) §3): health sets Kuiz's battle HP
+(70–120), energy scales XP paid (×0.8–1.2), mood scales crystals paid (×0.8–1.2), hunger softens counter
+damage (up to −20 %) and focus 50+ forgives the first miss. While `CompanionState.in_run` is true every
+stat's clock decay is paused and each item answered costs energy 0.5 and hunger 0.4 and raises mood (+1.5 right,
++0.3 wrong), while every counter Kuiz takes costs health `counter × 0.3` (never below 10): `play_item()` and
+`hurt()`. Reaching a level pays `level × LEVEL_CRYSTALS` (10)
+crystals. The capped-tap XP bug is fixed: after 10 taps an action pays at least 1 XP
+(`maxi(1, roundi(base × 0.3))`), so `known-issues.md` #5 is resolved.

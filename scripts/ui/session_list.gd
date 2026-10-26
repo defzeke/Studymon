@@ -35,7 +35,7 @@ func _on_topics_listed(topics: Array[Dictionary]) -> void:
 func _make_card(topic: Dictionary) -> Control:
 	var id := str(topic.get("id", ""))
 	var progress := SessionManager.topic_progress(id)
-	var total := int(progress["total"])
+	var total := int(progress["questions"])
 	var card := PanelContainer.new()
 	var pad := MarginContainer.new()
 	for side in ["left", "top", "right", "bottom"]:
@@ -51,7 +51,7 @@ func _make_card(topic: Dictionary) -> Control:
 	name_label.add_theme_color_override("font_color", Color("D6A85F"))
 	box.add_child(name_label)
 	var info := Label.new()
-	info.text = "%d questions · %d/%d trainers cleared" % [total, int(progress["cleared"]), total]
+	info.text = "%d questions · %d houses · %d/%d gyms cleared" % [total, int(progress["houses"]), int(progress["gyms"]), int(progress["gyms_total"])]
 	info.modulate = Color("E8F0EA", 0.75)
 	info.add_theme_font_size_override("font_size", 22)
 	box.add_child(info)
@@ -65,7 +65,7 @@ func _make_card(topic: Dictionary) -> Control:
 	var danger_row := HBoxContainer.new()
 	danger_row.add_theme_constant_override("separation", 8)
 	box.add_child(danger_row)
-	var reset := _button("Reset progress", danger_row, _ask.bind("Reset progress?", "\"%s\" loses its cleared trainers, gyms, mastery and Champion. Your questions are kept." % name_label.text, "Reset", SessionManager.reset_topic_progress.bind(id)))
+	var reset := _button("Reset progress", danger_row, _ask.bind("Reset progress?", "\"%s\" loses its cleared houses, gyms, mastery and Champion. Your questions are kept." % name_label.text, "Reset", SessionManager.reset_topic_progress.bind(id)))
 	var delete := _button("Delete", danger_row, _ask.bind("Delete world?", "\"%s\" and all its progress will be removed. This cannot be undone." % name_label.text, "Delete", SessionManager.delete_topic.bind(id)))
 	reset.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	delete.size_flags_horizontal = Control.SIZE_EXPAND_FILL

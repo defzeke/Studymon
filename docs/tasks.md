@@ -10,6 +10,25 @@ Last updated: 2026-10-26.
 
 ## In flight
 
+**Challenge Houses, Gyms, Champion runs, rewards — uncommitted, not play-tested.** Trainers and bosses are
+replaced by fixed-length runs: a Challenge House (Easy, 10 MC / 5 ID / 5 Essay) and a Gym (Medium,
+20 / 10 / 10) per question type, then the Champion Gym (40 items, Hard). A run rewrites
+and cycles questions to fill its quota (`SessionManager.build_run()`), pauses on a review beat after
+each answer, strengthens Kuiz's hits with a streak (the foe's bar is progress, so every item is
+played) and ends in a defeat animation with Exit / Try Again when Kuiz runs out of HP. Winning pays
+crystals and XP with stars, a first-clear bonus and a 25 % replay rate; care stats now feed battle
+(health = HP, energy = XP, mood = crystals, hunger = counter, focus = streak shield) and their clock decay is paused during a run: each item costs energy and hunger and raises mood, and every hit on
+Kuiz costs health (never below 10). Every one of the island's 15 houses is a Challenge House (5 per type, found at runtime by `MapHouses`
+from `map.glb`'s merged house meshes): walking into the house itself opens it, a dark doorway unfolds like the
+gyms' doors, the explorer walks inside, the screen fades, and after the battle the explorer steps back out of the
+same building (gyms too). Any house of a type opens its gym. A house opens on any bump with its walls, windows or door (an
+invisible box failed where windows, trees and a lamp post kept the explorer out), and a run is always
+buildable: a world whose questions cannot take a house's type (one unanswered essay) plays them as they
+are instead of refusing entry. Save v14; care XP cap bug (#5) fixed. Checked headless only (imports, scene loads,
+quota and reward maths). Contract: [`systems/battle.md`](systems/battle.md),
+[`systems/gameplay-structure.md`](systems/gameplay-structure.md) §3.2. Open: the houses have no door-swing animation (the glb merges all doors; needs a Blender split), the
+entrance and doorway are checked headless only (trigger, panel, house list), not seen on a phone, level milestones do not unlock closet items yet, and the pricing blocker below is unchanged.
+
 **Kuiz follows the explorer, objective bullets, Study screen — uncommitted.** Kuiz floats after
 the explorer on the region map like a Pokémon partner (`kuiz_follower.gd`). The "Next" pill became a
 bullet list of the next three objectives beside the minimap, with no panel. The Study (flashcards)

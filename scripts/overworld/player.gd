@@ -30,6 +30,8 @@ const EXPLORERS := {
 ## Set while an encounter panel (or the explorer picker) is open.
 var locked := false
 var _explorer := "boy"
+# Set while walk_into() moves the explorer; the stick and the ground ray are ignored meanwhile.
+var _scripted := false
 
 func _ready() -> void:
 	_start_clips()
@@ -54,7 +56,27 @@ func _start_clips() -> void:
 		anim.get_animation(clip).loop_mode = Animation.LOOP_LINEAR
 	anim.play("Idle")
 
+## Walks the explorer straight through a building's doorway to `target` (no collision), like stepping
+## inside; the map fades out once it arrives.
+func walk_into(target: Vector3, time := 0.55) -> void:
+	_scripted = true
+	var flat := Vector3(target.x, global_position.y, target.z)
+	var to := flat - global_position
+	if to.length() > 0.01:
+		model.rotation.y = atan2(to.x, to.z)
+	anim.play("Walk", BLEND)
+	anim.speed_scale = WALK_PACE
+	var t := create_tween()
+	t.tween_property(self, "global_position", flat, time)
+	await t.finished
+
+## Turns the explorer to face `dir` (on arriving back outside a building).
+func face(dir: Vector3) -> void:
+	model.rotation.y = atan2(dir.x, dir.z)
+
 func _physics_process(delta: float) -> void:
+	if _scripted:
+		return
 	var stick: Vector2 = joystick.output if joystick else Vector2.ZERO
 	if stick == Vector2.ZERO:
 		stick = Input.get_vector("ui_left", "ui_right", "ui_up", "ui_down")

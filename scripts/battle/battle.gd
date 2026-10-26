@@ -1,24 +1,34 @@
 extends Control
-## Phase 7: Battle scene (GDD §6.2) — Identification + Essay via one judging pipeline; Multiple
-## Choice is tapped and graded locally. Enemy HP, counters and thresholds follow the question's tier.
-## Flow: bound question from SessionManager -> answer input -> "judging..." beat
-## -> damage + one-line AI feedback -> enemy counter -> win/lose -> overworld.
-## Phase 8: Champion gauntlet — back-to-back battles over the moveset, final
-## step at boss HP; clearing the last one completes the region.
-## Phase 9: Juice — Camera2D screen-shake + hit-stop (brief time_scale pause) on strong essay hits.
+## Battle scene: one run (a Challenge House, Gym or the Champion Gym) of fixed items against one foe.
+## Identification and Essay are typed and graded by Api; Multiple Choice is tapped and graded locally.
+## Each answer is followed by a review beat; a streak strengthens Kuiz's hits; Kuiz losing all its HP
+## ends the run with Exit / Try Again. Juice: Camera2D shake + hit-stop.
 
-const PLAYER_MAX_HP := 100
-const BOSS_HP := 150
-const CHAMPION_XP_REWARD := 15
-# Contract: docs/systems/gameplay-structure.md (difficulty table).
+# Contract: docs/systems/battle.md. A run is a fixed list of items fought against one foe.
+const HP_PER_ITEM := 10
+const HEAL_ON_CORRECT := 4
+## Damage multiplier for the 1st, 2nd and 3rd+ miss in a row.
+const MISS_MULT: Array[float] = [1.0, 1.25, 1.5]
+## Reading time before Next, in seconds.
+const REVIEW_SEC_RIGHT := 1.5
+const REVIEW_SEC_WRONG := 4.0
+const HIT_NAMES: Array[String] = ["HIT!", "STRONG!", "HEAVY!!", "ULTIMATE!!!"]
+const StatGauge := preload("res://scripts/ui/widgets/stat_gauge.gd")
+# Kuiz's four care stats on its card: stat, icon, ring colour. They move as the run changes them.
+const GAUGES := [
+	["hunger", "res://assets/sprites/props/data_chips.svg", Color("D6A85F")],
+	["energy", "res://assets/sprites/ui/icon_charge.svg", Color("4F8F89")],
+	["mood", "res://assets/sprites/ui/stat_mood.svg", Color("8D82A8")],
+	["health", "res://assets/sprites/ui/stat_health.svg", Color("C97970")],
+]
+const RUN_NAMES := {"house": "Challenge House", "gym": "Gym", "champion": "Champion Gym"}
+const FOE_NAMES := {"house": "CHALLENGER", "gym": "GYM LEADER", "champion": "CHAMPION"}
+# Counter damage and the essay pass score, by the run's tier.
 const TIERS := {
-	"easy": {"hp": 60, "counter": 15, "xp": 5, "essay_pass": 0.5},
-	"medium": {"hp": 100, "counter": 25, "xp": 8, "essay_pass": 0.65},
-	"hard": {"hp": 150, "counter": 35, "xp": 12, "essay_pass": 0.8},
+	"easy": {"counter": 15, "essay_pass": 0.5},
+	"medium": {"counter": 25, "essay_pass": 0.65},
+	"hard": {"counter": 35, "essay_pass": 0.8},
 }
-# Phase 9 juice thresholds
-const STRONG_ESSAY_SCORE := 0.7
-const SHAKE_BASE_INTENSITY := 8.0
 const HIT_STOP_BASE := 0.06
 
 ## Start-of-battle entrance (see _play_intro). Turn it off to drop straight into the fight.
@@ -82,63 +92,64 @@ const HIT_STOP_BASE := 0.06
 @onready var retry_btn: Button = %RetryButton
 @onready var continue_btn: Button = %ContinueButton
 
+@onready var qscroll: Control = question_label.get_parent()
+
+var _run: Array[Dictionary] = []
+var _kind := "house"
+var _standalone := false
+var _index := 0
 var _q: Dictionary = {}
 var _qtype: String = "essay"
 var _tier: String = "medium"
 var _mc_options: Array[String] = []
-var _is_boss: bool = false
-var _is_champion: bool = false
+var _correct := 0
+var _streak := 0
+var _best_streak := 0
+var _loss_streak := 0
+var _shield_used := false
+var _hit_tier := 0
+# Questions whose mastery this run already recorded; a repeated item or a retry does not count twice.
+var _seen := {}
 var _enemy_hp: int = 0
 var _enemy_max: int = 0
-var _player_hp: int = PLAYER_MAX_HP
+var _player_hp: int = 0
+var _player_max: int = 0
 # HP last shown on the bars; a drop since then is what triggers the pet / robot reactions.
 var _shown_enemy_hp: int = 0
 var _shown_player_hp: int = 0
 var _awaiting: bool = false
 var _over: bool = false
+var _phase := "answer"
+var _last_feedback := ""
 var _shake_tween: Tween
 
 func _ready() -> void:
-	_q = SessionManager.get_battle_question()
-	if _q.is_empty():
-		# Direct scene run fallback: easy ID question so the arena is testable solo.
-		_q = {"id": "q_preview", "text": "Preview: What is the capital of France?", "type": "identification", "answer": "Paris", "confidence": 0.9, "key_concepts": []}
-	_is_boss = bool(SessionManager.battle_is_boss)
-	_is_champion = bool(SessionManager.battle_is_champion)
-	_qtype = str(_q.get("type", "essay")).to_lower()
-	_tier = str(_q.get("difficulty", "medium")).to_lower()
-	if not TIERS.has(_tier):
-		_tier = "medium"
-	if _qtype == "multiple_choice":
-		_mc_options = _mc_choices()
-		if _mc_options.size() < 2:
-			_qtype = "identification"
-	_enemy_max = BOSS_HP if _is_boss else int(TIERS[_tier]["hp"])
+	_run = SessionManager.battle_run
+	_standalone = _run.is_empty()
+	if _standalone:
+		# Direct scene run fallback: one easy question so the arena is testable solo.
+		_run = [{"q_index": -1, "question": {"id": "q_preview", "text": "Preview: What is the capital of France?", "type": "identification", "answer": "Paris", "confidence": 0.9, "key_concepts": []}}]
+	else:
+		_kind = SessionManager.battle_kind
+	_tier = SessionManager.RUN_TIER[_kind]
+	_player_max = CompanionState.battle_max_hp()
+	_player_hp = _player_max
+	_enemy_max = _run.size() * HP_PER_ITEM
 	_enemy_hp = _enemy_max
 	enemy_hp_bar.max_value = _enemy_max
-	player_hp_bar.max_value = PLAYER_MAX_HP
+	player_hp_bar.max_value = _player_max
+	CompanionState.in_run = true
+	_build_gauges()
+	CompanionState.stats_changed.connect(_refresh_gauges)
 	_refresh_bars()
-	var foe := "TRAINER"
-	if _is_champion:
-		foe = "CHAMPION"
-	elif _is_boss:
-		foe = "GYM BOSS"
+	var foe: String = FOE_NAMES[_kind]
 	enemy_name.text = foe
-	# Foes carry no stored level: show their tier (+1 for a boss / Champion) so both cards match.
-	enemy_level.text = "Lv%d" % (SessionManager.DIFFICULTIES.find(_tier) + 1 + (1 if _is_boss or _is_champion else 0))
+	# Foes carry no stored level: their tier stands in so both cards match.
+	enemy_level.text = "Lv%d" % (SessionManager.DIFFICULTIES.find(_tier) + 1)
 	player_name.text = "KUIZ"
 	player_level.text = "Lv%d" % CompanionState.level
-	stage.setup(_is_boss or _is_champion)
-	if _is_champion:
-		var cp := SessionManager.champion_progress()
-		title_label.text = "CHAMPION %d/%d" % [int(cp["done"]) + 1, int(cp["total"])]
-	else:
-		title_label.text = "Boss Battle" if _is_boss else "Battle"
-	qtype_label.text = "%s · %s" % [_qtype.capitalize(), _tier.capitalize()]
-	question_label.text = str(_q.get("text", ""))
-	answer_input.placeholder_text = "Type the exact term..." if _qtype == "identification" else "Explain in your own words..."
-	if _qtype == "multiple_choice":
-		_build_mc_buttons()
+	stage.setup(_kind != "house")
+	_bind_item()
 	judging_label.visible = false
 	result_panel.visible = false
 	submit_btn.pressed.connect(_on_submit)
@@ -150,6 +161,52 @@ func _ready() -> void:
 		_play_intro(foe)
 	else:
 		stage.start_hover()
+
+func _exit_tree() -> void:
+	CompanionState.in_run = false
+
+func _build_gauges() -> void:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 6)
+	for g: Array in GAUGES:
+		var gauge := StatGauge.new()
+		gauge.custom_minimum_size = Vector2(44, 44)
+		gauge.icon = load(g[1])
+		gauge.color = g[2]
+		gauge.name = str(g[0])
+		row.add_child(gauge)
+	player_card.get_node("Box").add_child(row)
+	_refresh_gauges()
+
+func _refresh_gauges() -> void:
+	var row := player_card.get_node("Box").get_child(-1)
+	for g: Array in GAUGES:
+		(row.get_node(str(g[0])) as Control).set("value", float(CompanionState.get(g[0])) / CompanionState.STAT_MAX)
+
+# Shows the current item: its question, and its answer controls for the type it is played as.
+func _bind_item() -> void:
+	var item: Dictionary = _run[_index]
+	_q = item["question"]
+	_qtype = str(_q.get("type", "essay")).to_lower()
+	_mc_options = []
+	if _qtype == "multiple_choice":
+		_mc_options = _mc_choices()
+		if _mc_options.size() < 2:
+			_qtype = "identification"
+	for b in mc_box.get_children():
+		if b != mc_template:
+			b.queue_free()
+	title_label.text = "%s  %d/%d" % [RUN_NAMES[_kind], _index + 1, _run.size()]
+	qtype_label.text = "%s · Streak %d" % [_qtype.capitalize().replace("_", " "), _streak]
+	question_label.text = str(_q.get("text", ""))
+	qscroll.visible = true
+	answer_input.text = ""
+	answer_input.placeholder_text = "Type the exact term..." if _qtype == "identification" else "Explain in your own words..."
+	result_label.text = ""
+	if _qtype == "multiple_choice":
+		_build_mc_buttons()
+	_show_answer_controls(true)
+	_phase = "answer"
 
 # Start-of-battle entrance. The bots fly onto their pads (ArenaStage.play_intro), the HUD slides in
 # around them, "VS" slams down and the screen flashes when the foe lands. Controls stay locked until
@@ -264,20 +321,11 @@ func _set_mc_enabled(on: bool) -> void:
 	for b: Button in mc_box.get_children():
 		b.disabled = not on
 
-func _on_mc_pick(button: Button, correct: bool) -> void:
-	if _over:
+func _on_mc_pick(_button: Button, correct: bool) -> void:
+	if _over or _awaiting or _phase != "answer":
 		return
 	_sfx(sfx_click)
-	if correct:
-		_enemy_hp = 0
-		result_label.text = "ONE-HIT KO! That's the one."
-		_screen_shake(6.0, 0.18)
-	else:
-		button.disabled = true
-		var counter := int(TIERS[_tier]["counter"])
-		_player_hp = maxi(0, _player_hp - counter)
-		result_label.text = "Wrong! The enemy strikes back for %d." % counter
-	_finish_turn()
+	_resolve(correct, "")
 
 func _on_job_status(job_id: String, status: String, _progress: float, result: Variant) -> void:
 	if job_id != "grade" or status != "completed" or not _awaiting:
@@ -292,29 +340,45 @@ func _on_job_status(job_id: String, status: String, _progress: float, result: Va
 	var score: float = clampf(float(data.get("score", 0.0)), 0.0, 1.0)
 	var feedback: String = str(data.get("feedback", ""))
 	if _qtype == "identification":
-		if score >= 0.7:
-			_enemy_hp = 0
-			result_label.text = "ONE-HIT KO! %s" % feedback
-			# Identification KO also gets light juice — but essay strong hits are heavier.
-			_screen_shake(6.0, 0.18)
-		else:
-			var counter := int(TIERS[_tier]["counter"])
-			_player_hp = maxi(0, _player_hp - counter)
-			result_label.text = "Not quite! The enemy strikes back for %d. %s" % [counter, feedback]
+		_resolve(score >= 0.7, feedback)
 	else:
-		var passed := score >= float(TIERS[_tier]["essay_pass"])
-		var damage: int = int(data.get("damage", int(round(score * 100.0)))) if passed else 0
-		_enemy_hp = maxi(0, _enemy_hp - damage)
-		# Phase 9: strong essay answers trigger hit-stop + Camera2D/Control shake.
-		if score >= STRONG_ESSAY_SCORE and damage > 0:
-			_trigger_strong_hit_juice(score)
-		if _enemy_hp > 0:
-			var counter := int(round(float(TIERS[_tier]["counter"]) * (0.4 + 0.6 * (1.0 - score))))
-			_player_hp = maxi(0, _player_hp - counter)
-			result_label.text = "%d dmg — %s\nEnemy hits back for %d." % [damage, feedback, counter]
+		# A failed essay still lands part of the counter: the closer it was, the softer the blow.
+		_resolve(score >= float(TIERS[_tier]["essay_pass"]), feedback, 0.4 + 0.6 * (1.0 - score))
+
+# Settles one item. Correct: the streak grows (and the hit with it), Kuiz heals a little, the foe's bar
+# drops one item's worth but never to 0 before the last item, so every item is always played. Wrong: the
+# streak breaks (the first miss of a run is forgiven when Kuiz has the focus) and the counter grows with
+# each miss in a row.
+func _resolve(correct: bool, feedback: String, miss_scale := 1.0) -> void:
+	_phase = "resolving"
+	_set_inputs(false)
+	var q_idx: int = _run[_index]["q_index"]
+	if q_idx >= 0 and not _seen.has(q_idx):
+		_seen[q_idx] = true
+		SessionManager.record_battle_outcome(SessionManager.battle_topic_id, q_idx, correct)
+	var last := _index == _run.size() - 1
+	_last_feedback = feedback
+	CompanionState.play_item(correct)
+	if correct:
+		_correct += 1
+		_streak += 1
+		_best_streak = maxi(_best_streak, _streak)
+		_loss_streak = 0
+		_hit_tier = 0 if _streak < 3 else (1 if _streak < 5 else (2 if _streak < 8 else 3))
+		_player_hp = mini(_player_max, _player_hp + HEAL_ON_CORRECT)
+		_enemy_hp = maxi(0 if last else 1, _enemy_hp - HP_PER_ITEM)
+		result_label.text = "%s  Streak %d" % [HIT_NAMES[_hit_tier], _streak]
+	else:
+		var counter := maxi(1, roundi(float(TIERS[_tier]["counter"]) * MISS_MULT[mini(_loss_streak, MISS_MULT.size() - 1)] * miss_scale * CompanionState.counter_mult()))
+		_loss_streak += 1
+		if CompanionState.has_streak_shield() and not _shield_used and _streak > 0:
+			_shield_used = true
 		else:
-			result_label.text = "%d dmg — %s" % [damage, feedback]
-	_finish_turn()
+			_streak = 0
+		_player_hp = maxi(0, _player_hp - counter)
+		CompanionState.hurt(counter)
+		result_label.text = "Missed! The foe strikes back for %d." % counter
+	_finish_turn(correct)
 
 func _refresh_bars() -> void:
 	_shown_enemy_hp = _enemy_hp
@@ -322,11 +386,11 @@ func _refresh_bars() -> void:
 	enemy_hp_bar.value = _enemy_hp
 	player_hp_bar.value = _player_hp
 	enemy_hp_text.text = "%d/%d" % [_enemy_hp, _enemy_max]
-	player_hp_text.text = "%d/%d" % [_player_hp, PLAYER_MAX_HP]
+	player_hp_text.text = "%d/%d" % [_player_hp, _player_max]
 
 # Plays out the turn's blows, then decides what happens next. A correct answer sends Kuiz at the foe; a
-# wrong or weak one sends the foe at Kuiz (both, for a partly right essay). HP drops when each blow lands.
-func _finish_turn() -> void:
+# wrong one sends the foe at Kuiz. HP drops when each blow lands.
+func _finish_turn(correct: bool) -> void:
 	var enemy_loss := _shown_enemy_hp - _enemy_hp
 	var player_loss := _shown_player_hp - _player_hp
 	blocker.visible = true
@@ -340,20 +404,48 @@ func _finish_turn() -> void:
 		await stage.strike_hit
 		_land_hit(true, player_loss)
 		await stage.strike_finished
+	elif _player_hp > _shown_player_hp:
+		_shown_player_hp = _player_hp
+		create_tween().tween_property(player_hp_bar, "value", float(_player_hp), 0.3)
+		player_hp_text.text = "%d/%d" % [_player_hp, _player_max]
 	blocker.visible = false
-	if _enemy_hp <= 0:
-		_win()
-	elif _player_hp <= 0:
+	if _player_hp <= 0:
 		_lose()
+	elif _index == _run.size() - 1:
+		_win()
 	else:
-		submit_btn.disabled = false
+		_show_review(correct)
+
+# The review beat: the answer and its source, with Next held back so a miss is actually read.
+func _show_review(correct: bool) -> void:
+	_phase = "review"
+	var text := "Answer: %s" % str(_q.get("answer", "")).strip_edges()
+	if _qtype == "essay":
+		var ideas: Array = _q.get("key_concepts", [])
+		text = "Key ideas: %s" % ", ".join(PackedStringArray(ideas.map(func(x: Variant) -> String: return str(x))))
+	if _last_feedback != "":
+		text += "\n" + _last_feedback
+	var source := str(_q.get("source", "")).strip_edges()
+	if source != "":
+		text += "\n“%s”" % (source.left(140) + ("…" if source.length() > 140 else ""))
+	result_title.text = "Correct!  Streak %d" % _streak if correct else "Not quite."
+	xp_label.text = text
+	retry_btn.visible = false
+	continue_btn.text = "Next"
+	continue_btn.disabled = true
+	qscroll.visible = false
+	_show_answer_controls(false)
+	result_panel.visible = true
+	await get_tree().create_timer(REVIEW_SEC_RIGHT if correct else REVIEW_SEC_WRONG).timeout
+	if is_instance_valid(continue_btn) and _phase == "review":
+		continue_btn.disabled = false
 
 # A blow connects: the bar drops, the number flies up, the screen punches.
 func _land_hit(on_pet: bool, amount: int) -> void:
 	if on_pet:
 		_shown_player_hp = _player_hp
 		create_tween().tween_property(player_hp_bar, "value", float(_player_hp), 0.3)
-		player_hp_text.text = "%d/%d" % [_player_hp, PLAYER_MAX_HP]
+		player_hp_text.text = "%d/%d" % [_player_hp, _player_max]
 		_sfx(sfx_hurt)
 		_sfx_later(sfx_wrong, 0.05)
 		_flash_screen(Color(1.0, 0.35, 0.3), hit_flash_strength)
@@ -361,11 +453,15 @@ func _land_hit(on_pet: bool, amount: int) -> void:
 		_shown_enemy_hp = _enemy_hp
 		create_tween().tween_property(enemy_hp_bar, "value", float(_enemy_hp), 0.3)
 		enemy_hp_text.text = "%d/%d" % [_enemy_hp, _enemy_max]
-		_sfx(sfx_hit)
-		_sfx_later(sfx_correct, 0.1)
-		_flash_screen(Color.WHITE, hit_flash_strength * 0.7)
-	_screen_shake(hit_shake, 0.22)
-	_pop_damage("-%d" % amount, stage.impact_point(on_pet), Color("C97970") if on_pet else Color("D6A85F"))
+		_sfx(sfx_hit, 1.0 + 0.12 * _hit_tier)
+		_sfx_later(sfx_correct, 0.1, 1.0 + 0.12 * _hit_tier)
+		_flash_screen(Color.WHITE, minf(1.0, hit_flash_strength * (0.7 + 0.25 * _hit_tier)))
+		if _hit_tier > 0:
+			_hit_stop(HIT_STOP_BASE * _hit_tier)
+	var power := 1.0 if on_pet else 1.0 + 0.6 * _hit_tier
+	_screen_shake(hit_shake * power, 0.22 + (0.0 if on_pet else 0.06 * _hit_tier))
+	var label := "-%d" % amount if on_pet else HIT_NAMES[_hit_tier]
+	_pop_damage(label, stage.impact_point(on_pet), Color("C97970") if on_pet else Color("D6A85F"))
 
 # The answer field, Fight button and choice buttons give way to the result panel, so it fits the smaller box.
 func _show_answer_controls(on: bool) -> void:
@@ -408,7 +504,6 @@ func _end_sequence(win: bool, banner: String) -> void:
 		_flash_screen(Color.WHITE, 0.6)
 	else:
 		stage.enemy_attack()
-		stage.pet_hurt()
 		_sfx(sfx_lose)
 		_flash_screen(Color(0.8, 0.25, 0.2), 0.35)
 	end_banner.text = banner
@@ -424,14 +519,6 @@ func _end_sequence(win: bool, banner: String) -> void:
 	create_tween().tween_property(end_banner, "modulate:a", 0.0, 0.35)
 	_show_answer_controls(false)
 	result_panel.visible = true
-# --- Phase 9: juice ---
-func _trigger_strong_hit_juice(score: float) -> void:
-	var intensity := SHAKE_BASE_INTENSITY + score * 10.0
-	var duration := 0.22 + score * 0.08
-	_screen_shake(intensity, duration)
-	var stop_dur := HIT_STOP_BASE + score * 0.04
-	_hit_stop(stop_dur)
-
 func _screen_shake(intensity: float, duration: float) -> void:
 	# Prefer Camera2D offset if present (spec requirement), fallback to Control position.
 	if cam:
@@ -463,64 +550,77 @@ func _hit_stop(duration: float) -> void:
 
 func _win() -> void:
 	_over = true
-	SessionManager.report_battle_result(true)
-	_set_mc_enabled(false)
-	var reward: int = int(TIERS[_tier]["xp"]) * (2 if _is_boss else 1)
-	var more := false
-	if _is_champion:
-		more = SessionManager.advance_champion()
-		if not more:
-			reward += CHAMPION_XP_REWARD
-	CompanionState.add_xp(reward)
-	if _is_champion and not more:
-		result_title.text = "CHAMPION DEFEATED — Region Complete!"
-		xp_label.text = "+%d XP (incl. champion bonus)  •  %s" % [reward, str(_q.get("text", "")).left(60)]
-	elif _is_champion:
-		var cp := SessionManager.champion_progress()
-		result_title.text = "Opponent down! (%d/%d)" % [int(cp["done"]), int(cp["total"])]
-		xp_label.text = "+%d XP — next challenger awaits." % reward
-	else:
-		result_title.text = "Victory!"
-		xp_label.text = "+%d XP  •  %s" % [reward, str(_q.get("text", "")).left(60)]
+	_phase = "end"
+	_enemy_hp = 0
+	create_tween().tween_property(enemy_hp_bar, "value", 0.0, 0.3)
+	enemy_hp_text.text = "0/%d" % _enemy_max
+	var line := "%d/%d correct  •  best streak %d" % [_correct, _run.size(), _best_streak]
+	if not _standalone:
+		var r := SessionManager.report_run(true, _correct, _run.size(), _best_streak)
+		line += "\nStars %d/3  •  +%d crystals  •  +%d XP" % [int(r["stars"]), int(r["coins"]), int(r["xp"])]
+		line += "\nFirst clear bonus!" if bool(r["first"]) else "\nReplay: reduced rewards."
+	result_title.text = "%s cleared!" % RUN_NAMES[_kind]
+	xp_label.text = line
 	retry_btn.visible = false
-	continue_btn.text = "Next" if more else "Overworld"
-	SaveManager.save_progress()
-	_end_sequence(true, "CHAMPION!" if _is_champion and not more else "VICTORY!")
+	continue_btn.text = "Overworld"
+	continue_btn.disabled = false
+	qscroll.visible = false
+	_end_sequence(true, "CHAMPION!" if _kind == "champion" else "VICTORY!")
 
+# Kuiz is out of HP: it topples over, then the player chooses to leave or to try the run again.
 func _lose() -> void:
 	_over = true
-	_set_mc_enabled(false)
-	SessionManager.report_battle_result(false)
-	result_title.text = "Defeated — review and retry!"
-	xp_label.text = "Tip: train up, then strike again."
+	_phase = "end"
+	var line := "%d/%d correct before falling." % [_correct, _run.size()]
+	if not _standalone:
+		var r := SessionManager.report_run(false, _correct, _run.size(), _best_streak)
+		line += "\n+%d crystals  •  +%d XP for the effort." % [int(r["coins"]), int(r["xp"])]
+	result_title.text = "Kuiz is down!"
+	xp_label.text = line
+	retry_btn.text = "↻ Try Again"
 	retry_btn.visible = true
-	continue_btn.text = "Flee"
-	SaveManager.save_progress()
+	continue_btn.text = "Exit"
+	continue_btn.disabled = false
+	qscroll.visible = false
+	stage.pet_defeat()
 	_end_sequence(false, "DEFEATED")
 
+# Try Again: the same run reshuffled, from item 1, Kuiz at full HP.
 func _on_retry() -> void:
 	_sfx(sfx_click)
+	if not _standalone:
+		SessionManager.reshuffle_run()
+		_run = SessionManager.battle_run
+	stage.pet_stand()
+	_index = 0
+	_correct = 0
+	_streak = 0
+	_best_streak = 0
+	_loss_streak = 0
+	_shield_used = false
+	_enemy_max = _run.size() * HP_PER_ITEM
 	_enemy_hp = _enemy_max
-	_player_hp = PLAYER_MAX_HP
+	_player_hp = _player_max
+	enemy_hp_bar.max_value = _enemy_max
 	_over = false
 	_refresh_bars()
-	answer_input.text = ""
-	result_label.text = ""
 	result_panel.visible = false
-	_show_answer_controls(true)
-	_set_mc_enabled(true)
-	submit_btn.disabled = false
+	end_banner.visible = false
+	_bind_item()
+	_set_inputs(true)
 
 func _on_continue() -> void:
 	_sfx(sfx_click)
-	# Champion gauntlet: next fight reloads the arena with the queued question.
-	if _is_champion and SessionManager.battle_is_champion:
-		get_tree().change_scene_to_file("res://scenes/battle/battle.tscn")
+	if _phase == "review":
+		_index += 1
+		result_panel.visible = false
+		_bind_item()
+		_set_inputs(true)
 		return
 	get_tree().change_scene_to_file("res://scenes/overworld/region_map.tscn")
 
+# Leaving mid-run forfeits it: no clear and no pay, but the items answered keep their mastery.
 func _on_flee() -> void:
 	_sfx(sfx_click)
-	# Abandoning the gauntlet forfeits the run (progress per-question stays).
-	SessionManager.battle_is_champion = false
+	SaveManager.save_progress()
 	get_tree().change_scene_to_file("res://scenes/overworld/region_map.tscn")

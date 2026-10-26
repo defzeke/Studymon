@@ -13,7 +13,7 @@ Severity: **P0** blocks the core loop · **P1** blocks a feature or silently cor
 | 2 | Auth header uses `***` instead of `Bearer` | **P1** |
 | 8 | ~~Nothing on home calls `CompanionState.care()`~~ — fixed | — |
 | 3, 4, 12, 16 | ~~Hidden rig, hidden TidbitBubble, rig `det == 0` spam, double save load~~ — gone with the care room | — |
-| 5 | Hourly diminishing returns yields **0 XP** | **P1** |
+| 5 | ~~Hourly diminishing returns yields 0 XP~~ — fixed | — |
 | 7 | Client/backend endpoint drift | **P1** |
 | 9 | Real grade/extract responses are silently dropped | **P1** |
 | 11 | ~~Large-text accessibility toggle is unreachable~~ — fixed | — |
@@ -40,7 +40,7 @@ sets `GameState.auth_token` (currently `set_user()` has no callers).
 
 ---
 
-## 5. Diminishing returns yields 0 XP (P1)
+## 5. Diminishing returns yields 0 XP — fixed (now `maxi(1, roundi(base * mult))`)
 
 `scripts/autoload/companion_state.gd:107-124`
 

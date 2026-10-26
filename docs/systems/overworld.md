@@ -1,8 +1,10 @@
 # Overworld, gyms and mastery
 
 The campaign map: the 3D island in `assets/models/map.glb`, seen from an angled top-down camera,
-with one gym per question type in the map's gym buildings, a trainer per question on the road
-leading to its gym, and a Champion fight in the big gym that closes the region.
+with one gym per question type in the map's gym buildings, every one of the island's 15 houses a
+Challenge House you walk into, and a Champion fight in the big gym that closes the region.
+
+- **Houses:** `scripts/overworld/map_houses.gd` (`MapHouses.find()`, reads the houses out of `map.glb`)
 
 - **Map logic:** `scripts/overworld/region_map.gd` → `scenes/overworld/region_map.tscn`
 - **Player:** `scripts/overworld/player.gd` (the explorer: `assets/models/boy_explorer.glb` or
@@ -12,7 +14,7 @@ leading to its gym, and a Champion fight in the big gym that closes the region.
 - **Question data:** `SessionManager.pending_questions` (see `review-session.md`)
 
 Status: **Implemented; loads and plays on mocks.** Confirming an encounter opens `battle.tscn`,
-which now loads. Gym tiers and the boss lock are Phase 3 of
+which now loads. Houses, gyms and runs are described in
 [`gameplay-structure.md`](gameplay-structure.md).
 
 ---
@@ -26,35 +28,43 @@ The overworld is a *derived* view. It holds no map data of its own:
 | Active topic id | `SessionManager.current_topic_id`, falling back to `editing_topic_id` |
 | Questions | `SessionManager.get_pending_questions()` |
 | Gyms | `SessionManager.get_gym_structure()` |
-| Clear state | `SessionManager.is_trainer_cleared()` / `is_gym_cleared()` |
+| Houses | `MapHouses.find(map)`: footprint, door and facing of each house in `map.glb` |
+| Clear state | `SessionManager.is_house_cleared()` / `houses_cleared()` / `is_gym_cleared()` |
 | Mastery | `SessionManager.get_mastery_state()` + `mastery_badge()` |
 | Champion state | `SessionManager.is_champion_available()` / `is_champion_defeated()` / `champion_moveset()` |
 
-If `pending_questions` is empty (direct scene run), `region_map.gd:36-43` seeds a two-question
+If `pending_questions` is empty (direct scene run), `region_map.gd` `_ready()` seeds a two-question
 `topic_preview` so the route still renders.
 
 ---
 
-## 2. Gym structure
+## 2. Houses and gyms
 
-`get_gym_structure()` buckets question indices by `type`, preserving first-seen order:
+`get_gym_structure()` returns one entry per question type, `[{type}]` in GymSlot order (Identification,
+Essay, Multiple Choice), as soon as the topic has a question; the runs fill themselves from the
+questions ([`battle.md`](battle.md) §1).
 
-```gdscript
-[
-  {"type": "identification", "question_indices": [0, 1, 2],
-   "trainer_indices": [1, 2], "boss_index": 0},     # Q1 easy, Q2 medium, Q0 hard
-  {"type": "essay", "question_indices": [3], "trainer_indices": [], "boss_index": 3}
-]
-```
+- **Every house is a Challenge House** (Easy; 10 MC, 5 ID or 5 Essay). The island has 15, so each type
+  gets 5: `_assign_types()` gives each house to the nearest gym that still has room (`ceil(15 / 3)`),
+  so a type's houses cluster around its gym. Each house is its own run with its own first-clear
+  bonus and stars, and starts at a different point of the question pool (its number is the
+  `variant` passed to `begin_run()`), so two houses of one type do not play the same items.
+- A **Gym** (Medium, 20 / 10 / 10) at the slot's `entrance` opens once **any** house of its type is
+  cleared. The other houses stay open for practice and their first-clear pay.
+- The Champion Gym (all three types, 40 items) opens once all three gyms are cleared.
 
-So **a gym is a question type**, not a topic or a chapter. At most one gym per type (Identification,
-Essay, Multiple Choice) per topic, regardless of question count. Re-typing a question in the
-categorizer moves it between gyms.
+### Finding the houses
 
-Inside a gym, questions are ranked Easy to Hard (ties in question order). The **last** one is the
-boss; the rest are the trainers, in that order along the road: the Easy trainers stand nearest the
-start of the road, the hardest nearest the gym. A gym with one question has no trainers, so its boss
-is open at once.
+`map.glb` merges its houses by material: one `House_Foundation` mesh, one `Door` mesh and so on, with no
+node per house. `MapHouses.find()` rebuilds them at startup:
+
+1. One box per `House_Foundation` triangle, merged while boxes overlap: one cluster per house (15).
+2. The `Door` triangles within 0.5 of a footprint are its door. A door is a thin slab, so it faces
+   along its thin axis, away from the middle of the house.
+3. Sorted north to south, then west to east, giving ids `h1`..`h15` that stay put between runs (they
+   are the save keys, so re-exporting `map.glb` with houses moved or added re-deals them).
+
+The footprint measured this way matches the walls and roof to within 0.06.
 
 ---
 
@@ -68,11 +78,12 @@ RegionMap            Node3D (region_map.gd)
 ├── Season            Node3D (season.gd): the real-world season, its weather particles
 ├── MapCollision      Node (map_collision.gd): builds the island's collision; keyword lists and layers are exports
 ├── Spawn             Marker3D (−2, 0, 9), on the south road
-├── GymSlot1          GymSlot (gym_slot.gd) for gyms[0]: Entrance (13.5, 0, 5.0), trainers From (2, 0, 9) → To (12.5, 0, 9), Gym2 door clips
-├── GymSlot2          gyms[1]: Entrance (−14.2, 0, −5.7), From (−9, 0, 7.5) → To (−9, 0, −0.5), Gym3 door clips
-├── GymSlot3          gyms[2]: Entrance (−15, 0, 9), no door; From (−4, 0, 9) → To (−12, 0, 9), walking toward the gym
+├── GymSlot1          GymSlot (gym_slot.gd) for gyms[0]: Entrance (13.5, 0, 5.0), Gym2 door clips
+├── GymSlot2          gyms[1]: Entrance (−14.2, 0, −5.7), Gym3 door clips
+├── GymSlot3          gyms[2]: Entrance (−15, 0, 9), no door
 ├── ChampionSlot      GymSlot: Entrance (−5.2, 0, −6.8), the big `Gym` door clips
-├── Trainers, Gyms    filled at runtime
+├── Trainers          the 15 house triggers, filled at runtime (the name is historical)
+├── Gyms              the gym and Champion triggers, filled at runtime
 ├── Kuiz              Node3D (kuiz_follower.gd): kuiz.glb, 0.6 tall, following the Player
 ├── Player            CharacterBody3D (player.gd), floating motion, capsule r 0.22 h 0.9
 │   ├── Explorer      instance of assets/models/boy_explorer.glb (Idle / Walk / Run looped);
@@ -90,17 +101,51 @@ RegionMap            Node3D (region_map.gd)
 `GymSlot3` (no building, so no door clips), and the Champion `ChampionSlot` (the big red `Gym`,
 north). A slot's `Entrance` marker is where its trigger stands (0.8 in front of the double door for
 the buildings), and its `door_open_clip` / `door_close_clip` are the map's own animation names,
-played as the explorer walks in and out. A gym's trainers are spread between the slot's `From` and
-`To` markers at `frac = (i+1)/(n+1)`. Move a marker in the editor to re-route; add a slot to the
-list for a fourth gym. Nothing is looked up by node name. Triggers come from
-`encounter_trigger.tscn` and the clear burst from `gym_burst.tscn`, both exported on the root.
+played as the explorer walks in and out. Move a marker in the editor to re-route; add a slot to the
+list for a fourth gym. Triggers come from `encounter_trigger.tscn` and the clear burst from
+`gym_burst.tscn`, both exported on the root.
 
-**Triggers.** Each is an `Area3D` with a cylinder (trainers r 0.45, doors r 0.7) on mask 4 (the
-player's layer), and a billboard `Label3D` (Josefin Bold, Deep Slate outline, drawn over geometry):
-`T<N>` over trainers, `GYM <n>` / `BADGE` plus the type over gyms, `CHAMPION` plus
-`LOCKED` / `FIGHT!` / `DOWN` over the Champion. A trainer also has a flat disc in its mastery colour
-(section 6); cleared trainers are darkened. Every node is created at runtime, and rebuilding clears
-both roots first.
+**Triggers.** Each is an `Area3D` on mask 4 (the player's layer) with a billboard `Label3D` (Josefin
+Bold, Deep Slate outline, drawn over geometry). Every node is created at runtime, and rebuilding
+clears both roots first.
+
+| Trigger | Shape | Label |
+|---|---|---|
+| House | **the house itself**: bumping into it (below) opens the panel; a box of the footprint grown by `house_margin` (0.6) only opens the doorway and re-arms the house | the type and `Easy` or its stars, 2.6 up; shown only within `house_label_near` (4.0) of the explorer, so 15 labels do not crowd the screen |
+| Gym | cylinder r 0.7 at the slot's `Entrance` | `GYM n` / `LOCKED` / stars, and the type |
+| Champion | cylinder r 0.7 | `CHAMPION` and `LOCKED` / `FIGHT!` / `DOWN` |
+
+**Walking into a house.** `_physics_process` reads the explorer's slide collisions each frame: a contact
+point within `house_contact` (0.35) of a house's footprint (its walls, the windows that stick out of
+them, its door) opens that house's panel. An invisible box around the house would not do: windows,
+trees and a lamp post stop the explorer short of any thin box on 13 of the 60 sides (the first
+version's bug), but they cannot hide the bump itself. Walking along a street past a house opens
+nothing, since there is no contact. Closing a house's panel shuts that house (`_dismissed_house`) until
+the explorer leaves its 0.6 box, so leaning on the wall does not reopen it every frame. Checked
+headless by pushing the explorer at every house from all four sides: every house opens, from at
+least three sides each (the misses are the narrow gaps between the h1/h2, h9/h10 and h11/h15 pairs,
+where the neighbour is bumped first). Each house also carries a bobbing
+`icon_trainer.svg` over its roof in its type's colour (Identification teal, Essay lilac `8D82A8`,
+Multiple Choice amber), faint once cleared: the icons mark the houses from afar.
+
+### Entering a building (houses and gyms alike)
+
+The house plays the part the gyms' animated doors play:
+
+1. **Walk up.** Touching a gym trigger plays its door-open clip (and door-close on leaving). Coming near
+   a house "opens" its door: a dark doorway panel (`DOORWAY` `1E2829`, the door's own size, just in front
+   of it) unfolds from zero width over 0.25 s, and folds shut again when the explorer walks away. The
+   houses have no door animation of their own because `map.glb` merges all their doors into one mesh.
+2. **The panel.** The encounter panel opens (§4) and the explorer stands still.
+3. **Go inside.** On confirm the explorer walks through the doorway (`player.walk_into()`, 0.55 s, no
+   collision): to the house's door when it touched the house on the door's side, or to the midpoint
+   of a gym's double door (`<clip base>_Left` / `_Right` in the map). Then the screen fades to off-white
+   (`FADE_SEC` 0.35) and the battle loads. Touching a house on another side, or GymSlot3 (no building),
+   it only fades.
+4. **Come back out.** The map remembers the doorway (`_return_to`, a static, so it survives the scene
+   change): back from the battle, the explorer stands where it touched the house (a spot it could
+   reach, unlike the door of a house with a tree in front) or just outside the gym, facing away from
+   it, as the screen fades in. Otherwise (first visit, GymSlot3) it starts at the spawn.
 
 **Collision.** `map.glb` ships none, so `_add_collisions()` builds a trimesh body per mesh, by name:
 
@@ -187,57 +232,42 @@ release. Drawn with `_draw()` in Deep Slate, Warm Off-White and Muted Teal, so i
 
 ## 4. Encounter panel
 
-One shared `PanelContainer` (`HUD/EncounterPanel`) is reconfigured per encounter type. Walking into
-an `Area3D` sets `_pending_encounter` and fills the title, body and action button.
+One shared `PanelContainer` (`HUD/EncounterPanel`) is reconfigured per encounter. Walking into an
+`Area3D` sets `_pending_encounter` and fills the title, body (items, tier, minutes, Kuiz readiness)
+and action button.
 
 | Encounter | `_pending_encounter` | Button |
 |---|---|---|
-| Trainer (uncleared) | `{kind: "trainer", q_index, gym}` | `Fight Trainer!` → `begin_battle(topic, q_idx, false)` |
-| Trainer (cleared) | same | `Already Cleared` (disabled) |
-| Gym boss (trainers cleared) | `{kind: "gym", gym, boss_index}` | `Fight Boss!` → `begin_battle(topic, boss_index, true)` |
-| Gym boss (trainers left) | same | `Boss Locked` (disabled); the text says how many trainers remain |
-| Gym (cleared) | — | `Badge Earned` (disabled) |
-| Champion (region complete) | `{}` | `Crowned` (disabled) |
+| House | `{kind: "house", gym, house}` | `Go inside` / `Replay` → `begin_run(topic, "house", type, house id, house number)` |
+| Gym (a house of its type cleared) | `{kind: "gym", gym}` | `Enter Gym` / `Replay` → `begin_run(topic, "gym", type)` |
+| Gym (none cleared yet) | same | `Locked` (disabled); the text points at the type's icons over the roofs |
+| Champion (ready or crowned) | `{kind: "champion"}` | `Challenge Champion!` / `Replay` → `begin_run(topic, "champion")` |
 | Champion (locked) | `{}` | `Locked` (disabled) |
-| Champion (ready) | `{kind: "champion"}` | `Challenge Champion!` → `begin_champion_battle(topic)` |
 
-The boss is the gym's **hardest question** (the last one among ties) and is not also a trainer.
-The Champion panel doubles as the pre-fight summary: it lists up to 6 of the Champion's questions
-with mastery badges plus `...and N more.`, and says so when it fields every question because none
-is Mastered yet.
-
-Confirming an encounter hides the panel and does `change_scene_to_file("res://scenes/battle/battle.tscn")`.
+A house's panel is titled `Challenge House · <type>` (with its stars once cleared) and adds how many
+of that type's houses are cleared, and that clearing one opens the gym. Confirming hides the panel
+and plays the entrance (§3 *Entering a building*) before `change_scene_to_file()`.
 
 ---
 
 ## 5. Clear state
 
-Two independent dictionaries, both keyed by strings:
-
 | Store | Key | Set by |
 |---|---|---|
-| `_cleared_trainers` | `"<topic_id>:<q_index>"` | `mark_trainer_cleared()` after a win |
-| `_cleared_gyms` | `"<topic_id>:<gym_type>"` | `mark_gym_cleared()` on a boss win |
+| `_cleared_houses` | `"<topic_id>:<gym_type>#<house_id>"` | `report_run()` on a house win |
+| `_cleared_gyms` | `"<topic_id>:<gym_type>"` | `report_run()` on a gym win |
+| `_champion_defeated` | `topic_id` | `report_run()` on a Champion win |
+| `_best_stars` | `"<kind>:<topic_id>:<run key>"` (run key: the type, or `type#house_id`) | best of 0–3 per run |
 
-A gym is cleared **only by its boss**, and the boss only opens once every trainer of that gym is
-cleared (`gym_trainers_left()` is 0), so progress is strictly ordered. A boss win also marks the
-boss question's own trainer key cleared, so it counts in `Trainers c/t`. `mark_trainer_cleared()`
-emits `overworld_progress_changed` once. Saves made under the old rule (a gym cleared once all its
-trainers were) keep their cleared gyms.
+A run is cleared by surviving every item; stars (accuracy) only scale the pay. A gym opens with the
+first house of its type (`houses_cleared(topic, type) > 0`), the Champion with all three gyms.
+`overworld_progress_changed` fires on each clear. A v13 key without a house id still counts toward its
+type, so an older save keeps its open gyms.
 
-`get_progress(topic_id)` returns:
-
-```gdscript
-{"cleared": int, "total": int, "gyms_cleared": int, "gyms_total": int}
-```
-
-`total` is `pending_questions.size()` — **all** questions in the topic, not just the ones in the
-current gym.
-
-The HUD's quest card (`_refresh_progress`) counts trainers from the gyms' `trainer_indices` (bosses
-are not trainers), lights a badge per cleared gym, shows the Champion as Locked / Ready! / Crowned,
-and the bullet list beside the minimap shows the next three steps (`_objectives()`): every
-uncleared gym's unbeaten trainers (easiest first), then its boss, then the Champion. Layout in
+The HUD's quest card (`_refresh_progress`) shows Houses cleared of 15 with a bar, a badge per cleared
+gym, and the Champion as Locked / Ready! / Crowned. The bullet list beside the minimap shows the next
+three steps (`_objectives()`): "Enter a house marked <type>" for each type whose gym is still shut, the
+gyms, the Champion, and then "Clear the other houses (n left)". Layout in
 [`ui-and-assets.md`](../ui-and-assets.md) §2 `region_map.tscn`.
 
 ---
@@ -271,29 +301,17 @@ Badges (`mastery_badge()`):
 | Remaster | 🟠 | `(1.0, 0.55, 0.1)` orange | distinct from both ends |
 | Mastered | 🔵 | `(0.2, 0.65, 1.0)` blue | deliberately **not** green, to stay colourblind-safe |
 
-Badges appear on trainer labels, in the Champion summary, and in the encounter panel text.
+Badges colour the mastery state in the Flashcard Sanctuary and the encounter panel text.
 
 ---
 
 ## 7. Champion
 
-```gdscript
-func is_champion_available(topic_id) -> bool:
-    # every gym must be cleared; empty gym list is not enough
-func champion_moveset(topic_id) -> Array:   # indices where mastery == MASTERED
-func begin_champion_battle(topic_id) -> bool
-func advance_champion() -> bool
-```
-
-- **Availability:** at least one gym and *all* gyms cleared.
-- **Moveset:** the `MASTERED` questions, **falling back to every question** when none is mastered,
-  sorted Easy to Hard (ties in question order) so the last step, the 150 HP boss, is the hardest.
-  `mastered_indices()` gives the Mastered subset.
-- **Queue:** `battle_champion_queue` holds `{topic_id, q_idx, boss}`, `boss` true only on the last
-  entry. `advance_champion()` steps the index and applies the next question to
-  `SessionManager.battle_*`, returning `false` when the queue is exhausted — at which point it sets
-  `_champion_defeated[topic_id]` and emits `champion_defeated`.
-- **Region complete:** `is_champion_defeated()`.
+- **Availability:** `is_champion_available()` — at least one gym and *all* gyms cleared.
+- **The run:** one 40-item run (20 MC, 10 ID, 10 Essay) against the toughest foe, built by
+  `build_run(topic, "champion", "")` ([`battle.md`](battle.md) §1). It prefers Hard questions and falls
+  back to the rest; the old Mastered-only moveset and the question-by-question gauntlet are gone.
+- **Region complete:** `is_champion_defeated()`, set by `report_run()` on a win.
 
 ---
 

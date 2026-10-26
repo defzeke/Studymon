@@ -19,7 +19,7 @@ func load_once() -> void:
 
 func save_game() -> bool:
 	var data := CompanionState.to_dict()
-	data["v"] = 12
+	data["v"] = 14
 	data["campaign_unlocked_flag"] = GameState.campaign_unlocked_flag
 	data["active_region_id"] = GameState.active_region_id
 	data["large_text_enabled"] = GameState.large_text_enabled

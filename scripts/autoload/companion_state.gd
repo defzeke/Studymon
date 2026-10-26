@@ -15,6 +15,8 @@ const CAMPAIGN_LEVEL := 5
 # meets GDD "minutes, not hours" for Levels 1-5.
 const FIRST_LEVEL_XP := 20
 const LEVEL_XP_STEP := 5
+# Reaching a level pays level x this many crystals.
+const LEVEL_CRYSTALS := 10
 const STAT_MAX := 100.0
 const STAT_DECAY_PER_SEC := 0.15
 const DAILY_CAP_BASE_XP := 10  # per action per hour before diminishing returns
@@ -34,6 +36,15 @@ const CLEAN_MOOD := 5.0
 const BATTERY_WEAR := 0.02
 const BATTERY_DRAIN_SPAN := 50.0
 const BATTERY_PRICE := 30
+# Playing a battle run moves the stats item by item instead of by the clock (decay is paused meanwhile).
+# Contract: docs/systems/battle.md §3.
+const PLAY_ENERGY := 0.5
+const PLAY_HUNGER := 0.4
+const PLAY_MOOD_RIGHT := 1.5
+const PLAY_MOOD_WRONG := 0.3
+# Each point of counter damage Kuiz takes costs this much health, never below HURT_FLOOR.
+const HURT_HEALTH := 0.3
+const HURT_FLOOR := 10.0
 
 # Pomodoro (Phase 4)
 const POMODORO_FOCUS_SEC := 25 * 60
@@ -55,6 +66,8 @@ var dirt: float = 0.0
 ## The battery's capacity left, 100 = new; lower drains energy faster.
 var battery_health: float = 100.0
 var bond: int = 0
+## True while a battle run is on; the clock decay is paused.
+var in_run := false
 var campaign_ready: bool = false
 var codex: Array[String] = []
 
@@ -82,6 +95,9 @@ func _ready() -> void:
 	_unlock_tidbit(1)
 
 func _process(delta: float) -> void:
+	if in_run:
+		dirt = minf(STAT_MAX, dirt + DIRT_PER_SEC * delta)
+		return
 	var drain := STAT_DECAY_PER_SEC * delta
 	energy = maxf(0.0, energy - drain * battery_drain())
 	focus = maxf(0.0, focus - drain * 0.8)
@@ -115,6 +131,7 @@ func reward_deck_done() -> void:
 func _check_level_up() -> void:
 	while xp >= xp_to_reach(level + 1):
 		level += 1
+		GameState.add_crystals(level * LEVEL_CRYSTALS)
 		_unlock_tidbit(level)
 		leveled_up.emit(level)
 		if level >= CAMPAIGN_LEVEL and not campaign_ready:
@@ -149,25 +166,25 @@ func care(action: String) -> Dictionary:
 		"feed":
 			hunger = minf(STAT_MAX, hunger + FEED_HUNGER)
 			deltas = {"hunger": FEED_HUNGER}
-			gained = int(2 * xp_mult)
+			gained = maxi(1, roundi(2 * xp_mult))
 		"pet":
 			mood = minf(STAT_MAX, mood + 8.0)
 			deltas = {"mood": 8.0}
-			gained = int(1 * xp_mult)
+			gained = maxi(1, roundi(1 * xp_mult))
 		"play":
 			mood = minf(STAT_MAX, mood + PLAY_MOOD)
 			energy = maxf(0.0, energy - 2.0)
 			deltas = {"mood": PLAY_MOOD, "energy": -2.0}
-			gained = int(2 * xp_mult)
+			gained = maxi(1, roundi(2 * xp_mult))
 		"fix":
 			health = minf(STAT_MAX, health + FIX_HEALTH)
 			deltas = {"health": FIX_HEALTH}
-			gained = int(2 * xp_mult)
+			gained = maxi(1, roundi(2 * xp_mult))
 		"clean":
 			# A finished scrub (the towel already took the dirt off): a happy, fresh Kuiz.
 			mood = minf(STAT_MAX, mood + CLEAN_MOOD)
 			deltas = {"mood": CLEAN_MOOD}
-			gained = int(2 * xp_mult)
+			gained = maxi(1, roundi(2 * xp_mult))
 
 	add_xp(gained)
 	stats_changed.emit()
@@ -187,6 +204,43 @@ func recharge(delta: float) -> void:
 	var gained := minf(STAT_MAX - energy, CHARGE_PER_SEC * delta)
 	energy += gained
 	battery_health = maxf(0.0, battery_health - gained * BATTERY_WEAR)
+
+## Battle readiness: each care stat has one job in a run. Contract: docs/systems/battle.md §Stats.
+## Health sets Kuiz's battle HP.
+func battle_max_hp() -> int:
+	return roundi(lerpf(70.0, 120.0, health / STAT_MAX))
+
+## Energy scales the XP a run pays.
+func xp_mult() -> float:
+	return lerpf(0.8, 1.2, energy / STAT_MAX)
+
+## Mood scales the crystals a run pays.
+func crystal_mult() -> float:
+	return lerpf(0.8, 1.2, mood / STAT_MAX)
+
+## Hunger softens the enemy's counters, by up to 20%.
+func counter_mult() -> float:
+	return 1.0 - 0.2 * hunger / STAT_MAX
+
+## Focus 50+ forgives the first miss of a run: it does not break the streak.
+func has_streak_shield() -> bool:
+	return focus >= 50.0
+
+## The four home stats averaged, 0 to 100.
+func readiness() -> float:
+	return (hunger + energy + mood + health) / 4.0
+
+## One battle item played: it tires and hungers Kuiz a little, and the fun lifts its mood (more when right).
+func play_item(correct: bool) -> void:
+	energy = maxf(0.0, energy - PLAY_ENERGY)
+	hunger = maxf(0.0, hunger - PLAY_HUNGER)
+	mood = minf(STAT_MAX, mood + (PLAY_MOOD_RIGHT if correct else PLAY_MOOD_WRONG))
+	stats_changed.emit()
+
+## Kuiz took a counter in battle: its health drops, but a battle never takes it below HURT_FLOOR.
+func hurt(counter: float) -> void:
+	health = maxf(minf(health, HURT_FLOOR), health - counter * HURT_HEALTH)
+	stats_changed.emit()
 
 ## How much faster than new the battery drains (1 at 100% health).
 func battery_drain() -> float:

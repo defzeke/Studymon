@@ -16,6 +16,29 @@ const MIN_WORDS := 20
 const MIN_CHARS := 80
 # Contract: docs/systems/gameplay-structure.md
 const DIFFICULTIES: Array[String] = ["easy", "medium", "hard"]
+## The three question types, in GymSlot order: each has a Challenge House and a Gym.
+const RUN_TYPES: Array[String] = ["identification", "essay", "multiple_choice"]
+## Items per run: [type, count] segments. The Champion plays all three in one run.
+const RUN_QUOTAS := {
+	"house": [["multiple_choice", 10], ["identification", 5], ["essay", 5]],
+	"gym": [["multiple_choice", 20], ["identification", 10], ["essay", 10]],
+	"champion": [["multiple_choice", 20], ["identification", 10], ["essay", 10]],
+}
+## The tier a run is fought at and the questions it prefers.
+const RUN_TIER := {"house": "easy", "gym": "medium", "champion": "hard"}
+## The review time a run is built to last, in minutes (about one per item; see the review beat).
+const RUN_MINUTES := {"house": 10, "gym": 20, "champion": 30}
+## Crystals / XP per correct item, and the first-clear bonus.
+const RUN_REWARDS := {
+	"house": {"coin": 1, "xp": 1, "clear_coin": 20, "clear_xp": 10},
+	"gym": {"coin": 2, "xp": 2, "clear_coin": 60, "clear_xp": 30},
+	"champion": {"coin": 3, "xp": 3, "clear_coin": 200, "clear_xp": 100},
+}
+## Accuracy needed for 1, 2 and 3 stars, and the reward multiplier for 0..3 stars.
+const STAR_ACCURACY: Array[float] = [0.70, 0.85, 0.95]
+const STAR_MULT: Array[float] = [1.0, 1.0, 1.25, 1.5]
+const REPLAY_RATE := 0.25
+const DEFEAT_RATE := 0.5
 
 var current_topic_id: String = ""
 var pending_questions: Array[Dictionary] = []
@@ -26,12 +49,9 @@ var last_source_text: String = ""
 var _topics: Array[Dictionary] = []
 var _active_job_id: String = ""
 # Phase 6: per-region clear state (mock-persisted in memory)
-var _cleared_trainers: Dictionary = {}  # "topic_id:q_idx" -> true
+var _cleared_houses: Dictionary = {}  # "topic_id:gym_type#house_id" -> true
 var _cleared_gyms: Dictionary = {}  # "topic_id:gym_type" -> true
-# Phase 7: battle context (survives the overworld -> battle scene change)
-var battle_topic_id: String = ""
-var battle_q_index: int = -1
-var battle_is_boss: bool = false
+var _best_stars: Dictionary = {}  # "kind:topic_id:run_key" -> 0..3 (run_key: type, or type#house_id)
 
 func _ready() -> void:
 	Api.job_status.connect(_on_job_status)
@@ -75,32 +95,26 @@ func world_name(topic_id: String) -> String:
 			return str(t.get("name", topic_id))
 	return ""
 
-## Trainers cleared out of the world's stored questions (get_progress only reads pending_questions).
+## Houses and gyms cleared in a world, for the worlds list.
 func topic_progress(topic_id: String) -> Dictionary:
-	var total := _questions_for_topic(topic_id).size()
-	var done := 0
-	for i in total:
-		if is_trainer_cleared(topic_id, i):
-			done += 1
-	return {"cleared": done, "total": total}
-
-func _questions_for_topic(topic_id: String) -> Array:
-	for t in _topics:
-		if str(t.get("id", "")) == topic_id:
-			return t.get("questions", [])
-	return []
+	var gyms := 0
+	for t in RUN_TYPES:
+		gyms += 1 if is_gym_cleared(topic_id, t) else 0
+	return {"houses": houses_cleared(topic_id), "gyms": gyms, "gyms_total": RUN_TYPES.size(), "questions": _questions_for(topic_id).size()}
 
 func _erase_prefixed(d: Dictionary, prefix: String) -> void:
 	for k in d.keys():
 		if str(k).begins_with(prefix):
 			d.erase(k)
 
-## Clears a world's cleared trainers/gyms, mastery and Champion; its questions stay.
+## Clears a world's cleared houses/gyms, mastery and Champion; its questions stay.
 func reset_topic_progress(topic_id: String) -> void:
 	var prefix := topic_id + ":"
 	_erase_prefixed(_mastery, prefix)
-	_erase_prefixed(_cleared_trainers, prefix)
+	_erase_prefixed(_cleared_houses, prefix)
 	_erase_prefixed(_cleared_gyms, prefix)
+	for kind in RUN_QUOTAS:
+		_erase_prefixed(_best_stars, kind + ":" + prefix)
 	_champion_defeated.erase(topic_id)
 	overworld_progress_changed.emit()
 	mastery_changed.emit()
@@ -246,106 +260,227 @@ func build_map_data(topic_id: String, questions: Array[Dictionary]) -> Dictionar
 func get_pending_questions() -> Array[Dictionary]:
 	return pending_questions.duplicate(true)
 
-# --- Phase 6: gym structure + clear-state progress ---
+# --- Phase 6: houses, gyms and runs (contract: docs/systems/gameplay-structure.md) ---
+
+## One entry per question type, in GymSlot order; empty until the topic has a question.
+func get_gym_structure() -> Array[Dictionary]:
+	var out: Array[Dictionary] = []
+	if pending_questions.is_empty():
+		return out
+	for t in RUN_TYPES:
+		out.append({"type": t})
+	return out
+
+func is_house_cleared(topic_id: String, gym_type: String, house_id: String) -> bool:
+	return _cleared_houses.has("%s:%s#%s" % [topic_id, gym_type, house_id])
+
+## Houses cleared in a world, of one type or (type "") of all. A v13 key, which has no house id, still counts.
+func houses_cleared(topic_id: String, gym_type := "") -> int:
+	var n := 0
+	var prefix := "%s:%s" % [topic_id, gym_type]
+	for k: String in _cleared_houses:
+		if (gym_type == "" and k.begins_with(prefix)) or k == prefix or k.begins_with(prefix + "#"):
+			n += 1
+	return n
+
+func is_gym_cleared(topic_id: String, gym_type: String) -> bool:
+	return _cleared_gyms.has("%s:%s" % [topic_id, gym_type])
+
+## A gym opens once any Challenge House of its type is cleared.
+func is_gym_open(topic_id: String, gym_type: String) -> bool:
+	return houses_cleared(topic_id, gym_type) > 0
+
+## How many items a run plays.
+func run_items(kind: String, gym_type: String) -> int:
+	var n := 0
+	for seg: Array in RUN_QUOTAS[kind]:
+		if kind == "champion" or str(seg[0]) == gym_type:
+			n += int(seg[1])
+	return n
+
+## `run_key` is the type, or "type#house_id" for a house.
+func best_stars(kind: String, topic_id: String, run_key: String) -> int:
+	return int(_best_stars.get("%s:%s:%s" % [kind, topic_id, run_key], 0))
+
+# --- Phase 7: runs ---
+# A battle is a run: a fixed list of items fought against one foe. Contract: docs/systems/battle.md.
+
+var battle_topic_id: String = ""
+var battle_kind: String = ""
+var battle_type: String = ""
+## The Challenge House being played ("" for a gym or the Champion) and its number on the map.
+var battle_house: String = ""
+var battle_variant := 0
+var battle_run: Array[Dictionary] = []
+
+## Called by the overworld before it opens the battle scene. `variant` (a house's number) starts each
+## house at a different point of the question pool, so two houses of one type do not play alike.
+func begin_run(topic_id: String, kind: String, gym_type: String = "", house_id := "", variant := 0) -> bool:
+	var items := build_run(topic_id, kind, gym_type, false, variant)
+	if items.is_empty():
+		return false
+	battle_topic_id = topic_id
+	battle_kind = kind
+	battle_type = gym_type
+	battle_house = house_id
+	battle_variant = variant
+	battle_run = items
+	return true
+
+## Rebuilds the active run with each segment shuffled (Try Again).
+func reshuffle_run() -> void:
+	battle_run = build_run(battle_topic_id, battle_kind, battle_type, true, battle_variant)
+
+func _run_key() -> String:
+	return battle_type + ("#" + battle_house if battle_house != "" else "")
+
+## The items of a run: [{q_index, question}]. A segment takes the questions of its type nearest the run's
+## tier first (Remaster, then New, then the rest), then questions convertible to the type, then cycles
+## through them again so a short reviewer still fills the quota.
+func build_run(topic_id: String, kind: String, gym_type: String, shuffle := false, variant := 0) -> Array[Dictionary]:
+	var qs: Array = _questions_for(topic_id)
+	var out: Array[Dictionary] = []
+	if qs.is_empty() or not RUN_QUOTAS.has(kind):
+		return out
+	var target: int = DIFFICULTIES.find(RUN_TIER[kind])
+	for seg: Array in RUN_QUOTAS[kind]:
+		if kind != "champion" and str(seg[0]) != gym_type:
+			continue
+		out.append_array(_segment(topic_id, qs, str(seg[0]), int(seg[1]), target, shuffle, variant))
+	return out
+
+func _segment(topic_id: String, qs: Array, type: String, count: int, target: int, shuffle: bool, variant: int) -> Array[Dictionary]:
+	var order: Array = range(qs.size())
+	var mastery_rank := [Mastery.REMASTER, Mastery.NEW, Mastery.LEARNING, Mastery.MASTERED]
+	order.sort_custom(func(a: int, b: int) -> bool:
+		var ka := [0 if str(qs[a].get("type", "")) == type else 1, absi(_tier_rank(qs[a]) - target), mastery_rank.find(get_mastery_state(topic_id, a)), a]
+		var kb := [0 if str(qs[b].get("type", "")) == type else 1, absi(_tier_rank(qs[b]) - target), mastery_rank.find(get_mastery_state(topic_id, b)), b]
+		return ka < kb)
+	# Items played as the segment's type come first; only when no question can be, the run falls back to
+	# the forms the questions can take, so every house and gym can always be entered.
+	var pool: Array[Dictionary] = []
+	var fallback: Array[Dictionary] = []
+	for i: int in order:
+		var q := _as_type(qs[i], type, qs)
+		(pool if str(q["type"]) == type else fallback).append({"q_index": i, "question": q})
+	if pool.is_empty():
+		pool = fallback
+	var out: Array[Dictionary] = []
+	if pool.is_empty():
+		return out
+	var start := (variant * count) % pool.size()
+	for n in count:
+		out.append((pool[(start + n) % pool.size()] as Dictionary).duplicate(true))
+	if shuffle:
+		out.shuffle()
+	return out
+
+## `q` rewritten as `type` when it has what that type needs, else `q` as it is (always playable).
+## The correct answer is the answer key, or else the first key idea. Identification needs one; Multiple
+## Choice needs one plus wrong options (its own, then other questions' answers and key ideas), and
+## without wrong options is played as Identification; Essay takes its key ideas from the answer.
+func _as_type(q: Dictionary, type: String, qs: Array) -> Dictionary:
+	var d := q.duplicate(true)
+	if str(d.get("type", "")) == type:
+		return d
+	var answer := str(d.get("answer", "")).strip_edges()
+	var ideas: Array = d.get("key_concepts", [])
+	if answer == "" and not ideas.is_empty():
+		answer = str(ideas[0]).strip_edges()
+	match type:
+		"identification":
+			if answer == "":
+				return d
+			d["answer"] = answer
+		"multiple_choice":
+			if answer == "":
+				return d
+			d["answer"] = answer
+			var wrong: Array = []
+			for x in d.get("distractors", []):
+				wrong.append(str(x))
+			for other: Dictionary in qs:
+				var options: Array = [other.get("answer", "")]
+				options.append_array(other.get("key_concepts", []))
+				for o in options:
+					var s := str(o).strip_edges()
+					if wrong.size() < 3 and s != "" and s.to_lower() != answer.to_lower() and not wrong.has(s):
+						wrong.append(s)
+			if wrong.is_empty():
+				d["type"] = "identification"
+				return d
+			d["distractors"] = wrong
+		"essay":
+			if ideas.is_empty() and answer != "":
+				d["key_concepts"] = [answer]
+			d["text"] = "Explain: " + str(d.get("text", ""))
+	d["type"] = type
+	return d
 
 ## Rank of a question's tier, Easy 0 to Hard 2 (unknown tiers count as medium).
 func _tier_rank(q: Dictionary) -> int:
 	return maxi(0, DIFFICULTIES.find(str(q.get("difficulty", "medium"))))
 
-## Indices sorted Easy to Hard, ties in question order.
-func _sorted_by_tier(indices: Array, questions: Array) -> Array:
-	var out := indices.duplicate()
-	out.sort_custom(func(a: int, b: int) -> bool:
-		var ra := _tier_rank(questions[a])
-		var rb := _tier_rank(questions[b])
-		return ra < rb or (ra == rb and a < b))
-	return out
+## Stars for an accuracy (0..3).
+func stars_for(accuracy: float) -> int:
+	var stars := 0
+	for need in STAR_ACCURACY:
+		if accuracy >= need:
+			stars += 1
+	return stars
 
-## Groups pending questions by type:
-## [{type, question_indices, trainer_indices, boss_index}]. Trainers climb Easy to Hard; the boss
-## is the hardest question of the gym (the last one among ties). Contract: docs/systems/gameplay-structure.md.
-func get_gym_structure() -> Array[Dictionary]:
-	var order: Array = []
-	var buckets: Dictionary = {}
-	for i in pending_questions.size():
-		var t: String = str(pending_questions[i].get("type", "essay")).to_lower()
-		if not buckets.has(t):
-			buckets[t] = []
-			order.append(t)
-		buckets[t].append(i)
-	var out: Array[Dictionary] = []
-	for t in order:
-		var ranked := _sorted_by_tier(buckets[t], pending_questions)
-		var boss: int = ranked.pop_back()
-		out.append({"type": t, "question_indices": buckets[t], "trainer_indices": ranked, "boss_index": boss})
-	return out
+## Settles a finished run: marks the house / gym / Champion cleared on a win, pays crystals and XP
+## (replays pay REPLAY_RATE, a defeat DEFEAT_RATE of the per-item pay) and charges Kuiz the effort.
+## Returns {stars, coins, xp, first, replay} for the results panel.
+func report_run(won: bool, correct: int, total: int, best_streak: int) -> Dictionary:
+	var pay: Dictionary = RUN_REWARDS[battle_kind]
+	var first := false
+	match battle_kind:
+		"house":
+			first = not is_house_cleared(battle_topic_id, battle_type, battle_house)
+		"gym":
+			first = not is_gym_cleared(battle_topic_id, battle_type)
+		"champion":
+			first = not is_champion_defeated(battle_topic_id)
+	var replay := won and not first
+	var stars := stars_for(float(correct) / maxf(1.0, float(total)))
+	var coins := float(correct * int(pay["coin"]))
+	var xp := float(correct * int(pay["xp"]))
+	if won:
+		coins += best_streak / 5
+		if first:
+			coins += int(pay["clear_coin"])
+			xp += int(pay["clear_xp"])
+		coins *= STAR_MULT[stars]
+		xp *= STAR_MULT[stars]
+		if replay:
+			coins *= REPLAY_RATE
+			xp *= REPLAY_RATE
+	else:
+		coins *= DEFEAT_RATE
+		xp *= DEFEAT_RATE
+	var coins_won := roundi(coins * CompanionState.crystal_mult())
+	var xp_won := roundi(xp * CompanionState.xp_mult())
+	GameState.add_crystals(coins_won)
+	CompanionState.add_xp(xp_won)
+	if won:
+		_mark_run_cleared(stars)
+	SaveManager.save_progress()
+	return {"stars": stars, "coins": coins_won, "xp": xp_won, "first": first, "replay": replay}
 
-## Trainers of a gym still to beat before its boss opens.
-func gym_trainers_left(topic_id: String, gym_type: String) -> int:
-	var left := 0
-	for g in get_gym_structure():
-		if str(g["type"]) == gym_type:
-			for qi in g["trainer_indices"]:
-				if not is_trainer_cleared(topic_id, int(qi)):
-					left += 1
-	return left
-
-func _trainer_key(topic_id: String, q_idx: int) -> String:
-	return "%s:%d" % [topic_id, q_idx]
-
-func is_trainer_cleared(topic_id: String, q_idx: int) -> bool:
-	return _cleared_trainers.has(_trainer_key(topic_id, q_idx))
-
-func mark_trainer_cleared(topic_id: String, q_idx: int) -> void:
-	_cleared_trainers[_trainer_key(topic_id, q_idx)] = true
+func _mark_run_cleared(stars: int) -> void:
+	var k := "%s:%s" % [battle_topic_id, battle_type]
+	match battle_kind:
+		"house":
+			_cleared_houses["%s:%s" % [battle_topic_id, _run_key()]] = true
+		"gym":
+			_cleared_gyms[k] = true
+		"champion":
+			_champion_defeated[battle_topic_id] = true
+			champion_defeated.emit(battle_topic_id)
+	var sk := "%s:%s:%s" % [battle_kind, battle_topic_id, _run_key()]
+	_best_stars[sk] = maxi(int(_best_stars.get(sk, 0)), stars)
 	overworld_progress_changed.emit()
-
-func is_gym_cleared(topic_id: String, gym_type: String) -> bool:
-	return _cleared_gyms.has("%s:%s" % [topic_id, gym_type])
-
-func mark_gym_cleared(topic_id: String, gym_type: String) -> void:
-	_cleared_gyms["%s:%s" % [topic_id, gym_type]] = true
-	overworld_progress_changed.emit()
-
-func get_progress(topic_id: String) -> Dictionary:
-	var total := pending_questions.size()
-	var done := 0
-	for i in pending_questions.size():
-		if is_trainer_cleared(topic_id, i):
-			done += 1
-	var gyms := get_gym_structure()
-	var gyms_done := 0
-	for g in gyms:
-		if is_gym_cleared(topic_id, str(g["type"])):
-			gyms_done += 1
-	return {"cleared": done, "total": total, "gyms_cleared": gyms_done, "gyms_total": gyms.size()}
-
-# --- Phase 7: battle handoff ---
-
-## Called by the overworld encounter panel. Boss = final question of a gym.
-func begin_battle(topic_id: String, q_idx: int, is_boss: bool = false) -> void:
-	battle_topic_id = topic_id
-	battle_q_index = q_idx
-	battle_is_boss = is_boss
-
-## The bound question for the active battle ({} if none).
-func get_battle_question() -> Dictionary:
-	if battle_q_index < 0 or battle_q_index >= pending_questions.size():
-		return {}
-	return (pending_questions[battle_q_index] as Dictionary).duplicate(true)
-
-## Called by the battle scene on victory. Marks trainer cleared (+ gym badge for bosses).
-## Phase 8: every result (win AND loss) also feeds the mastery tracker.
-func report_battle_result(won: bool) -> void:
-	if battle_topic_id == "" or battle_q_index < 0:
-		return
-	record_battle_outcome(battle_topic_id, battle_q_index, won)
-	if not won:
-		return
-	mark_trainer_cleared(battle_topic_id, battle_q_index)
-	if battle_is_boss and battle_q_index >= 0 and battle_q_index < pending_questions.size():
-		var gym_type: String = str(pending_questions[battle_q_index].get("type", "essay")).to_lower()
-		mark_gym_cleared(battle_topic_id, gym_type)
 
 # --- Phase 8: mastery states ---
 # Per-question mastery: New -> Learning -> Remaster -> Mastered.
@@ -544,29 +679,9 @@ func promote_from_review(topic_id: String, q_idx: int) -> bool:
 	mastery_changed.emit()
 	return true
 
-# --- Phase 8: Champion battle ---
-# Moveset = all current Mastered questions; falls back to every question
-# so the fight stays playable even with zero mastered.
+# --- Phase 8: Champion ---
 
-var battle_is_champion: bool = false
-var battle_champion_queue: Array = []
-var battle_champion_index: int = 0
-
-func mastered_indices(topic_id: String) -> Array:
-	var mastered: Array = []
-	for i in _questions_for(topic_id).size():
-		if get_mastery_state(topic_id, i) == Mastery.MASTERED:
-			mastered.append(i)
-	return mastered
-
-## The Champion's questions, Easy to Hard: the Mastered ones, or every question when none is.
-func champion_moveset(topic_id: String) -> Array:
-	var qs: Array = _questions_for(topic_id)
-	var picked := mastered_indices(topic_id)
-	if picked.is_empty():
-		picked = range(qs.size())
-	return _sorted_by_tier(picked, qs)
-
+## The Champion opens once every gym is cleared.
 func is_champion_available(topic_id: String) -> bool:
 	var gyms := get_gym_structure()
 	if gyms.is_empty():
@@ -579,63 +694,29 @@ func is_champion_available(topic_id: String) -> bool:
 func is_champion_defeated(topic_id: String) -> bool:
 	return _champion_defeated.has(topic_id)
 
-func begin_champion_battle(topic_id: String) -> bool:
-	if not is_champion_available(topic_id):
-		return false
-	var moveset := champion_moveset(topic_id)
-	if moveset.is_empty():
-		return false
-	battle_is_champion = true
-	battle_champion_queue = []
-	for n in moveset.size():
-		battle_champion_queue.append({
-			"topic_id": topic_id,
-			"q_idx": int(moveset[n]),
-			"boss": n == moveset.size() - 1,
-		})
-	battle_champion_index = 0
-	_apply_champion_active()
-	return true
-
-func _apply_champion_active() -> void:
-	var step: Dictionary = battle_champion_queue[battle_champion_index]
-	battle_topic_id = str(step["topic_id"])
-	battle_q_index = int(step["q_idx"])
-	battle_is_boss = bool(step["boss"])
-
-func advance_champion() -> bool:
-	if not battle_is_champion:
-		return false
-	battle_champion_index += 1
-	if battle_champion_index < battle_champion_queue.size():
-		_apply_champion_active()
-		return true
-	battle_is_champion = false
-	_champion_defeated[battle_topic_id] = true
-	champion_defeated.emit(battle_topic_id)
-	overworld_progress_changed.emit()
-	return false
-
-func champion_progress() -> Dictionary:
-	return {"done": battle_champion_index, "total": battle_champion_queue.size()}
-
 func to_dict() -> Dictionary:
 	return {
 		"mastery": _mastery.duplicate(true),
-		"cleared_trainers": _cleared_trainers.keys(),
+		"cleared_houses": _cleared_houses.keys(),
 		"cleared_gyms": _cleared_gyms.keys(),
+		"best_stars": _best_stars.duplicate(),
 		"champion_defeated": _champion_defeated.keys(),
 		"topics": _topics.duplicate(true),
 	}
 
 func from_dict(data: Dictionary) -> void:
 	_mastery = (data.get("mastery", {}) as Dictionary).duplicate(true)
-	_cleared_trainers = {}
-	for k in data.get("cleared_trainers", []):
-		_cleared_trainers[str(k)] = true
 	_cleared_gyms = {}
 	for k in data.get("cleared_gyms", []):
 		_cleared_gyms[str(k)] = true
+	# v13: a gym cleared before houses existed counts as a house of its type cleared.
+	_cleared_houses = _cleared_gyms.duplicate()
+	for k in data.get("cleared_houses", []):
+		_cleared_houses[str(k)] = true
+	_best_stars = {}
+	var stars: Dictionary = data.get("best_stars", {})
+	for k in stars:
+		_best_stars[str(k)] = int(stars[k])
 	_champion_defeated = {}
 	for k in data.get("champion_defeated", []):
 		_champion_defeated[str(k)] = true

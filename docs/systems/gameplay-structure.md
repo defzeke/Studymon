@@ -5,8 +5,8 @@ works, where flashcards fit, and the order to build what is missing. It supersed
 `gameplay_structure.md` draft (v2.6).
 
 Status: **Phases 0–4 implemented** (battles load, progress saves, the question model and mock
-generation, Multiple Choice and per-tier battles, a third gym spot on the map, tier-ordered
-trainers, the boss lock, the Champion fallback and the Flashcard Sanctuary). **Phase 5 (the real
+generation, Multiple Choice, a third gym spot on the map, Challenge Houses, Gyms and the Champion
+Gym as fixed-length runs with streaks, rewards and the defeat flow, and the Flashcard Sanctuary). **Phase 5 (the real
 AI backend and the store launch) is future work, not started: the game stays on mocks**
 ([`../launch-plan.md`](../launch-plan.md)). Where this page and the code disagree, the code describes today. As each phase lands,
 move its facts into the owning doc (see [`../rules.md`](../rules.md) §2) and update the status here.
@@ -57,9 +57,9 @@ Care room (Feed/Pet/Play) → Level 5 → Campaign
   → Session list → Upload reviewer (paste/file) → AI generates questions (editable)
   → Island map for that topic
        3 gyms, one per type:  Multiple Choice | Identification | Essay
-       each gym = a road of trainers by difficulty:  Easy → Medium → Hard (boss)
+       each type = a Challenge House (Easy run) then a Gym (Medium run)
        Study node: Flashcard Sanctuary (untimed, no penalties)
-       Big gym: Champion (needs every gym cleared)
+       Big gym: Champion Gym, a 40-item Hard run (needs every gym cleared)
 ```
 
 ### 3.1 Question model (additive, save `"v": 6`)
@@ -80,35 +80,37 @@ Generation rules for the extractor and the AI:
 - MC: one correct option and three plausible distractors from other concepts in the same reviewer, each under about 40 characters.
 - Essay: 3–5 `key_concepts`; they are the rubric.
 
-### 3.2 Gyms and progression
+### 3.2 Houses, gyms and runs (replaces the trainer road and the boss)
 
-- A gym is a question **type** (`get_gym_structure()`), holding questions of all three tiers.
-- Its questions are ranked Easy to Hard. The **hardest** (the last among ties) is the **boss**; every
-  other question is a **trainer**, standing along the road in that order, Easy nearest the start.
-  A gym with a single question has no trainers.
-- The boss is **locked until every trainer of that gym is cleared**, so a boss win can no longer clear
-  a gym whose trainers were skipped ([`overworld.md`](overworld.md) §5).
-- Gym cleared means the boss is defeated. The Champion is available when every gym that has
-  questions is cleared.
-- A type with no questions gets no gym.
+Every house on the island is a **Challenge House** (15, five per type), and each question type
+(Identification, Essay, Multiple Choice) has a **Gym**;
+the **Champion Gym** closes the region. Each is one **run** of a fixed item count against one foe
+([`battle.md`](battle.md) §1):
+
+| Building | Tier | MC | ID | Essay | Built to last |
+|---|---|---|---|---|---|
+| Challenge House | Easy | 10 | 5 | 5 (per house, by its type) | 10 min |
+| Gym | Medium | 20 | 10 | 10 (per type) | 20 min |
+| Champion Gym | Hard | 20 + 10 + 10 = 40, all types | | | 30 min |
+
+- Gate: any house of a type → that gym → Champion (all gyms cleared). The other houses are optional
+  practice, each paying its own first-clear bonus. A run is cleared by surviving every item.
+- Questions are not one-to-one with items: `build_run()` rewrites a question as the needed type and
+  cycles through the pool, so a short reviewer still fills the quota.
+- Time: counts give about a minute per item; the review beat after each answer (1.5 s right, 4 s wrong)
+  makes a miss get read. There is no timer.
 
 ### 3.3 Difficulty scaling
 
-Starting values; tune in [`battle.md`](battle.md) once implemented.
-
-| Knob | Easy | Medium | Hard |
+| Knob | Easy (house) | Medium (gym) | Hard (Champion) |
 |---|---|---|---|
-| Enemy HP | 60 | 100 | 150 (boss) |
 | Counter damage on a miss | 15 | 25 | 35 |
-| Identification accepts | exact, contains, or Levenshtein ≤ 2 | same as Easy | exact, or Levenshtein ≤ 1 (no containment) |
+| Identification accepts | exact, contains, or Levenshtein ≤ 2 | same | exact, or Levenshtein ≤ 1 |
 | Essay pass score | 0.5 | 0.65 | 0.8 |
-| XP (boss ×2) | 5 | 8 | 12 |
+| Foe | normal | large | large |
 
-Essay below the pass score deals no damage and the enemy counters
-(`round(counter × (0.4 + 0.6 × (1 − score)))`).
-
-MC has no typing: a correct tap is a one-hit KO, a wrong tap greys out that option and triggers the
-counter. A Multiple Choice question with no correct answer or no wrong option is played as Identification.
+The question's own `difficulty` now only chooses which questions a run prefers. Rewards, stars and the
+stat effects are in [`battle.md`](battle.md) §3–4.
 
 ### 3.4 Flashcard Sanctuary
 
@@ -133,9 +135,7 @@ the canonical palette (Soft Sage room, Warm Off-White card, Muted Teal controls)
 ### 3.5 Mastery, Champion and AI use
 
 - Keep `NEW → LEARNING → MASTERED`, with `REMASTER` after a miss or 7 days ([`overworld.md`](overworld.md) §6).
-- Champion moveset is the MASTERED questions, **falling back to all questions** when none are
-  mastered. The queue is sorted Easy to Hard (ties in question order), so the last step, the 150 HP
-  boss, is the hardest question.
+- The Champion Gym is one 40-item run that prefers Hard questions and falls back to the rest; the Mastered-only moveset is gone ([`battle.md`](battle.md) §1).
 - Only Essay grading and extraction use the AI. Identification and MC grade locally (resolves #15).
   There is no usage limit: the weekly quota was removed.
 
@@ -148,7 +148,7 @@ Each phase ships on its own and ends with the gates in [`../rules.md`](../rules.
 | 0 Unblock — **done** | #1 battle scene parse; #10 save after battle, confirm and Champion win (`SaveManager.save_progress()`). #8 (care buttons) and the Level 5 gate are superseded by the home loop; #5 sits in `care()`, which nothing calls now | `scenes/battle/battle.tscn`, `save_manager.gd`, `session_manager.gd`, `battle.gd` |
 | 1 Data and generation — **done** | `difficulty` and `distractors` keys with `normalize_question()`; mock extractor rotates three types, tags tiers by sentence-length terciles and builds MC distractors; save `"v": 6`; categorizer edits type, difficulty and wrong options. Mastery is still keyed by question index | `session_manager.gd`, `api.gd`, `save_manager.gd`, `categorizer.gd` |
 | 2 Battle by type and difficulty — **done** | MC panel; per-tier constants and thresholds; essay-only quota (since removed); the third gym spot and `Trainers3` road so MC is reachable | `battle.gd`, `api.gd`, `region_map.gd`, `region_map.tscn` |
-| 3 Overworld tiers — **done** | Trainers ordered by tier with the tier on their labels; the boss is the hardest question and stays locked until the gym's trainers are cleared; gyms clear only through the boss (so `_recheck_gym_clear()` is gone and a trainer win emits once, #17); Champion fallback and Easy-to-Hard order (#6); the Trainers3 road now walks toward its gym | `region_map.gd`, `region_map.tscn`, `session_manager.gd` |
+| 3 Overworld tiers — **superseded** | Replaced by the run structure in §3.2: a Challenge House and a Gym per type, the Champion as one 40-item run, `build_run()`, rewards and the stat effects (save v13) | `region_map.gd`, `battle.gd`, `session_manager.gd`, `companion_state.gd` |
 | 4 Flashcard Sanctuary — **done** | New scene and script; entry from the map HUD and the session list; a mastery write that only allows NEW/REMASTER → LEARNING; small once-per-card rewards | `scenes/review_session/flashcards.tscn`, `flashcards.gd`, `session_manager.gd`, `companion_state.gd` |
 | 5 Real AI backend and store launch — **Future (not started; mock first)**, plan in [`../launch-plan.md`](../launch-plan.md) | Pick the contract (#7); PDF text extraction, Claude generation using §3.1, essay grading; `Bearer` header (#2); handle non-envelope and non-2xx responses (#9); keep `Api.MOCK` working | `backend/main.py`, `api.gd` |
 

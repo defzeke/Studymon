@@ -188,54 +188,30 @@ map = NodePath("../Map")
 unique_name_in_owner = true
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 0, 9)
 
-[node name="GymSlot1" type="Node3D" parent="." node_paths=PackedStringArray("entrance", "trainers_from", "trainers_to")]
+[node name="GymSlot1" type="Node3D" parent="." node_paths=PackedStringArray("entrance")]
 script = ExtResource("7_slot")
 entrance = NodePath("Entrance")
-trainers_from = NodePath("From")
-trainers_to = NodePath("To")
 door_open_clip = &"Gym2_Door_Open"
 door_close_clip = &"Gym2_Door_Close"
 
 [node name="Entrance" type="Marker3D" parent="GymSlot1"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13.54317, 0, 5.032681)
 
-[node name="From" type="Marker3D" parent="GymSlot1" unique_id=2133143354]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 0, 9)
-
-[node name="To" type="Marker3D" parent="GymSlot1" unique_id=226954458]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12.5, 0, 9)
-
-[node name="GymSlot2" type="Node3D" parent="." node_paths=PackedStringArray("entrance", "trainers_from", "trainers_to")]
+[node name="GymSlot2" type="Node3D" parent="." node_paths=PackedStringArray("entrance")]
 script = ExtResource("7_slot")
 entrance = NodePath("Entrance")
-trainers_from = NodePath("From")
-trainers_to = NodePath("To")
 door_open_clip = &"Gym3_Door_Open"
 door_close_clip = &"Gym3_Door_Close"
 
 [node name="Entrance" type="Marker3D" parent="GymSlot2"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14.15683, 0, -5.717319)
 
-[node name="From" type="Marker3D" parent="GymSlot2" unique_id=970512045]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9, 0, 7.5)
-
-[node name="To" type="Marker3D" parent="GymSlot2" unique_id=135207920]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9, 0, -0.5)
-
-[node name="GymSlot3" type="Node3D" parent="." node_paths=PackedStringArray("entrance", "trainers_from", "trainers_to")]
+[node name="GymSlot3" type="Node3D" parent="." node_paths=PackedStringArray("entrance")]
 script = ExtResource("7_slot")
 entrance = NodePath("Entrance")
-trainers_from = NodePath("From")
-trainers_to = NodePath("To")
 
 [node name="Entrance" type="Marker3D" parent="GymSlot3" unique_id=1445727592]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -15, 0, 9)
-
-[node name="From" type="Marker3D" parent="GymSlot3" unique_id=1833472821]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 0, 9)
-
-[node name="To" type="Marker3D" parent="GymSlot3" unique_id=1830030275]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12, 0, 9)
 
 [node name="ChampionSlot" type="Node3D" parent="." node_paths=PackedStringArray("entrance")]
 script = ExtResource("7_slot")

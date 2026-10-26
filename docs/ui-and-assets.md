@@ -63,7 +63,7 @@ text** checkbox in `settings.tscn` calls `set_large_text()` and saves.
 | `scenes/ui/boot/peek.tscn` | `Node3D` | `scripts/ui/boot/peek.gd`, `scripts/ui/boot/tutorial.gd`, `scripts/ui/home.gd` | 3D Kuiz peeks, runs the tutorial, then the home loop across four rooms; the hub every other screen returns to |
 | `scenes/ui/session_list.tscn` | `Control` | `scripts/ui/session_list.gd` | Worlds hub: saved worlds (play, cards, edit, reset, delete) and New World |
 | `scenes/review_session/categorizer.tscn` | `Control` | `scripts/review_session/categorizer.gd` | upload + question editor |
-| `scenes/overworld/region_map.tscn` | `Node3D` | `scripts/overworld/region_map.gd` (+ `player.gd`, `joystick.gd`) | 3D island: explorer, trainers, gyms, champion |
+| `scenes/overworld/region_map.tscn` | `Node3D` | `scripts/overworld/region_map.gd` (+ `player.gd`, `joystick.gd`) | 3D island: explorer, Challenge Houses, gyms, champion |
 | `scenes/battle/battle.tscn` | `Control` | `scripts/battle/battle.gd`, `scripts/battle/arena_stage.gd` | 3D arena behind the battle HUD: intro, strikes, ten SFX cues |
 | `scenes/review_session/flashcards.tscn` | `Control` | `scripts/review_session/flashcards.gd` | Flashcard Sanctuary: untimed card review |
 | `scenes/ui/settings.tscn` | `Control` | `scripts/ui/settings.gd` | one card, "Sound & display" (music, sounds, large text); Back returns home. The "AI plan" card (quota, premium, debug reset) was removed |
@@ -483,17 +483,17 @@ The HUD, top to bottom, in the home HUD's look (Off-White, Deep Slate 3 px outli
 - **Back** (top left): a 72 px round button with a slate chevron (`ui/icon_back.svg`); back to the
   worlds list.
 - **Quest card** (`QuestCard`, beside it): "Region quest" and how many of the region's tasks are
-  done ("1 / 6 done": every trainer, every gym and the Champion), then three task chips built in
-  `region_map.gd` `_refresh_progress()`: **Trainers** (`ui/icon_trainer.svg`, beaten / total and
+  done ("1 / 19 done": every house, every gym and the Champion), then three task chips built in
+  `region_map.gd` `_refresh_progress()`: **Houses** (`ui/icon_trainer.svg`, cleared / 15 and
   a teal bar), **Gyms** (one `ui/icon_badge.svg` per gym, lit once cleared, faint until then, and
   the count) and **Champion** (`ui/icon_lock.svg` "Locked" until every gym is cleared, then
   `ui/icon_crown.svg` "Ready!", "Crowned" once beaten).
 - **Minimap** (under the card, at the left; `minimap.gd`, 200 px): the whole island from straight
   above, rendered once into a small SubViewport, with live dots for the explorer (teal),
-  trainers, gyms (amber) and the Champion (coral).
+  houses, gyms (amber) and the Champion (coral).
 - **Objectives** (`Objectives`, beside the minimap, no panel): a bullet list of the next three
-  steps, in order: each unfinished gym's unbeaten trainers, easiest first ("Beat Trainer 3 (Easy)
-  on the Essay road"), then its boss, then the Champion; "+N more" when there are more, and
+  steps, in order: a house of each type whose gym is still shut ("Enter a house marked Essay (5 on the
+  island)"), the gyms, the Champion, then "Clear the other houses (n left)"; "+N more" when there are more, and
   "Region complete!" at the end. Off-White bold text with a Deep Slate outline so it reads over
   the map; the current step is larger with an amber bullet, the rest slightly dimmer.
 - **Joystick** (bottom left) and **Study** (bottom right): a 124 px Off-White card with a stack of
@@ -509,7 +509,7 @@ The HUD, top to bottom, in the home HUD's look (Off-White, Deep Slate 3 px outli
 The enemy and player cards sit over `ArenaStage`, the 3D scene that holds the models. The Broken
 Bot foe makes its own sounds on its clips (§2 Model sounds). For a Multiple Choice question
 `battle.gd` hides `AnswerInput` and `SubmitButton` and builds a `VBoxContainer` of four option
-`Button`s (56 px tall) in their place at runtime.
+`Button`s (56 px tall) in their place at runtime. A row of four `stat_gauge.gd` rings (Hunger, Energy, Mood, Health, 44 px) is added to `PlayerCard`'s box in code (`_build_gauges()`) and follows `CompanionState.stats_changed`, so a run's costs and hits show live. After each answer `ResultPanel` is the review beat (answer, feedback, source; Next held 1.5 s or 4 s). `region_map.tscn` gains a full-screen off-white fade (`CanvasLayer` 100) built in code: out when a house or gym is entered, in on arrival. Over the island, each of the 15 houses carries a bobbing `ui/icon_trainer.svg` in its type's colour (Identification teal, Essay lilac `8D82A8`, Multiple Choice amber; faint once cleared) and a `Label3D` (type, `Easy` or stars) shown only within 4 units of the explorer; walking up to a house unfolds a dark doorway (`1E2829`) over its door.
 
 
 ---
