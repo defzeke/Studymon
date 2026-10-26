@@ -149,7 +149,8 @@ it lowercases the type, defaults an unknown tier to `medium`, and turns a Multip
 no correct answer or no wrong option into an Identification. Rows the player leaves incomplete in
 the editor are kept as typed; the battle plays them as Identification.
 
-Rows are built in code (`_make_question_row`), not as a reusable scene. Each row shows:
+Each row is a copy of the hidden `RowTemplate` in `categorizer.tscn` (edit its layout and look in
+the Godot editor); `_make_question_row` fills the copy and wires its signals. Each row shows:
 
 - `#N` index
 - confidence badge: ✓ green ≥ 85 %, ○ yellow ≥ 60 %, ⚠ red below

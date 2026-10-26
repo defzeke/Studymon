@@ -42,7 +42,7 @@ Where the two disagree, the docs say so explicitly.
 | Main scene | `res://scenes/ui/boot/splash.tscn` |
 | Viewport | 720 × 1280, stretch `canvas_items`, aspect `expand` |
 | Renderer | `mobile`, D3D12 on Windows |
-| Language | GDScript only (37 files, ~269 KB) |
+| Language | GDScript only (38 files, ~296 KB) |
 | Scenes | 12 (`.tscn`) |
 | Autoloads | 7 |
 | Backend | FastAPI stub, `/health` only — client runs on `Api.MOCK = true` |

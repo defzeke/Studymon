@@ -85,7 +85,7 @@ text = "1 · Your reviewer"
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 52)
 layout_mode = 2
-placeholder_text = "World name"
+placeholder_text = "World name (e.g. Biology 101)"
 
 [node name="FileButton" type="Button" parent="Margin/Content/SourceCard/Pad/Source" unique_id=400211232]
 unique_name_in_owner = true
@@ -97,7 +97,7 @@ text = "Upload a file"
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 130)
 layout_mode = 2
-placeholder_text = "...or paste your reviewer text here"
+placeholder_text = "Paste reviewer text here — or pick a .txt/notes file..."
 wrap_mode = 1
 
 [node name="SanityLabel" type="Label" parent="Margin/Content/SourceCard/Pad/Source" unique_id=1109058020]
@@ -149,6 +149,96 @@ unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 12
+
+[node name="RowTemplate" type="PanelContainer" parent="Margin/Content/QuestionsBlock"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+
+[node name="Pad" type="MarginContainer" parent="Margin/Content/QuestionsBlock/RowTemplate"]
+layout_mode = 2
+theme_override_constants/margin_left = 14
+theme_override_constants/margin_top = 14
+theme_override_constants/margin_right = 14
+theme_override_constants/margin_bottom = 14
+
+[node name="Box" type="VBoxContainer" parent="Margin/Content/QuestionsBlock/RowTemplate/Pad"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Header" type="HBoxContainer" parent="Margin/Content/QuestionsBlock/RowTemplate/Pad/Box"]
+layout_mode = 2
+
+[node name="Index" type="Label" parent="Margin/Content/QuestionsBlock/RowTemplate/Pad/Box/Header"]
+custom_minimum_size = Vector2(40, 0)
+layout_mode = 2
+text = "#1"
+
+[node name="Confidence" type="Label" parent="Margin/Content/QuestionsBlock/RowTemplate/Pad/Box/Header"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 22
+text = "AI is fairly sure (90%)"
+horizontal_alignment = 2
+
+[node name="Delete" type="Button" parent="Margin/Content/QuestionsBlock/RowTemplate/Pad/Box/Header"]
+custom_minimum_size = Vector2(56, 48)
+layout_mode = 2
+text = "×"
+
+[node name="Prompt" type="TextEdit" parent="Margin/Content/QuestionsBlock/RowTemplate/Pad/Box"]
+custom_minimum_size = Vector2(0, 90)
+layout_mode = 2
+placeholder_text = "Question prompt"
+wrap_mode = 1
+
+[node name="TypeRow" type="HBoxContainer" parent="Margin/Content/QuestionsBlock/RowTemplate/Pad/Box"]
+layout_mode = 2
+
+[node name="TypeLabel" type="Label" parent="Margin/Content/QuestionsBlock/RowTemplate/Pad/Box/TypeRow"]
+custom_minimum_size = Vector2(70, 0)
+layout_mode = 2
+text = "Type"
+
+[node name="TypeOption" type="OptionButton" parent="Margin/Content/QuestionsBlock/RowTemplate/Pad/Box/TypeRow"]
+custom_minimum_size = Vector2(0, 52)
+layout_mode = 2
+size_flags_horizontal = 3
+selected = 0
+item_count = 3
+popup/item_0/text = "Essay"
+popup/item_0/id = 0
+popup/item_1/text = "Identification"
+popup/item_1/id = 1
+popup/item_2/text = "Multiple Choice"
+popup/item_2/id = 2
+
+[node name="Difficulty" type="OptionButton" parent="Margin/Content/QuestionsBlock/RowTemplate/Pad/Box/TypeRow"]
+custom_minimum_size = Vector2(130, 52)
+layout_mode = 2
+
+[node name="Answer" type="LineEdit" parent="Margin/Content/QuestionsBlock/RowTemplate/Pad/Box"]
+custom_minimum_size = Vector2(0, 52)
+layout_mode = 2
+placeholder_text = "Answer / key concepts (comma-separated for Essay)"
+
+[node name="Wrong1" type="LineEdit" parent="Margin/Content/QuestionsBlock/RowTemplate/Pad/Box"]
+visible = false
+custom_minimum_size = Vector2(0, 52)
+layout_mode = 2
+placeholder_text = "Wrong option 1"
+
+[node name="Wrong2" type="LineEdit" parent="Margin/Content/QuestionsBlock/RowTemplate/Pad/Box"]
+visible = false
+custom_minimum_size = Vector2(0, 52)
+layout_mode = 2
+placeholder_text = "Wrong option 2"
+
+[node name="Wrong3" type="LineEdit" parent="Margin/Content/QuestionsBlock/RowTemplate/Pad/Box"]
+visible = false
+custom_minimum_size = Vector2(0, 52)
+layout_mode = 2
+placeholder_text = "Wrong option 3"
 
 [node name="AddQuestionButton" type="Button" parent="Margin/Content/QuestionsBlock" unique_id=2143912199]
 unique_name_in_owner = true

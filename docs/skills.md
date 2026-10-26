@@ -10,7 +10,7 @@ This repo has no test framework and no CI. Verification is a headless Godot run.
 **Prerequisite.** Godot **4.7.2** console build. It is not on `PATH` on the current machine:
 
 ```powershell
-$GODOT = "C:\Users\user\Downloads\Godot_v4.7.2-stable_win64.exe\Godot_v4.7.2-stable_win64_console.exe"
+$GODOT = "C:\Users\Mary\Tools\Godot_4.7.2\Godot_v4.7.2-stable_win64_console.exe"
 ```
 
 **Steps.**
@@ -57,7 +57,9 @@ $GODOT = "C:\Users\user\Downloads\Godot_v4.7.2-stable_win64.exe\Godot_v4.7.2-sta
 
 **Expected noise** (not new failures): `ObjectDB instances leaked at exit`, `1 resources still in
 use at exit` when `--quit-after` ends a scene mid-tween, and the rig warnings listed as issues #3 and
-#12 in [`known-issues.md`](known-issues.md). Anything else is a regression.
+#12 in [`known-issues.md`](known-issues.md). Headless `splash.tscn` / `loading.tscn` runs also fail the
+scene they load in the background (issue #22); check the boot chain windowed instead. Anything else is
+a regression.
 
 **Optional backend check** (only when working in `backend/`):
 
@@ -137,8 +139,9 @@ each. The source is [`assets/sprites/boot/kuizmon_loading.gif`](../assets/sprite
 The two live types are `"identification"` and `"essay"`; the type is also the gym bucket. A third
 type touches five places:
 
-1. **Categorizer UI** — `categorizer.gd:247-251` builds the `OptionButton` with two hard-coded
-   entries, and `_on_type_changed()` (`:273-276`) maps index → type. Add the item and the mapping.
+1. **Categorizer UI** — the type `OptionButton` is `RowTemplate/Pad/Box/TypeRow/TypeOption` in
+   `categorizer.tscn`, and `QUESTION_TYPES` in `categorizer.gd` maps its index → type
+   (`_on_type_changed()`). Add the item in the editor and the type at the same position in the list.
 2. **Mock grading** — `Api._execute_mock_grade()` (`scripts/autoload/api.gd:276-329`) branches on
    `identification` vs everything else. Add the branch, or the new type is graded as an essay.
 3. **Battle input** — `battle.gd:86` sets the placeholder and `:151` branches on type for KO juice.

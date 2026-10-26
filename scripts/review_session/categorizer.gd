@@ -2,7 +2,7 @@ extends Control
 ## Phase 5: Categorizer — Upload → AI is studying... → editable question list → Confirm → Play
 ## Implements build-plan P5: word-count sanity, confidence badges, CRUD list, region generation.
 
-# Order matches the type OptionButton; contract: docs/systems/gameplay-structure.md.
+# Order matches %RowTemplate's TypeOption items; contract: docs/systems/gameplay-structure.md.
 const QUESTION_TYPES: Array[String] = ["essay", "identification", "multiple_choice"]
 
 @onready var topic_name_field: LineEdit = %TopicName
@@ -13,6 +13,7 @@ const QUESTION_TYPES: Array[String] = ["essay", "identification", "multiple_choi
 @onready var loading_bar: ProgressBar = %LoadingBar
 @onready var sanity_label: Label = %SanityLabel
 @onready var questions_box: VBoxContainer = %QuestionsBox
+@onready var row_template: PanelContainer = %RowTemplate
 @onready var add_q_btn: Button = %AddQuestionButton
 @onready var play_btn: Button = %PlayButton
 @onready var back_btn: Button = %BackButton
@@ -22,10 +23,8 @@ var _studying: bool = false
 
 func _ready() -> void:
 	theme = load("res://assets/theme/app_theme.tres") as Theme
-	topic_name_field.placeholder_text = "World name (e.g. Biology 101)"
 	var saved_name := SessionManager.world_name(SessionManager.editing_topic_id)
 	topic_name_field.text = saved_name if saved_name != "" else "My New World"
-	paste_area.placeholder_text = "Paste reviewer text here — or pick a .txt/notes file..."
 	file_btn.pressed.connect(_on_pick_file)
 	file_dialog.file_selected.connect(_on_file_selected)
 	study_btn.pressed.connect(_on_study)
@@ -150,25 +149,13 @@ func _make_question_row(q: Dictionary, idx: int) -> Control:
 			parts.append(str(k))
 		concepts = ", ".join(parts)
 
-	var panel := PanelContainer.new()
-	var pad := MarginContainer.new()
-	for side in ["left", "top", "right", "bottom"]:
-		pad.add_theme_constant_override("margin_" + side, 14)
-	panel.add_child(pad)
-	var vbox := VBoxContainer.new()
-	vbox.add_theme_constant_override("separation", 10)
-	pad.add_child(vbox)
+	# The row's layout and look are %RowTemplate's; this fills one copy and wires it to the question.
+	var panel := row_template.duplicate() as PanelContainer
+	panel.visible = true
+	var box := panel.get_node("Pad/Box")
+	(box.get_node("Header/Index") as Label).text = "#%d" % (idx + 1)
 
-	var header := HBoxContainer.new()
-	var idx_label := Label.new()
-	idx_label.text = "#%d" % (idx + 1)
-	idx_label.custom_minimum_size = Vector2(40, 0)
-	header.add_child(idx_label)
-
-	var conf_label := Label.new()
-	conf_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	conf_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	conf_label.add_theme_font_size_override("font_size", 22)
+	var conf_label := box.get_node("Header/Confidence") as Label
 	if conf >= 0.85:
 		conf_label.text = "AI is fairly sure (%.0f%%)" % (conf * 100)
 		conf_label.modulate = Color("78A982")
@@ -178,66 +165,36 @@ func _make_question_row(q: Dictionary, idx: int) -> Control:
 	else:
 		conf_label.text = "Double-check (%.0f%%)" % (conf * 100)
 		conf_label.modulate = Color("C97970")
-	header.add_child(conf_label)
 
-	var del_btn := Button.new()
-	del_btn.text = "×"
-	del_btn.custom_minimum_size = Vector2(56, 48)
-	del_btn.pressed.connect(_on_delete_question.bind(idx))
-	header.add_child(del_btn)
-	vbox.add_child(header)
+	(box.get_node("Header/Delete") as Button).pressed.connect(_on_delete_question.bind(idx))
 
-	var text_edit := TextEdit.new()
+	var text_edit := box.get_node("Prompt") as TextEdit
 	text_edit.text = text
-	text_edit.custom_minimum_size = Vector2(0, 90)
-	text_edit.wrap_mode = TextEdit.LINE_WRAPPING_BOUNDARY
-	text_edit.placeholder_text = "Question prompt"
 	text_edit.text_changed.connect(_on_question_text_changed.bind(idx, text_edit))
-	vbox.add_child(text_edit)
 
-	var type_row := HBoxContainer.new()
-	var type_label := Label.new()
-	type_label.text = "Type"
-	type_label.custom_minimum_size = Vector2(70, 0)
-	type_row.add_child(type_label)
-	var type_opt := OptionButton.new()
-	type_opt.add_item("Essay", 0)
-	type_opt.add_item("Identification", 1)
-	type_opt.add_item("Multiple Choice", 2)
+	var type_opt := box.get_node("TypeRow/TypeOption") as OptionButton
 	type_opt.selected = maxi(0, QUESTION_TYPES.find(qtype))
 	type_opt.item_selected.connect(_on_type_changed.bind(idx))
-	type_opt.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	type_opt.custom_minimum_size = Vector2(0, 52)
-	type_row.add_child(type_opt)
-	var diff_opt := OptionButton.new()
+	var diff_opt := box.get_node("TypeRow/Difficulty") as OptionButton
 	for tier in SessionManager.DIFFICULTIES:
 		diff_opt.add_item(tier.capitalize())
 	diff_opt.selected = maxi(0, SessionManager.DIFFICULTIES.find(str(q.get("difficulty", "medium"))))
 	diff_opt.item_selected.connect(_on_difficulty_changed.bind(idx))
-	diff_opt.custom_minimum_size = Vector2(130, 52)
-	type_row.add_child(diff_opt)
-	vbox.add_child(type_row)
 
-	var ans_field := LineEdit.new()
+	var ans_field := box.get_node("Answer") as LineEdit
 	ans_field.text = answer
-	ans_field.placeholder_text = "Answer / key concepts (comma-separated for Essay)"
 	if concepts != "" and answer == "":
 		ans_field.text = concepts
 		ans_field.placeholder_text = "Key concepts"
 	ans_field.text_changed.connect(_on_answer_changed.bind(idx))
-	ans_field.custom_minimum_size = Vector2(0, 52)
-	vbox.add_child(ans_field)
 	if qtype == "multiple_choice":
 		ans_field.placeholder_text = "Correct option"
 		var wrong: Array = q.get("distractors", [])
 		for n in 3:
-			var wrong_field := LineEdit.new()
+			var wrong_field := box.get_node("Wrong%d" % (n + 1)) as LineEdit
+			wrong_field.visible = true
 			wrong_field.text = str(wrong[n]) if n < wrong.size() else ""
-			wrong_field.placeholder_text = "Wrong option %d" % (n + 1)
 			wrong_field.text_changed.connect(_on_distractor_changed.bind(idx, n))
-			wrong_field.custom_minimum_size = Vector2(0, 52)
-			vbox.add_child(wrong_field)
-
 
 	return panel
 

@@ -15,6 +15,10 @@
 [ext_resource type="Texture2D" path="res://assets/sprites/ui/icon_back.svg" id="13_back"]
 [ext_resource type="Texture2D" path="res://assets/sprites/ui/icon_study.svg" id="15_study"]
 [ext_resource type="Script" path="res://scripts/overworld/kuiz_follower.gd" id="16_kuiz"]
+[ext_resource type="Texture2D" path="res://assets/sprites/ui/icon_trainer.svg" id="17_trainer"]
+[ext_resource type="Texture2D" path="res://assets/sprites/ui/icon_badge.svg" id="18_badge"]
+[ext_resource type="Texture2D" path="res://assets/sprites/ui/icon_crown.svg" id="19_crown"]
+[ext_resource type="Texture2D" path="res://assets/sprites/ui/icon_lock.svg" id="20_lock"]
 
 [sub_resource type="Environment" id="Environment_island"]
 background_mode = 1
@@ -153,12 +157,29 @@ shadow_color = Color(0.1608, 0.2196, 0.2275, 0.25)
 shadow_size = 6
 shadow_offset = Vector2(0, 3)
 
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_houses_back"]
+bg_color = Color(0.1608, 0.2196, 0.2275, 0.15)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_houses_fill"]
+bg_color = Color(0.3098, 0.5608, 0.5373, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
 [node name="RegionMap" type="Node3D" unique_id=542269348 node_paths=PackedStringArray("gym_slots", "champion_slot")]
 script = ExtResource("1")
 gym_slots = [NodePath("GymSlot1"), NodePath("GymSlot2"), NodePath("GymSlot3")]
 champion_slot = NodePath("ChampionSlot")
 trigger_scene = ExtResource("9_trigger")
 burst_scene = ExtResource("10_burst")
+house_icon = ExtResource("17_trainer")
+icon_crown = ExtResource("19_crown")
+icon_lock = ExtResource("20_lock")
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1627825419]
 environment = SubResource("Environment_island")
@@ -311,6 +332,125 @@ layout_mode = 2
 mouse_filter = 2
 theme_override_constants/separation = 10
 
+[node name="Houses" type="HBoxContainer" parent="HUD/QuestCard/Body/QuestTasks"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+theme_override_constants/separation = 8
+
+[node name="Icon" type="TextureRect" parent="HUD/QuestCard/Body/QuestTasks/Houses"]
+custom_minimum_size = Vector2(44, 44)
+layout_mode = 2
+size_flags_vertical = 4
+texture = ExtResource("17_trainer")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Text" type="VBoxContainer" parent="HUD/QuestCard/Body/QuestTasks/Houses"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 0
+
+[node name="Title" type="Label" parent="HUD/QuestCard/Body/QuestTasks/Houses/Text"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.4078, 0.4667, 0.4706, 1)
+theme_override_fonts/font = ExtResource("12_bold")
+theme_override_font_sizes/font_size = 15
+text = "Houses"
+
+[node name="HousesValue" type="Label" parent="HUD/QuestCard/Body/QuestTasks/Houses/Text"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.1608, 0.2196, 0.2275, 1)
+theme_override_fonts/font = ExtResource("12_bold")
+theme_override_font_sizes/font_size = 22
+text = "0 / 0"
+
+[node name="HousesBar" type="ProgressBar" parent="HUD/QuestCard/Body/QuestTasks/Houses/Text"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 8)
+layout_mode = 2
+theme_override_styles/background = SubResource("StyleBoxFlat_houses_back")
+theme_override_styles/fill = SubResource("StyleBoxFlat_houses_fill")
+max_value = 1.0
+show_percentage = false
+
+[node name="Gyms" type="HBoxContainer" parent="HUD/QuestCard/Body/QuestTasks"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+theme_override_constants/separation = 8
+
+[node name="GymBadges" type="HBoxContainer" parent="HUD/QuestCard/Body/QuestTasks/Gyms"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 2
+
+[node name="BadgeTemplate" type="TextureRect" parent="HUD/QuestCard/Body/QuestTasks/Gyms/GymBadges"]
+unique_name_in_owner = true
+visible = false
+custom_minimum_size = Vector2(30, 30)
+layout_mode = 2
+size_flags_vertical = 4
+texture = ExtResource("18_badge")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Text" type="VBoxContainer" parent="HUD/QuestCard/Body/QuestTasks/Gyms"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 0
+
+[node name="Title" type="Label" parent="HUD/QuestCard/Body/QuestTasks/Gyms/Text"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.4078, 0.4667, 0.4706, 1)
+theme_override_fonts/font = ExtResource("12_bold")
+theme_override_font_sizes/font_size = 15
+text = "Gyms"
+
+[node name="GymsValue" type="Label" parent="HUD/QuestCard/Body/QuestTasks/Gyms/Text"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.1608, 0.2196, 0.2275, 1)
+theme_override_fonts/font = ExtResource("12_bold")
+theme_override_font_sizes/font_size = 22
+text = "0 / 0"
+
+[node name="Champion" type="HBoxContainer" parent="HUD/QuestCard/Body/QuestTasks"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+theme_override_constants/separation = 8
+
+[node name="ChampionIcon" type="TextureRect" parent="HUD/QuestCard/Body/QuestTasks/Champion"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(44, 44)
+layout_mode = 2
+size_flags_vertical = 4
+texture = ExtResource("20_lock")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Text" type="VBoxContainer" parent="HUD/QuestCard/Body/QuestTasks/Champion"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 0
+
+[node name="Title" type="Label" parent="HUD/QuestCard/Body/QuestTasks/Champion/Text"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.4078, 0.4667, 0.4706, 1)
+theme_override_fonts/font = ExtResource("12_bold")
+theme_override_font_sizes/font_size = 15
+text = "Champion"
+
+[node name="ChampionValue" type="Label" parent="HUD/QuestCard/Body/QuestTasks/Champion/Text"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.1608, 0.2196, 0.2275, 1)
+theme_override_fonts/font = ExtResource("12_bold")
+theme_override_font_sizes/font_size = 22
+text = "Locked"
+
 [node name="Objectives" type="VBoxContainer" parent="HUD"]
 unique_name_in_owner = true
 anchors_preset = 10
@@ -322,6 +462,97 @@ offset_bottom = 350.0
 grow_horizontal = 2
 mouse_filter = 2
 theme_override_constants/separation = 6
+
+[node name="Step1" type="HBoxContainer" parent="HUD/Objectives"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 8
+
+[node name="Dot" type="Label" parent="HUD/Objectives/Step1"]
+layout_mode = 2
+size_flags_vertical = 0
+theme_override_colors/font_color = Color(0.8392, 0.6588, 0.3725, 1)
+theme_override_colors/font_outline_color = Color(0.1608, 0.2196, 0.2275, 1)
+theme_override_constants/outline_size = 7
+theme_override_fonts/font = ExtResource("12_bold")
+theme_override_font_sizes/font_size = 22
+text = "●"
+
+[node name="Text" type="Label" parent="HUD/Objectives/Step1"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_colors/font_outline_color = Color(0.1608, 0.2196, 0.2275, 1)
+theme_override_constants/outline_size = 7
+theme_override_fonts/font = ExtResource("12_bold")
+theme_override_font_sizes/font_size = 22
+text = "Current objective"
+autowrap_mode = 3
+
+[node name="Step2" type="HBoxContainer" parent="HUD/Objectives"]
+modulate = Color(1, 1, 1, 0.85)
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 8
+
+[node name="Dot" type="Label" parent="HUD/Objectives/Step2"]
+layout_mode = 2
+size_flags_vertical = 0
+theme_override_colors/font_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_colors/font_outline_color = Color(0.1608, 0.2196, 0.2275, 1)
+theme_override_constants/outline_size = 7
+theme_override_fonts/font = ExtResource("12_bold")
+theme_override_font_sizes/font_size = 22
+text = "●"
+
+[node name="Text" type="Label" parent="HUD/Objectives/Step2"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_colors/font_outline_color = Color(0.1608, 0.2196, 0.2275, 1)
+theme_override_constants/outline_size = 7
+theme_override_fonts/font = ExtResource("12_bold")
+theme_override_font_sizes/font_size = 19
+text = "Next objective"
+autowrap_mode = 3
+
+[node name="Step3" type="HBoxContainer" parent="HUD/Objectives"]
+modulate = Color(1, 1, 1, 0.85)
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 8
+
+[node name="Dot" type="Label" parent="HUD/Objectives/Step3"]
+layout_mode = 2
+size_flags_vertical = 0
+theme_override_colors/font_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_colors/font_outline_color = Color(0.1608, 0.2196, 0.2275, 1)
+theme_override_constants/outline_size = 7
+theme_override_fonts/font = ExtResource("12_bold")
+theme_override_font_sizes/font_size = 22
+text = "●"
+
+[node name="Text" type="Label" parent="HUD/Objectives/Step3"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_colors/font_outline_color = Color(0.1608, 0.2196, 0.2275, 1)
+theme_override_constants/outline_size = 7
+theme_override_fonts/font = ExtResource("12_bold")
+theme_override_font_sizes/font_size = 19
+text = "Later objective"
+autowrap_mode = 3
+
+[node name="ObjectivesMore" type="Label" parent="HUD/Objectives"]
+unique_name_in_owner = true
+modulate = Color(1, 1, 1, 0.75)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_colors/font_outline_color = Color(0.1608, 0.2196, 0.2275, 1)
+theme_override_constants/outline_size = 7
+theme_override_fonts/font = ExtResource("12_bold")
+theme_override_font_sizes/font_size = 17
+text = "+1 more"
 
 [node name="Minimap" type="PanelContainer" parent="HUD"]
 offset_left = 16.0
@@ -445,3 +676,16 @@ unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
 text = "Close"
+
+[node name="FadeLayer" type="CanvasLayer" parent="."]
+layer = 100
+
+[node name="Fade" type="ColorRect" parent="FadeLayer"]
+unique_name_in_owner = true
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.9686, 0.9608, 0.9373, 0)

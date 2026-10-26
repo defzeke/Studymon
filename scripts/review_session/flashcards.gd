@@ -2,19 +2,15 @@ extends Control
 ## Flashcard Sanctuary: untimed review of a topic's questions, no HP, no game over.
 ## Again re-queues three cards ahead, Hard sends the card to the end, Easy banks it (New or
 ## Remaster become Learning; Mastered is earned only in battle).
-## Contract: docs/systems/gameplay-structure.md §3.4
+## Contract: docs/systems/gameplay-structure.md §3.4. Every style lives in flashcards.tscn; the card's
+## tags are copies of %TagTemplate.
 
-const SAGE := Color("E8F0EA")
-const OFF_WHITE := Color("F7F5EF")
 const TEAL := Color("4F8F89")
 const GREEN := Color("78A982")
 const AMBER := Color("D6A85F")
 const CORAL := Color("C97970")
-const SLATE := Color("29383A")
-const SLATE_GRAY := Color("687778")
 const AGAIN_GAP := 3
 
-const BOLD: Font = preload("res://assets/fonts/JosefinSans-Bold.ttf")
 const TIER_COLORS := {"easy": GREEN, "medium": AMBER, "hard": CORAL}
 
 @onready var back_btn: Button = %BackButton
@@ -22,6 +18,7 @@ const TIER_COLORS := {"easy": GREEN, "medium": AMBER, "hard": CORAL}
 @onready var progress_bar: ProgressBar = %Progress
 @onready var card_panel: PanelContainer = %CardPanel
 @onready var tags: HBoxContainer = %Tags
+@onready var tag_template: Label = %TagTemplate
 @onready var front_label: Label = %FrontLabel
 @onready var back_box: VBoxContainer = %Back
 @onready var answer_label: Label = %AnswerLabel
@@ -48,7 +45,6 @@ func _ready() -> void:
 	_questions = SessionManager.get_pending_questions()
 	_queue = SessionManager.flashcard_deck(_topic_id)
 	_deck_size = _queue.size()
-	_style()
 	back_btn.pressed.connect(_on_back)
 	flip_btn.pressed.connect(_on_flip)
 	again_btn.pressed.connect(_rate.bind("again"))
@@ -56,57 +52,14 @@ func _ready() -> void:
 	easy_btn.pressed.connect(_rate.bind("easy"))
 	_show_card()
 
-# The home HUD's look over the dimmed Study Room: an Off-White card with a Deep Slate outline and soft
-# shadow, a round Back button, a teal progress bar, and buttons in palette colours with Off-White text.
-func _style() -> void:
-	var card := _box(OFF_WHITE, 32, 28)
-	card.shadow_color = Color(SLATE, 0.35)
-	card.shadow_size = 12
-	card.shadow_offset = Vector2(0, 6)
-	card_panel.add_theme_stylebox_override("panel", card)
-	var line := StyleBoxLine.new()
-	line.color = Color(SLATE, 0.18)
-	line.thickness = 3
-	%Sep.add_theme_stylebox_override("separator", line)
-	progress_bar.add_theme_stylebox_override("background", _flat(Color(OFF_WHITE, 0.25), 7))
-	progress_bar.add_theme_stylebox_override("fill", _flat(TEAL, 7))
-	_style_button(back_btn, OFF_WHITE, 36)
-	for pair: Array in [[flip_btn, TEAL], [again_btn, CORAL], [hard_btn, AMBER], [easy_btn, GREEN]]:
-		_style_button(pair[0], pair[1], 24)
-
-func _box(color: Color, radius: int, margin: int) -> StyleBoxFlat:
-	var sb := _flat(color, radius)
-	sb.set_content_margin_all(margin)
-	sb.border_color = SLATE
-	sb.set_border_width_all(3)
-	return sb
-
-func _flat(color: Color, radius: int) -> StyleBoxFlat:
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = color
-	sb.set_corner_radius_all(radius)
-	return sb
-
-func _style_button(btn: Button, color: Color, radius: int) -> void:
-	btn.add_theme_stylebox_override("normal", _box(color, radius, 12))
-	btn.add_theme_stylebox_override("hover", _box(color.lightened(0.08), radius, 12))
-	btn.add_theme_stylebox_override("pressed", _box(color.darkened(0.15), radius, 12))
-	btn.add_theme_stylebox_override("focus", _box(color, radius, 12))
-	for state in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
-		btn.add_theme_color_override(state, OFF_WHITE)
-
-# A rounded tag on the card: the mastery state, the type and the tier.
+# A rounded tag on the card: the mastery state, the type and the tier. Each copy gets its own stylebox
+# so its colour does not repaint the others.
 func _tag(text: String, color: Color) -> Label:
-	var l := Label.new()
+	var l := tag_template.duplicate() as Label
+	l.visible = true
 	l.text = text
-	l.add_theme_font_override("font", BOLD)
-	l.add_theme_font_size_override("font_size", 18)
-	l.add_theme_color_override("font_color", OFF_WHITE)
-	var sb := _flat(color, 14)
-	sb.content_margin_left = 14
-	sb.content_margin_right = 14
-	sb.content_margin_top = 5
-	sb.content_margin_bottom = 3
+	var sb := tag_template.get_theme_stylebox("normal").duplicate() as StyleBoxFlat
+	sb.bg_color = color
 	l.add_theme_stylebox_override("normal", sb)
 	return l
 
@@ -120,8 +73,9 @@ func _show_card() -> void:
 	var badge: Dictionary = SessionManager.mastery_badge(SessionManager.get_mastery_state(_topic_id, int(_queue[0])))
 	var tier := str(q.get("difficulty", "medium")).to_lower()
 	for c in tags.get_children():
-		tags.remove_child(c)
-		c.queue_free()
+		if c != tag_template:
+			tags.remove_child(c)
+			c.queue_free()
 	tags.add_child(_tag(str(badge["name"]), badge["color"]))
 	tags.add_child(_tag(str(q.get("type", "essay")).capitalize().replace("_", " "), TEAL))
 	tags.add_child(_tag(tier.capitalize(), TIER_COLORS.get(tier, AMBER)))

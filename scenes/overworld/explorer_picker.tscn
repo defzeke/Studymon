@@ -1,0 +1,190 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/overworld/explorer_picker.gd" id="1_picker"]
+[ext_resource type="FontFile" path="res://assets/fonts/JosefinSans-Bold.ttf" id="2_bold"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
+content_margin_left = 28.0
+content_margin_top = 28.0
+content_margin_right = 28.0
+content_margin_bottom = 28.0
+bg_color = Color(0.9686, 0.9608, 0.9373, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.1608, 0.2196, 0.2275, 1)
+corner_radius_top_left = 32
+corner_radius_top_right = 32
+corner_radius_bottom_right = 32
+corner_radius_bottom_left = 32
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_card_selected"]
+content_margin_left = 10.0
+content_margin_top = 10.0
+content_margin_right = 10.0
+content_margin_bottom = 10.0
+bg_color = Color(0.9098, 0.9412, 0.9176, 1)
+border_width_left = 6
+border_width_top = 6
+border_width_right = 6
+border_width_bottom = 6
+border_color = Color(0.3098, 0.5608, 0.5373, 1)
+corner_radius_top_left = 24
+corner_radius_top_right = 24
+corner_radius_bottom_right = 24
+corner_radius_bottom_left = 24
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_card_normal"]
+content_margin_left = 10.0
+content_margin_top = 10.0
+content_margin_right = 10.0
+content_margin_bottom = 10.0
+bg_color = Color(0.9686, 0.9608, 0.9373, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.1608, 0.2196, 0.2275, 0.35)
+corner_radius_top_left = 24
+corner_radius_top_right = 24
+corner_radius_bottom_right = 24
+corner_radius_bottom_left = 24
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_go"]
+bg_color = Color(0.3098, 0.5608, 0.5373, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.1608, 0.2196, 0.2275, 1)
+corner_radius_top_left = 24
+corner_radius_top_right = 24
+corner_radius_bottom_right = 24
+corner_radius_bottom_left = 24
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_go_down"]
+bg_color = Color(0.2633, 0.4767, 0.4567, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.1608, 0.2196, 0.2275, 1)
+corner_radius_top_left = 24
+corner_radius_top_right = 24
+corner_radius_bottom_right = 24
+corner_radius_bottom_left = 24
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_focus"]
+
+[sub_resource type="Environment" id="Environment_card"]
+ambient_light_source = 2
+ambient_light_color = Color(1, 1, 1, 1)
+ambient_light_energy = 0.7
+
+[node name="ExplorerPicker" type="CanvasLayer"]
+layer = 20
+script = ExtResource("1_picker")
+card_selected = SubResource("StyleBoxFlat_card_selected")
+card_normal = SubResource("StyleBoxFlat_card_normal")
+
+[node name="Dim" type="ColorRect" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.1608, 0.2196, 0.2275, 0.6)
+
+[node name="Centre" type="CenterContainer" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Panel" type="PanelContainer" parent="Centre"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
+
+[node name="List" type="VBoxContainer" parent="Centre/Panel"]
+layout_mode = 2
+theme_override_constants/separation = 18
+
+[node name="Title" type="Label" parent="Centre/Panel/List"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.1608, 0.2196, 0.2275, 1)
+theme_override_fonts/font = ExtResource("2_bold")
+theme_override_font_sizes/font_size = 36
+text = "Choose your explorer"
+horizontal_alignment = 1
+
+[node name="Subtitle" type="Label" parent="Centre/Panel/List"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.4078, 0.4667, 0.4706, 1)
+theme_override_fonts/font = ExtResource("2_bold")
+theme_override_font_sizes/font_size = 22
+text = "Who walks the island with Kuiz?"
+horizontal_alignment = 1
+
+[node name="Cards" type="HBoxContainer" parent="Centre/Panel/List"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="CardTemplate" type="PanelContainer" parent="Centre/Panel/List/Cards"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_card_normal")
+
+[node name="Box" type="VBoxContainer" parent="Centre/Panel/List/Cards/CardTemplate"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="View" type="SubViewportContainer" parent="Centre/Panel/List/Cards/CardTemplate/Box"]
+custom_minimum_size = Vector2(250, 330)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Viewport" type="SubViewport" parent="Centre/Panel/List/Cards/CardTemplate/Box/View"]
+own_world_3d = true
+transparent_bg = true
+msaa_3d = 2
+size = Vector2i(250, 330)
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="Centre/Panel/List/Cards/CardTemplate/Box/View/Viewport"]
+environment = SubResource("Environment_card")
+
+[node name="Sun" type="DirectionalLight3D" parent="Centre/Panel/List/Cards/CardTemplate/Box/View/Viewport"]
+rotation_degrees = Vector3(-40, 30, 0)
+
+[node name="Camera3D" type="Camera3D" parent="Centre/Panel/List/Cards/CardTemplate/Box/View/Viewport"]
+position = Vector3(0, 0.62, 2.3)
+rotation_degrees = Vector3(-4, 0, 0)
+fov = 30.0
+
+[node name="Name" type="Label" parent="Centre/Panel/List/Cards/CardTemplate/Box"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.1608, 0.2196, 0.2275, 1)
+theme_override_fonts/font = ExtResource("2_bold")
+theme_override_font_sizes/font_size = 28
+text = "Explorer"
+horizontal_alignment = 1
+
+[node name="GoButton" type="Button" parent="Centre/Panel/List"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 72)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_colors/font_hover_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_colors/font_pressed_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_colors/font_focus_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_fonts/font = ExtResource("2_bold")
+theme_override_font_sizes/font_size = 30
+theme_override_styles/normal = SubResource("StyleBoxFlat_go")
+theme_override_styles/hover = SubResource("StyleBoxFlat_go")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_go_down")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
+text = "Let's go!"

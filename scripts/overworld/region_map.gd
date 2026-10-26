@@ -22,29 +22,25 @@ extends Node3D
 @export var house_margin := 0.6
 ## A house's label shows only while the explorer is this close, so 15 labels do not crowd the screen.
 @export var house_label_near := 4.0
+## The icon that bobs over each house roof, tinted with the house's type colour.
+@export var house_icon: Texture2D
 
-const ExplorerPicker := preload("res://scripts/overworld/explorer_picker.gd")
-const BOLD: Font = preload("res://assets/fonts/JosefinSans-Bold.ttf")
-const ICON_TRAINER: Texture2D = preload("res://assets/sprites/ui/icon_trainer.svg")
-const ICON_BADGE: Texture2D = preload("res://assets/sprites/ui/icon_badge.svg")
-const ICON_CROWN: Texture2D = preload("res://assets/sprites/ui/icon_crown.svg")
-const ICON_LOCK: Texture2D = preload("res://assets/sprites/ui/icon_lock.svg")
-const SLATE := Color("29383A")
-const GRAY := Color("687778")
+@export_group("HUD")
+## The Champion chip's icon once the Champion is open or beaten, and while it is still locked.
+@export var icon_crown: Texture2D
+@export var icon_lock: Texture2D
+
+const ExplorerPicker := preload("res://scenes/overworld/explorer_picker.tscn")
 const TEAL := Color("4F8F89")
-const OFF := Color("F7F5EF")
 const AMBER := Color("D6A85F")
 const LILAC := Color("8D82A8")
 ## Each question type's colour: the icon over its houses.
 const TYPE_COLORS := {"identification": TEAL, "essay": LILAC, "multiple_choice": AMBER}
 ## An open doorway: the dark inside of a house, shown when the explorer walks up to it.
 const DOORWAY := Color("1E2829")
-## How many upcoming objectives the list beside the minimap shows.
-const OBJECTIVES_SHOWN := 3
 ## A house label floats this high so it clears the roof; the map's houses stand about 2 units tall.
 const HOUSE_LABEL_HEIGHT := 2.6
-## Entering a house or gym fades the screen to this over FADE_SEC; coming back fades it in again.
-const FADE_COLOR := Color("F7F5EF")
+## Entering a house or gym fades the screen to %Fade's colour over FADE_SEC; coming back fades it in.
 const FADE_SEC := 0.35
 
 @onready var map: Node3D = %Map
@@ -53,9 +49,17 @@ const FADE_SEC := 0.35
 @onready var spawn: Marker3D = %Spawn
 @onready var trainers_root: Node3D = %Trainers
 @onready var gyms_root: Node3D = %Gyms
-@onready var quest_tasks: HBoxContainer = %QuestTasks
 @onready var quest_count: Label = %QuestCount
+@onready var houses_value: Label = %HousesValue
+@onready var houses_bar: ProgressBar = %HousesBar
+@onready var gym_badges: HBoxContainer = %GymBadges
+@onready var badge_template: TextureRect = %BadgeTemplate
+@onready var gyms_value: Label = %GymsValue
+@onready var champion_icon: TextureRect = %ChampionIcon
+@onready var champion_value: Label = %ChampionValue
 @onready var objectives: VBoxContainer = %Objectives
+@onready var objectives_more: Label = %ObjectivesMore
+@onready var _fade: ColorRect = %Fade
 @onready var back_btn: Button = %BackButton
 @onready var study_btn: Button = %StudyButton
 @onready var encounter_panel: PanelContainer = %EncounterPanel
@@ -68,7 +72,6 @@ var _topic_id: String = ""
 var _pending_encounter: Dictionary = {}
 var _gym_positions: Dictionary = {}
 var _prev_cleared_gyms: Dictionary = {}
-var _fade: ColorRect
 ## The island's houses (MapHouses.find), each with the question type it plays ("type").
 var _houses: Array[Dictionary] = []
 ## The id of a house whose panel was just closed: it stays shut until the explorer steps away from it,
@@ -82,7 +85,8 @@ func _enter_tree() -> void:
 	MusicManager.play_overworld()
 
 func _ready() -> void:
-	_build_fade()
+	_fade.color.a = 1.0
+	_fade.create_tween().tween_property(_fade, "color:a", 0.0, FADE_SEC)
 	_topic_id = SessionManager.current_topic_id
 	if _topic_id == "":
 		_topic_id = SessionManager.editing_topic_id
@@ -120,21 +124,9 @@ func _ready() -> void:
 	# flashcards keeps the one picked.
 	if not GameState.explorer_picked:
 		player.locked = true
-		var picker := ExplorerPicker.new()
+		var picker := ExplorerPicker.instantiate()
 		picker.picked.connect(_on_explorer_picked)
 		add_child(picker)
-
-func _build_fade() -> void:
-	var layer := CanvasLayer.new()
-	layer.layer = 100
-	_fade = ColorRect.new()
-	_fade.color = FADE_COLOR
-	_fade.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_fade.set_anchors_preset(Control.PRESET_FULL_RECT)
-	layer.add_child(_fade)
-	add_child(layer)
-	var t := _fade.create_tween()
-	t.tween_property(_fade, "color:a", 0.0, FADE_SEC)
 
 func _on_explorer_picked(id: String) -> void:
 	GameState.explorer = id
@@ -245,7 +237,7 @@ func _open_doorway(doorway: MeshInstance3D, open: bool) -> void:
 # A bobbing icon over the roof in the house's type colour, faint once the house is cleared.
 func _add_house_icon(area: EncounterTrigger, color: Color, cleared: bool) -> void:
 	var icon := Sprite3D.new()
-	icon.texture = ICON_TRAINER
+	icon.texture = house_icon
 	icon.pixel_size = 0.003
 	icon.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	icon.no_depth_test = true
@@ -496,28 +488,21 @@ func _refresh_progress() -> void:
 		badges.append(now_cleared)
 	var crowned := SessionManager.is_champion_defeated(_topic_id)
 	var champion_ready := SessionManager.is_champion_available(_topic_id)
-	for c in quest_tasks.get_children():
-		quest_tasks.remove_child(c)
-		c.queue_free()
-	var houses := _task(ICON_TRAINER, "Houses", "%d / %d" % [houses_done, _houses.size()])
-	var bar := ProgressBar.new()
-	bar.custom_minimum_size = Vector2(0, 8)
-	bar.show_percentage = false
-	bar.max_value = maxi(_houses.size(), 1)
-	bar.value = houses_done
-	bar.add_theme_stylebox_override("background", _flat(Color(SLATE, 0.15), 4))
-	bar.add_theme_stylebox_override("fill", _flat(TEAL, 4))
-	houses.get_child(1).add_child(bar)
-	quest_tasks.add_child(houses)
-	var gym_task := _task(null, "Gyms", "%d / %d" % [gyms_done, gyms.size()])
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 2)
+	houses_value.text = "%d / %d" % [houses_done, _houses.size()]
+	houses_bar.max_value = maxi(_houses.size(), 1)
+	houses_bar.value = houses_done
+	for c in gym_badges.get_children():
+		if c != badge_template:
+			gym_badges.remove_child(c)
+			c.queue_free()
 	for lit in badges:
-		row.add_child(_icon(ICON_BADGE, 30, 1.0 if lit else 0.28))
-	gym_task.add_child(row)
-	gym_task.move_child(row, 0)
-	quest_tasks.add_child(gym_task)
-	quest_tasks.add_child(_task(ICON_CROWN if champion_ready or crowned else ICON_LOCK, "Champion", "Crowned" if crowned else ("Ready!" if champion_ready else "Locked")))
+		var badge := badge_template.duplicate() as TextureRect
+		badge.visible = true
+		badge.modulate.a = 1.0 if lit else 0.28
+		gym_badges.add_child(badge)
+	gyms_value.text = "%d / %d" % [gyms_done, gyms.size()]
+	champion_icon.texture = icon_crown if champion_ready or crowned else icon_lock
+	champion_value.text = "Crowned" if crowned else ("Ready!" if champion_ready else "Locked")
 	quest_count.text = "%d / %d done" % [houses_done + gyms_done + (1 if crowned else 0), _houses.size() + gyms.size() + 1]
 	_show_objectives(_objectives(gyms, _houses.size() - houses_done))
 
@@ -539,76 +524,16 @@ func _objectives(gyms: Array[Dictionary], houses_left: int) -> Array[String]:
 		steps.append("Clear the other houses (%d left)" % houses_left)
 	return steps
 
-# A bare bullet list beside the minimap (no panel): Off-White text with a Deep Slate outline so it
-# reads over the map; the current step has an amber bullet, the later ones are dimmer.
+# Fills the step rows placed in %Objectives (their look is set in the scene); as many steps show as
+# there are rows, and %ObjectivesMore counts the rest.
 func _show_objectives(steps: Array[String]) -> void:
-	for c in objectives.get_children():
-		objectives.remove_child(c)
-		c.queue_free()
-	for i in mini(steps.size(), OBJECTIVES_SHOWN):
-		var row := HBoxContainer.new()
-		row.add_theme_constant_override("separation", 8)
-		row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		var dot := _outlined("●", 22, AMBER if i == 0 else OFF)
-		dot.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
-		row.add_child(dot)
-		var text := _outlined(steps[i], 22 if i == 0 else 19, OFF)
-		text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		row.add_child(text)
-		row.modulate.a = 1.0 if i == 0 else 0.85
-		objectives.add_child(row)
-	if steps.size() > OBJECTIVES_SHOWN:
-		var more := _outlined("+%d more" % (steps.size() - OBJECTIVES_SHOWN), 17, OFF)
-		more.modulate.a = 0.75
-		objectives.add_child(more)
-
-func _outlined(text: String, size: int, color: Color) -> Label:
-	var l := _text(text, size, color)
-	l.add_theme_color_override("font_outline_color", SLATE)
-	l.add_theme_constant_override("outline_size", 7)
-	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	return l
-
-# One task chip: an icon (when given), the task's name and its value, stacked beside it.
-func _task(icon: Texture2D, title: String, value: String) -> HBoxContainer:
-	var chip := HBoxContainer.new()
-	chip.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	chip.add_theme_constant_override("separation", 8)
-	chip.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	if icon != null:
-		chip.add_child(_icon(icon, 44, 1.0))
-	var text := VBoxContainer.new()
-	text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	text.add_theme_constant_override("separation", 0)
-	text.add_child(_text(title, 15, GRAY))
-	text.add_child(_text(value, 22, SLATE))
-	chip.add_child(text)
-	return chip
-
-func _icon(tex: Texture2D, size: float, alpha: float) -> TextureRect:
-	var r := TextureRect.new()
-	r.texture = tex
-	r.custom_minimum_size = Vector2(size, size)
-	r.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	r.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	r.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	r.modulate.a = alpha
-	return r
-
-func _text(text: String, size: int, color: Color) -> Label:
-	var l := Label.new()
-	l.text = text
-	l.add_theme_font_override("font", BOLD)
-	l.add_theme_font_size_override("font_size", size)
-	l.add_theme_color_override("font_color", color)
-	return l
-
-func _flat(color: Color, radius: int) -> StyleBoxFlat:
-	var b := StyleBoxFlat.new()
-	b.bg_color = color
-	b.set_corner_radius_all(radius)
-	return b
+	var rows := objectives.get_children().filter(func(c: Node) -> bool: return c != objectives_more)
+	for i in rows.size():
+		rows[i].visible = i < steps.size()
+		if i < steps.size():
+			(rows[i].get_node("Text") as Label).text = steps[i]
+	objectives_more.visible = steps.size() > rows.size()
+	objectives_more.text = "+%d more" % (steps.size() - rows.size())
 
 func _on_back() -> void:
 	_leave("res://scenes/ui/session_list.tscn")
@@ -617,7 +542,7 @@ func _on_study() -> void:
 	SessionManager.flashcards_return = "res://scenes/overworld/region_map.tscn"
 	_leave("res://scenes/review_session/flashcards.tscn")
 
-# Fades to FADE_COLOR, then changes scene: stepping through a door feels like going in.
+# Fades to %Fade's colour, then changes scene: stepping through a door feels like going in.
 func _leave(scene: String) -> void:
 	player.locked = true
 	var t := _fade.create_tween()

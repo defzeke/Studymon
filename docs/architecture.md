@@ -96,7 +96,7 @@ res://
 │       ├── minigames/    minigame.gd, soccer.gd, sky_jump.gd (Playroom games)
 │       └── widgets/      confirm_modal.gd, stat_gauge.gd
 ├── scenes/               session_list, settings (ui/)
-│   │                     encounter_trigger, gym_burst, region_map (overworld/)
+│   │                     encounter_trigger, gym_burst, region_map, explorer_picker (overworld/)
 │   │                     categorizer, flashcards (review_session/), battle (battle/)
 │   └── ui/boot/          splash, loading, peek
 ├── backend/              main.py (FastAPI stub), requirements.txt, README.md

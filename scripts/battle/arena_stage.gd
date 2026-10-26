@@ -43,7 +43,6 @@ extends SubViewportContainer
 @export var hover_time := 1.3
 
 @export_group("Strikes")
-## How far toward its target an attacker runs (0 = stays home, 1 = on top of it).
 ## Attacks happen in place: the attacker plays its attack clip, and after this long the blow lands.
 @export var strike_impact_time := 0.55
 ## After the blow lands, how long before the exchange counts as finished.

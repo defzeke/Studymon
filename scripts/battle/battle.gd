@@ -13,14 +13,6 @@ const MISS_MULT: Array[float] = [1.0, 1.25, 1.5]
 const REVIEW_SEC_RIGHT := 1.5
 const REVIEW_SEC_WRONG := 4.0
 const HIT_NAMES: Array[String] = ["HIT!", "STRONG!", "HEAVY!!", "ULTIMATE!!!"]
-const StatGauge := preload("res://scripts/ui/widgets/stat_gauge.gd")
-# Kuiz's four care stats on its card: stat, icon, ring colour. They move as the run changes them.
-const GAUGES := [
-	["hunger", "res://assets/sprites/props/data_chips.svg", Color("D6A85F")],
-	["energy", "res://assets/sprites/ui/icon_charge.svg", Color("4F8F89")],
-	["mood", "res://assets/sprites/ui/stat_mood.svg", Color("8D82A8")],
-	["health", "res://assets/sprites/ui/stat_health.svg", Color("C97970")],
-]
 const RUN_NAMES := {"house": "Challenge House", "gym": "Gym", "champion": "Champion Gym"}
 const FOE_NAMES := {"house": "CHALLENGER", "gym": "GYM LEADER", "champion": "CHAMPION"}
 # Counter damage and the essay pass score, by the run's tier.
@@ -31,6 +23,7 @@ const TIERS := {
 }
 const HIT_STOP_BASE := 0.06
 
+@export_group("Intro")
 ## Start-of-battle entrance (see _play_intro). Turn it off to drop straight into the fight.
 @export var play_intro := true
 @export var intro_text := "%s wants to battle!"
@@ -52,8 +45,12 @@ const HIT_STOP_BASE := 0.06
 @export var sfx_win: AudioStream
 @export var sfx_lose: AudioStream
 
+@export_group("Juice")
 @export var hit_shake := 8.0
 @export var hit_flash_strength := 0.45
+## Screen flash when Kuiz is hit, and when Kuiz goes down.
+@export var hurt_flash_color := Color(1.0, 0.35, 0.3)
+@export var lose_flash_color := Color(0.8, 0.25, 0.2)
 ## How long the VICTORY / DEFEATED banner stays before the result panel appears.
 @export var end_banner_hold := 1.5
 
@@ -64,6 +61,7 @@ const HIT_STOP_BASE := 0.06
 @onready var blocker: Control = %Blocker
 @onready var enemy_card: Control = %EnemyCard
 @onready var player_card: Control = %PlayerCard
+@onready var gauge_row: HBoxContainer = %GaugeRow
 @onready var dialogue: Control = %Dialogue
 @onready var vs_label: Label = %VsLabel
 @onready var flash: ColorRect = %Flash
@@ -139,7 +137,7 @@ func _ready() -> void:
 	enemy_hp_bar.max_value = _enemy_max
 	player_hp_bar.max_value = _player_max
 	CompanionState.in_run = true
-	_build_gauges()
+	_refresh_gauges()
 	CompanionState.stats_changed.connect(_refresh_gauges)
 	_refresh_bars()
 	var foe: String = FOE_NAMES[_kind]
@@ -165,23 +163,11 @@ func _ready() -> void:
 func _exit_tree() -> void:
 	CompanionState.in_run = false
 
-func _build_gauges() -> void:
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 6)
-	for g: Array in GAUGES:
-		var gauge := StatGauge.new()
-		gauge.custom_minimum_size = Vector2(44, 44)
-		gauge.icon = load(g[1])
-		gauge.color = g[2]
-		gauge.name = str(g[0])
-		row.add_child(gauge)
-	player_card.get_node("Box").add_child(row)
-	_refresh_gauges()
-
+# Kuiz's care stats on its card move as the run changes them. Each gauge in %GaugeRow is named after
+# the CompanionState stat it shows.
 func _refresh_gauges() -> void:
-	var row := player_card.get_node("Box").get_child(-1)
-	for g: Array in GAUGES:
-		(row.get_node(str(g[0])) as Control).set("value", float(CompanionState.get(g[0])) / CompanionState.STAT_MAX)
+	for gauge in gauge_row.get_children():
+		gauge.set("value", float(CompanionState.get(gauge.name)) / CompanionState.STAT_MAX)
 
 # Shows the current item: its question, and its answer controls for the type it is played as.
 func _bind_item() -> void:
@@ -448,7 +434,7 @@ func _land_hit(on_pet: bool, amount: int) -> void:
 		player_hp_text.text = "%d/%d" % [_player_hp, _player_max]
 		_sfx(sfx_hurt)
 		_sfx_later(sfx_wrong, 0.05)
-		_flash_screen(Color(1.0, 0.35, 0.3), hit_flash_strength)
+		_flash_screen(hurt_flash_color, hit_flash_strength)
 	else:
 		_shown_enemy_hp = _enemy_hp
 		create_tween().tween_property(enemy_hp_bar, "value", float(_enemy_hp), 0.3)
@@ -505,7 +491,7 @@ func _end_sequence(win: bool, banner: String) -> void:
 	else:
 		stage.enemy_attack()
 		_sfx(sfx_lose)
-		_flash_screen(Color(0.8, 0.25, 0.2), 0.35)
+		_flash_screen(lose_flash_color, 0.35)
 	end_banner.text = banner
 	end_banner.add_theme_color_override("font_color", Color("D6A85F") if win else Color("C97970"))
 	end_banner.pivot_offset = end_banner.size / 2.0

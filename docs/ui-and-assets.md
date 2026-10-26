@@ -64,6 +64,7 @@ text** checkbox in `settings.tscn` calls `set_large_text()` and saves.
 | `scenes/ui/session_list.tscn` | `Control` | `scripts/ui/session_list.gd` | Worlds hub: saved worlds (play, cards, edit, reset, delete) and New World |
 | `scenes/review_session/categorizer.tscn` | `Control` | `scripts/review_session/categorizer.gd` | upload + question editor |
 | `scenes/overworld/region_map.tscn` | `Node3D` | `scripts/overworld/region_map.gd` (+ `player.gd`, `joystick.gd`) | 3D island: explorer, Challenge Houses, gyms, champion |
+| `scenes/overworld/explorer_picker.tscn` | `CanvasLayer` | `scripts/overworld/explorer_picker.gd` | "Choose your explorer" card, instanced over the region map |
 | `scenes/battle/battle.tscn` | `Control` | `scripts/battle/battle.gd`, `scripts/battle/arena_stage.gd` | 3D arena behind the battle HUD: intro, strikes, ten SFX cues |
 | `scenes/review_session/flashcards.tscn` | `Control` | `scripts/review_session/flashcards.gd` | Flashcard Sanctuary: untimed card review |
 | `scenes/ui/settings.tscn` | `Control` | `scripts/ui/settings.gd` | one card, "Sound & display" (music, sounds, large text); Back returns home. The "AI plan" card (quota, premium, debug reset) was removed |
@@ -447,13 +448,15 @@ with no questions. Reset and Delete ask first; Reset keeps the questions, Delete
 `Veil`, `Margin` → `List`: `TopBar` (a 72 px round Off-White `BackButton` with `ui/icon_back.svg`,
 then "Flashcards" bold 34 px Off-White over `ProgressLabel` "N left · M banked"), `Progress` (a
 teal bar of the cards banked out of the deck), `CardPanel` (Off-White, Deep Slate 3 px outline,
-radius 32, soft shadow) → `CardBox`: `Tags` (rounded pills built in code: the mastery state in its
-badge colour, the type in teal, the tier green / amber / coral), "QUESTION", `FrontLabel` (bold
+radius 32, soft shadow) → `CardBox`: `Tags` (rounded pills copied from the hidden `TagTemplate`, each
+with its own stylebox: the mastery state in its badge colour, the type in teal, the tier green / amber /
+coral), "QUESTION", `FrontLabel` (bold
 34 px), `Back` (hidden until flipped: a soft line, "ANSWER", `AnswerLabel` bold 28 px teal,
 `SourceLabel`) and `DoneLabel` (the closing message, shown inside the card). Under the card:
 `FlipButton` ("Show answer", teal) or `RateRow` (`AgainButton` Soft Coral, `HardButton` Muted
 Amber, `EasyButton` Soft Green), all 84 px tall with bold Off-White text and a Deep Slate outline.
-Styles are applied in `_style()` from the canonical palette.
+Every style is a sub-resource in `flashcards.tscn` (canonical palette; each button's hover is its
+colour lightened 8 %, pressed darkened 15 %), so the screen is edited in the Godot editor.
 
 ### `categorizer.tscn`
 
@@ -461,13 +464,14 @@ Titled "World Builder", on the Study Room art under a Deep Slate veil (`Veil`, 0
 Inside `Margin` → `Content`: `Title` (Muted Amber, bold 44), a `SourceCard` panel ("1 · Your reviewer":
 `TopicName` `LineEdit`, `FileButton` which shows the picked file name, `PasteArea`, `SanityLabel`,
 `StudyButton`, `StatusLabel`, `LoadingBar`), then `QuestionsBlock` ("2 · Questions": `Scroll` → `QuestionsBox`
-with rows built in code, `AddQuestionButton`), `PlayButton` and `BackButton`. `FileDialog` is the native
+with one row per question, the hidden `RowTemplate`, `AddQuestionButton`), `PlayButton` and `BackButton`. `FileDialog` is the native
 OS dialog (`use_native_dialog`) where the platform has one; the weekly-limit notice is a `ConfirmModal`.
 
-Each question row (built in `_make_question_row`) has a header (index, confidence, delete), the
-prompt `TextEdit`, a type row (`Type:` label, type `OptionButton` with Essay / Identification /
-Multiple Choice, tier `OptionButton` with Easy / Medium / Hard), the answer `LineEdit`, and for
-Multiple Choice three `Wrong option N` `LineEdit`s.
+Each question row is a copy of `RowTemplate` (laid out in the scene; `_make_question_row` fills it
+and finds its parts by name): `Pad/Box` → `Header` (`Index`, `Confidence`, `Delete`), `Prompt`
+(`TextEdit`), `TypeRow` (`TypeLabel`, `TypeOption` with Essay / Identification / Multiple Choice in
+`QUESTION_TYPES` order, `Difficulty` filled from `SessionManager.DIFFICULTIES`), `Answer`
+(`LineEdit`), and `Wrong1`–`Wrong3`, shown only for Multiple Choice.
 
 `FileDialog` uses `file_mode = 0` (open file) and `access = 2` (filesystem), with **no filters** —
 any file type can be selected. Only the first 4000 characters of a text file are shown in the paste
@@ -477,17 +481,22 @@ box, although all bytes are kept for the upload call (`categorizer.gd:89-96`).
 
 The 3D island overworld; structure and rules in [`overworld.md`](systems/overworld.md). It is
 portrait like the rest of the game. Each visit from the worlds list opens with the "Choose your
-explorer" card (`explorer_picker.gd`: live 3D previews of the boy and the girl, **Let's go!**).
+explorer" card (`explorer_picker.tscn` + `explorer_picker.gd`: live 3D previews of the boy and the
+girl, **Let's go!**). Its `Panel`, `GoButton` and the hidden `CardTemplate` (a `SubViewport` with its
+own light, camera and environment, plus a `Name` label) are laid out in the scene; one card per
+explorer is copied from the template, and the chosen / plain card looks are the `card_selected` /
+`card_normal` exports.
 The HUD, top to bottom, in the home HUD's look (Off-White, Deep Slate 3 px outline, soft shadow):
 
 - **Back** (top left): a 72 px round button with a slate chevron (`ui/icon_back.svg`); back to the
   worlds list.
 - **Quest card** (`QuestCard`, beside it): "Region quest" and how many of the region's tasks are
-  done ("1 / 19 done": every house, every gym and the Champion), then three task chips built in
-  `region_map.gd` `_refresh_progress()`: **Houses** (`ui/icon_trainer.svg`, cleared / 15 and
-  a teal bar), **Gyms** (one `ui/icon_badge.svg` per gym, lit once cleared, faint until then, and
-  the count) and **Champion** (`ui/icon_lock.svg` "Locked" until every gym is cleared, then
-  `ui/icon_crown.svg` "Ready!", "Crowned" once beaten).
+  done ("1 / 19 done": every house, every gym and the Champion), then three task chips placed in
+  the scene under `QuestTasks`, whose values `_refresh_progress()` fills: **Houses**
+  (`ui/icon_trainer.svg`, `%HousesValue` cleared / 15 and the teal `%HousesBar`), **Gyms**
+  (`%GymBadges`: one copy of the hidden `BadgeTemplate` per gym, lit once cleared, faint until
+  then, and `%GymsValue`) and **Champion** (`%ChampionIcon`: the `icon_lock` export "Locked" until
+  every gym is cleared, then `icon_crown` "Ready!", "Crowned" once beaten).
 - **Minimap** (under the card, at the left; `minimap.gd`, 200 px): the whole island from straight
   above, rendered once into a small SubViewport, with live dots for the explorer (teal),
   houses, gyms (amber) and the Champion (coral).
@@ -495,7 +504,9 @@ The HUD, top to bottom, in the home HUD's look (Off-White, Deep Slate 3 px outli
   steps, in order: a house of each type whose gym is still shut ("Enter a house marked Essay (5 on the
   island)"), the gyms, the Champion, then "Clear the other houses (n left)"; "+N more" when there are more, and
   "Region complete!" at the end. Off-White bold text with a Deep Slate outline so it reads over
-  the map; the current step is larger with an amber bullet, the rest slightly dimmer.
+  the map; the current step is larger with an amber bullet, the rest slightly dimmer. The rows are
+  `Step1`–`Step3` (each a `Dot` and a `Text` label, styled in the scene) and `%ObjectivesMore`; as
+  many steps show as there are `Step` rows, so adding a row in the editor shows one more.
 - **Joystick** (bottom left) and **Study** (bottom right): a 124 px Off-White card with a stack of
   flashcards (`ui/icon_study.svg`) over "Study"; opens the Flashcard Sanctuary.
 
@@ -509,7 +520,7 @@ The HUD, top to bottom, in the home HUD's look (Off-White, Deep Slate 3 px outli
 The enemy and player cards sit over `ArenaStage`, the 3D scene that holds the models. The Broken
 Bot foe makes its own sounds on its clips (§2 Model sounds). For a Multiple Choice question
 `battle.gd` hides `AnswerInput` and `SubmitButton` and builds a `VBoxContainer` of four option
-`Button`s (56 px tall) in their place at runtime. A row of four `stat_gauge.gd` rings (Hunger, Energy, Mood, Health, 44 px) is added to `PlayerCard`'s box in code (`_build_gauges()`) and follows `CompanionState.stats_changed`, so a run's costs and hits show live. After each answer `ResultPanel` is the review beat (answer, feedback, source; Next held 1.5 s or 4 s). `region_map.tscn` gains a full-screen off-white fade (`CanvasLayer` 100) built in code: out when a house or gym is entered, in on arrival. Over the island, each of the 15 houses carries a bobbing `ui/icon_trainer.svg` in its type's colour (Identification teal, Essay lilac `8D82A8`, Multiple Choice amber; faint once cleared) and a `Label3D` (type, `Easy` or stars) shown only within 4 units of the explorer; walking up to a house unfolds a dark doorway (`1E2829`) over its door.
+`Button`s (56 px tall) in their place at runtime. `PlayerCard`'s box ends in `%GaugeRow`: four `stat_gauge.gd` rings (44 px) placed in the scene, each **named after the `CompanionState` stat it shows** (`hunger`, `energy`, `mood`, `health`; icon and ring colour set in the Inspector). `_refresh_gauges()` follows `CompanionState.stats_changed`, so a run's costs and hits show live. `stat_gauge.gd` is a `@tool` script, so the rings draw in the editor. `battle.gd`'s exports are grouped **Intro**, **Sound effects** and **Juice** (shake, flash strength, the `hurt_flash_color` / `lose_flash_color` screen flashes, the end-banner hold). After each answer `ResultPanel` is the review beat (answer, feedback, source; Next held 1.5 s or 4 s). `region_map.tscn` has a full-screen off-white fade (`FadeLayer`, `CanvasLayer` 100 → `%Fade`, transparent in the editor): out when a house or gym is entered, in on arrival. Over the island, each of the 15 houses carries a bobbing `house_icon` (`ui/icon_trainer.svg`) in its type's colour (Identification teal, Essay lilac `8D82A8`, Multiple Choice amber; faint once cleared) and a `Label3D` (type, `Easy` or stars) shown only within 4 units of the explorer; walking up to a house unfolds a dark doorway (`1E2829`) over its door.
 
 
 ---

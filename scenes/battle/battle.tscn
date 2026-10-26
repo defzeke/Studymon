@@ -18,6 +18,11 @@
 [ext_resource type="AudioStream" uid="uid://gx86rehn3gri" path="res://assets/audio/sfx/sfx_hurt.wav" id="17_hurt"]
 [ext_resource type="AudioStream" uid="uid://bk4yndblv0rb5" path="res://assets/audio/sfx/sfx_win.wav" id="18_win"]
 [ext_resource type="AudioStream" uid="uid://cugu6p5g0m1h6" path="res://assets/audio/sfx/sfx_lose.wav" id="19_lose"]
+[ext_resource type="Script" path="res://scripts/ui/widgets/stat_gauge.gd" id="20_gauge"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/data_chips.svg" id="21_hunger"]
+[ext_resource type="Texture2D" path="res://assets/sprites/ui/icon_charge.svg" id="22_energy"]
+[ext_resource type="Texture2D" path="res://assets/sprites/ui/stat_mood.svg" id="23_mood"]
+[ext_resource type="Texture2D" path="res://assets/sprites/ui/stat_health.svg" id="24_health"]
 
 [sub_resource type="Gradient" id="Gradient_confetti"]
 colors = PackedColorArray(0.84, 0.66, 0.37, 1, 0.79, 0.44, 0.44, 1, 0.31, 0.56, 0.54, 1, 0.97, 0.96, 0.94, 1)
@@ -447,6 +452,39 @@ unique_name_in_owner = true
 layout_mode = 2
 text = "100/100"
 horizontal_alignment = 2
+
+[node name="GaugeRow" type="HBoxContainer" parent="HUD/PlayerCard/Box"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="hunger" type="Control" parent="HUD/PlayerCard/Box/GaugeRow"]
+custom_minimum_size = Vector2(44, 44)
+layout_mode = 2
+script = ExtResource("20_gauge")
+icon = ExtResource("21_hunger")
+color = Color(0.8392, 0.6588, 0.3725, 1)
+
+[node name="energy" type="Control" parent="HUD/PlayerCard/Box/GaugeRow"]
+custom_minimum_size = Vector2(44, 44)
+layout_mode = 2
+script = ExtResource("20_gauge")
+icon = ExtResource("22_energy")
+color = Color(0.3098, 0.5608, 0.5373, 1)
+
+[node name="mood" type="Control" parent="HUD/PlayerCard/Box/GaugeRow"]
+custom_minimum_size = Vector2(44, 44)
+layout_mode = 2
+script = ExtResource("20_gauge")
+icon = ExtResource("23_mood")
+color = Color(0.5529, 0.5098, 0.6588, 1)
+
+[node name="health" type="Control" parent="HUD/PlayerCard/Box/GaugeRow"]
+custom_minimum_size = Vector2(44, 44)
+layout_mode = 2
+script = ExtResource("20_gauge")
+icon = ExtResource("24_health")
+color = Color(0.7882, 0.4745, 0.4392, 1)
 
 [node name="Dialogue" type="PanelContainer" parent="." unique_id=428512085]
 unique_name_in_owner = true

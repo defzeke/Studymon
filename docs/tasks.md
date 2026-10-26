@@ -10,6 +10,22 @@ Last updated: 2026-10-26.
 
 ## In flight
 
+**Editor-editable UI for the region map, battle and study screens — uncommitted.** Fixed layout
+that code used to build is now nodes in the scenes, so it can be seen and tweaked in the Godot
+editor:
+- the region map's quest chips, objective rows and fade;
+- a new `explorer_picker.tscn`;
+- battle's gauge row, whose `stat_gauge.gd` is now `@tool`;
+- every flashcards style;
+- the categorizer's question row.
+
+Rows that depend on data are copies of hidden templates (`BadgeTemplate`, `CardTemplate`,
+`TagTemplate`, `RowTemplate`). `battle.gd`'s exports are grouped (Intro / Sound effects / Juice).
+No save, progress or gameplay change (save stays v14). Checked headless, with a scratch check of
+every template row, before/after frames (pixel-identical apart from the falling leaves), and an
+unchanged save hash. Not yet opened in the editor GUI. Details in
+[`ui-and-assets.md`](ui-and-assets.md) §2. Found on the way: issue #22 (the headless boot chain).
+
 **Challenge Houses, Gyms, Champion runs, rewards — uncommitted, not play-tested.** Trainers and bosses are
 replaced by fixed-length runs: a Challenge House (Easy, 10 MC / 5 ID / 5 Essay) and a Gym (Medium,
 20 / 10 / 10) per question type, then the Champion Gym (40 items, Hard). A run rewrites
@@ -169,6 +185,7 @@ Hygiene, after the slice plays:
 | #13 | Emit `stats_changed` at ~5 Hz or only on change |
 | #14 | Debounce the save instead of one full write per tap |
 | #20 | Add a headless smoke-test script / CI |
+| #22 | Find why the headless boot chain fails its threaded loads |
 
 ## Needs a decision
 

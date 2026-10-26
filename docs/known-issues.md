@@ -22,6 +22,7 @@ Severity: **P0** blocks the core loop · **P1** blocks a feature or silently cor
 | 19 | ~~Fake "Biology 101" topic seeded on every boot~~ — fixed | — |
 | 20 | Stale docs, no tests/CI | **P3** |
 | 21 | ~~Theme and scene colours predate the canonical palette~~ — migrated | — |
+| 22 | Headless boot chain fails its threaded loads | **P3** |
 
 ---
 
@@ -155,6 +156,25 @@ caught).
 
 The shared theme, battle, settings, categorizer, flashcards and the Worlds hub use the canonical palette.
 New inline `Color(...)` overrides should pick a palette role from [`ui-and-assets.md`](ui-and-assets.md) §1.
+
+---
+
+## 22. Headless boot chain fails its threaded loads (P3)
+
+Running `splash.tscn` or `loading.tscn` **headless** fails the scene each one loads in the background
+(`ResourceLoader.load_threaded_request`): a `preload()` in that scene's scripts reports
+`Could not preload resource file …` (a different file from run to run: `loading_screen_logo.png`,
+`kuiz_look.gd`'s costumes, `sky_jump.gd`'s backdrops), so `loading.tscn` or `peek.tscn` fails to
+parse. All those files are committed and import cleanly. The same scenes run on their own, and the
+same chain run **windowed**, load without errors. Reproduced on an untouched `git archive HEAD`
+copy (2026-10-26), so it predates the editor-UI pass.
+
+**Impact:** players are unaffected (windowed boot is clean), but the headless `splash.tscn` gate in
+[`skills.md`](skills.md) cannot pass.
+
+**Fix:** not yet known. First check whether it is a Godot 4.7.2 headless threaded-load bug (re-test
+on the next patch release). Until then, verify the boot chain windowed, and verify `peek.tscn` headless
+on its own.
 
 ---
 

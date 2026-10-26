@@ -1,3 +1,4 @@
+@tool
 extends Control
 ## One of home's top stat gauges: an icon on an off-white disc, ringed by an arc that fills
 ## clockwise from the top. A low stat turns the ring coral and pulses it.

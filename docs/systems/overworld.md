@@ -89,10 +89,12 @@ RegionMap            Node3D (region_map.gd)
 │   ├── Explorer      instance of assets/models/boy_explorer.glb (Idle / Walk / Run looped);
 │   │                 player.gd swaps in explorer_girl.glb when she is picked
 │   └── Camera3D      (0, 7, 4.7), pitched −54°, fov 40 horizontal (keep width, portrait)
-└── HUD               BackButton (round, top-left), QuestCard (task chips built in code), Minimap
-                      (minimap.gd), Objectives (bullet list beside it), Joystick (bottom-left), StudyButton
-                      (bottom-right icon card, opens the Flashcard Sanctuary and returns here),
-                      EncounterPanel
+├── HUD               BackButton (round, top-left), QuestCard (Houses / Gyms / Champion task chips
+│                     placed in the scene, values filled by code), Minimap (minimap.gd), Objectives
+│                     (Step1–Step3 rows + ObjectivesMore beside it), Joystick (bottom-left), StudyButton
+│                     (bottom-right icon card, opens the Flashcard Sanctuary and returns here),
+│                     EncounterPanel
+└── FadeLayer         CanvasLayer 100 → Fade, the off-white scene-change fade
 ```
 
 **Where things go.** Every gym is a `GymSlot` node in `region_map.tscn`, listed in the root's
@@ -173,7 +175,8 @@ cutting through walls, catching up smoothly (it trails a little further while ru
 where it is going and, once the explorer stops, turns to face them. It has no collision and stays
 off the minimap. `region_map.gd` places it just behind the explorer at the spawn.
 
-**Explorer** (`explorer_picker.gd`). Each visit to the map from the worlds list starts with a
+**Explorer** (`scenes/overworld/explorer_picker.tscn`, script `explorer_picker.gd`, instanced by
+`region_map.gd`). Each visit to the map from the worlds list starts with a
 "Choose your explorer" card over the map: a live 3D preview of each explorer (its own small
 world, idling; the chosen one cheers and gets a teal border) and **Let's go!**. The pick is
 `GameState.explorer` (`"boy"` or `"girl"`, saved, v11) and `player.set_explorer()` swaps the
