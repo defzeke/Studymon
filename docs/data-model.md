@@ -6,7 +6,7 @@ no cloud sync.
 - **Path:** `user://studymon_save.json`
 - **Written by:** `SaveManager.save_game()` — `scripts/autoload/save_manager.gd:6`
 - **Read by:** `SaveManager.load_game()` — `scripts/autoload/save_manager.gd:24`
-- **Schema tag:** `"v": 15` (v15 keys `session.mastery` by question id (`"topic_id:question_id"`; v14 index keys `"topic_id:<index>"` are rekeyed on load) and adds `tutorial_done` (a save with a `player_name` but no flag loads as done) and `ai_consent`, and stops writing `campaign_ready` / `campaign_unlocked_flag` (the removed Level 5 gate; ignored on load); v14 keys `cleared_houses` per house, `"topic_id:gym_type#house_id"`, and `best_stars` house runs `"house:topic_id:gym_type#house_id"`; a v13 house key without an id still counts toward its type; v13 replaced `session.cleared_trainers` with `cleared_houses` and added `best_stars`; a gym cleared before counts as its house cleared; v12 dropped the `monetization` block with the weekly AI limit; an older save's block is ignored; v11 added `explorer`; v10 added `battery_health` and replaced `costume` with `outfit`; a v9 `costume` loads into its slot; v9 added `dirt` and `costume`; v8 added `hunger`, `health` and `crystals`; v7 added `player_name` and `food_stock`; older saves load with defaults)
+- **Schema tag:** `"v": 15` (v15 keys `session.mastery` by question id (`"topic_id:question_id"`; v14 index keys `"topic_id:<index>"` are rekeyed on load) and adds `tutorial_done` (a save with a `player_name` but no flag loads as done) and `ai_consent`, and stops writing `campaign_ready` / `campaign_unlocked_flag` (the removed Level 5 gate) and the global `explorer` (now per world, `topics[].explorer`), all ignored on load; v14 keys `cleared_houses` per house, `"topic_id:gym_type#house_id"`, and `best_stars` house runs `"house:topic_id:gym_type#house_id"`; a v13 house key without an id still counts toward its type; v13 replaced `session.cleared_trainers` with `cleared_houses` and added `best_stars`; a gym cleared before counts as its house cleared; v12 dropped the `monetization` block with the weekly AI limit; an older save's block is ignored; v11 added `explorer`; v10 added `battery_health` and replaced `costume` with `outfit`; a v9 `costume` loads into its slot; v9 added `dirt` and `costume`; v8 added `hunger`, `health` and `crystals`; v7 added `player_name` and `food_stock`; older saves load with defaults)
 - **Loaded:** once at boot, deferred from `SaveManager._ready`
 - **Format:** `JSON.stringify` of a single `Dictionary`, pretty-print off
 
@@ -48,7 +48,6 @@ That is fine for the current scope but means there is **no type safety and no au
   "study_cards_day": "2026-10-29", "study_cards": 6,
   "owned_costumes": ["bow"],                               // closet costumes bought; a worn one counts as owned
   "outfit": { "head": "crown", "body": "scarf" }, // v10: closet slot -> kuiz_look.gd COSTUMES id; a missing slot is bare
-  "explorer": "boy", // v11: the region map's explorer, "boy" or "girl"; missing loads as "boy"
 
   // MusicManager (v5): settings sliders, 0..1; missing keys load as 1.0
   "music_volume": 1.0,
@@ -112,7 +111,7 @@ question's **answer key**: battles check answers against it on the device.
 | `distractors` | string[] | Multiple Choice only (v6): the wrong options; blanks are dropped on load |
 | `rubric` | `{point, keywords[], weight}`[] | Essay marking guide. Optional; without it `Api.rubric_for()` makes one point per key concept |
 | `key_concepts` | string[] | Essay key ideas (the rubric's points when the server wrote it); the fallback rubric |
-| `model_answer` | string | Essay: the ideal answer shown on the review beat and flashcard. Optional |
+| `model_answer` | string | Essay: the ideal answer shown in the battle's Review answers and on the flashcard. Optional |
 | `explanation` | string | One line on why the answer is right, shown after answering and on the flashcard. Optional |
 | `confidence` | float | 0–1. Drives the categorizer's colour-coded badge; **not** sent to battle |
 | `source` | string | Source sentence excerpt; forwarded as `source` to a real grade call |
@@ -133,6 +132,7 @@ rows (see [`systems/review-session.md`](systems/review-session.md) §6); a v5 sa
 | `question_count` | int | Denormalised `questions.size()`; `session_list.gd` reads `questions` when it is 0 |
 | `questions` | question[] | The actual question bank |
 | `source_text` | string | The reviewer text the world was built from (pasted, or read by the server from a PDF / Word / PowerPoint file); `""` for a photo or an older save. Used by "More questions" |
+| `explorer` | string | `"boy"` or `"girl"`: the explorer this world was first played with, asked once; `""` until then |
 
 Topic ids are **not** guaranteed unique across sessions: `session_list.gd:_on_new_world` builds
 `topic_%d % (unix_time % 100000)`, which collides roughly every 27 hours of wall-clock use. The

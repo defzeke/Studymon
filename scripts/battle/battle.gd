@@ -2,17 +2,17 @@ extends Control
 ## Battle scene: one run (a Challenge House, Gym or the Champion Gym) of fixed items against one foe.
 ## Multiple Choice and Identification are graded on the device from the answer key; an Essay (and an
 ## Identification near-miss) goes to Api, with an offline mark when the server cannot answer.
-## Each answer is followed by a review beat; a streak strengthens Kuiz's hits; Kuiz losing all its HP
-## ends the run with Exit / Try Again. Juice: Camera2D shake + hit-stop.
+## Each answer is followed by a short beat that says only right or wrong (answers are kept for Review
+## answers at the end); a streak strengthens Kuiz's hits. Kuiz losing all its HP, or finishing below a
+## star, ends the run in defeat with Exit / Try Again. Juice: Camera2D shake + hit-stop.
 
 # Contract: docs/systems/battle.md. A run is a fixed list of items fought against one foe.
 const HP_PER_ITEM := 10
 const HEAL_ON_CORRECT := 4
 ## Damage multiplier for the 1st, 2nd and 3rd+ miss in a row.
 const MISS_MULT: Array[float] = [1.0, 1.25, 1.5]
-## Reading time before Next, in seconds.
-const REVIEW_SEC_RIGHT := 1.5
-const REVIEW_SEC_WRONG := 4.0
+## Seconds before Next after an answer: only the verdict shows, the answers wait for Review answers.
+const REVIEW_SEC := 0.8
 const HIT_NAMES: Array[String] = ["HIT!", "STRONG!", "HEAVY!!", "ULTIMATE!!!"]
 const RUN_NAMES := {"house": "Challenge House", "gym": "Gym", "champion": "Champion Gym"}
 const FOE_NAMES := {"house": "CHALLENGER", "gym": "GYM LEADER", "champion": "CHAMPION"}
@@ -90,7 +90,10 @@ const HIT_STOP_BASE := 0.06
 @onready var xp_label: Label = %XPLabel
 @onready var retry_btn: Button = %RetryButton
 @onready var continue_btn: Button = %ContinueButton
-@onready var report_btn: Button = %ReportButton
+@onready var review_btn: Button = %ReviewButton
+@onready var review_panel: Control = %ReviewPanel
+@onready var review_list: VBoxContainer = %ReviewList
+@onready var review_row: Control = %ReviewRow
 
 @onready var qscroll: Control = question_label.get_parent()
 
@@ -127,8 +130,11 @@ var _job_id := ""
 var _typed := ""
 var _grade_mode := ""
 var _offline_feedback := ""
-# The rubric points the last essay covered, for the review beat.
+# The rubric points the last essay covered, and what the player typed or tapped for this item.
 var _last_covered: Array = []
+var _given := ""
+# Every item answered this run, for Review answers: {q, type, given, correct, feedback, covered}.
+var _answers: Array[Dictionary] = []
 var _shake_tween: Tween
 
 func _ready() -> void:
@@ -164,7 +170,8 @@ func _ready() -> void:
 	flee_btn.pressed.connect(_on_flee)
 	retry_btn.pressed.connect(_on_retry)
 	continue_btn.pressed.connect(_on_continue)
-	report_btn.pressed.connect(_on_report)
+	review_btn.pressed.connect(_show_answers)
+	%CloseButton.pressed.connect(review_panel.hide)
 	Api.job_status.connect(_on_job_status)
 	if play_intro:
 		_play_intro(foe)
@@ -283,6 +290,7 @@ func _on_submit() -> void:
 		return
 	_sfx(sfx_click)
 	_last_covered = []
+	_given = answer
 	_grade_mode = "essay"
 	_offline_feedback = ""
 	if _qtype == "identification":
@@ -331,10 +339,12 @@ func _set_mc_enabled(on: bool) -> void:
 	for b: Button in mc_box.get_children():
 		b.disabled = not on
 
-func _on_mc_pick(_button: Button, correct: bool) -> void:
+func _on_mc_pick(button: Button, correct: bool) -> void:
 	if _over or _awaiting or _phase != "answer":
 		return
 	_sfx(sfx_click)
+	_last_covered = []
+	_given = button.text
 	_resolve(correct, "")
 
 # The server's grade. When it cannot answer (offline, an error), the device grades instead: a near-miss
@@ -373,6 +383,7 @@ func _resolve(correct: bool, feedback: String, miss_scale := 1.0) -> void:
 		SessionManager.record_battle_outcome(SessionManager.battle_topic_id, q_idx, correct)
 	var last := _index == _run.size() - 1
 	_last_feedback = feedback
+	_answers.append({"q": _q, "type": _qtype, "given": _given, "correct": correct, "feedback": feedback, "covered": _last_covered.duplicate()})
 	CompanionState.play_item(correct)
 	if correct:
 		_correct += 1
@@ -425,42 +436,30 @@ func _finish_turn(correct: bool) -> void:
 		player_hp_text.text = "%d/%d" % [_player_hp, _player_max]
 	blocker.visible = false
 	if _player_hp <= 0:
-		_lose()
+		_lose(false)
 	elif _index == _run.size() - 1:
-		_win()
+		# Finishing below a star is a defeat too; a scene run on its own has nothing to clear.
+		if _standalone or SessionManager.stars_for(float(_correct) / _run.size()) > 0:
+			_win()
+		else:
+			_lose(true)
 	else:
 		_show_review(correct)
 
-# The review beat: the answer and its source, with Next held back so a miss is actually read.
+# The beat after an answer: only right or wrong, so the run gives nothing away; every answer is listed
+# by Review answers once the run ends.
 func _show_review(correct: bool) -> void:
 	_phase = "review"
-	var text := "Answer: %s" % str(_q.get("answer", "")).strip_edges()
-	if _qtype == "essay":
-		text = "Model answer: %s" % str(_q.get("model_answer", _q.get("answer", ""))).strip_edges()
-		var rubric := Api.rubric_for(_q)
-		for i in rubric.size():
-			var hit := i < _last_covered.size() and bool(_last_covered[i])
-			text += "\n%s %s" % ["✓" if hit else "✗", str((rubric[i] as Dictionary).get("point", ""))]
-	var why := str(_q.get("explanation", "")).strip_edges()
-	if why != "":
-		text += "\n" + why
-	if _last_feedback != "":
-		text += "\n" + _last_feedback
-	var source := str(_q.get("source", "")).strip_edges()
-	if source != "":
-		text += "\n“%s”" % (source.left(140) + ("…" if source.length() > 140 else ""))
 	result_title.text = "Correct!  Streak %d" % _streak if correct else "Not quite."
-	xp_label.text = text
+	xp_label.text = "%d of %d answered" % [_index + 1, _run.size()]
 	retry_btn.visible = false
-	report_btn.visible = true
-	report_btn.disabled = false
-	report_btn.text = "Report"
+	review_btn.visible = false
 	continue_btn.text = "Next"
 	continue_btn.disabled = true
 	qscroll.visible = false
 	_show_answer_controls(false)
 	result_panel.visible = true
-	await get_tree().create_timer(REVIEW_SEC_RIGHT if correct else REVIEW_SEC_WRONG).timeout
+	await get_tree().create_timer(REVIEW_SEC).timeout
 	if is_instance_valid(continue_btn) and _phase == "review":
 		continue_btn.disabled = false
 
@@ -579,26 +578,19 @@ func _win() -> void:
 	create_tween().tween_property(enemy_hp_bar, "value", 0.0, 0.3)
 	enemy_hp_text.text = "0/%d" % _enemy_max
 	var line := "%d/%d correct  •  best streak %d" % [_correct, _run.size(), _best_streak]
-	var cleared := true
 	if not _standalone:
 		var r := SessionManager.report_run(true, _correct, _run.size(), _best_streak)
-		cleared = bool(r["cleared"])
-		if cleared:
-			line += "\nStars %d/3  •  +%d crystals  •  +%d XP" % [int(r["stars"]), int(r["coins"]), int(r["xp"])]
-			line += "\nFirst clear bonus!" if bool(r["first"]) else "\nReplay: reduced rewards."
-		else:
-			line += "\nGet %d%% right to earn a star and clear it.\n+%d crystals  •  +%d XP for the effort." % [
-				roundi(SessionManager.STAR_ACCURACY[0] * 100), int(r["coins"]), int(r["xp"])]
+		line += "\nStars %d/3  •  +%d crystals  •  +%d XP" % [int(r["stars"]), int(r["coins"]), int(r["xp"])]
+		line += "\nFirst clear bonus!" if bool(r["first"]) else "\nReplay: reduced rewards."
 		line += _study_goal_line()
-	result_title.text = "%s cleared!" % RUN_NAMES[_kind] if cleared else "Kuiz made it through!"
+	result_title.text = "%s cleared!" % RUN_NAMES[_kind]
 	xp_label.text = line
-	retry_btn.visible = not cleared
-	retry_btn.text = "↻ Try Again"
+	retry_btn.visible = false
+	review_btn.visible = true
 	continue_btn.text = "Overworld"
 	continue_btn.disabled = false
 	qscroll.visible = false
-	# Without a star the foe stays up (no defeat pose), so Try Again starts from a standing foe.
-	_end_sequence(cleared, ("CHAMPION!" if _kind == "champion" else "VICTORY!") if cleared else "SURVIVED")
+	_end_sequence(true, "CHAMPION!" if _kind == "champion" else "VICTORY!")
 
 # A finished run (cleared or not) meets the daily study goal; a fled one does not.
 func _study_goal_line() -> String:
@@ -608,24 +600,68 @@ func _study_goal_line() -> String:
 	SaveManager.save_progress()
 	return "\nDaily study goal met: %d-day streak  •  +%d crystals" % [GameState.study_streak, paid]
 
-# Kuiz is out of HP: it topples over, then the player chooses to leave or to try the run again.
-func _lose() -> void:
+# Defeat: Kuiz ran out of HP, or (`finished`) reached the end below a star. Kuiz topples over, the run
+# pays the defeat rate and clears nothing, and the player can review the answers, leave or try again.
+func _lose(finished: bool) -> void:
 	_over = true
 	_phase = "end"
 	var line := "%d/%d correct before falling." % [_correct, _run.size()]
+	if finished:
+		line = "Only %d/%d correct: you need %d%% to win." % [_correct, _run.size(), roundi(SessionManager.STAR_ACCURACY[0] * 100)]
 	if not _standalone:
-		var r := SessionManager.report_run(false, _correct, _run.size(), _best_streak)
+		var r := SessionManager.report_run(finished, _correct, _run.size(), _best_streak)
 		line += "\n+%d crystals  •  +%d XP for the effort." % [int(r["coins"]), int(r["xp"])]
 		line += _study_goal_line()
-	result_title.text = "Kuiz is down!"
+	result_title.text = "Not enough to win" if finished else "Kuiz is down!"
 	xp_label.text = line
 	retry_btn.text = "↻ Try Again"
 	retry_btn.visible = true
+	review_btn.visible = true
 	continue_btn.text = "Exit"
 	continue_btn.disabled = false
 	qscroll.visible = false
 	stage.pet_defeat()
 	_end_sequence(false, "DEFEATED")
+
+# Review answers: every item answered this run with what was given and the right answer. Rows are
+# copies of %ReviewRow; each can be reported (Google Play's AI-content rule).
+func _show_answers() -> void:
+	_sfx(sfx_click)
+	for c in review_list.get_children():
+		if c != review_row:
+			c.queue_free()
+	for i in _answers.size():
+		var row := review_row.duplicate() as Control
+		row.visible = true
+		(row.get_node("Text") as Label).text = _answer_text(i)
+		var report := row.get_node("Report") as Button
+		report.pressed.connect(_report_answer.bind(i, report))
+		review_list.add_child(row)
+	review_panel.show()
+
+func _answer_text(i: int) -> String:
+	var a: Dictionary = _answers[i]
+	var q: Dictionary = a["q"]
+	var text := "%s  #%d  %s" % ["✓" if a["correct"] else "✗", i + 1, str(q.get("text", ""))]
+	text += "\nYour answer: %s" % (str(a["given"]) if str(a["given"]) != "" else "—")
+	if a["type"] == "essay":
+		text += "\nModel answer: %s" % str(q.get("model_answer", q.get("answer", ""))).strip_edges()
+		var covered: Array = a["covered"]
+		var rubric := Api.rubric_for(q)
+		for p in rubric.size():
+			text += "\n   %s %s" % ["✓" if p < covered.size() and bool(covered[p]) else "✗", str((rubric[p] as Dictionary).get("point", ""))]
+	else:
+		text += "\nCorrect answer: %s" % str(q.get("answer", "")).strip_edges()
+	for extra in [str(a["feedback"]), str(q.get("explanation", ""))]:
+		if extra.strip_edges() != "":
+			text += "\n" + extra.strip_edges()
+	return text
+
+func _report_answer(i: int, button: Button) -> void:
+	_sfx(sfx_click)
+	Api.report_content(Api.new_job_id("report"), "feedback", _answer_text(i))
+	button.disabled = true
+	button.text = "Reported"
 
 # Try Again: the same run reshuffled, from item 1, Kuiz at full HP.
 func _on_retry() -> void:
@@ -635,6 +671,8 @@ func _on_retry() -> void:
 		_run = SessionManager.battle_run
 	stage.pet_stand()
 	_index = 0
+	_answers.clear()
+	review_panel.hide()
 	_correct = 0
 	_streak = 0
 	_best_streak = 0
@@ -651,20 +689,10 @@ func _on_retry() -> void:
 	_bind_item()
 	_set_inputs(true)
 
-# Flags the item's AI-written question or feedback as wrong or offensive (Google Play's AI-content rule).
-func _on_report() -> void:
-	_sfx(sfx_click)
-	Api.report_content(Api.new_job_id("report"), "feedback", "%s
-Answer key: %s
-Feedback: %s" % [_q.get("text", ""), _q.get("answer", ""), _last_feedback])
-	report_btn.disabled = true
-	report_btn.text = "Reported"
-
 func _on_continue() -> void:
 	_sfx(sfx_click)
 	if _phase == "review":
 		_index += 1
-		report_btn.visible = false
 		result_panel.visible = false
 		_bind_item()
 		_set_inputs(true)

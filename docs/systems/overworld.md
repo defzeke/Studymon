@@ -176,13 +176,14 @@ where it is going and, once the explorer stops, turns to face them. It has no co
 off the minimap. `region_map.gd` places it just behind the explorer at the spawn.
 
 **Explorer** (`scenes/overworld/explorer_picker.tscn`, script `explorer_picker.gd`, instanced by
-`region_map.gd`). Each visit to the map from the worlds list starts with a
-"Choose your explorer" card over the map: a live 3D preview of each explorer (its own small
-world, idling; the chosen one cheers and gets a teal border) and **Let's go!**. The pick is
-`GameState.explorer` (`"boy"` or `"girl"`, saved, v11) and `player.set_explorer()` swaps the
-model; both share the same rig, size (about 1 unit tall) and clips. `GameState.explorer_picked`
-(memory only) skips the card when coming back from a battle or flashcards; opening the worlds
-list clears it.
+`region_map.gd`). **Each world chooses once**: the first time a world is played (right after
+Confirm & Play saves it), a "Choose your explorer" card shows over the map: a live 3D preview of each
+explorer (its own small world, idling; the chosen one cheers and gets a teal border) and **Let's go!**.
+The pick is saved in that world's topic record (`"explorer"`: `"boy"` or `"girl"`;
+`SessionManager.world_explorer()` / `set_world_explorer()`), so every later visit to that world uses it
+without asking, and other worlds keep their own. `player.set_explorer()` swaps the model; both share
+the same rig, size (about 1 unit tall) and clips. A save from before keeps one global `"explorer"`,
+which is ignored: each of its worlds asks once.
 
 **Seasons** (`season.gd`). The island follows the real-world season, from the device's local date,
 on a Northern Hemisphere calendar (`season_for(month, day)`), so a season lasts for months and the

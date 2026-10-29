@@ -26,7 +26,7 @@ const RUN_QUOTAS := {
 }
 ## The tier a run is fought at and the questions it prefers.
 const RUN_TIER := {"house": "easy", "gym": "medium", "champion": "hard"}
-## The review time a run is built to last, in minutes (about one per item; see the review beat).
+## The review time a run is built to last, in minutes (about one per item).
 const RUN_MINUTES := {"house": 10, "gym": 20, "champion": 30}
 ## Crystals / XP per correct item, and the first-clear bonus.
 const RUN_REWARDS := {
@@ -94,7 +94,7 @@ func get_topics_cache() -> Array[Dictionary]:
 ## Saves a world; its reviewer text is kept (for "More questions") unless there is none to keep.
 func add_topic_to_history(topic_id: String, topic_label: String, questions: Array[Dictionary]) -> void:
 	var source := last_source_text if last_source_text != "" else saved_source(topic_id)
-	var entry := {"id": topic_id, "name": topic_label, "question_count": questions.size(), "questions": questions.duplicate(true), "source_text": source}
+	var entry := {"id": topic_id, "name": topic_label, "question_count": questions.size(), "questions": questions.duplicate(true), "source_text": source, "explorer": world_explorer(topic_id)}
 	for i in _topics.size():
 		if _topics[i].get("id", "") == topic_id:
 			_topics[i] = entry
@@ -107,6 +107,19 @@ func saved_source(topic_id: String) -> String:
 		if str(t.get("id", "")) == topic_id:
 			return str(t.get("source_text", ""))
 	return ""
+
+## The explorer a saved world was first played with ("boy" / "girl"), or "" when it has not chosen yet.
+func world_explorer(topic_id: String) -> String:
+	for t in _topics:
+		if str(t.get("id", "")) == topic_id:
+			return str(t.get("explorer", ""))
+	return ""
+
+## Keeps `choice` as the world's explorer; a world that is not saved (the map's preview) keeps nothing.
+func set_world_explorer(topic_id: String, choice: String) -> void:
+	for t in _topics:
+		if str(t.get("id", "")) == topic_id:
+			t["explorer"] = choice
 
 ## "More questions": asks for new questions from the world's saved reviewer, added to the ones it
 ## has. False when the world has no saved reviewer text.

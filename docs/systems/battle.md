@@ -53,9 +53,12 @@ answer              MC tap → _resolve;  ID → Api.check_identification → _r
                     Essay / near-miss → Api.grade_battle_question → job_status(own job_id) → _resolve
 _resolve(correct)   mastery (first time this run), streak/HP maths, result line
 _finish_turn        Kuiz strikes (correct) or the foe strikes (wrong), bars drop as the blow lands
-then                Kuiz at 0 HP → _lose;  last item → _win;  otherwise the review beat
-review beat         answer (Essay: model answer, ✓ / ✗ per rubric point), explanation, feedback,
-                    source excerpt; Next is held back
+then                Kuiz at 0 HP → _lose;  last item → _win with a star, else _lose;  otherwise the beat
+beat                only "Correct! Streak N" / "Not quite." and "n of N answered"; no answer, feedback or
+                    source is shown during the run; Next is held 0.8 s
+end                 Review answers lists every item answered: question, your answer, the right
+                    answer (Essay: model answer and ✓ / ✗ per rubric point), feedback, explanation,
+                    and Report
                     1.5 s after a right answer, 4 s after a wrong one
 ```
 
@@ -120,9 +123,11 @@ needs the screwdriver at home. Kuiz's card in the battle shows the four stats li
 
 `SessionManager.report_run(survived, correct, total, best_streak)` runs once when a run ends, adds the
 crystals (`GameState.add_crystals`) and XP (`CompanionState.add_xp`), saves, and returns
-`{stars, coins, xp, first, replay, cleared}`. **A run clears its building only when Kuiz survives with
-at least one star** (70 % right): surviving without a star pays like a defeat, clears nothing, and the
-result panel says "Kuiz made it through!" with Try Again.
+`{stars, coins, xp, first, replay, cleared}`. **A run is won only when Kuiz survives with at least one
+star** (70 % right). Anything else is a **defeat**, with the same ending either way: the DEFEATED
+banner, Kuiz falls, the defeat pay below, nothing cleared, and Try Again / Exit / Review answers. The
+result says why: "Kuiz is down!" (out of HP) or "Not enough to win" ("Only 9/20 correct: you need 70 %
+to win.").
 
 | | House | Gym | Champion |
 |---|---|---|---|
@@ -189,8 +194,9 @@ The marking guide is the question's `rubric`: 3–5 `{point, keywords, weight}`.
 
   The feedback starts "Graded offline." when the server could not be reached.
 
-A failed essay still lands only part of the counter (`0.4 + 0.6 × (1 − score)`, §2). The review beat
-shows the model answer, a ✓ / ✗ per rubric point, the `explanation` and the feedback.
+A failed essay still lands only part of the counter (`0.4 + 0.6 × (1 − score)`, §2). The model
+answer, the ✓ / ✗ per rubric point, the `explanation` and the feedback show only in Review answers at
+the end of the run, never during it.
 
 Each grade request has its own `job_id` (`Api.new_job_id("grade")`), and battle only takes the result
 with its id.

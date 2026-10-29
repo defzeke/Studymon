@@ -9,13 +9,16 @@ extends CanvasLayer
 ## mood. Contract: docs/ui-and-assets.md §2 Home.
 
 const ROOMS: Array[String] = ["StudyRoom", "MaintenanceBay", "DataKitchen", "Playroom"]
+# The fridge: what each meal restores and costs, priced at about 0.4 crystals per hunger point (bigger
+# meals a little cheaper, a second effect a little dearer). `start` is the new player's welcome stock.
+# Contract: docs/systems/monetization.md.
 const FOODS: Array[Dictionary] = [
-	{"id": "data_chips", "name": "Data Chips", "icon": preload("res://assets/sprites/props/data_chips.svg"), "start": 3},
-	{"id": "spicy_chips", "name": "Spicy Memory Chips", "icon": preload("res://assets/sprites/props/spicy_chips.svg"), "start": 1},
-	{"id": "cache_cookie", "name": "Cache Cookie", "icon": preload("res://assets/sprites/props/cache_cookie.svg"), "start": 2},
-	{"id": "pi_pie", "name": "Pi Pie", "icon": preload("res://assets/sprites/props/pi_pie.svg"), "start": 1},
-	{"id": "byte_burger", "name": "Byte Burger", "icon": preload("res://assets/sprites/props/byte_burger.svg"), "start": 1},
-	{"id": "java_juice", "name": "Java Juice", "icon": preload("res://assets/sprites/props/java_juice.svg"), "start": 2},
+	{"id": "data_chips", "name": "Data Chips", "icon": preload("res://assets/sprites/props/data_chips.svg"), "start": 3, "hunger": 10.0, "price": 4},
+	{"id": "spicy_chips", "name": "Spicy Memory Chips", "icon": preload("res://assets/sprites/props/spicy_chips.svg"), "start": 1, "hunger": 12.0, "mood": 8.0, "price": 7},
+	{"id": "cache_cookie", "name": "Cache Cookie", "icon": preload("res://assets/sprites/props/cache_cookie.svg"), "start": 2, "hunger": 15.0, "price": 6},
+	{"id": "pi_pie", "name": "Pi Pie", "icon": preload("res://assets/sprites/props/pi_pie.svg"), "start": 1, "hunger": 25.0, "price": 9},
+	{"id": "byte_burger", "name": "Byte Burger", "icon": preload("res://assets/sprites/props/byte_burger.svg"), "start": 1, "hunger": 40.0, "price": 13},
+	{"id": "java_juice", "name": "Java Juice", "icon": preload("res://assets/sprites/props/java_juice.svg"), "start": 2, "hunger": 8.0, "focus": 10.0, "price": 8},
 ]
 const FAVORITE_FOOD := "spicy_chips"
 const SCREWDRIVER: Texture2D = preload("res://assets/sprites/props/screwdriver.svg")
@@ -543,12 +546,8 @@ func _build_shop() -> void:
 		label.add_theme_color_override("font_color", Color("29383A"))
 		var buy: Button = buy_template.duplicate()
 		buy.show()
-		# shortcut: buying is free until the currency exists; then charge its price here.
-		buy.pressed.connect(func() -> void:
-			GameState.food_stock[food["id"]] += 1
-			SaveManager.save_progress()
-			_refresh_shop()
-			_pick_food(0))
+		buy.text = "Buy · %d" % food["price"]
+		buy.pressed.connect(_buy_food.bind(food))
 		row.add_child(icon)
 		row.add_child(label)
 		row.add_child(buy)
@@ -562,7 +561,26 @@ func _open_shop() -> void:
 func _refresh_shop() -> void:
 	for row in shop_list.get_children():
 		var food: Dictionary = row.get_meta("food")
-		(row.get_child(1) as Label).text = "%s\nYou have %d" % [food["name"], GameState.food_stock[food["id"]]]
+		(row.get_child(1) as Label).text = "%s  +%d hunger%s\nYou have %d" % [food["name"], food["hunger"], _food_extra(food), GameState.food_stock[food["id"]]]
+		(row.get_child(2) as Button).disabled = GameState.crystals < int(food["price"])
+
+func _food_extra(food: Dictionary) -> String:
+	if food.has("focus"):
+		return ", +%d focus" % food["focus"]
+	if food.has("mood"):
+		return ", +%d mood" % food["mood"]
+	return ""
+
+# One more of a food from the fridge, for its price in crystals.
+func _buy_food(food: Dictionary) -> void:
+	if GameState.crystals < int(food["price"]):
+		_toast("Not enough crystals. Clear houses and gyms to earn them.")
+		return
+	GameState.add_crystals(-int(food["price"]))
+	GameState.food_stock[food["id"]] += 1
+	SaveManager.save_progress()
+	_refresh_shop()
+	_pick_food(0)
 
 func _eat(food: Dictionary) -> void:
 	GameState.food_stock[food["id"]] -= 1
@@ -574,7 +592,8 @@ func _eat(food: Dictionary) -> void:
 	await t.finished
 	held.hide()
 	held.scale = Vector2.ONE
-	_care("feed")
+	CompanionState.care("feed", food)
+	SaveManager.save_progress()
 	CompanionState.soil()
 	peek.act("Pet" if food["id"] == FAVORITE_FOOD else "Happy")
 

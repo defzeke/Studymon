@@ -1,5 +1,5 @@
 extends CanvasLayer
-## "Choose your explorer": shown over the region map before playing. Each card is a live 3D preview
+## "Choose your explorer": shown over the region map the first time a world is played (each world keeps its own). Each card is a live 3D preview
 ## of an explorer (its own small world, idling; the chosen one cheers). "Let's go!" emits `picked`
 ## with the id from player.gd's EXPLORERS. Layout lives in explorer_picker.tscn; one card per explorer
 ## is copied from %CardTemplate. Contract: docs/systems/overworld.md §3 Explorer.
@@ -22,7 +22,7 @@ var _cards := {}
 var _anims := {}
 
 func _ready() -> void:
-	_choice = GameState.explorer if Player.EXPLORERS.has(GameState.explorer) else "boy"
+	_choice = "boy"
 	for id: String in Player.EXPLORERS:
 		cards.add_child(_card(id))
 	%GoButton.pressed.connect(_go)

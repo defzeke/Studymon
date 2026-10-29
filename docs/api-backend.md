@@ -226,7 +226,7 @@ memory per instance, so they are a brake, not a guarantee: the real cap is the A
 ```
 
 Google Play requires an in-app way to report offensive AI output. The categorizer's **Report** on each
-question row and the battle review beat's **Report** call `Api.report_content()`. The server only
+question row and each row of the battle's end-of-run **Review answers** list call `Api.report_content()`. The server only
 logs the report (`log.warning`); read reports in the host's log viewer.
 
 ### Still needed before release

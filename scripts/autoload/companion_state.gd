@@ -154,7 +154,8 @@ func _unlock_tidbit(lv: int) -> void:
 			codex.append(text)
 			codex_entry_added.emit(text)
 
-func care(action: String) -> Dictionary:
+## A care action. `food` (feed only) is the meal's {hunger, mood, focus} from home.gd FOODS.
+func care(action: String, food := {}) -> Dictionary:
 	var gained := 1
 	var deltas := {}
 	
@@ -168,8 +169,11 @@ func care(action: String) -> Dictionary:
 
 	match action:
 		"feed":
-			hunger = minf(STAT_MAX, hunger + FEED_HUNGER)
-			deltas = {"hunger": FEED_HUNGER}
+			var fill := float(food.get("hunger", FEED_HUNGER))
+			hunger = minf(STAT_MAX, hunger + fill)
+			mood = minf(STAT_MAX, mood + float(food.get("mood", 0.0)))
+			focus = minf(STAT_MAX, focus + float(food.get("focus", 0.0)))
+			deltas = {"hunger": fill}
 			gained = maxi(1, roundi(2 * xp_mult))
 		"pet":
 			mood = minf(STAT_MAX, mood + 8.0)

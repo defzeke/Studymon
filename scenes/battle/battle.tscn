@@ -595,12 +595,13 @@ layout_mode = 2
 size_flags_horizontal = 3
 text = "↻ Retry"
 
-[node name="ReportButton" type="Button" parent="Dialogue/Box/ResultPanel/RBox/RButtons"]
+[node name="ReviewButton" type="Button" parent="Dialogue/Box/ResultPanel/RBox/RButtons"]
 unique_name_in_owner = true
 visible = false
 custom_minimum_size = Vector2(0, 52)
 layout_mode = 2
-text = "Report"
+size_flags_horizontal = 3
+text = "Review answers"
 
 [node name="ContinueButton" type="Button" parent="Dialogue/Box/ResultPanel/RBox/RButtons" unique_id=879944101]
 unique_name_in_owner = true
@@ -710,3 +711,66 @@ angular_velocity_min = -360.0
 angular_velocity_max = 360.0
 scale_amount_min = 6.0
 scale_amount_max = 12.0
+
+[node name="ReviewPanel" type="PanelContainer" parent="."]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 24.0
+offset_top = 80.0
+offset_right = -24.0
+offset_bottom = -80.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_card")
+
+[node name="Box" type="VBoxContainer" parent="ReviewPanel"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Title" type="Label" parent="ReviewPanel/Box"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("6_font")
+theme_override_font_sizes/font_size = 32
+text = "Your answers"
+horizontal_alignment = 1
+
+[node name="Scroll" type="ScrollContainer" parent="ReviewPanel/Box"]
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="ReviewList" type="VBoxContainer" parent="ReviewPanel/Box/Scroll"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 18
+
+[node name="ReviewRow" type="VBoxContainer" parent="ReviewPanel/Box/Scroll/ReviewList"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="Text" type="Label" parent="ReviewPanel/Box/Scroll/ReviewList/ReviewRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 22
+text = "✓ #1 Question"
+autowrap_mode = 3
+
+[node name="Report" type="Button" parent="ReviewPanel/Box/Scroll/ReviewList/ReviewRow"]
+custom_minimum_size = Vector2(160, 48)
+layout_mode = 2
+size_flags_horizontal = 8
+theme_override_font_sizes/font_size = 20
+text = "Report"
+
+[node name="CloseButton" type="Button" parent="ReviewPanel/Box"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 60)
+layout_mode = 2
+text = "Close"

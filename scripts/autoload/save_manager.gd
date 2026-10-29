@@ -1,6 +1,6 @@
 extends Node
-## Phase 2: Local JSON persistence for CompanionState + GameState.
-## (Cloud save arrives with backend/auth; format is versioned via "v".)
+## Local JSON persistence for CompanionState + GameState, on this device only (no accounts).
+## The format is versioned via "v".
 
 const SAVE_PATH := "user://studymon_save.json"
 ## The schema written by save_game(); history in docs/data-model.md.
@@ -40,7 +40,6 @@ func save_game() -> bool:
 	data["minigame_day"] = GameState.minigame_day
 	data["minigame_crystals"] = GameState.minigame_crystals
 	data["outfit"] = GameState.outfit
-	data["explorer"] = GameState.explorer
 	data["music_volume"] = MusicManager.music_volume
 	data["sfx_volume"] = MusicManager.sfx_volume
 	data["session"] = SessionManager.to_dict()
@@ -70,8 +69,6 @@ func _reset() -> void:
 	GameState.ai_consent = false
 	GameState.food_stock = {}
 	GameState.outfit = {}
-	GameState.explorer = "boy"
-	GameState.explorer_picked = false
 	GameState.active_region_id = ""
 	GameState.add_crystals(-GameState.crystals)
 	GameState.world_slots = GameState.FREE_WORLD_SLOTS
@@ -160,7 +157,7 @@ func load_game() -> bool:
 	for id in parsed.get("owned_costumes", []):
 		GameState.owned_costumes.append(str(id))
 	GameState.crystals_changed.emit(GameState.crystals)
-	GameState.explorer = str(parsed.get("explorer", "boy"))
+	# Saves before per-world explorers hold one global "explorer"; it is ignored (each world asks once).
 	GameState.outfit = {}
 	var outfit: Variant = parsed.get("outfit", {})
 	if typeof(outfit) == TYPE_DICTIONARY:

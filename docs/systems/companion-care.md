@@ -17,7 +17,7 @@ curriculum through `CURRICULUM` lines.
 
 | Stat | Start | Range | Decay | Grown by |
 |---|---|---|---|---|
-| `hunger` | 80.0 | 0–100 | **0.105 / s** (0.7×) | `feed` +12 |
+| `hunger` | 80.0 | 0–100 | **0.105 / s** (0.7×) | `feed` +8 – 40 by food (`home.gd` `FOODS`) |
 | `energy` | 80.0 | 0–100 | **0.15 / s** × battery wear (`battery_drain()`: 1 + (100 − battery health) / 50, so ×2 at 50 %) | charging +6 / s (`recharge()`), rest complete +6, `play` −2, skip focus −3, missed rest −5 |
 | `mood` | 75.0 | 0–100 | **0.09 / s** (0.6×) | `pet` +8, `play` +8, rest complete +6, skip focus −2, missed rest −3 |
 | `health` | 100.0 | 0–100 | **0.03 / s** (0.2×) | `fix` +25 |

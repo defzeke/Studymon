@@ -31,10 +31,6 @@ var minigame_crystals := 0
 ## What Kuiz wears: closet slot ("head", "face", "body") -> an id from kuiz_look.gd's COSTUMES; a
 ## missing slot is bare.
 var outfit: Dictionary = {}
-## The region map's explorer (player.gd EXPLORERS id), saved; `explorer_picked` (memory only) is
-## set once it is chosen on a visit to the map and cleared when the worlds list opens again.
-var explorer: String = "boy"
-var explorer_picked := false
 var active_region_id: String = ""
 
 # --- Phase 9: Accessibility — font-size scaling hooked into app_theme.tres ---

@@ -15,7 +15,7 @@ const TURN_SPEED := 12.0
 const BLEND := 0.15
 const WATERLINE := -0.05
 const GROUND_LAYER := 1
-## The playable explorers (GameState.explorer ids); both share the same rig, size and clips.
+## The playable explorers (a world's `explorer` id, SessionManager.world_explorer()); both share the same rig, size and clips.
 const EXPLORERS := {
 	"boy": preload("res://assets/models/boy_explorer.glb"),
 	"girl": preload("res://assets/models/explorer_girl.glb"),

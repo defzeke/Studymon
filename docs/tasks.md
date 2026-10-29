@@ -10,6 +10,17 @@ Last updated: 2026-10-29.
 
 ## In flight
 
+**Play-test fixes — uncommitted.**
+- The intro asks only for the name: the Google / profile line and its Continue button are gone.
+- Fridge food is priced (4–13 crystals) with its own hunger, mood and focus.
+- Every closet costume is bought (40–250).
+- Each world picks its explorer once and keeps it.
+- Battles show only right or wrong during a run, and **Review answers** at the end lists every answer.
+- Finishing below 70 % is a real defeat.
+
+Checked: headless checks (14 new, 79 in all, pass) and the scene gates. Not opened in the editor GUI.
+
+
 **World slots, crystal economy, backups, reviewer formats, study goal, closet shop, focus timer
 — uncommitted.**
 - 3 free world slots, then 300 crystals per permanent slot.

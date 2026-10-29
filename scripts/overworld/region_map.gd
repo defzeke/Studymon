@@ -119,18 +119,17 @@ func _ready() -> void:
 	kuiz.place_behind()
 	_build_route()
 	_refresh_progress()
-	player.set_explorer(GameState.explorer)
-	# Each visit from the worlds list starts with picking the explorer; coming back from a battle or
-	# flashcards keeps the one picked.
-	if not GameState.explorer_picked:
+	# Each world keeps its own explorer: only a world that has none yet (a new one) asks, once.
+	var chosen := SessionManager.world_explorer(_topic_id)
+	player.set_explorer(chosen if chosen != "" else "boy")
+	if chosen == "":
 		player.locked = true
 		var picker := ExplorerPicker.instantiate()
 		picker.picked.connect(_on_explorer_picked)
 		add_child(picker)
 
 func _on_explorer_picked(id: String) -> void:
-	GameState.explorer = id
-	GameState.explorer_picked = true
+	SessionManager.set_world_explorer(_topic_id, id)
 	SaveManager.save_progress()
 	player.set_explorer(id)
 	player.locked = encounter_panel.visible

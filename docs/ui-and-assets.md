@@ -178,7 +178,7 @@ blend as in the artifact, and `peeked` starts the tutorial.
 
 ### Tutorial (`tutorial.gd`, inside `peek.tscn`)
 
-Kuiz introduces the game, takes a profile and a name, then tours the rooms. Text types at 40
+Kuiz introduces the game, asks the player's name (there is no sign-in), then tours the rooms. Text types at 40
 characters a second; a tap (or `ui_accept`) finishes the typing, the next tap advances, and a line
 with a prompt waits for it instead. The script is the `LINES` table in `tutorial.gd`: text, clip,
 and optionally a `room` + `move` to make before the line, or a `prompt` after it. `{name}` is the
@@ -187,18 +187,17 @@ player's name.
 | # | Line (start) | Clip | Before the line | After the line |
 |---|---|---|---|---|
 | 1 | "Hi there! Welcome to the hub!…" | `Greetings` | — (on white) | tap |
-| 2 | "First things first—let's set up our shared user profile…" | `Blink` | — | **Continue** button: the stand-in for Google sign-in / register |
-| 3 | "Awesome! Connection established…what name should I call you, Partner?" | `Charging` (the bolt reads as syncing) | — | **name** field + OK (1–16 characters; Enter also submits) |
-| 4 | "{name}! What a cool name!…" | `Happy` | — | tap |
-| 5 | "Alright, {name}, welcome to our main hub—The Study Room!…" | `State_Charging` (docked in the cradle: eyes closed, bolt, gem glowing) | **jump**: Kuiz hops, the white gives way to the Study Room at the top, and Kuiz lands at room size | tap |
-| 6 | "Since we're an official team now…Follow me!" | `Celebrate` (confetti) | — | tap |
-| 7 | "Welcome to The Maintenance Bay! Mind the loose gears!…" | `Surprised` | **walk** to the Maintenance Bay | tap |
-| 8 | "If you ever see me squeaking or moving a bit slow…" | `State_Sick` (screws working loose) | — | tap |
-| 9 | "Ooh, listen to that… Welcome to The Data Kitchen!" | `State_Hungry` (drooling, dreaming of a chip) | **walk** to the Data Kitchen | tap |
-| 10 | "I don't eat regular food…Spicy Memory Chips…" | `Pet` (hearts for its favourite snack) | — | tap |
-| 11 | "And last, but definitely not least… The Playroom!…" | `Happy` | **walk** to the Playroom | tap |
-| 12 | "And that's the whole tour!…" | `Greetings` (sparkles) | **close**: walk back to the Study Room, then drift up to the screen and keep hovering | tap |
-| 13 | "Ready to jump into our very first review session?" | `Learn_Something_New` (reads a book, then "!") | — | nothing yet: the tutorial ends here |
+| 2 | "First things first: what should I call you, Partner?" | `Blink` | — | **name** field + OK (1–16 characters; Enter also submits) |
+| 3 | "{name}! What a cool name!…" | `Happy` | — | tap |
+| 4 | "Alright, {name}, welcome to our main hub—The Study Room!…" | `State_Charging` (docked in the cradle: eyes closed, bolt, gem glowing) | **jump**: Kuiz hops, the white gives way to the Study Room at the top, and Kuiz lands at room size | tap |
+| 5 | "Since we're an official team now…Follow me!" | `Celebrate` (confetti) | — | tap |
+| 6 | "Welcome to The Maintenance Bay! Mind the loose gears!…" | `Surprised` | **walk** to the Maintenance Bay | tap |
+| 7 | "If you ever see me squeaking or moving a bit slow…" | `State_Sick` (screws working loose) | — | tap |
+| 8 | "Ooh, listen to that… Welcome to The Data Kitchen!" | `State_Hungry` (drooling, dreaming of a chip) | **walk** to the Data Kitchen | tap |
+| 9 | "I don't eat regular food…Spicy Memory Chips…" | `Pet` (hearts for its favourite snack) | — | tap |
+| 10 | "And last, but definitely not least… The Playroom!…" | `Happy` | **walk** to the Playroom | tap |
+| 11 | "And that's the whole tour!…" | `Greetings` (sparkles) | **close**: walk back to the Study Room, then drift up to the screen and keep hovering | tap |
+| 12 | "Ready to jump into our very first review session?" | `Learn_Something_New` (reads a book, then "!") | — | nothing yet: the tutorial ends here |
 
 - **Moves** live in `peek.gd` (`jump`, `walk`, `come_close`); the dialogue box fades out while Kuiz
   moves, and taps are ignored. A walk hops Kuiz off to the right with a lean, swaps the room, and
@@ -258,8 +257,8 @@ arrives:
 | Maintenance Bay | **Check-up** (`props/tablet.svg`) opens the tablet: Battery health (`battery_health`, the battery's capacity like a phone's, not its charge; the Energy gauge shows the charge), Frame (health), Clean (100 − dirt) and Fuel (hunger) bars, off-white when fine, amber below half, coral below a quarter, and a hint naming the most urgent fix. **New battery** (30 crystals) puts battery health back to 100 % (`replace_battery()`); without enough crystals a toast says to win minigames, and at 100 % it is greyed out | `Celebrate` on a new battery |
 | Maintenance Bay | **Clean** (`props/towel.svg`): drag the towel over Kuiz and rub; every pixel scrubbed takes 0.06 dirt off, and getting Kuiz spotless in one scrub is `care("clean")` (mood +5, XP) and a "Squeaky clean!" toast | `Pet` while it is rubbed, `Celebrate` when spotless |
 | Maintenance Bay | **Tighten**: drag the **screwdriver** from the bar and hold it over Kuiz: it twists, and after 2 s the tune-up is done (`care("fix")`: health +25) and it returns to the bar | `State_Sick` (screws working loose) while it is held there, `Celebrate` when done, `Idle` if it is taken away early |
-| Data Kitchen | **Food**: ‹ › step through the foods in stock (one with none left is skipped; it is only in the fridge), then drag it onto Kuiz to eat it (one from stock; `care("feed")`: hunger +12, and a little dirt); dropped anywhere else it goes back. With nothing in stock the slot reads "Empty! Check the fridge" | `Surprised` (mouth open) when the food reaches it, then `Happy`, or `Pet` (hearts) for Spicy Memory Chips, its favourite |
-| Data Kitchen | **Fridge** (`props/fridge.svg`, the first item in the kitchen bar): a list of the six foods with how many you have and a **Buy** button each (+1, still free) | — |
+| Data Kitchen | **Food**: ‹ › step through the foods in stock (one with none left is skipped; it is only in the fridge), then drag it onto Kuiz to eat it (one from stock; `care("feed", food)`: that food's hunger, plus mood or focus for two of them, and a little dirt); dropped anywhere else it goes back. With nothing in stock the slot reads "Empty! Check the fridge" | `Surprised` (mouth open) when the food reaches it, then `Happy`, or `Pet` (hearts) for Spicy Memory Chips, its favourite |
+| Data Kitchen | **Fridge** (`props/fridge.svg`, the first item in the kitchen bar): a list of the six foods with what each restores, how many you have and a **Buy · N** button each (its price in crystals, disabled when you can't afford it; prices in [`systems/monetization.md`](systems/monetization.md)) | — |
 | Playroom | **Ball**: it waits in the dock; drag it out and fling it (a fast throw is `care("play")`: mood +8, energy −2). It falls, bounces off the screen edges, the floor above the dock and Kuiz's head, and once it settles it rolls back into its dock slot | Turns its head to follow the ball (and anything being dragged), `Happy` on a throw, `Surprised` when hit |
 | Playroom | **Closet** (`props/closet.svg`) opens tabs for **Head** (Party hat, Crown, Beanie, Bow, Flower), **Face** (Glasses, Shades, Hero mask) and **Body** (Bow tie, Scarf, Medal), each with None; Kuiz wears one per tab at once, so a hat, glasses and a scarf go together. A tap wears it at once and saves it (`GameState.outfit`) | `Happy` |
 | Playroom | **Games** (`ui/icon_games.svg`) opens the Minigames card: Kuiz Keeper or Sky Jump (below) | — |
@@ -316,7 +315,7 @@ soft drop shadow, like the props.
   [`companion-care.md`](systems/companion-care.md) §1.
 - **Crystals** (top right): the currency, `GameState.crystals`, with the forehead gem from the
   logo (`ui/crystal.svg`), saved (v8). Minigame rounds earn it (Kuiz Keeper 1 per goal, Sky Jump
-  1 per 50 m) and a new battery spends it (30); the fridge is still free. The pill only shows the
+  1 per 50 m); food, costumes, world slots and a new battery spend it. The pill only shows the
   balance: there is no shop (free launch, [`systems/monetization.md`](systems/monetization.md)).
 
 ### Kuiz's look (`kuiz_look.gd`)
@@ -515,12 +514,12 @@ The HUD, top to bottom, in the home HUD's look (Off-White, Deep Slate 3 px outli
 `Battle` (`Control`) → `Camera2D`, `Background`, `Margin` → `List`: `TopBar` (flee, title),
 `EnemyCard` (sprite, name, HP), `PlayerCard` (sprite, name, HP), `QuestionCard`
 (type, text), `AnswerInput` (`TextEdit`), `SubmitButton`, `JudgingLabel`, `ResultLabel`,
-`ResultPanel` (title, XP label, retry / report / continue).
+`ResultPanel` (title, XP label, retry / review answers / continue) and the full-screen `ReviewPanel`.
 
 The enemy and player cards sit over `ArenaStage`, the 3D scene that holds the models. The Broken
 Bot foe makes its own sounds on its clips (§2 Model sounds). For a Multiple Choice question
 `battle.gd` hides `AnswerInput` and `SubmitButton` and builds a `VBoxContainer` of four option
-`Button`s (56 px tall) in their place at runtime. `PlayerCard`'s box ends in `%GaugeRow`: four `stat_gauge.gd` rings (44 px) placed in the scene, each **named after the `CompanionState` stat it shows** (`hunger`, `energy`, `mood`, `health`; icon and ring colour set in the Inspector). `_refresh_gauges()` follows `CompanionState.stats_changed`, so a run's costs and hits show live. `stat_gauge.gd` is a `@tool` script, so the rings draw in the editor. `battle.gd`'s exports are grouped **Intro**, **Sound effects** and **Juice** (shake, flash strength, the `hurt_flash_color` / `lose_flash_color` screen flashes, the end-banner hold). After each answer `ResultPanel` is the review beat (answer or model answer with ✓ / ✗ per rubric point, explanation, feedback, source; Next held 1.5 s or 4 s), with `%ReportButton` to flag the item's AI content (shown only on the review beat). `region_map.tscn` has a full-screen off-white fade (`FadeLayer`, `CanvasLayer` 100 → `%Fade`, transparent in the editor): out when a house or gym is entered, in on arrival. Over the island, each of the 15 houses carries a bobbing `house_icon` (`ui/icon_trainer.svg`) in its type's colour (Identification teal, Essay lilac `8D82A8`, Multiple Choice amber; faint once cleared) and a `Label3D` (type, `Easy` or stars) shown only within 4 units of the explorer; walking up to a house unfolds a dark doorway (`1E2829`) over its door.
+`Button`s (56 px tall) in their place at runtime. `PlayerCard`'s box ends in `%GaugeRow`: four `stat_gauge.gd` rings (44 px) placed in the scene, each **named after the `CompanionState` stat it shows** (`hunger`, `energy`, `mood`, `health`; icon and ring colour set in the Inspector). `_refresh_gauges()` follows `CompanionState.stats_changed`, so a run's costs and hits show live. `stat_gauge.gd` is a `@tool` script, so the rings draw in the editor. `battle.gd`'s exports are grouped **Intro**, **Sound effects** and **Juice** (shake, flash strength, the `hurt_flash_color` / `lose_flash_color` screen flashes, the end-banner hold). After each answer `ResultPanel` is a short beat that shows only "Correct! Streak N" or "Not quite." and "n of N answered" (Next held 0.8 s); no answer is shown during a run. At the end (cleared or defeated) `%ReviewButton` (**Review answers**) opens `%ReviewPanel`: a scrollable `%ReviewList` of copies of the hidden `%ReviewRow` (a `Text` label with ✓ / ✗, the question, your answer, the correct answer or model answer with rubric marks, feedback and explanation, and a **Report** button), closed by `%CloseButton`. `region_map.tscn` has a full-screen off-white fade (`FadeLayer`, `CanvasLayer` 100 → `%Fade`, transparent in the editor): out when a house or gym is entered, in on arrival. Over the island, each of the 15 houses carries a bobbing `house_icon` (`ui/icon_trainer.svg`) in its type's colour (Identification teal, Essay lilac `8D82A8`, Multiple Choice amber; faint once cleared) and a `Label3D` (type, `Easy` or stars) shown only within 4 units of the explorer; walking up to a house unfolds a dark doorway (`1E2829`) over its door.
 
 
 ---
@@ -687,6 +686,6 @@ None known. `bot_lv1..5.png` was only read by the deleted `companion.gd`.
   for a saved world that kept its reviewer text.
 - **Study screen** (`flashcards.tscn`): `%TimerButton` in the top bar, "Focus 25:00" / "Rest mm:ss",
   disabled while the timer runs; `ProgressLabel` adds Kuiz's focus and the daily-goal note.
-- **Closet**: a costume not owned yet shows "Level N" (disabled) or its price in crystals; tapping a
-  priced one asks to buy it (`ConfirmModal`).
+- **Closet**: every costume is bought with crystals (only "None" is free). One not owned yet shows
+  "Level N" (disabled) or its price; tapping a priced one asks to buy it (`ConfirmModal`).
 - **Check-up tablet**: a fifth row, **Focus**.

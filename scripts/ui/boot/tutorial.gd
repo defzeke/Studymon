@@ -1,5 +1,5 @@
 extends CanvasLayer
-## The first-run tutorial over peek.tscn: Kuiz introduces itself, takes a profile and a name, then
+## The first-run tutorial over peek.tscn: Kuiz introduces itself, asks the player's name, then
 ## tours the rooms. A tap finishes the typing, then advances; a line with a prompt waits for it.
 ## A tap after the last line ends it (`finished`), and home.gd takes over.
 ## Contract: docs/ui-and-assets.md §2 Tutorial.
@@ -11,9 +11,8 @@ const FADE_TIME := 0.35
 # player must do once the line is shown.
 const LINES: Array[Dictionary] = [
 	{"text": "Hi there! Welcome to the hub! I’m Kuiz, your AI study partner and digital companion. I've been waiting so long for my system setup to finish so we could finally meet!", "clip": "Greetings"},
-	{"text": "First things first—let’s set up our shared user profile so I know who I’m teaming up with. Would you like to sign in with your Google Account to save your study progress automatically, or register a new profile?", "clip": "Blink", "prompt": "profile"},
-	{"text": "Awesome! Connection established and synced to the cloud. Now... what name should I call you, Partner?", "clip": "Charging", "prompt": "name"},
-	{"text": "{name}! What a cool name! It’s officially registered in my core memory now!", "clip": "Happy"},
+	{"text": "First things first: what should I call you, Partner?", "clip": "Blink", "prompt": "name"},
+	{"text": "{name}! What a cool name! It’s saved in my memory now!", "clip": "Happy"},
 	{"text": "Alright, {name}, welcome to our main hub—The Study Room! This is where I dock in my cradle to recharge when my energy gets low, and it's also where we launch into the overworld for study battles and review sessions!", "clip": "State_Charging", "room": "StudyRoom", "move": "jump"},
 	{"text": "Since we're an official team now, let me give you a proper tour of the rest of our base! Follow me!", "clip": "Celebrate"},
 	{"text": "Welcome to The Maintenance Bay! Mind the loose gears! Since I’m an AI pet, my frame needs a little care after long study sessions.", "clip": "Surprised", "room": "MaintenanceBay", "move": "walk"},
@@ -29,7 +28,6 @@ signal finished
 @onready var peek: Node3D = owner as Node3D
 @onready var speech: Control = %Speech
 @onready var text: Label = %Text
-@onready var continue_button: Button = %Continue
 @onready var name_row: Control = %NameRow
 @onready var name_input: LineEdit = %NameInput
 @onready var name_ok: Button = %NameOk
@@ -44,7 +42,6 @@ func _ready() -> void:
 	if GameState.tutorial_done:
 		speech.hide()
 		return
-	continue_button.pressed.connect(_next)
 	name_input.text_changed.connect(func(t: String) -> void: name_ok.disabled = t.strip_edges().is_empty())
 	name_input.text_submitted.connect(func(_t: String) -> void: _submit_name())
 	name_ok.pressed.connect(_submit_name)
@@ -70,7 +67,6 @@ func _unhandled_input(event: InputEvent) -> void:
 func _next() -> void:
 	_waiting = false
 	hint.modulate.a = 0.0
-	continue_button.hide()
 	name_row.hide()
 	_line += 1
 	if _line == LINES.size():
@@ -101,8 +97,6 @@ func _next() -> void:
 
 func _shown() -> void:
 	match LINES[_line].get("prompt", ""):
-		"profile":
-			continue_button.show()
 		"name":
 			name_row.show()
 			name_input.grab_focus()

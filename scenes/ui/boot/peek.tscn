@@ -593,23 +593,6 @@ theme_override_colors/font_color = Color(0.1608, 0.2196, 0.2275, 1)
 theme_override_font_sizes/font_size = 28
 autowrap_mode = 3
 
-[node name="Continue" type="Button" parent="Tutorial/Speech/Dialogue/Body"]
-unique_name_in_owner = true
-visible = false
-custom_minimum_size = Vector2(280, 64)
-layout_mode = 2
-size_flags_horizontal = 4
-theme_override_colors/font_color = Color(0.9686, 0.9608, 0.9373, 1)
-theme_override_colors/font_hover_color = Color(0.9686, 0.9608, 0.9373, 1)
-theme_override_colors/font_pressed_color = Color(0.9686, 0.9608, 0.9373, 1)
-theme_override_fonts/font = ExtResource("9_bold")
-theme_override_font_sizes/font_size = 28
-theme_override_styles/normal = SubResource("StyleBoxFlat_btn")
-theme_override_styles/hover = SubResource("StyleBoxFlat_btn")
-theme_override_styles/pressed = SubResource("StyleBoxFlat_btn_pressed")
-theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
-text = "Continue"
-
 [node name="NameRow" type="HBoxContainer" parent="Tutorial/Speech/Dialogue/Body"]
 unique_name_in_owner = true
 visible = false

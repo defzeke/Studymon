@@ -11,7 +11,7 @@ Terms used throughout this repo, in the sense this repo means them.
 | **Dirt** | `CompanionState.dirt`, 0 (clean) to 100: builds up over time and with meals and play, shows as spots and scratches on Kuiz, scrubbed off with the towel. |
 | **Outfit** | What Kuiz wears from the Playroom closet, `GameState.outfit`: one costume per slot (head, face, body), each a sticker on its head. |
 | **Battery health** | `CompanionState.battery_health`: the battery's capacity, like a phone's. Charging wears it, a worn battery drains energy faster, and a new one (30 crystals, the check-up tablet) restores 100 %. |
-| **Crystals** | Home's currency, `GameState.crystals`, shown top right with the logo's forehead gem. Saved; minigame rounds earn it, a new battery spends it. It cannot be bought (free launch). |
+| **Crystals** | Home's currency, `GameState.crystals`, shown top right with the logo's forehead gem. Saved; battles, the study goal, level-ups and minigames earn it; food, costumes, world slots and a new battery spends it. It cannot be bought (free launch). |
 | **Care tap** | One press of Feed, Pet or Play. Grants XP, nudges one stat, increments bond, and is subject to hourly diminishing returns. |
 | **Hunger / Energy / Mood / Health** | The four 0–100 stats on home's HUD gauges. Energy drains fastest; Hunger, Mood and Health drain at 0.7×, 0.6× and 0.2× of `STAT_DECAY_PER_SEC`. Focus (0.8×) is also 0–100 but only flashcards use it. |
 | **Bond** | A monotonic tap counter. It is saved, but nothing gates on it yet. |
@@ -55,7 +55,7 @@ Terms used throughout this repo, in the sense this repo means them.
 | Term | Meaning |
 |---|---|
 | **Region** | The overworld for one topic: the 3D island (`map.glb`) with its gyms, trainers and the Champion's gym, filled from the topic's questions. |
-| **Explorer** | The player's walking character on the island (`boy_explorer.glb`), steered with the on-screen joystick at the bottom-left. |
+| **Explorer** | The player's walking character on the island (`boy_explorer.glb` or `explorer_girl.glb`), steered with the on-screen joystick at the bottom-left; each world picks one, once. |
 | **Gym** | A group of encounters for one question type (`identification`, `essay`, `multiple_choice`). Clearing every gym is the Champion prerequisite. |
 | **Trainer** | A single-question encounter on a gym's road, ordered Easy to Hard. Every trainer of a gym must be beaten before its boss opens. |
 | **Boss** | The gym's hardest question, fought after its trainers; winning it clears the gym. 150 HP and double XP. |

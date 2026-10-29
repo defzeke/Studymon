@@ -103,8 +103,9 @@ the **Champion Gym** closes the region. Each is one **run** of a fixed item coun
   practice, each paying its own first-clear bonus. A run is cleared by surviving every item with at least one star (70 % right).
 - Questions are not one-to-one with items: `build_run()` rewrites a question as the needed type and
   cycles through the pool, so a short reviewer still fills the quota.
-- Time: counts give about a minute per item; the review beat after each answer (1.5 s right, 4 s wrong)
-  makes a miss get read. There is no timer.
+- Time: counts give about a minute per item. After each answer a 0.8 s beat shows only right or wrong;
+  the answers are read at the end in Review answers. There is no timer.
+- A run is won with at least one star (70 % right); below that, or out of HP, it is a defeat.
 
 ### 3.3 Difficulty scaling
 
