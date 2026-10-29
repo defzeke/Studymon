@@ -6,9 +6,41 @@ Where the work stands. Short on purpose — this is a **register**, not a backlo
 > doc that owns it, and **those docs win** if the two disagree. See [`rules.md`](rules.md) §2. Do not
 > let a second status list grow here.
 
-Last updated: 2026-10-26.
+Last updated: 2026-10-29.
 
 ## In flight
+
+**Store-readiness fixes — uncommitted.** For a v1 with **no accounts** and a **free launch**
+([`launch-plan.md`](launch-plan.md) §1):
+- the placeholder Crystal Shop is removed;
+- the tutorial flag is saved;
+- release builds use the HTTPS server (`Api.RELEASE_URL`), and the editor stays on the mock;
+- the AI-consent pop-up is shown before the first upload;
+- Report buttons send to `POST /v1/reports`;
+- Settings gains Privacy / Terms / Support links and Delete my data;
+- the dead `save_topic` / `update_mastery` uploads and the auth header (#2) are deleted;
+- per-IP daily limits on the server;
+- ball throws have a 3 s cooldown, and care XP has an hourly hard cap;
+- a run only clears with ≥ 1★;
+- mastery is keyed by question id (save v15);
+- `stats_changed` is throttled (#13).
+
+Checked: `backend/tests` (12 pass), headless Godot checks (38 pass) and the scene gates. Not opened in
+the editor GUI.
+
+
+**AI question generation, answer keys and answer checking — uncommitted, not run against the real
+model.** The study server (`backend/`) now has `POST /v1/extract` (Claude writes the questions and
+their answer keys from pasted text or a PDF; the server drops ungrounded or broken items) and
+`POST /v1/grade` (essays scored by the server from quoted evidence; Identification near-misses). The
+answer key (`accepted`, `rubric`, `model_answer`, `explanation`) is saved on the device with the
+world. Multiple Choice and Identification are checked offline: a one-letter answer no longer passes,
+and a filler essay scores 0. Each request has its own `HTTPRequest` and `job_id` (#7, #9 fixed). The
+release builds use the server, the editor stays on the mock. Checked: `backend/tests` (10 pass), a headless Godot check of the
+answer rules, and a client↔server run against a stubbed Claude. Open: run `backend/evals/` once with a
+real key (costs money) and record the figures in [`api-backend.md`](api-backend.md) §3. The model choice per
+route is the maintainer's. Rate limiting and a spend cap are needed before any public URL. Contract:
+[`api-backend.md`](api-backend.md), [`systems/battle.md`](systems/battle.md) §5.
 
 **Editor-editable UI for the region map, battle and study screens — uncommitted.** Fixed layout
 that code used to build is now nodes in the scenes, so it can be seen and tweaked in the Godot
@@ -162,17 +194,21 @@ switches back to `main room.mp3`. `assets/audio/loading.mp3` and its `.import` a
 | Work | Blocked by |
 |---|---|
 | Pricing the fridge, and gating Play at Level 5 | Waiting on the design: what the shop charges (minigames earn crystals and a new battery costs 30 for now), and whether Play waits for Level 5 |
-| Any real backend call | Issue #7 (endpoints disagree) and issue #2 (auth header is a redaction placeholder) |
 
-## Next
+## Next: before the store release
 
-P0/P1 first; each item's evidence and fix live in [`known-issues.md`](known-issues.md).
+Order from the store-readiness plan; the code items above are done.
 
-| Order | Item | Why now |
+| Order | Item | Needs |
 |---|---|---|
-| 1 | #8 / #5 Care input that earns XP, once the top-bar design lands | Makes Level 5 reachable and gives the gate back |
-| 2 | #2 `Bearer` header + a way to set `auth_token` | Required before `MOCK` can flip |
-| 3 | #9 Standardise the job envelope (or add a `grade_result` signal) and handle non-2xx | Real responses are dropped today |
+| 1 | Run `backend/evals/` with a real key, tune prompts, record cost; pick the model per route | an Anthropic key (costs money) |
+| 2 | Deploy the backend over HTTPS; set the workspace **monthly spend limit**; set `Api.RELEASE_URL` | a host (Cloud Run / Fly.io) |
+| 3 | Host the privacy policy, terms and support pages; set the three URLs in `settings.gd` | a domain or static host |
+| 4 | `export_presets.cfg` for Android (`.aab`, keystore out of git) and iOS; **start Google's 14-day closed test** | developer accounts, a Mac or macOS CI for iOS |
+| 5 | A real app icon (still Godot's default `icon.svg`), adaptive icon, iOS icon set | art |
+| 6 | Privacy labels / Data safety, age rating 13+, screenshots, review notes with a sample reviewer | store consoles |
+| 7 | Play-test the whole loop on a low-end Android phone and an iPhone (airplane mode, relaunch, large text) | devices |
+| later | App Attest / Play Integrity; Sentry; debounce saves (#14) | — |
 
 **Future, not started: Phase 5**, the real backend and the App Store / Google Play launch. The game
 stays on mocks until the maintainer decides to begin. The researched plan, store requirements and

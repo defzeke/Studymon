@@ -4,11 +4,13 @@ Turns reviewer material into an editable question bank, then into the region dat
 consumes.
 
 - **State / pipeline:** `scripts/autoload/session_manager.gd` (autoload `SessionManager`)
-- **Extraction (mock):** `scripts/autoload/api.gd` — `mock_upload_pdf()`, `_build_questions_from_text()`
+- **Extraction:** `scripts/autoload/api.gd` — `upload_reviewer()`; mock: `_build_questions_from_text()`;
+  real: `POST /v1/extract` on the study server ([`../api-backend.md`](../api-backend.md) §2)
 - **Worlds hub (topic list):** `scripts/ui/session_list.gd` → `scenes/ui/session_list.tscn`
 - **Upload / edit screen:** `scripts/review_session/categorizer.gd` → `scenes/review_session/categorizer.tscn`
 
-Status: **Implemented, fully mocked.** No PDF text is ever really parsed and no network call is made.
+Status: **Implemented.** The editor runs on the mock extractor (`Api.MOCK`); with the server on (release builds),
+Claude writes the questions and their answer keys, and PDFs are accepted.
 
 ---
 
@@ -27,7 +29,6 @@ categorizer.tscn  ◄───────────────────�
    ▼
 SessionManager.confirm_topic(name)
    ├─ add_topic_to_history()   → topics cache
-   ├─ Api.save_topic()         → PUT /topics/{id}  (no-op in MOCK)
    ├─ topic_saved signal
    └─ build_map_data() → region_generated → region_map.tscn
 ```
@@ -46,32 +47,39 @@ SessionManager.confirm_topic(name)
 Returns `{ok, words, chars}` or `{ok: false, error}`. The categorizer renders this live under the
 paste box as a green ✓ or a red warning (`categorizer.gd:103-117`).
 
-The gate always runs. A picked file is decoded as UTF-8 in `_on_file_selected` and its full text goes
-into the paste box, so it is validated like pasted text. A file that does not decode as text (a PDF)
-is refused with a status message and the box is left untouched.
+The gate runs for text. A picked file is decoded as UTF-8 in `_on_file_selected` and its full text goes
+into the paste box, so it is validated like pasted text. A file that does not decode as text is a
+**PDF upload** when the server is on (`Api.MOCK` false), the extension is `.pdf` and it is at most
+20 MB (`categorizer.gd` `MAX_PDF_BYTES`): the bytes are kept in `_pdf`, the paste box is cleared, and
+the server checks pages and content. Typing in the paste box afterwards drops the PDF. On mocks, or
+for any other file, it is refused with a status message.
 
 ---
 
 ## 3. Upload precedence
 
-The categorizer always calls `start_upload_from_text()`, which validates, sets `last_source_text`,
-and delegates to `start_upload()`. That emits `extraction_started`, then hands off to
-`Api.mock_upload_pdf()`.
+For text the categorizer calls `start_upload_from_text()`, which validates, sets `last_source_text`,
+and delegates to `start_upload()`; for a PDF it calls `start_upload(name, bytes)`. `start_upload()`
+sends bytes that do not decode as text on as a PDF, takes a fresh `Api.new_job_id("extract")`,
+emits `extraction_started` and calls `Api.upload_reviewer(job_id, name, text, pdf)`.
 
 Binary detection is literally `decoded.contains("�")` — the U+FFFD replacement character
-(`categorizer.gd`, `_on_file_selected`). A real PDF will almost always trip it and is refused.
+(`categorizer.gd`, `_on_file_selected`; `session_manager.gd`, `start_upload`).
 
 ---
 
 ## 4. Mock extraction
 
-`Api.mock_upload_pdf()` → `_execute_mock_upload()`:
+`Api.upload_reviewer()` on mocks → `_execute_mock_upload()`:
 
 ```text
-job_status("job_001", "processing", 0.0)     immediately
+job_status(job_id, "processing", 0.0)     immediately
 Timer 0.8 s
-job_status("job_001", "completed", 1.0, {topic_id, questions})
+job_status(job_id, "completed", 1.0, {topic_id, questions})
 ```
+
+The questions carry the older subset of the answer key ([`../api-backend.md`](../api-backend.md) §5):
+Identification and Multiple Choice blank their answer term out of the quoted excerpt (`_blank()`).
 
 ### Sentence splitter — `_split_sentences()` (`api.gd:217`)
 
@@ -120,15 +128,14 @@ Multiple Choice on generalization, and a hard Essay on trial-and-error practice 
 
 | `job_id` | `status` | Handling |
 |---|---|---|
-| `"grade"` | any | **ignored** — belongs to `battle.gd` |
 | `"topics"` | `completed` | Merges `result.topics` into the cache, emits `topics_listed` |
-| anything else | `processing` | `extraction_progress(job_id, progress)` |
-| anything else | `completed` with `questions` | Normalises each `type` to lowercase, defaults `confidence` to 0.7, sets `pending_questions` / `editing_topic_id` / `current_topic_id`, emits `extraction_completed` |
-| anything else | `completed` without `questions` | `extraction_failed(job_id, "No questions extracted")` |
-| anything else | `failed` | `extraction_failed(job_id, str(result))` |
+| not the current upload's id | any | **ignored** (grades, older uploads) |
+| the current upload's id | `processing` | `extraction_progress(job_id, progress)` |
+| the current upload's id | `completed` with `questions` | Normalises each `type` to lowercase, defaults `confidence` to 0.7, sets `pending_questions` / `editing_topic_id` / `current_topic_id`, emits `extraction_completed` |
+| the current upload's id | `completed` without `questions` | `extraction_failed(job_id, "No questions extracted")` |
+| the current upload's id | `failed` | `extraction_failed(job_id, str(result))`: the server's or the network's message |
 
-Any new async job type **must** pick a unique `job_id`, or `SessionManager` will swallow it as an
-extraction result.
+Every job takes its id from `Api.new_job_id()`, so results never cross between screens.
 
 ---
 
@@ -141,6 +148,7 @@ extraction result.
 | Change tier | `update_question(i, {"difficulty": "easy"\|"medium"\|"hard"})` | second dropdown on the type row |
 | Edit answer | `update_question(i, {"answer": ...})` | same field used as key concepts for essays; the correct option for MC |
 | Edit wrong options | `update_question(i, {"distractors": [3 strings]})` | three `LineEdit`s, MC rows only |
+| Edit accepted answers | `update_question(i, {"accepted": [...]})` | "Also accept" `LineEdit`, comma-separated, Identification rows only |
 | Delete | `remove_question(i)` | `remove_at`, then full re-render |
 | Add | `add_question(text, type, answer, key_concepts, difficulty, distractors)` | id `q_<n>_<rand0-9999>`, tier `medium`, confidence 0.5 |
 
@@ -158,6 +166,7 @@ the Godot editor); `_make_question_row` fills the copy and wires its signals. Ea
 - prompt `TextEdit`
 - type `OptionButton` and tier `OptionButton`
 - answer/key-concepts `LineEdit`
+- for Identification, an "Also accept" `LineEdit` (`Accepted`)
 - for Multiple Choice, three wrong-option `LineEdit`s
 
 Edits are applied by index, so **deleting a row while editing others is safe only because the whole
@@ -175,10 +184,8 @@ list is re-rendered** after every delete. Note that mastery keys also use indice
 
 1. `add_topic_to_history(editing_topic_id, name, pending_questions)` — overwrites an entry with the
    same id, else appends a `{id, name, question_count, questions}` record.
-2. `Api.save_topic()` — `PUT /topics/{id}`; in MOCK mode `_put` still fires an HTTPRequest at
-   `localhost:8000`, which simply fails and is ignored by `_on_request_completed`.
-3. `SaveManager.save_progress()` — the new topic is saved at once (a no-op until a save has been loaded).
-4. Emits `topic_saved`, then `_enter_overworld()` → `build_map_data()` → `region_generated`.
+2. `SaveManager.save_progress()` — the new topic is saved at once (a no-op until a save has been loaded).
+3. Emits `topic_saved`, then `_enter_overworld()` → `build_map_data()` → `region_generated`.
 
 `build_map_data()` (`session_manager.gd:178-187`) produces:
 
@@ -213,7 +220,7 @@ world's mastery, cleared trainers/gyms and Champion (keys starting `<topic_id>:`
 
 | Gap | Detail |
 |---|---|
-| No real PDF parsing | Files that do not decode as UTF-8 text are refused with a status message |
-| No real extraction | `Api.MOCK = true`; `/extract` is not called |
+| Mock cannot read PDFs | On mocks a PDF is refused; it needs the server |
+| Real extraction unproven | `/v1/extract` has been checked against a stubbed Claude only; run `backend/evals/` |
 | Source text not persisted | Re-opening a topic later cannot re-run extraction on the original reviewer |
 | Topic id collisions | `topic_<unix%100000>` repeats every ~27.8 hours |

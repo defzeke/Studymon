@@ -1,0 +1,5 @@
+Scarcity means that resources are limited while human wants are unlimited, so every choice has a cost. Opportunity cost is the value of the next best alternative given up when a choice is made.
+The law of demand states that, other things equal, as the price of a good rises, the quantity demanded falls. The law of supply states that as price rises, the quantity supplied rises. The point where the supply and demand curves cross is the market equilibrium.
+A price ceiling is a legal maximum price; when set below equilibrium it causes a shortage. A price floor is a legal minimum price, such as a minimum wage; when set above equilibrium it causes a surplus.
+Price elasticity of demand measures how strongly quantity demanded responds to a change in price. Goods with close substitutes tend to be elastic, while necessities such as medicine tend to be inelastic.
+Inflation is a general rise in the price level that reduces the purchasing power of money. Central banks fight inflation by raising interest rates, which makes borrowing more expensive and slows spending.

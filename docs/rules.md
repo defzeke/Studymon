@@ -95,7 +95,7 @@ build paths by string concatenation.
 the version literal (`data["v"] = 7` in `save_manager.gd`) and documents the migration in
 [`data-model.md`](data-model.md). Never silently reinterpret an existing field.
 
-**Mock mode stays working.** `Api.MOCK = true` is the only path the game actually runs today. When
+**Mock mode stays working.** The editor, the headless gates and debug builds run on `Api.MOCK`. When
 you add a real request, keep the mock branch functional and keep the response shape in
 [`api-backend.md`](api-backend.md) truthful.
 
@@ -148,9 +148,9 @@ is blocked and why. Severity definitions live in that file.
 
 These are unresolved and belong to the docs that own them:
 
-1. **Backend contract.** Client uses `/battle/grade` + a job envelope; `backend/README.md` documents
-   `/grade` + `/extract`. Pick one and update both sides (issue #7).
-2. **Auth.** `GameState.auth_token` is never set and the header is broken (issue #2). Is login in
-   scope for the vertical slice?
+1. ~~**Backend contract.**~~ Settled: `/v1/extract` and `/v1/grade` with the job envelope on both
+   sides ([`api-backend.md`](api-backend.md) §2; issue #7 fixed).
+2. ~~**Auth.**~~ Settled for v1: no accounts; saves stay on the device and the header was removed
+   (issue #2).
 3. **Codex.** The remote branch `feat/remove-codex` suggests it is being cut. Keep the button out of
    the UI until that lands.

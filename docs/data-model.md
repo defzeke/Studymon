@@ -6,7 +6,7 @@ no cloud sync.
 - **Path:** `user://studymon_save.json`
 - **Written by:** `SaveManager.save_game()` — `scripts/autoload/save_manager.gd:6`
 - **Read by:** `SaveManager.load_game()` — `scripts/autoload/save_manager.gd:24`
-- **Schema tag:** `"v": 14` (v14 keys `cleared_houses` per house, `"topic_id:gym_type#house_id"`, and `best_stars` house runs `"house:topic_id:gym_type#house_id"`; a v13 house key without an id still counts toward its type; v13 replaced `session.cleared_trainers` with `cleared_houses` and added `best_stars`; a gym cleared before counts as its house cleared; v12 dropped the `monetization` block with the weekly AI limit; an older save's block is ignored; v11 added `explorer`; v10 added `battery_health` and replaced `costume` with `outfit`; a v9 `costume` loads into its slot; v9 added `dirt` and `costume`; v8 added `hunger`, `health` and `crystals`; v7 added `player_name` and `food_stock`; older saves load with defaults. The tutorial flag is deliberately not saved, so the intro plays every launch)
+- **Schema tag:** `"v": 15` (v15 keys `session.mastery` by question id (`"topic_id:question_id"`; v14 index keys `"topic_id:<index>"` are rekeyed on load) and adds `tutorial_done` (a save with a `player_name` but no flag loads as done) and `ai_consent`; v14 keys `cleared_houses` per house, `"topic_id:gym_type#house_id"`, and `best_stars` house runs `"house:topic_id:gym_type#house_id"`; a v13 house key without an id still counts toward its type; v13 replaced `session.cleared_trainers` with `cleared_houses` and added `best_stars`; a gym cleared before counts as its house cleared; v12 dropped the `monetization` block with the weekly AI limit; an older save's block is ignored; v11 added `explorer`; v10 added `battery_health` and replaced `costume` with `outfit`; a v9 `costume` loads into its slot; v9 added `dirt` and `costume`; v8 added `hunger`, `health` and `crystals`; v7 added `player_name` and `food_stock`; older saves load with defaults)
 - **Loaded:** once at boot, deferred from `SaveManager._ready`
 - **Format:** `JSON.stringify` of a single `Dictionary`, pretty-print off
 
@@ -40,6 +40,8 @@ That is fine for the current scope but means there is **no type safety and no au
   "active_region_id": "",
   "large_text_enabled": false,
   "player_name": "",
+  "tutorial_done": true,
+  "ai_consent": false,
   "food_stock": { "apple": 3 },
   "crystals": 0,    // v8: home's currency; missing loads as 0
   "outfit": { "head": "crown", "body": "scarf" }, // v10: closet slot -> kuiz_look.gd COSTUMES id; a missing slot is bare
@@ -82,7 +84,7 @@ Field-by-field:
 | `campaign_unlocked_flag` | bool | `GameState` | Mirrors `campaign_ready` |
 | `active_region_id` | string | `GameState` | `topic_id` of the region being played |
 | `large_text_enabled` | bool | `GameState` | Applied to the Theme on load |
-| `session.mastery` | dict | `SessionManager._mastery` | Keyed `"<topic_id>:<q_index>"` |
+| `session.mastery` | dict | `SessionManager._mastery` | Keyed `"<topic_id>:<question id>"` (v15), so editing or deleting other questions keeps it |
 | `session.cleared_houses` | string[] | keys of `_cleared_houses` | `"topic_id:gym_type#house_id"`; house ids `h1`..`h15` come from `MapHouses.find()` |
 | `session.best_stars` | object | `_best_stars` | `"kind:topic_id:run_key"` → 0–3; run key is the type, or `type#house_id` for a house |
 | `session.cleared_gyms` | string[] | keys of `_cleared_gyms` | `"<topic_id>:<gym_type>"` |
@@ -93,23 +95,29 @@ Field-by-field:
 
 ## 2. Question dict
 
-Produced by the mock extractor (`api.gd:138`) or by user edits in the categorizer, and stored
-verbatim inside `session.topics[].questions`.
+Produced by the study server (`POST /v1/extract`, [`api-backend.md`](api-backend.md) §5), the mock
+extractor (`Api._build_questions_from_text`) or user edits in the categorizer, and stored verbatim
+inside `session.topics[].questions`. Together `answer`, `accepted`, `distractors` and `rubric` are the
+question's **answer key**: battles check answers against it on the device.
 
 | Key | Type | Purpose |
 |---|---|---|
-| `id` | string | `q1`, `q2`… from extraction; `q_<n>_<rand>` for manually added |
+| `id` | string | `q_<hash>` from the server, `q1`, `q2`… from the mock; `q_<n>_<rand>` for manually added |
 | `text` | string | The prompt shown in battle / the editor |
 | `type` | string | `"identification"`, `"essay"` or `"multiple_choice"` (always lowercased) |
 | `difficulty` | string | `"easy"`, `"medium"` or `"hard"` (v6; a missing or unknown value loads as `"medium"`) |
 | `answer` | string | Expected answer (Identification), a model excerpt (Essay) or the correct option (Multiple Choice) |
+| `accepted` | string[] | Identification: other answers that count as exact (synonyms, abbreviations, spellings). Optional; loads as `[]` with blanks dropped |
 | `distractors` | string[] | Multiple Choice only (v6): the wrong options; blanks are dropped on load |
-| `key_concepts` | string[] | Keywords used for essay coverage scoring |
+| `rubric` | `{point, keywords[], weight}`[] | Essay marking guide. Optional; without it `Api.rubric_for()` makes one point per key concept |
+| `key_concepts` | string[] | Essay key ideas (the rubric's points when the server wrote it); the fallback rubric |
+| `model_answer` | string | Essay: the ideal answer shown on the review beat and flashcard. Optional |
+| `explanation` | string | One line on why the answer is right, shown after answering and on the flashcard. Optional |
 | `confidence` | float | 0–1. Drives the categorizer's colour-coded badge; **not** sent to battle |
 | `source` | string | Source sentence excerpt; forwarded as `source` to a real grade call |
 
-Only `text`, `type`, `difficulty`, `answer`, `distractors` and `key_concepts` affect battle
-outcome. `confidence` is purely a "how much should I double-check this" hint for the player.
+Only `text`, `type`, `difficulty`, `answer`, `accepted`, `distractors`, `rubric` and `key_concepts`
+affect battle outcome. The answer-key keys are additive and optional, so saves keep `"v": 14`. `confidence` is purely a "how much should I double-check this" hint for the player.
 `SessionManager.normalize_question()` applies the defaults and repairs unplayable Multiple Choice
 rows (see [`systems/review-session.md`](systems/review-session.md) §6); a v5 save needs no migration.
 
@@ -133,7 +141,7 @@ saved-topic lookup is a linear scan by id, so a collision overwrites the older t
 ## 4. Mastery record
 
 ```jsonc
-"topic_001:2": {
+"topic_001:q3": {
   "state": 3,            // 0 NEW, 1 LEARNING, 2 REMASTER, 3 MASTERED
   "attempts": 4,         // every battle result, win or loss
   "correct": 3,          // wins only
@@ -164,10 +172,10 @@ These live only in memory and are lost on quit or scene change:
 | Battle handoff (`battle_topic_id`, `battle_q_index`, `battle_is_boss`, `battle_is_champion`) | `SessionManager` | Correct by design — a battle doesn't survive a restart |
 | Pomodoro (`_pomodoro_mode`, `_pomodoro_remaining`) | `CompanionState` | A running 25-minute focus timer is lost on quit |
 | Tap-cap counters (`_action_tap_counts`, `_last_hour_reset`) | `CompanionState` | Relaunching clears the hourly diminishing-returns counter — an easy exploit |
-| `GameState.user_id`, `auth_token` | `GameState` | Never set, never saved (no auth yet) |
-| `GameState.player_name` | `GameState` | Set by the tutorial, never saved; every launch replays the tutorial and asks again |
-| `GameState.tutorial_done` | `GameState` | Set when the tutorial ends, and by the Worlds hub and Settings on open (they are only reachable from home, so running one on its own still returns to home, not the intro); lets screens return home without replaying it, until the app closes |
-| `GameState.food_stock` | `GameState` | Home's food counts (id → count); a relaunch restocks the starting amounts |
+| `GameState.player_name` | `GameState` | Set by the tutorial; saved as `player_name` (v7) |
+| `GameState.tutorial_done` | `GameState` | Set when the tutorial ends, and by the Worlds hub and Settings on open (they are only reachable from home, so running one on its own still returns to home, not the intro). **Saved** as `tutorial_done` (v15) |
+| `GameState.ai_consent` | `GameState` | The player agreed to send reviewers and typed answers to the AI (the categorizer asks before the first upload; Settings can withdraw it). Without it the server is never called and essays grade offline. Saved as `ai_consent` (v15) |
+| `GameState.food_stock` | `GameState` | Home's food counts (id → count); saved as `food_stock` (v7) |
 
 ---
 

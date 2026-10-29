@@ -4,3 +4,9 @@
 
 # Godot MCP addon (installed locally, not committed)
 addons/godot_mcp/
+
+# Backend secrets and Python caches
+backend/.env
+__pycache__/
+.venv/
+.pytest_cache/

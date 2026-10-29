@@ -1,196 +1,225 @@
 # API and backend
 
 The rule the whole project is built around: **the Godot client never talks to an LLM provider.**
-It talks only to our own API, which holds the keys. Today the client doesn't talk to anything at
-all — every call is mocked.
+It talks only to our own API, which holds the Claude key. The API is a **stateless gateway**: it turns
+a reviewer into questions with their answer keys and grades essays, and stores nothing. Worlds,
+questions and answer keys live only in the device's save file ([`data-model.md`](data-model.md)).
 
 - **Client wrapper:** `scripts/autoload/api.gd` (autoload `Api`)
-- **Backend skeleton:** `backend/main.py`, `backend/requirements.txt`, `backend/README.md`
-- **Consumers:** `SessionManager` (extraction), `battle.gd` (grading), `companion` (starter data)
+- **Backend:** `backend/main.py` (routes, limits), `backend/ai.py` (Claude calls, answer-key checks,
+  essay score), `backend/tests/`, `backend/evals/`
+- **Consumers:** `SessionManager` (extraction), `battle.gd` (grading)
 
-Status: **Client = 100 % mock. Backend = health check only.**
+Status: **The editor and debug builds run on mocks; release builds use the server. Backend implemented; checked with unit tests and
+against a stubbed Claude, not yet against the real model.**
 
 ---
 
 ## 1. Client surface
 
 ```gdscript
-const MOCK := true
-const BASE_URL := "http://localhost:8000"
+const RELEASE_URL := ""                     # the deployed HTTPS server; set before exporting
+const DEV_USES_SERVER := false               # true: the editor talks to DEV_URL instead of the mock
+const DEV_URL := "http://127.0.0.1:8000"     # not localhost: it can resolve to IPv6, which uvicorn ignores
+var MOCK := OS.is_debug_build() and not DEV_USES_SERVER
+var BASE_URL := DEV_URL if OS.is_debug_build() else RELEASE_URL
+const EXTRACT_TIMEOUT := 180.0
+const GRADE_TIMEOUT := 30.0
 
 signal job_status(job_id: String, status: String, progress: float, result: Variant)
 ```
 
 | Method | MOCK behaviour | Real behaviour |
 |---|---|---|
-| `mock_upload_pdf(topic, source_text)` | 0.8 s timer → `job_status("job_001", "completed", …)` | **no HTTP call is made even when `MOCK = false`** |
-| `mock_get_topics()` | `job_status("topics", "completed", …, {topics: [...]})` with an empty list (the old fake "Biology 101" is gone) | — |
-| `grade_battle_question(q, answer)` | local rubric, which reads `q.difficulty` for the Hard Identification rule → `job_status("grade", "completed", …, {score, feedback, damage, type})`. Multiple Choice is graded in `battle.gd` and never calls this | `POST /battle/grade` |
-| `save_topic(topic_id, questions)` | fires HTTP anyway (fails silently against localhost) | `PUT /topics/{id}` |
-| `update_mastery(topic, qid, state)` | not called (guarded by `if not Api.MOCK`) | `PUT /mastery/{topic}/{qid}` |
-
-Internal helpers use `_post` / `_put` / `_http_get` prefixes on purpose — plain `_get` would collide
-with `Object._get(StringName)` (noted in the file header).
+| `new_job_id(kind)` | `"<kind>_<n>"`, unique per session | same |
+| `upload_reviewer(job_id, topic, text, pdf)` | the mock extractor (§5), 0.8 s → `job_status(job_id, "completed", …)` | `processing`, then `POST /v1/extract` |
+| `grade_battle_question(job_id, q, answer, mode)` | `mode "essay"` → `essay_offline()`; `"identification"` → score 0 (a near-miss stays a miss) | `POST /v1/grade` |
+| `check_identification(q, answer, strict)` | on the device, never networked: `{verdict, feedback}` | same |
+| `essay_offline(q, answer)` / `rubric_for(q)` | the offline essay mark ([`systems/battle.md`](systems/battle.md) §5) | used when the server cannot answer |
+| `report_content(job_id, kind, text)` | `completed` at once | `POST /v1/reports` |
+| `mock_get_topics()` | `job_status("topics", "completed", …, {topics: []})` | — |
 
 ### HTTP plumbing
 
-One `HTTPRequest` child is created in `_ready()`. Every call reuses it, so **requests are serialised
-implicitly** — a second call while one is in flight will error out. There is no queue, timeout,
-retry or cancellation.
+Every call makes its **own `HTTPRequest`** (freed when done), so requests never cancel each other.
+Every outcome reaches `job_status` under the caller's `job_id`:
 
-```gdscript
-func _on_request_completed(result, _response_code, _headers, body) -> void:
-    if result != HTTPRequest.RESULT_SUCCESS: return          # silent
-    var parsed = JSON.parse_string(body.get_string_from_utf8())
-    if typeof(parsed) != TYPE_DICTIONARY: return             # silent
-    if data.has("job_id"):                                   # <-- only dicts with job_id are surfaced
-        job_status.emit(jid, status, progress, data.get("result", null))
-```
+| Outcome | Emitted |
+|---|---|
+| 2xx with an envelope whose `job_id` matches | the envelope's `status`, `progress`, `result` |
+| network failure or timeout | `"failed"`, `"No connection to the study server."` |
+| 429 (a daily limit, §6) | `"failed"`, `"You've reached today's AI limit. Try again tomorrow."` |
+| other non-2xx | `"failed"`, `"The study server returned an error (<code>)."` |
+| unreadable body, or a different `job_id` | `"failed"`, `"The study server sent an unreadable reply."` |
 
-Two consequences for anyone wiring the backend:
-
-1. **A plain `{score, feedback, damage}` response is dropped** — `_on_request_completed` only emits
-   when the payload contains a `job_id`, and `battle.gd` only listens for `job_id == "grade"`.
-   Either wrap the response as `{"job_id": "grade", "status": "completed", "result": {...}}` or
-   change the parser.
-2. HTTP status codes are ignored (`_response_code` is unused), so a 401/500 looks identical to a
-   network failure: nothing happens.
+`SessionManager` only takes its own extraction id and `battle.gd` only its own grade id (rules §5).
+Against a local server that is down, the failure arrives only at the timeout (30 s for a grade); with
+no network at all, the address lookup fails at once.
 
 ### Auth
 
-```gdscript
-func _auth_headers() -> Array:
-    var headers: Array = []
-    if GameState.auth_token != "":
-        headers.append("Authorization: *** " + GameState.auth_token)
-    return headers
-```
-
-The scheme is literally `*** `, not `Bearer `. This is almost certainly a redaction that was
-committed into the source. `GameState.auth_token` is never set anyway (no login flow), so the header
-never ships. See `known-issues.md` #2.
+None: v1 has no accounts, and the client sends no `Authorization` header. Worlds and mastery never
+leave the device; only the reviewer and typed answers are sent, to be processed and dropped. See §6
+for what protects the gateway.
 
 ---
 
-## 2. Endpoints the client expects
+## 2. Endpoints
 
-| Call site | Method + path | Body | Expected response |
-|---|---|---|---|
-| `save_topic()` | `PUT /topics/{topic_id}` | `{"questions": [question…]}` | ignored |
-| `grade_battle_question()` | `POST /battle/grade` | see below | `{"job_id": "grade", "status": "completed", "result": {"score": 0…1, "feedback": str, "damage": int}}` |
-| `update_mastery()` | `PUT /mastery/{topic_id}/{question_id}` | `{"state": "new"\|"learning"\|"remaster"\|"mastered"}` | ignored |
-| *(not implemented)* | `POST /extract` | PDF / text | `{"job_id", "status", "progress", "result": {"topic_id", "questions": […]}}` |
-
-Grade request payload (`api.gd:49-56`):
+Every response is HTTP 200 with the job envelope; a problem the player should read is
+`status: "failed"` with a message in `result`. Request validation errors are 422 (reported by the
+client as a server error).
 
 ```jsonc
-{
-  "type": "essay",                 // or "identification"; Multiple Choice never reaches the API
-  "question": "Explain how …",
-  "answer": "The player's text",
-  "source": "original excerpt",
-  "expected": "model answer / key term",
-  "key_concepts": ["feedback", "reward"]
-}
+{"job_id": "<echoed>", "status": "completed" | "failed", "progress": 1.0, "result": …}
 ```
 
-Mastery names are lowercased strings from `SessionManager.MASTERY_NAMES`; question ids come from the
-question dict (`q1`, `q_3_4821`, …) and fall back to `"q_<index>"` when missing.
+### `POST /v1/extract`: reviewer → questions + answer keys
+
+```jsonc
+// request: text, or a PDF
+{"job_id": "extract_3", "topic_name": "Biology", "text": "…"}            // 80 – 200 000 chars
+{"job_id": "extract_3", "topic_name": "Biology", "pdf_base64": "…"}      // ≤ 20 MB, ≤ 100 pages
+// result
+{"topic_id": "topic_biology", "questions": [question…]}                    // question shape: §5
+```
+
+One streamed Claude call with a JSON-schema structured output (`ai.QUESTION_SET_SCHEMA`),
+`effort: "high"`, adaptive thinking and the server-side refusal fallback (`fallbacks: "default"`). The
+reviewer is wrapped in `<reviewer>` tags as data. The system prompt (`ai.EXTRACT_SYSTEM`) carries the
+generation rules of [`systems/gameplay-structure.md`](systems/gameplay-structure.md) §3.1.
+
+The server then **checks every question and drops the ones the game cannot trust** (`ai.check_questions`):
+
+| Check | On failure |
+|---|---|
+| `source` appears in the reviewer (whitespace and case ignored); for a PDF against its `pypdf` text, skipped when it has none (a scan) | dropped |
+| a duplicate question text | dropped |
+| Identification: its answer is not inside its question; `accepted` starts with `answer`, deduplicated | dropped / repaired |
+| Multiple Choice: at least 3 distinct wrong options, none equal to the answer or an accepted alias; extras trimmed | dropped / repaired |
+| Essay: 3–5 rubric points with weight > 0; weights rescaled to sum to 1; extras trimmed | dropped / repaired |
+
+The server sets `id` (`q_<sha1 of the text>`) and `confidence` (1.0, −0.15 per repair), and caps the
+bank at 45. Failures the player sees: too short, a PDF over the limits or unreadable, a refusal, an
+answer cut off at `max_tokens`, rate limits, no usable questions.
+
+### `POST /v1/grade`: one typed answer
+
+```jsonc
+{"job_id": "grade_12", "mode": "identification" | "essay", "question": "…", "answer": "<typed>",
+ "expected": "…", "accepted": ["…"], "rubric": [{"point", "keywords", "weight"}],
+ "model_answer": "…", "source": "…"}
+// result, identification: {"score": 1.0 | 0.0, "feedback": "…"}
+// result, essay:          {"score": 0..1, "covered": [bool per rubric point], "feedback": "…"}
+```
+
+The typed answer is wrapped in `<answer>` tags as data. For an essay, Claude returns per point
+`{covered, evidence}` and the **server** scores it: a point counts only when its evidence is really in
+the answer ([`systems/battle.md`](systems/battle.md) §5). `effort` is `low` for an Identification
+check, `medium` for an essay. An essay request with no rubric fails.
+
+### `GET /health`
+
+`{"ok": true}`.
 
 ---
 
-## 3. Drift from the documented backend
+## 3. Models and cost
 
-`backend/README.md` describes a **different** contract than the client implements:
-
-| Concern | Backend README | Client actually does |
+| Route | Model (`backend/ai.py`) | Rough cost per call |
 |---|---|---|
-| Grading path | `POST /grade` | `POST /battle/grade` |
-| Extraction path | `POST /extract` | never called — `mock_upload_pdf()` has no real branch |
-| Grade response | `{score_0_1, feedback}` | `{job_id, status, result: {score, feedback, damage}}` |
-| PDF upload | `{pdf}` | no request at all |
-| Auth | Supabase anon key server-side | header never sent |
+| `/v1/extract` | `EXTRACT_MODEL = "claude-opus-5-5"` | $0.20 – 0.30 per reviewer (most of it the ~10k tokens of questions written) |
+| `/v1/grade` | `GRADE_MODEL = "claude-opus-5-5"` | about $0.01 per essay, less for an Identification check |
 
-Treat `backend/README.md` as intent, not as a spec. Whichever side you keep, one of them must change.
+Estimates, not measurements; record real figures after the first eval run. [`launch-plan.md`](launch-plan.md)
+suggests Sonnet 5.5 for extraction and Haiku 5.5 for grading to cut cost; that is a one-constant change
+per route, to be decided by the maintainer and checked with the evals.
 
 ---
 
-## 4. Backend state
+## 4. Running the backend
 
-```python
-# backend/main.py — 13 lines
-app = FastAPI(title="Studymon API")
-
-@app.get("/health")
-def health() -> dict:
-    return {"ok": True}
+```powershell
+cd backend
+copy .env.example .env      # put ANTHROPIC_API_KEY in it, or `ant auth login`
+uv run --no-project --with-requirements requirements.txt uvicorn main:app --port 8000
+# tests (no Claude calls)
+uv run --no-project --with-requirements requirements.txt --with pytest --with httpx python -m pytest tests
+# quality evals (calls Claude, costs money)
+uv run --no-project --with-requirements requirements.txt python evals/run_evals.py --yes
 ```
 
-- `requirements.txt`: `fastapi>=0.115`, `uvicorn[standard]>=0.30`. No Anthropic SDK, no Supabase
-  client, no PDF library, no `.env` handling.
-- No auth, no database, no object storage, no rate limiting, no CORS setup (relevant if you ever run
-  the client in a browser export).
-- Run: `uvicorn main:app --reload --port 8000` from `backend/`, then `curl localhost:8000/health`.
+The SDK reads `ANTHROPIC_API_KEY` from the environment. To use it from the editor, set
+`Api.DEV_USES_SERVER = true` ([`skills.md`](skills.md) §*Use the real study server*).
+
+**Evals** (`backend/evals/`): four reviewers (biology, Philippine history, economics, programming) and
+seven graded answers (essay perfect, partial, off-topic, filler, injection; Identification synonym,
+broader term). A reviewer passes when ≥ 80 % of its generated questions survive the checks and every
+type has ≥ 3; an answer passes when its score lands in its expected band. Run it on every prompt or
+model change. **Not yet run.**
 
 ---
 
-## 5. Contract for the mock extractor
+## 5. The question shape (both paths)
 
-If you replace `mock_upload_pdf()` with a real call, the response must preserve this shape because
-`SessionManager._on_job_status` depends on it:
+`SessionManager._on_job_status` takes any completed envelope with `result.questions`, passes each
+through `normalize_question()`, and defaults a missing `confidence` to 0.7.
 
 ```jsonc
 {
-  "job_id": "job_001",
-  "status": "processing"            // or "completed" / "failed"
-  "progress": 0.0,
-  "result": null
+  "id": "q_1a2b3c4d5e",
+  "type": "identification",               // or "essay", "multiple_choice"
+  "difficulty": "easy",                   // "medium", "hard"
+  "text": "Which organelle holds chlorophyll?",
+  "answer": "chloroplast",
+  "accepted": ["chloroplast", "chloroplasts"],     // Identification
+  "distractors": ["mitochondrion", "nucleus", "ribosome"],   // Multiple Choice
+  "rubric": [{"point": "…", "keywords": ["…"], "weight": 0.4}],   // Essay
+  "key_concepts": ["…"],                  // rubric points (Essay) or [answer]
+  "model_answer": "…",
+  "explanation": "…",
+  "source": "…verbatim reviewer excerpt…",
+  "confidence": 1.0
 }
 ```
 
-and on completion:
-
-```jsonc
-{
-  "job_id": "job_001",
-  "status": "completed",
-  "progress": 1.0,
-  "result": {
-    "topic_id": "topic_biology_101",
-    "questions": [
-      {
-        "id": "q1",
-        "text": "What key term is described here? \"…\"",
-        "type": "identification",          // or "essay"
-        "answer": "photosynthesis",
-        "key_concepts": ["chlorophyll", "light"],
-        "confidence": 0.85,
-        "source": "…excerpt…"
-      }
-    ]
-  }
-}
-```
-
-Missing `confidence` defaults to 0.7; `type` is lowercased; missing `questions` becomes
-`extraction_failed`. Any `job_id` other than `"grade"` / `"topics"` is treated as an extraction job,
-so keep `"job_001"` or generate ids that cannot collide with those two.
+The **mock extractor** (`Api._build_questions_from_text`) produces the older subset (`text`, `type`,
+`difficulty`, `answer`, `distractors`, `key_concepts`, `source`, `confidence`): up to 12 sentences of
+pasted text, rotating the three types, with the answer term blanked (`_____`) out of Identification
+and Multiple Choice questions. Its essays still quote the passage they ask about. A PDF cannot be read
+on mocks and gets the five canned fallback questions.
 
 ---
 
-## 6. Suggested minimum to go live
+## 6. Protection, consent and reports
 
-> The fuller, store-aware plan (accounts, quotas, evals, release pipeline) is in
-> [`launch-plan.md`](launch-plan.md). It is future work; the game stays on mocks for now.
+**Consent.** Nothing is sent until the player agrees: the categorizer shows `GameState.AI_CONSENT_TEXT`
+before the first upload, and Settings can withdraw it (`GameState.ai_consent`, saved). Without it
+`upload_reviewer()` and `grade_battle_question()` fail at once on the real path, so essays grade on
+the device. The text must stay true to what the server sends (Apple 5.1.2(i)).
 
-1. Decide the real paths (`/grade` vs `/battle/grade`) and fix the client **and** `backend/README.md`.
-2. Teach `_on_request_completed` to surface non-`job_id` payloads (or standardise every response on
-   the job envelope) and to report non-2xx codes through a signal.
-3. Fix the `Authorization` scheme to `Bearer ` and add a real token source (Supabase or your own).
-4. Implement `POST /extract` server-side: PDF → Claude document input → structured JSON, matching
-   §5. Keep raw extraction separate from player edits (the plan's requirement).
-5. Implement grading server-side with the hybrid rubric (50 % key-concept coverage, 50 % holistic)
-   and return `damage` so scoring is tunable without a client update.
-6. If usage limits come back, enforce them on the server; the client-side weekly limit was removed.
-7. Add timeouts/retries and a request queue before shipping; the single shared `HTTPRequest` will
-   drop concurrent calls.
+**Daily limits.** No accounts means anyone who finds the URL could spend the key, so `main.py` counts
+calls per client IP per UTC day (`DAILY_LIMITS`: 5 extracts, 300 grades, 20 reports) and for everyone
+together (`DAILY_TOTAL`, 20 000). Over a limit the reply is HTTP **429** with a `failed` envelope, and the
+client shows "You've reached today's AI limit. Try again tomorrow." The IP is the last
+`X-Forwarded-For` entry (the one the host's proxy appends) or the socket address. The counts live in
+memory per instance, so they are a brake, not a guarantee: the real cap is the Anthropic workspace's
+**monthly spend limit**, which must be set before release.
+
+### `POST /v1/reports`: flag AI content
+
+```jsonc
+{"job_id": "report_4", "kind": "question" | "feedback", "text": "…"}   // ≤ 4000 chars
+// result: {"ok": true}
+```
+
+Google Play requires an in-app way to report offensive AI output. The categorizer's **Report** on each
+question row and the battle review beat's **Report** call `Api.report_content()`. The server only
+logs the report (`log.warning`); read reports in the host's log viewer.
+
+### Still needed before release
+
+- Set the workspace monthly spend limit; later add App Attest / Play Integrity
+  ([`launch-plan.md`](launch-plan.md) §5.3).
+- Set `RELEASE_URL` to the deployed HTTPS server, and the policy URLs in `settings.gd`, before exporting.
+- If accounts arrive, send `Authorization: Bearer <token>` ([`launch-plan.md`](launch-plan.md) §5.2).

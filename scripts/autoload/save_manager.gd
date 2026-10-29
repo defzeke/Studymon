@@ -19,11 +19,13 @@ func load_once() -> void:
 
 func save_game() -> bool:
 	var data := CompanionState.to_dict()
-	data["v"] = 14
+	data["v"] = 15
 	data["campaign_unlocked_flag"] = GameState.campaign_unlocked_flag
 	data["active_region_id"] = GameState.active_region_id
 	data["large_text_enabled"] = GameState.large_text_enabled
 	data["player_name"] = GameState.player_name
+	data["tutorial_done"] = GameState.tutorial_done
+	data["ai_consent"] = GameState.ai_consent
 	data["food_stock"] = GameState.food_stock
 	data["crystals"] = GameState.crystals
 	data["outfit"] = GameState.outfit
@@ -38,6 +40,26 @@ func save_game() -> bool:
 	f.store_string(JSON.stringify(data))
 	f.close()
 	return true
+
+## Settings' "Delete my data": removes the save file and puts every saved value back to a fresh game.
+func delete_all() -> void:
+	if FileAccess.file_exists(SAVE_PATH):
+		DirAccess.remove_absolute(SAVE_PATH)
+	CompanionState.from_dict({})
+	SessionManager.from_dict({})
+	SessionManager.pending_questions = []
+	SessionManager.editing_topic_id = ""
+	SessionManager.current_topic_id = ""
+	GameState.player_name = ""
+	GameState.tutorial_done = false
+	GameState.ai_consent = false
+	GameState.food_stock = {}
+	GameState.outfit = {}
+	GameState.explorer = "boy"
+	GameState.explorer_picked = false
+	GameState.active_region_id = ""
+	GameState.set_campaign_unlocked(false)
+	GameState.add_crystals(-GameState.crystals)
 
 ## Progress saves never run before a load, so a scene run on its own cannot overwrite the real save.
 func save_progress() -> void:
@@ -60,6 +82,9 @@ func load_game() -> bool:
 		GameState.set_campaign_unlocked(true)
 	GameState.active_region_id = str(parsed.get("active_region_id", ""))
 	GameState.player_name = str(parsed.get("player_name", ""))
+	# Saves from before v15 lack the flag; a saved name means the tutorial was already played.
+	GameState.tutorial_done = bool(parsed.get("tutorial_done", GameState.player_name != ""))
+	GameState.ai_consent = bool(parsed.get("ai_consent", false))
 	var stock: Variant = parsed.get("food_stock", {})
 	if typeof(stock) == TYPE_DICTIONARY:
 		for id in stock:

@@ -93,8 +93,14 @@ func _answer_text(q: Dictionary) -> String:
 	if answer != "":
 		parts.append(answer)
 	var concepts: Array = q.get("key_concepts", [])
+	var model := str(q.get("model_answer", "")).strip_edges()
+	if str(q.get("type", "")) == "essay" and model != "" and model != answer:
+		parts.append(model)
 	if str(q.get("type", "")) == "essay" and not concepts.is_empty():
 		parts.append("Key ideas: " + ", ".join(concepts))
+	var why := str(q.get("explanation", "")).strip_edges()
+	if why != "":
+		parts.append(why)
 	return "\n".join(parts) if not parts.is_empty() else "(No answer written for this card.)"
 
 func _on_flip() -> void:

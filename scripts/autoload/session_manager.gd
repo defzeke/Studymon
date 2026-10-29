@@ -59,12 +59,20 @@ func _ready() -> void:
 # --- Topics history (mock-persisted in memory until SaveManager handles it) ---
 
 ## Fills defaults and repairs rows a battle could not play: an unknown tier becomes medium, and a
-## Multiple Choice row without a correct answer and a wrong option becomes Identification.
+## Multiple Choice row without a correct answer and a wrong option becomes Identification. The answer
+## key (`accepted`, `rubric`, `model_answer`, `explanation`) is optional: Api reads it with defaults.
 func normalize_question(q: Dictionary) -> Dictionary:
 	var d: Dictionary = q.duplicate(true)
+	if str(d.get("id", "")) == "":
+		d["id"] = "q_%d_%d" % [Time.get_ticks_usec(), randi() % 10000]
 	d["type"] = str(d.get("type", "essay")).to_lower()
 	var tier := str(d.get("difficulty", "medium")).to_lower()
 	d["difficulty"] = tier if tier in DIFFICULTIES else "medium"
+	var accepted: Array = []
+	for a in d.get("accepted", []):
+		if str(a).strip_edges() != "":
+			accepted.append(str(a).strip_edges())
+	d["accepted"] = accepted
 	if d["type"] == "multiple_choice":
 		var wrong: Array = []
 		for x in d.get("distractors", []):
@@ -148,9 +156,10 @@ func validate_source_text(text: String) -> Dictionary:
 
 func start_upload(topic_name: String, pdf_bytes: PackedByteArray, source_hint: String = "") -> void:
 	# Wire reviewer input through to the extractor. Precedence: explicit hint
-	# (paste box) > decodable bytes > previous last_source_text. Binary PDFs
-	# won't decode cleanly — then the mock falls back to editable placeholders.
+	# (paste box) > decodable bytes > previous last_source_text. Bytes that are not text (a PDF) go to
+	# the server as they are; the mock cannot read them and falls back to editable placeholders.
 	var hint := source_hint.strip_edges()
+	var pdf := PackedByteArray()
 	if hint != "":
 		last_source_text = source_hint
 	elif pdf_bytes.size() > 0:
@@ -159,9 +168,10 @@ func start_upload(topic_name: String, pdf_bytes: PackedByteArray, source_hint: S
 			last_source_text = decoded
 		else:
 			last_source_text = ""
-	_active_job_id = "job_001"
+			pdf = pdf_bytes
+	_active_job_id = Api.new_job_id("extract")
 	extraction_started.emit(_active_job_id)
-	Api.mock_upload_pdf(topic_name, last_source_text)
+	Api.upload_reviewer(_active_job_id, topic_name, last_source_text, pdf)
 
 func start_upload_from_text(topic_name: String, source_text: String) -> void:
 	var v := validate_source_text(source_text)
@@ -172,9 +182,6 @@ func start_upload_from_text(topic_name: String, source_text: String) -> void:
 	start_upload(topic_name, source_text.to_utf8_buffer())
 
 func _on_job_status(job_id: String, status: String, progress: float, result: Variant) -> void:
-	# Grade jobs belong to the battle scene (Api._mock_grade_done) — not extraction.
-	if job_id == "grade":
-		return
 	# Handle topics listing (Api mocks topics via job_status with job_id "topics")
 	if job_id == "topics" and status == "completed" and typeof(result) == TYPE_DICTIONARY:
 		var topics_arr: Array[Dictionary] = []
@@ -191,6 +198,8 @@ func _on_job_status(job_id: String, status: String, progress: float, result: Var
 			if not found:
 				_topics.append(t)
 		topics_listed.emit(_topics.duplicate(true))
+		return
+	if job_id != _active_job_id:
 		return
 	match status:
 		"processing":
@@ -238,7 +247,6 @@ func confirm_topic(topic_name: String = "") -> void:
 		return
 	var topic_label := topic_name if topic_name != "" else editing_topic_id
 	add_topic_to_history(editing_topic_id, topic_label, pending_questions)
-	Api.save_topic(editing_topic_id, pending_questions)
 	SaveManager.save_progress()
 	topic_saved.emit(editing_topic_id)
 	_enter_overworld(editing_topic_id)
@@ -429,10 +437,11 @@ func stars_for(accuracy: float) -> int:
 			stars += 1
 	return stars
 
-## Settles a finished run: marks the house / gym / Champion cleared on a win, pays crystals and XP
-## (replays pay REPLAY_RATE, a defeat DEFEAT_RATE of the per-item pay) and charges Kuiz the effort.
-## Returns {stars, coins, xp, first, replay} for the results panel.
-func report_run(won: bool, correct: int, total: int, best_streak: int) -> Dictionary:
+## Settles a finished run: a win with at least one star (STAR_ACCURACY[0] right) clears the house / gym
+## / Champion and pays crystals and XP (replays pay REPLAY_RATE); surviving without a star, or a
+## defeat, pays DEFEAT_RATE of the per-item pay and clears nothing.
+## Returns {stars, coins, xp, first, replay, cleared} for the results panel.
+func report_run(survived: bool, correct: int, total: int, best_streak: int) -> Dictionary:
 	var pay: Dictionary = RUN_REWARDS[battle_kind]
 	var first := false
 	match battle_kind:
@@ -442,8 +451,9 @@ func report_run(won: bool, correct: int, total: int, best_streak: int) -> Dictio
 			first = not is_gym_cleared(battle_topic_id, battle_type)
 		"champion":
 			first = not is_champion_defeated(battle_topic_id)
-	var replay := won and not first
 	var stars := stars_for(float(correct) / maxf(1.0, float(total)))
+	var won := survived and stars > 0
+	var replay := won and not first
 	var coins := float(correct * int(pay["coin"]))
 	var xp := float(correct * int(pay["xp"]))
 	if won:
@@ -466,7 +476,7 @@ func report_run(won: bool, correct: int, total: int, best_streak: int) -> Dictio
 	if won:
 		_mark_run_cleared(stars)
 	SaveManager.save_progress()
-	return {"stars": stars, "coins": coins_won, "xp": xp_won, "first": first, "replay": replay}
+	return {"stars": stars, "coins": coins_won, "xp": xp_won, "first": first, "replay": replay, "cleared": won}
 
 func _mark_run_cleared(stars: int) -> void:
 	var k := "%s:%s" % [battle_topic_id, battle_type]
@@ -489,7 +499,6 @@ func _mark_run_cleared(stars: int) -> void:
 
 enum Mastery { NEW, LEARNING, REMASTER, MASTERED }
 const MASTERY_DECAY_DAYS := 7
-const MASTERY_NAMES: Array[String] = ["new", "learning", "remaster", "mastered"]
 
 signal mastery_changed
 signal champion_defeated(topic_id: String)
@@ -497,8 +506,11 @@ signal champion_defeated(topic_id: String)
 var _mastery: Dictionary = {}
 var _champion_defeated: Dictionary = {}
 
+## Mastery is keyed by the question's id, so editing or deleting other questions keeps it (save v15).
 func _mastery_key(topic_id: String, q_idx: int) -> String:
-	return "%s:%d" % [topic_id, q_idx]
+	var qs := _questions_for(topic_id)
+	var qid := str((qs[q_idx] as Dictionary).get("id", "")) if q_idx >= 0 and q_idx < qs.size() else ""
+	return "%s:%s" % [topic_id, qid if qid != "" else "#%d" % q_idx]
 
 func get_mastery_state(topic_id: String, q_idx: int) -> int:
 	var k := _mastery_key(topic_id, q_idx)
@@ -630,12 +642,6 @@ func record_battle_outcome(topic_id: String, q_idx: int, won: bool) -> void:
 				st = Mastery.LEARNING
 	rec["state"] = st
 	_mastery[k] = rec
-	if not Api.MOCK:
-		var qs := _questions_for(topic_id)
-		var qid := "q_%d" % q_idx
-		if q_idx >= 0 and q_idx < qs.size():
-			qid = str((qs[q_idx] as Dictionary).get("id", qid))
-		Api.update_mastery(topic_id, qid, MASTERY_NAMES[st])
 	mastery_changed.emit()
 	# Phase 9: rule-based companion insight after every battle (mock and real)
 	var insight := _check_insight_triggers(topic_id, q_idx, won, prev_st)
@@ -729,5 +735,13 @@ func from_dict(data: Dictionary) -> void:
 				qs.append(normalize_question(q) if q is Dictionary else q)
 			topic["questions"] = qs
 			_topics.append(topic)
+	# v15: mastery was keyed "topic:<index>"; rekey it by the question's id.
+	for k: String in _mastery.keys():
+		var cut := k.rfind(":")
+		if k.substr(cut + 1).is_valid_int():
+			var moved := _mastery_key(k.left(cut), int(k.substr(cut + 1)))
+			if moved != k:
+				_mastery[moved] = _mastery[k]
+				_mastery.erase(k)
 	overworld_progress_changed.emit()
 	mastery_changed.emit()

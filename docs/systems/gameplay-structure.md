@@ -7,7 +7,7 @@ works, where flashcards fit, and the order to build what is missing. It supersed
 Status: **Phases 0–4 implemented** (battles load, progress saves, the question model and mock
 generation, Multiple Choice, a third gym spot on the map, Challenge Houses, Gyms and the Champion
 Gym as fixed-length runs with streaks, rewards and the defeat flow, and the Flashcard Sanctuary). **Phase 5 (the real
-AI backend and the store launch) is future work, not started: the game stays on mocks**
+AI backend and the store launch) is partly built: the AI gateway exists, the game stays on mocks**
 ([`../launch-plan.md`](../launch-plan.md)). Where this page and the code disagree, the code describes today. As each phase lands,
 move its facts into the owning doc (see [`../rules.md`](../rules.md) §2) and update the status here.
 
@@ -71,6 +71,7 @@ Existing keys stay ([`../data-model.md`](../data-model.md) §2). New keys:
 | `type` | `multiple_choice` \| `identification` \| `essay` | `multiple_choice` is new |
 | `difficulty` | `easy` \| `medium` \| `hard` | AI-tagged; loader default `medium` |
 | `distractors` | string[3] | MC only: the wrong options, from the same reviewer. `answer` is the correct option; the battle shuffles `[answer] + distractors` |
+| `accepted`, `rubric`, `model_answer`, `explanation` | see [`../data-model.md`](../data-model.md) §2 | The rest of the **answer key**, written by the study server with the questions; all optional |
 
 Generation rules for the extractor and the AI:
 
@@ -78,7 +79,12 @@ Generation rules for the extractor and the AI:
 - Easy recalls a term or definition. Medium explains or distinguishes. Hard applies, compares or synthesises.
 - Per gym aim for at least 3 Easy, 3 Medium and 1 Hard. A short reviewer gets fewer tiers, never an empty gym.
 - MC: one correct option and three plausible distractors from other concepts in the same reviewer, each under about 40 characters.
-- Essay: 3–5 `key_concepts`; they are the rubric.
+- Identification: the question must not contain its answer; `accepted` lists genuine equivalents only.
+- Essay: a 3–5 point `rubric` (point, 2–4 keywords, weight) and a `model_answer`; its points are the `key_concepts`.
+- Count: about one question per 80 words, at least 3 per type, at most 45.
+
+These rules are the server's system prompt (`backend/ai.py` `EXTRACT_SYSTEM`); the server also checks
+the output and drops what breaks them ([`../api-backend.md`](../api-backend.md) §2).
 
 ### 3.2 Houses, gyms and runs (replaces the trainer road and the boss)
 
@@ -94,7 +100,7 @@ the **Champion Gym** closes the region. Each is one **run** of a fixed item coun
 | Champion Gym | Hard | 20 + 10 + 10 = 40, all types | | | 30 min |
 
 - Gate: any house of a type → that gym → Champion (all gyms cleared). The other houses are optional
-  practice, each paying its own first-clear bonus. A run is cleared by surviving every item.
+  practice, each paying its own first-clear bonus. A run is cleared by surviving every item with at least one star (70 % right).
 - Questions are not one-to-one with items: `build_run()` rewrites a question as the needed type and
   cycles through the pool, so a short reviewer still fills the quota.
 - Time: counts give about a minute per item; the review beat after each answer (1.5 s right, 4 s wrong)
@@ -105,7 +111,7 @@ the **Champion Gym** closes the region. Each is one **run** of a fixed item coun
 | Knob | Easy (house) | Medium (gym) | Hard (Champion) |
 |---|---|---|---|
 | Counter damage on a miss | 15 | 25 | 35 |
-| Identification accepts | exact, contains, or Levenshtein ≤ 2 | same | exact, or Levenshtein ≤ 1 |
+| Identification accepts | the answer key, or a typo within the allowance (0 / 1 / 2 by key length) | same | the key, or one typo fewer |
 | Essay pass score | 0.5 | 0.65 | 0.8 |
 | Foe | normal | large | large |
 
@@ -118,7 +124,8 @@ Scene `scenes/review_session/flashcards.tscn`, logic `scripts/review_session/fla
 the canonical palette (Soft Sage room, Warm Off-White card, Muted Teal controls).
 
 - Deck is the topic's questions (`SessionManager.flashcard_deck()`): front is the prompt and a
-  mastery badge, back is the answer (an Essay also lists its key ideas) and the source excerpt.
+  mastery badge, back is the answer (an Essay also shows its model answer and key ideas), the
+  `explanation` and the source excerpt.
   Order: Remaster, New, Learning, Mastered; ties in question order.
 - Show answer first; then **Again** (re-queue three cards ahead), **Hard** (to the end of the
   deck) or **Easy** (bank it). The deck is done when the queue is empty.
@@ -136,7 +143,7 @@ the canonical palette (Soft Sage room, Warm Off-White card, Muted Teal controls)
 
 - Keep `NEW → LEARNING → MASTERED`, with `REMASTER` after a miss or 7 days ([`overworld.md`](overworld.md) §6).
 - The Champion Gym is one 40-item run that prefers Hard questions and falls back to the rest; the Mastered-only moveset is gone ([`battle.md`](battle.md) §1).
-- Only Essay grading and extraction use the AI. Identification and MC grade locally (resolves #15).
+- Only extraction, Essay grading and an Identification near-miss use the AI; MC and Identification are checked on the device against the saved answer key ([`battle.md`](battle.md) §5). Resolves #15.
   There is no usage limit: the weekly quota was removed.
 
 ## 4. Implementation phases
@@ -150,7 +157,7 @@ Each phase ships on its own and ends with the gates in [`../rules.md`](../rules.
 | 2 Battle by type and difficulty — **done** | MC panel; per-tier constants and thresholds; essay-only quota (since removed); the third gym spot and `Trainers3` road so MC is reachable | `battle.gd`, `api.gd`, `region_map.gd`, `region_map.tscn` |
 | 3 Overworld tiers — **superseded** | Replaced by the run structure in §3.2: a Challenge House and a Gym per type, the Champion as one 40-item run, `build_run()`, rewards and the stat effects (save v13) | `region_map.gd`, `battle.gd`, `session_manager.gd`, `companion_state.gd` |
 | 4 Flashcard Sanctuary — **done** | New scene and script; entry from the map HUD and the session list; a mastery write that only allows NEW/REMASTER → LEARNING; small once-per-card rewards | `scenes/review_session/flashcards.tscn`, `flashcards.gd`, `session_manager.gd`, `companion_state.gd` |
-| 5 Real AI backend and store launch — **Future (not started; mock first)**, plan in [`../launch-plan.md`](../launch-plan.md) | Pick the contract (#7); PDF text extraction, Claude generation using §3.1, essay grading; `Bearer` header (#2); handle non-envelope and non-2xx responses (#9); keep `Api.MOCK` working | `backend/main.py`, `api.gd` |
+| 5 Real AI backend and store launch — **Partly built (AI gateway); the game stays on mocks**, plan in [`../launch-plan.md`](../launch-plan.md) | Done: the contract (#7), PDF and text extraction with Claude using §3.1 and its answer keys, essay and near-miss grading, failure reporting (#9), `Api.MOCK` still working. Open: `Bearer` header (#2), accounts, quotas, consent, reports, deployment | `backend/main.py`, `api.gd` |
 
 ### Future
 

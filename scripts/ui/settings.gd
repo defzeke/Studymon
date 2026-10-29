@@ -1,11 +1,19 @@
 extends Control
-## Settings, opened from the Study Room: music and sound volume, and large text. Every change is
-## saved.
+## Settings, opened from the Study Room: music and sound volume, large text, and privacy & data (the
+## AI consent, the policy links, deleting the save). Every change is saved.
+
+const ConfirmModal := preload("res://scripts/ui/widgets/confirm_modal.gd")
+## The hosted policy pages; both stores need them reachable in the app. Set before exporting.
+const PRIVACY_URL := ""
+const TERMS_URL := ""
+const SUPPORT_URL := ""
 
 @onready var back_btn: Button = %BackButton
 @onready var music_slider: HSlider = %MusicSlider
 @onready var sounds_slider: HSlider = %SoundsSlider
 @onready var large_text_check: CheckBox = %LargeTextCheck
+@onready var consent_check: CheckBox = %ConsentCheck
+@onready var consent_note: Label = %ConsentNote
 
 func _ready() -> void:
 	theme = load("res://assets/theme/app_theme.tres") as Theme
@@ -21,6 +29,24 @@ func _ready() -> void:
 	large_text_check.toggled.connect(func(on: bool) -> void:
 		GameState.set_large_text(on)
 		SaveManager.save_game())
+	consent_note.text = GameState.AI_CONSENT_TEXT
+	consent_check.set_pressed_no_signal(GameState.ai_consent)
+	consent_check.toggled.connect(func(on: bool) -> void:
+		GameState.ai_consent = on
+		SaveManager.save_game())
+	for pair: Array in [[%PrivacyButton, PRIVACY_URL], [%TermsButton, TERMS_URL], [%SupportButton, SUPPORT_URL]]:
+		(pair[0] as Button).disabled = pair[1] == ""
+		(pair[0] as Button).pressed.connect(OS.shell_open.bind(pair[1]))
+	if not OS.is_debug_build() and "" in [PRIVACY_URL, TERMS_URL, SUPPORT_URL]:
+		push_error("Settings: set PRIVACY_URL, TERMS_URL and SUPPORT_URL before a store release.")
+	%DeleteDataButton.pressed.connect(func() -> void:
+		ConfirmModal.open(self, "Delete my data?", "This erases Kuiz, your worlds, questions and progress from this device. It cannot be undone.", "Delete", _delete_all, true))
+	ConfirmModal.tint_danger(%DeleteDataButton)
+
+# The fresh game starts at the tutorial, like a new install.
+func _delete_all() -> void:
+	SaveManager.delete_all()
+	get_tree().change_scene_to_file("res://scenes/ui/boot/peek.tscn")
 
 func _on_back() -> void:
 	get_tree().change_scene_to_file("res://scenes/ui/boot/peek.tscn")

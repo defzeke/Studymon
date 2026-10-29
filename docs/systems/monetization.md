@@ -10,9 +10,9 @@ gates in `Api`, the battle's quota label, the pop-ups and the save's `monetizati
 
 - **Crystals** (`GameState.crystals`, saved): home's currency. Minigame rounds earn them (Kuiz
   Keeper 1 per goal, Sky Jump 1 per 50 m) and a new battery on the check-up tablet costs 30.
-- **Crystal Shop** (home, tap the crystal pill): four real-money packs with placeholder prices,
-  under a "Coming soon" badge; the price buttons are disabled and nothing can be bought. Details in
-  [`ui-and-assets.md`](../ui-and-assets.md) §2 Home HUD.
+- **No purchases.** v1 is a free launch: the placeholder Crystal Shop (disabled real-money packs
+  marked "Coming soon") was removed, because unfinished purchase UI is a common App Review
+  rejection. The crystal pill only shows the balance ([`ui-and-assets.md`](../ui-and-assets.md) §2 Home HUD).
 
 ## Future work
 

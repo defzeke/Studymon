@@ -65,17 +65,17 @@ the floating `+N XP` tick and an extra `(tired)` suffix once `tap_count > DAILY_
 ### Diminishing returns
 
 ```gdscript
-const DAILY_CAP_BASE_XP := 10   # taps of the SAME action per hour
+const DAILY_CAP_BASE_XP := 10   # taps of the SAME action per hour at full XP
+const HOURLY_HARD_CAP := 30     # past this, the action pays no XP this hour
 if count >= 10: xp_mult = 0.3
-gained = int(2 * xp_mult)       # feed / play / fix
-gained = int(1 * xp_mult)       # pet
+gained = maxi(1, roundi(base * xp_mult))   # taps 11-30: 1 XP
+if count >= 30: gained = 0
 ```
 
-Counter resets hourly via `_maybe_reset_hourly_cap()` (`companion_state.gd:70-74`).
-
-> **This is currently a bug, not a balance knob.** `0.3` multiplied and truncated by `int()` yields
-> **0** for all three actions (`int(2*0.3) == 0`, `int(1*0.3) == 0`). After 10 taps of one action in
-> an hour, that action grants no XP at all until the hour rolls over. See `known-issues.md` #5.
+So one action pays at most 10 × its base + 20 XP an hour, and the five together cap care XP at
+roughly 190 an hour. Home also limits the two actions that are quickest to repeat: a pet and a ball
+throw count at most once every 3 s (`PET_GAP`, `FLING_GAP` in `home.gd`). The counter resets hourly
+via `_maybe_reset_hourly_cap()`; it is not saved, so a relaunch resets it too.
 
 ---
 
@@ -224,5 +224,5 @@ damage (up to −20 %) and focus 50+ forgives the first miss. While `CompanionSt
 stat's clock decay is paused and each item answered costs energy 0.5 and hunger 0.4 and raises mood (+1.5 right,
 +0.3 wrong), while every counter Kuiz takes costs health `counter × 0.3` (never below 10): `play_item()` and
 `hurt()`. Reaching a level pays `level × LEVEL_CRYSTALS` (10)
-crystals. The capped-tap XP bug is fixed: after 10 taps an action pays at least 1 XP
-(`maxi(1, roundi(base × 0.3))`), so `known-issues.md` #5 is resolved.
+crystals. After 10 taps an action pays 1 XP (`known-issues.md` #5), and after 30 it pays none until the hour
+resets (§2).

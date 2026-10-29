@@ -76,7 +76,8 @@ godot --path . --editor
 godot --path .
 ```
 
-Optional backend (not used by the client while `Api.MOCK = true`):
+The study server (the editor uses the offline mock unless `Api.DEV_USES_SERVER` is on; release
+builds use it):
 
 ```bash
 cd backend

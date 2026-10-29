@@ -185,22 +185,18 @@ Kuiz is `assets/models/kuiz.glb`; the arena foes are the scenes in `ArenaStage.f
    clip names must still match `idle_clip`, `attack_clip`, `defeat_clip` and the `pet_*_clip` exports.
 3. Add the file to the asset inventory in [`ui-and-assets.md`](ui-and-assets.md).
 
-## Wire the real backend
+## Use the real study server
 
-1. The switch is `const MOCK := true` in `scripts/autoload/api.gd:11`. Flipping it disables every mock path,
-   so the endpoints below must exist first.
-2. Contract the client already calls:
-   - `POST /battle/grade` — `{type, question, answer, source, expected, key_concepts}`
-   - `PUT /topics/{topic_id}` — `{questions: [...]}`
-   - `PUT /mastery/{topic_id}/{question_id}` — `{state}`
-   - `GET /health` — exists in the FastAPI stub.
-3. `_on_request_completed()` (`api.gd:21-32`) only emits `job_status` when the body has a `job_id`.
-   Either return `{job_id, status, progress, result}` for every call, or add a separate signal for
-   plain payloads (issue #9). Also handle non-2xx: today `401`, `500` and a timeout are
-   indistinguishable from an empty success.
-4. Keep the mock branch working while the real path lands: the game still ships on it.
-5. Update [`api-backend.md`](api-backend.md) and `backend/README.md` in the same change, or the
-   drift in issue #7 gets worse.
+The editor, the headless gates and debug exports run on the mock (`Api.MOCK` is
+`OS.is_debug_build() and not DEV_USES_SERVER`); an exported **release** build always uses the server.
+
+1. **Locally:** start the backend ([`api-backend.md`](api-backend.md) §4), set
+   `const DEV_USES_SERVER := true` in `scripts/autoload/api.gd`, and run the game. It talks to
+   `DEV_URL` (`http://127.0.0.1:8000`). Set it back to `false` before handing off.
+2. **For a release:** deploy the backend over HTTPS and set `const RELEASE_URL` to its address before
+   exporting. A release build with a non-HTTPS URL logs an error at boot, and every AI request fails.
+3. Keep the mock branch working and the response shapes in [`api-backend.md`](api-backend.md) truthful
+   (rules §5).
 
 ## Reset a save / debug progression
 

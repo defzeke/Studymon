@@ -19,7 +19,11 @@ const LEVEL_XP_STEP := 5
 const LEVEL_CRYSTALS := 10
 const STAT_MAX := 100.0
 const STAT_DECAY_PER_SEC := 0.15
+# The clock decay announces itself this often (issue #13); care actions announce at once.
+const DECAY_EMIT_SEC := 0.2
 const DAILY_CAP_BASE_XP := 10  # per action per hour before diminishing returns
+# Past this many taps of one action in an hour it pays no XP at all, so care cannot be farmed forever.
+const HOURLY_HARD_CAP := 30
 # Home care (docs/systems/companion-care.md): food fills hunger, a fix restores health, a ball
 # throw lifts mood, and charging refills energy over time.
 const FEED_HUNGER := 12.0
@@ -68,6 +72,7 @@ var battery_health: float = 100.0
 var bond: int = 0
 ## True while a battle run is on; the clock decay is paused.
 var in_run := false
+var _decay_emit_wait := 0.0
 var campaign_ready: bool = false
 var codex: Array[String] = []
 
@@ -105,7 +110,10 @@ func _process(delta: float) -> void:
 	hunger = maxf(0.0, hunger - drain * 0.7)
 	health = maxf(0.0, health - drain * 0.2)
 	dirt = minf(STAT_MAX, dirt + DIRT_PER_SEC * delta)
-	stats_changed.emit()
+	_decay_emit_wait -= delta
+	if _decay_emit_wait <= 0.0:
+		_decay_emit_wait = DECAY_EMIT_SEC
+		stats_changed.emit()
 	_maybe_reset_hourly_cap()
 
 func _maybe_reset_hourly_cap() -> void:
@@ -186,6 +194,8 @@ func care(action: String) -> Dictionary:
 			deltas = {"mood": CLEAN_MOOD}
 			gained = maxi(1, roundi(2 * xp_mult))
 
+	if count >= HOURLY_HARD_CAP:
+		gained = 0
 	add_xp(gained)
 	stats_changed.emit()
 	bond += 1

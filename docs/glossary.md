@@ -11,7 +11,7 @@ Terms used throughout this repo, in the sense this repo means them.
 | **Dirt** | `CompanionState.dirt`, 0 (clean) to 100: builds up over time and with meals and play, shows as spots and scratches on Kuiz, scrubbed off with the towel. |
 | **Outfit** | What Kuiz wears from the Playroom closet, `GameState.outfit`: one costume per slot (head, face, body), each a sticker on its head. |
 | **Battery health** | `CompanionState.battery_health`: the battery's capacity, like a phone's. Charging wears it, a worn battery drains energy faster, and a new one (30 crystals, the check-up tablet) restores 100 %. |
-| **Crystals** | Home's currency, `GameState.crystals`, shown top right with the logo's forehead gem. Saved; minigame rounds earn it, a new battery spends it. Buying it with real money is "Coming soon" in the Crystal Shop. |
+| **Crystals** | Home's currency, `GameState.crystals`, shown top right with the logo's forehead gem. Saved; minigame rounds earn it, a new battery spends it. It cannot be bought (free launch). |
 | **Care tap** | One press of Feed, Pet or Play. Grants XP, nudges one stat, increments bond, and is subject to hourly diminishing returns. |
 | **Hunger / Energy / Mood / Health** | The four 0–100 stats on home's HUD gauges. Energy drains fastest; Hunger, Mood and Health drain at 0.7×, 0.6× and 0.2× of `STAT_DECAY_PER_SEC`. Focus (0.8×) is also 0–100 but only flashcards use it. |
 | **Bond** | A monotonic tap counter. It is saved, but nothing gates on it yet. |
@@ -29,14 +29,21 @@ Terms used throughout this repo, in the sense this repo means them.
 
 | Term | Meaning |
 |---|---|
-| **Reviewer** | The study material the player uploads or pastes (PDF or text). In mock mode, pasted text is parsed; binary bytes fall back to canned questions. |
+| **Reviewer** | The study material the player uploads or pastes (PDF or text). With the study server on, Claude reads it; in mock mode pasted text is parsed and a PDF is refused. |
 | **World** | The player-facing name for a topic: the Worlds hub lists saved worlds, and a new one is built from a reviewer. |
 | **Topic** | One reviewer's worth of content, identified by a slug (`topic_<name>`, or `topic_001`). Has a name, a question list, mastery records and gym progress. |
-| **Extraction** | Turning a reviewer into questions. `Api.mock_upload_pdf()` is the current implementation; a real endpoint is not wired. |
-| **Question** | `{id, text, type, answer, key_concepts, confidence, source}`. See [`data-model.md`](data-model.md). |
-| **Identification** | A one-term answer graded locally: exact, contained, or within edit distance 2; 0.7–1.0. |
-| **Essay** | A free-text answer graded in mock mode by 50 % key-concept coverage + 50 % length proxy. |
-| **Key concepts** | The expected ideas for an essay. Coverage drives the mock score and the "missed:" feedback. |
+| **Extraction** | Turning a reviewer into questions and their answer keys: `Api.upload_reviewer()`, which calls `POST /v1/extract` (Claude) or, on mocks, the sentence-splitting mock extractor. |
+| **Study server** | `backend/`: the stateless gateway between the game and Claude. It holds the API key and stores nothing. |
+| **Answer key** | What a question is checked against, written with the question and saved on the device: `answer`, `accepted`, `distractors`, `rubric`. See [`data-model.md`](data-model.md) §2. |
+| **Accepted answers** | `accepted`: other answers an Identification counts as exact (synonyms, abbreviations, spellings). Editable as "Also accept" in the categorizer. |
+| **Rubric** | An essay's marking guide: 3–5 `{point, keywords, weight}`. The server's score is the weight of the points the answer covers, with quoted evidence. |
+| **AI consent** | `GameState.ai_consent`: the player's yes to sending reviewers and typed answers to the AI, asked before the first upload and withdrawable in Settings. |
+| **Daily limit** | The server's per-IP, per-day call caps (`backend/main.py` `DAILY_LIMITS`); over one, the reply is 429 and the game says to try tomorrow. |
+| **Near-miss** | An Identification answer close to the key but not on it; only these go to the server to judge. |
+| **Question** | `{id, text, type, difficulty, answer, accepted, distractors, rubric, key_concepts, model_answer, explanation, confidence, source}`. See [`data-model.md`](data-model.md). |
+| **Identification** | A one-term answer checked on the device against the answer key: a key or a small typo is correct, a near-miss goes to the server. See [`systems/battle.md`](systems/battle.md) §5. |
+| **Essay** | A free-text answer graded by the server against its rubric; offline (and on mocks) by keyword coverage, where length only helps once a point is covered. |
+| **Key concepts** | The expected ideas for an essay: the rubric's points, and the fallback rubric when a question has none. |
 | **Confidence** | The extractor's 0–1 self-rating. Displayed in the editor; not used for grading. |
 | **Categorizer** | The upload/edit screen: pick a file or paste text, review the generated questions, change a type, add or delete one, then Confirm & Play. |
 | **Fallback questions** | The canned trio used only when no usable text survived extraction (e.g. raw PDF bytes). |
@@ -80,7 +87,7 @@ Terms used throughout this repo, in the sense this repo means them.
 | **`ext_resource`** | A `.tscn` reference to an external file. If the target is missing, the scene fails to **parse** — no runtime fallback (issue #1). |
 | **`.import` / `.uid`** | Generated metadata for assets. Never hand-edit; let the editor regenerate them. |
 | **`user://`** | Godot's per-project writable directory. The save is `user://studymon_save.json`. |
-| **`MOCK`** | `const MOCK := true` in `scripts/autoload/api.gd`. When true, every API call is served by canned or locally computed data. |
+| **`MOCK`** | `Api.MOCK`: true in the editor and debug builds (unless `DEV_USES_SERVER`), false in release builds. When true, every API call is served by canned or locally computed data. |
 | **Job envelope** | The mock's async response shape: `{job_id, status, progress, result}`, broadcast on `Api.job_status`. |
 | **`job_status`** | The global signal every async result travels on. Handlers match a `job_id`; `"grade"` is currently a magic id (issue #9). |
 | **Rig** | `CompanionRig`, the skeletal `Skeleton2D` pet. Hidden in favour of `bot_sprite`, and the source of the `det == 0` warnings. |

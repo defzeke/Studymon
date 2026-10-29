@@ -1,12 +1,12 @@
 # Battle runs and answer grading
 
 A battle is a **run**: a fixed list of items fought against one foe, in a Challenge House, a Gym or
-the Champion Gym. Identification and Essay are typed and scored; Multiple Choice is tapped and graded
-locally. Every item is always played: the foe's bar is progress, not a kill condition.
+the Champion Gym. Multiple Choice is tapped and Identification typed, both checked on the device against
+the question's answer key; an Essay is typed and graded by the study server (offline mark as fallback). Every item is always played: the foe's bar is progress, not a kill condition.
 
 - **Scene / logic:** `scripts/battle/battle.gd` → `scenes/battle/battle.tscn`; the arena in `arena_stage.gd`
 - **Run building and rewards:** `SessionManager` — `begin_run()`, `build_run()`, `report_run()`
-- **Judging:** `scripts/autoload/api.gd` — `grade_battle_question()`, `_execute_mock_grade()`
+- **Judging:** `scripts/autoload/api.gd` — `check_identification()`, `essay_offline()`, `grade_battle_question()`; server: `backend/ai.py`
 - **Mastery:** `SessionManager.record_battle_outcome()`, once per question per run
 
 Status: **Implemented on mocks.** Not yet played end to end by a person (the 3D arena and the review
@@ -49,16 +49,18 @@ item and pays nothing.
 
 ```text
 _bind_item          question, type controls (MC buttons / text box), "Item n/N · Streak s"
-answer              MC tap → _resolve;  ID/Essay → Api.grade_battle_question → job_status("grade") → _resolve
+answer              MC tap → _resolve;  ID → Api.check_identification → _resolve (a near-miss goes on to the server)
+                    Essay / near-miss → Api.grade_battle_question → job_status(own job_id) → _resolve
 _resolve(correct)   mastery (first time this run), streak/HP maths, result line
 _finish_turn        Kuiz strikes (correct) or the foe strikes (wrong), bars drop as the blow lands
 then                Kuiz at 0 HP → _lose;  last item → _win;  otherwise the review beat
-review beat         answer / key ideas, feedback, source excerpt; Next is held back
+review beat         answer (Essay: model answer, ✓ / ✗ per rubric point), explanation, feedback,
+                    source excerpt; Next is held back
                     1.5 s after a right answer, 4 s after a wrong one
 ```
 
-Correct means: Multiple Choice tapped right; Identification score ≥ 0.7; Essay score ≥ the tier's
-`essay_pass` (Easy 0.5, Medium 0.65, Hard 0.8). Multiple Choice gets one attempt per item.
+Correct means: Multiple Choice tapped right; Identification matches its answer key (§5); Essay score ≥
+the tier's `essay_pass` (Easy 0.5, Medium 0.65, Hard 0.8). Multiple Choice gets one attempt per item.
 
 ### Streaks (Kuiz's hits)
 
@@ -116,9 +118,11 @@ needs the screwdriver at home. Kuiz's card in the battle shows the four stats li
 
 ## 4. Rewards
 
-`SessionManager.report_run(won, correct, total, best_streak)` runs once on a win or a defeat, adds the
-crystals (`GameState.add_crystals`) and XP (`CompanionState.add_xp`), marks the building cleared on a
-win, saves, and returns `{stars, coins, xp, first, replay}`.
+`SessionManager.report_run(survived, correct, total, best_streak)` runs once when a run ends, adds the
+crystals (`GameState.add_crystals`) and XP (`CompanionState.add_xp`), saves, and returns
+`{stars, coins, xp, first, replay, cleared}`. **A run clears its building only when Kuiz survives with
+at least one star** (70 % right): surviving without a star pays like a defeat, clears nothing, and the
+result panel says "Kuiz made it through!" with Try Again.
 
 | | House | Gym | Champion |
 |---|---|---|---|
@@ -126,36 +130,69 @@ win, saves, and returns `{stars, coins, xp, first, replay}`.
 | First-clear bonus, crystals / XP | 20 / 10 | 60 / 30 | 200 / 100 |
 | Streak bonus | + best streak ÷ 5 crystals | same | same |
 
-On a win: (items + bonuses) × star multiplier (0 or 1 star ×1.0, 2 stars ×1.25, 3 stars ×1.5; accuracy
+On a clear: (items + bonuses) × star multiplier (1 star ×1.0, 2 stars ×1.25, 3 stars ×1.5; accuracy
 70 / 85 / 95 % earns 1 / 2 / 3 stars), × mood (crystals) or energy (XP). A replay of a cleared building
 pays 25 %. A defeat pays 50 % of the per-item pay only. Reaching a level pays `level × 10` crystals
 (`CompanionState.LEVEL_CRYSTALS`). A battery costs 30 crystals, so one house pays for one.
 
-## 5. Grading (mock)
+## 5. Grading
 
-`Api._execute_mock_grade()`; Multiple Choice never reaches it.
+Every question carries an **answer key**, written when the reviewer was turned into questions (by
+Claude on the study server, or by the mock extractor). It is saved on the device with the world
+([`../data-model.md`](../data-model.md) §2), so Multiple Choice and Identification are checked on the
+phone, offline. Only an Essay and an Identification near-miss go to the server. Code:
+`Api.check_identification()`, `Api.essay_offline()`, `Api.rubric_for()`, `Api.grade_battle_question()`;
+the server side is `backend/ai.py`.
+
+| Type | Checked by | Correct when |
+|---|---|---|
+| Multiple Choice | `battle.gd`, on the device | the tapped option is `answer` |
+| Identification | `Api.check_identification()`, on the device; a near-miss asks the server | see below |
+| Essay | the server (`POST /v1/grade`); `Api.essay_offline()` when it cannot answer | score ≥ the run tier's `essay_pass` |
 
 ### Identification
 
-| Condition | Score |
+Both sides are normalised first (`Api.normalize_answer()`): lowercase, punctuation stripped, spaces
+collapsed, a leading "a / an / the" dropped. The keys are `answer` plus `accepted`.
+
+| Check, in order | Verdict |
 |---|---|
-| empty answer | 0.0 |
-| exact match (lowercased, trimmed) | 1.0 |
-| one contains the other (**not on Hard**) | 0.8 |
-| Levenshtein distance ≤ 2 (±3 length); **≤ 1 on Hard** | 0.7 |
-| no answer key set | 0.5 if ≥ 2 chars |
-| anything else | 0.0 |
+| empty answer | wrong |
+| equals a key | **correct** |
+| edit distance to a key within the allowance: 0 for keys of ≤ 4 letters, 1 for 5–8, 2 for 9+; **one fewer on a Hard run** | **correct** (typo) |
+| shares a word of ≥ 3 letters with a key, or edit distance ≤ a third of the key's length; also a card with no key | **near-miss** → server |
+| anything else | wrong, with "the key says …" |
+
+A substring no longer counts, so typing one letter of the answer fails. A near-miss is sent to
+`POST /v1/grade` (`mode: "identification"`), where Claude decides whether it names the same thing as
+the key, judged by the source (a broader or vaguer word is wrong). The grade is correct at score ≥ 0.5.
+Offline, on an error, or on mocks, a near-miss counts as a miss.
 
 ### Essay
 
-```text
-coverage  = hits / key_concepts.size()          # substring match, lowercase
-holistic  = clamp(words / 30, 0, 1)             # effort proxy
-score     = 0.5 * coverage + 0.5 * holistic
-```
+The marking guide is the question's `rubric`: 3–5 `{point, keywords, weight}`. Without one,
+`Api.rubric_for()` makes one point per key idea (or one from the answer).
 
-With no `key_concepts`, coverage defaults to 0.5 if the answer is ≥ 10 chars, else 0. The real rubric
-belongs server-side: `POST /battle/grade` fires when `MOCK == false` and returns `{score, feedback, damage}`.
+- **Server** (`mode: "essay"`): Claude marks each point covered or not. It must quote the player's
+  own words as evidence, and **the server computes the score**: the sum of the weights of covered
+  points whose evidence really is in the answer. The model never sets the number itself, so an answer
+  asking for full marks gets nothing. Reply: `{score, covered[], feedback}`.
+- **Offline** (`Api.essay_offline()`, used on mocks and whenever the server cannot answer): a point
+  counts when one of its keywords (or the point itself) appears as whole words in the answer.
+
+  ```text
+  coverage = weight of covered points / total weight
+  score    = 0                                         if coverage == 0   # filler alone scores nothing
+           = 0.7 * coverage + 0.3 * clamp(words / 30, 0, 1)   otherwise
+  ```
+
+  The feedback starts "Graded offline." when the server could not be reached.
+
+A failed essay still lands only part of the counter (`0.4 + 0.6 × (1 − score)`, §2). The review beat
+shows the model answer, a ✓ / ✗ per rubric point, the `explanation` and the feedback.
+
+Each grade request has its own `job_id` (`Api.new_job_id("grade")`), and battle only takes the result
+with its id.
 
 ## 6. Known gaps
 
@@ -165,4 +202,4 @@ belongs server-side: `POST /battle/grade` fires when `MOCK == false` and returns
 | Rewritten items | An Identification rewritten as Essay is graded by key ideas taken from its answer, which is coarse |
 | Foe look | Houses, Gyms and the Champion share `robot_1.glb` / `robot_2.glb`; only size and counters differ |
 | House doors | The map's houses have no door animation (one merged `Door` mesh); a dark doorway panel stands in for it |
-| Grading is local | no Claude call; `/battle/grade` only fires when `MOCK == false` |
+| Server grading untested live | `/v1/grade` was checked against a stubbed server only; no real Claude grade has been run yet (`backend/evals/`) |

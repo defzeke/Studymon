@@ -51,15 +51,6 @@ const TOAST_TIME := 2.2
 # A tap on the level pill or a stat gauge shows its numbers in a card below it for this long (or
 # until tapped again).
 const LEVEL_INFO_TIME := 3.0
-# The Crystal Shop's packs: [crystals, price, tag]. shortcut: placeholder prices and no store; when
-# in-app purchases exist, take the prices from the store and enable the buttons.
-const CRYSTAL_PACKS := [
-	[100, "$0.99", ""],
-	[550, "$4.99", "+10% bonus"],
-	[1200, "$9.99", "+20% bonus"],
-	[2500, "$19.99", "Best value"],
-]
-const CRYSTAL_ICON: Texture2D = preload("res://assets/sprites/ui/crystal.svg")
 const STAT_NAMES :={"hunger": "Hunger", "energy": "Energy", "mood": "Mood", "health": "Health"}
 const STAT_HINTS := {
 	"hunger": "Feed Kuiz in the Data Kitchen",
@@ -72,6 +63,8 @@ const STAT_HINTS := {
 const PET_HOLD := 0.35
 const PET_STROKE := 70.0
 const PET_GAP := 3.0
+# A ball throw counts as play care at most once per FLING_GAP seconds.
+const FLING_GAP := 3.0
 # The towel takes this much dirt off per pixel scrubbed over Kuiz.
 const SCRUB_PER_PX := 0.06
 # The check-up's rows: [label, stat, inverted (dirt reads as cleanliness)]. The battery row is its
@@ -94,7 +87,6 @@ const CHECK_HINTS := {
 @onready var xp_bar: ProgressBar = %Xp
 @onready var level_info: Control = %LevelInfo
 @onready var stat_info: Control = %StatInfo
-@onready var crystal_shop: Control = %CrystalShop
 @onready var crystal_label: Label = %CrystalLabel
 @onready var gauges := {"hunger": %Hunger, "energy": %Energy, "mood": %Mood, "health": %Health}
 # Room name (the Rooms/<Name> node in peek.tscn) -> the bar section shown in that room.
@@ -161,6 +153,7 @@ var _pet_stroke := 0.0
 var _pet_last := Vector2.ZERO
 var _petting := false
 var _pet_cared := -100.0
+var _fling_cared := -100.0
 var _held_last := Vector2.ZERO
 var _was_dirty := false
 var _closet_slot := "head"
@@ -202,10 +195,6 @@ func _ready() -> void:
 	CompanionState.stats_changed.connect(_refresh_stats)
 	CompanionState.xp_changed.connect(func(_xp: int, _level: int) -> void: _refresh_level())
 	%Level.gui_input.connect(_on_level_input)
-	%Crystals.gui_input.connect(func(e: InputEvent) -> void:
-		if _tapped(e):
-			_open_crystal_shop())
-	%CrystalClose.pressed.connect(crystal_shop.hide)
 	for stat: String in gauges:
 		gauges[stat].gui_input.connect(_on_gauge_input.bind(stat))
 	GameState.crystals_changed.connect(func(amount: int) -> void: crystal_label.text = str(amount))
@@ -255,7 +244,7 @@ func _show_room_props(room_name: String) -> void:
 	ball_slot.modulate.a = 1.0
 	_ball_grabbed = false
 	_ball_returning = false
-	for panel: Control in [shop, picker, check_panel, wardrobe, crystal_shop]:
+	for panel: Control in [shop, picker, check_panel, wardrobe]:
 		panel.hide()
 	_fix = 0.0
 	peek.look_ahead()
@@ -297,39 +286,6 @@ func _on_gauge_input(event: InputEvent, stat: String) -> void:
 	var under: Rect2 = gauges[stat].get_global_rect()
 	stat_info.position.x = clampf(under.get_center().x - stat_info.size.x / 2.0, 16.0, _view().x - stat_info.size.x - 16.0)
 	_toggle_info(stat_info, stat)
-
-# The crystal pill opens the Crystal Shop: real-money packs, shown with their prices but not for
-# sale yet ("Coming soon"; the price buttons are disabled).
-func _open_crystal_shop() -> void:
-	var packs := %CrystalPacks
-	if packs.get_child_count() == 0:
-		for pack: Array in CRYSTAL_PACKS:
-			var row := HBoxContainer.new()
-			row.add_theme_constant_override("separation", 14)
-			var icon := TextureRect.new()
-			icon.texture = CRYSTAL_ICON
-			icon.custom_minimum_size = Vector2(64, 64)
-			icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-			icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-			var label := Label.new()
-			label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-			label.text = "%d crystals" % pack[0] + ("\n" + pack[2] if pack[2] != "" else "")
-			label.add_theme_color_override("font_color", Color("29383A"))
-			label.add_theme_font_override("font", BOLD)
-			label.add_theme_font_size_override("font_size", 26)
-			var price: Button = buy_template.duplicate()
-			price.show()
-			price.text = pack[1]
-			price.disabled = true
-			price.custom_minimum_size = Vector2(140, 64)
-			price.add_theme_stylebox_override("disabled", buy_template.get_theme_stylebox("normal"))
-			price.add_theme_color_override("font_disabled_color", Color("F7F5EF", 0.75))
-			price.modulate.a = 0.6
-			row.add_child(icon)
-			row.add_child(label)
-			row.add_child(price)
-			packs.add_child(row)
-	crystal_shop.show()
 
 func _tapped(event: InputEvent) -> bool:
 	return event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT
@@ -859,9 +815,11 @@ func _fling_ball() -> void:
 		_ball_vel = ((b[0] as Vector2) - (a[0] as Vector2)) / dt
 	_ball_vel = _ball_vel.limit_length(MAX_FLING)
 	if _ball_vel.length() > 300.0:
-		_care("play")
-		CompanionState.soil(1.5)
 		peek.act("Happy")
+		if _now() - _fling_cared > FLING_GAP:
+			_fling_cared = _now()
+			_care("play")
+			CompanionState.soil(1.5)
 
 func _step_ball(delta: float) -> void:
 	var view := _view()

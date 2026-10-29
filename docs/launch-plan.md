@@ -1,7 +1,8 @@
 # Launch plan: the real backend and the App Store / Google Play release
 
-Status: **Future. Not started.** The game stays on mocks (`Api.MOCK = true`) until the maintainer
-decides to begin. This page is the researched plan for **Phase 5** of
+Status: **Future; 5.3 partly built.** The AI gateway's two routes exist (`/v1/extract`, `/v1/grade`,
+see [`api-backend.md`](api-backend.md)) as a stateless server with no accounts, quotas, consent screen
+or reports; release builds call it once `Api.RELEASE_URL` is set. This page is the researched plan for **Phase 5** of
 [`systems/gameplay-structure.md`](systems/gameplay-structure.md), written down so it is not lost.
 Where it disagrees with the code, the code describes today; this page describes the target.
 
@@ -18,7 +19,8 @@ Made by the maintainer:
 | Decision | Choice |
 |---|---|
 | Audience | **13+** (students, teens, adults). Children under 13 would add COPPA, Apple Kids Category and Google Families work and roughly double the compliance scope |
-| Login | At the start of the tutorial's profile step (`scripts/ui/boot/tutorial.gd`, prompt `"profile"`): **Google + Apple (iOS only) + Register with email** |
+| Login | **v1: no accounts** (decided 2026-10-29): saves stay on the device, so Sign in with Apple, in-app account deletion and Supabase are not needed for the first release; Settings offers "Delete my data" instead. Later: Google + Apple (iOS only) + Register with email at the tutorial's profile step |
+| Purchases | **v1: free launch** (decided 2026-10-29): the placeholder Crystal Shop was removed; in-app purchases come in a later update |
 | Backend | **None yet; mock first.** This whole page is future work |
 
 Open until Phase 5 starts (recommendations recorded, not decided):
@@ -26,7 +28,6 @@ Open until Phase 5 starts (recommendations recorded, not decided):
 | Decision | Recommendation | Alternatives |
 |---|---|---|
 | Hosting | FastAPI (the existing stub) on Google Cloud Run or Fly.io, with Supabase for auth, database and PDF storage | Supabase Edge Functions only (short time limits for PDF jobs); Vercel (fine for the policy web pages, poor for big PDF jobs) |
-| Purchases | **Free launch** with server-side quotas; a premium plan in a later phase, with an `entitlements` table prepared up front | Subscriptions at launch (plugin work, sandbox testing, receipt validation); no purchases |
 
 ## 2. What is most useful
 
@@ -85,7 +86,7 @@ Each is shippable and verified on its own.
 | **5.0 Accounts and decisions** | Apple Developer ($99/yr), Google Play Console ($25), Supabase project, an Anthropic workspace with a **monthly spend limit**, a domain for the policy pages; settle the open decisions in §1 | none |
 | **5.1 Network layer and CI** | Replace the single shared `HTTPRequest` with a request queue; timeouts, retry with backoff for 408/429/5xx, non-2xx reported through a signal (#9), `Authorization: Bearer` (#2), unique `job_id`s, a job-polling helper; `MOCK` becomes a flag so dev builds stay on mocks; `BASE_URL` per environment through export feature tags; backend skeleton with `/health` and `/v1/config` (minimum client version, feature flags, quota limits); GitHub Actions running the `docs/rules.md` §6 gates, a committed `tests/` folder and backend tests; export presets without secrets. A minimal Android build goes to **Play closed testing** here to start the 14-day clock | `scripts/autoload/api.gd`, `project.godot`, `export_presets.cfg`, `backend/`, `.github/workflows/`, `tests/` |
 | **5.2 Accounts and profile sync** | The tutorial's Continue stand-in becomes *Continue with Google*, *Continue with Apple* (iOS) and *Register a new profile* (Supabase email). Google and Apple sign-in through Supabase OAuth in the system browser with a deep-link return, so no heavy native SDK; check the plugin situation first (Godot has no first-party sign-in plugin). `GameState.set_user()` gets a caller; tokens go in the best available secure store (documented limit if only an encrypted file). Save `"v": 8` gains an `account` block (user id, signed-in flag; never raw tokens), and `player_name` and `tutorial_done` move into the profile so the tutorial stops replaying. Endpoints `GET /v1/me`, `PUT /v1/profile`, `DELETE /v1/me`, `GET/PUT /v1/topics`, `PUT /v1/mastery`. Settings gets **Delete account** and **Sign out**. A public deletion-request page for Google | `scripts/ui/boot/tutorial.gd`, `scenes/ui/boot/peek.tscn`, `game_state.gd`, `save_manager.gd`, `settings.gd`, `settings.tscn`, `backend/` |
-| **5.3 AI gateway** | `POST /v1/extract` (PDF or pasted text → job), `GET /v1/jobs/{id}`, `POST /v1/grade` (essays). Keep the job envelope and the question schema in [`systems/gameplay-structure.md`](systems/gameplay-structure.md) §3.1 so `SessionManager._on_job_status` and `normalize_question()` need no change. **Structured outputs** (`output_config.format` with the question JSON schema); forced `tool_choice` is rejected on the current models. Check `stop_reason == "refusal"` and enable the documented server-side fallback for Sonnet 5.5; Haiku has none, so the app shows "couldn't grade this, try again". **Grounding checks** after the model answers (every `source` must appear in the reviewer text, Multiple Choice needs four distinct options, tiers must be spread; the server computes `confidence`). **Prompt-injection safety**: reviewer text and answers go in as delimited data; graders return only `{score, feedback, covered_concepts}`. **Server-side quota ledger** (weekly PDF and essay counters; the client has no limit since the old client-only `MonetizationState` was removed, so add a display cache of `/me` if limits come back), per-user and per-IP rate limits, a global daily spend cap; App Attest (iOS) and Play Integrity (Android) checks as hardening before public launch. **Consent screen** and **`POST /v1/reports`**. **Privacy**: PDFs deleted after extraction, logs hold metadata and token counts, not content | `backend/`, `api.gd`, `session_manager.gd`, `categorizer.gd`, `battle.gd` |
+| **5.3 AI gateway** (partly done: `/v1/extract` with structured outputs, grounding checks and the refusal fallback; `/v1/grade` for essays and Identification near-misses, server-scored; synchronous, so there is no `GET /v1/jobs/{id}`; delimited data against injection) | `POST /v1/extract` (PDF or pasted text → job), `GET /v1/jobs/{id}`, `POST /v1/grade` (essays). Keep the job envelope and the question schema in [`systems/gameplay-structure.md`](systems/gameplay-structure.md) §3.1 so `SessionManager._on_job_status` and `normalize_question()` need no change. **Structured outputs** (`output_config.format` with the question JSON schema); forced `tool_choice` is rejected on the current models. Check `stop_reason == "refusal"` and enable the documented server-side fallback for Sonnet 5.5; Haiku has none, so the app shows "couldn't grade this, try again". **Grounding checks** after the model answers (every `source` must appear in the reviewer text, Multiple Choice needs four distinct options, tiers must be spread; the server computes `confidence`). **Prompt-injection safety**: reviewer text and answers go in as delimited data; graders return only `{score, feedback, covered_concepts}`. **Server-side quota ledger** (weekly PDF and essay counters; the client has no limit since the old client-only `MonetizationState` was removed, so add a display cache of `/me` if limits come back), per-user and per-IP rate limits, a global daily spend cap; App Attest (iOS) and Play Integrity (Android) checks as hardening before public launch. **Consent screen** and **`POST /v1/reports`**. **Privacy**: PDFs deleted after extraction, logs hold metadata and token counts, not content | `backend/`, `api.gd`, `session_manager.gd`, `categorizer.gd`, `battle.gd` |
 | **5.4 Store readiness** | Privacy policy, terms, support and deletion pages; Apple privacy labels and Google Data safety answers matching what the backend collects; age ratings; icon, screenshots and store text; a demo account and review notes for App Review; Sentry (Godot SDK and backend) for crashes | web pages, store consoles |
 | **5.5 Release pipeline** | An Android job building a signed `.aab` from secrets; an iOS job on a macOS runner that exports the Xcode project, signs and uploads to **TestFlight** (fastlane or Codemagic); versions from CI. Release path: TestFlight internal → external beta; Play internal → closed → production with a **staged rollout**. The `/v1/config` minimum-version flag is the emergency lever | `.github/workflows/`, `export_presets.cfg` |
 
@@ -104,11 +105,11 @@ lower (suggest 20 MB and 100 pages) so one bad file cannot burn the budget.
 These can be built and tested against the mocks before any backend exists, which also de-risks 5.2
 and 5.3:
 
-- The **AI-data consent screen** and its stored flag.
-- A **Report button** on generated questions and essay feedback (writes to a local list on mocks).
-- **Delete account / Sign out** in Settings (clears the local save on mocks).
-- The tutorial's **profile step UI** (Google / Apple / Register buttons) with a mock sign-in.
-- The `Api` request queue, timeout/retry and error-signal handling behind `MOCK`.
+- ~~The **AI-data consent screen** and its stored flag.~~ Done (`GameState.ai_consent`, [`api-backend.md`](api-backend.md) §6).
+- ~~A **Report button** on generated questions and essay feedback.~~ Done (`POST /v1/reports`).
+- ~~**Delete account / Sign out** in Settings.~~ v1 has no accounts: Settings' **Delete my data** wipes the save.
+- The tutorial's **profile step UI** (Google / Apple / Register buttons): only if accounts come later.
+- ~~The `Api` request queue, timeout and error-signal handling.~~ Done (one `HTTPRequest` per call; no retry).
 
 ## 7. Later (not Phase 5)
 

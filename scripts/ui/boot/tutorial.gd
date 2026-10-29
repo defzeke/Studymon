@@ -75,6 +75,7 @@ func _next() -> void:
 	_line += 1
 	if _line == LINES.size():
 		GameState.tutorial_done = true
+		SaveManager.save_progress()
 		set_process_unhandled_input(false)
 		await _fade(speech, 0.0).finished
 		finished.emit()

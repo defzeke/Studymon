@@ -123,6 +123,71 @@ custom_minimum_size = Vector2(0, 52)
 layout_mode = 2
 text = "Large text"
 
+[node name="DataCard" type="PanelContainer" parent="Margin/Content"]
+layout_mode = 2
+
+[node name="Pad" type="MarginContainer" parent="Margin/Content/DataCard"]
+layout_mode = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 16
+
+[node name="Data" type="VBoxContainer" parent="Margin/Content/DataCard/Pad"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="DataHeader" type="Label" parent="Margin/Content/DataCard/Pad/Data"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.8392, 0.6588, 0.3725, 1)
+theme_override_fonts/font = ExtResource("3")
+text = "Privacy & data"
+
+[node name="ConsentCheck" type="CheckBox" parent="Margin/Content/DataCard/Pad/Data"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 52)
+layout_mode = 2
+text = "Let the AI read my reviewers and answers"
+autowrap_mode = 3
+
+[node name="ConsentNote" type="Label" parent="Margin/Content/DataCard/Pad/Data"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(560, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+autowrap_mode = 3
+
+[node name="Links" type="HBoxContainer" parent="Margin/Content/DataCard/Pad/Data"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="PrivacyButton" type="Button" parent="Margin/Content/DataCard/Pad/Data/Links"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 56)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Privacy"
+
+[node name="TermsButton" type="Button" parent="Margin/Content/DataCard/Pad/Data/Links"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 56)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Terms"
+
+[node name="SupportButton" type="Button" parent="Margin/Content/DataCard/Pad/Data/Links"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 56)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Support"
+
+[node name="DeleteDataButton" type="Button" parent="Margin/Content/DataCard/Pad/Data"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 56)
+layout_mode = 2
+text = "Delete my data"
+
 [node name="Spacer" type="Control" parent="Margin/Content"]
 layout_mode = 2
 size_flags_vertical = 3

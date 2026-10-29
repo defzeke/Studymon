@@ -22,12 +22,12 @@ until their trainers are beaten, and the Champion always has a moveset.
 | **2** | Pet-care loop: Pet/Feed/Play, stats, XP, decay, level gate, HUD strip | **Partial** — home's room actions call `care()` and its top HUD shows level, XP, hunger/energy/mood/health and crystals; no petting | `companion_state.gd`, `home.gd`; see #5 |
 | **3** | AI Codex + optional pop-quiz reuse | **Partial** — data only | `CURRICULUM` + `codex` array; no screen, bubble deleted with the care room |
 | **4** | Scheduler / Pomodoro with missed-rest penalty, HUD badge | **Logic only** — the panel and badge were removed | `companion_state.gd:168-241` |
-| **5** | Upload PDF → extraction → editable list → region | **Implemented (mock)** | `categorizer.gd`, `session_manager.gd`, `api.gd:98-269` |
+| **5** | Upload PDF → extraction → editable list → region | **Implemented (mock; Claude server built, untested live)** | `categorizer.gd`, `session_manager.gd`, `api.gd`, `backend/` |
 | **6** | Overworld + gym structure + trainer encounters | **Implemented (mock)** | 3D island `region_map.tscn`, `player.gd`, `joystick.gd`; three gyms (one at a marker, no building) |
 | **7** | Battle per question type, one judging pipeline | **Implemented (mock)** | `battle.gd`: Identification, Essay and Multiple Choice, per-tier HP/counter/thresholds |
 | **8** | Mastery states + 7-day decay + Champion recap | **Implemented** | `session_manager.gd`; Champion falls back to every question |
 | **9** | Polish: insights, juice, accessibility, pacing | **Partial** | particles/shake/hit-stop/colourblind badges and the large-text toggle done; bubble hidden (#4) |
-| **10** | Monetization quota + stretch | **Partial (mock)** | the client-side quota was removed; Crystal Shop placeholder ("Coming soon"); no store, no deck sharing |
+| **10** | Monetization quota + stretch | **Partial (mock)** | the client-side quota was removed; free launch, no shop; no deck sharing |
 
 ---
 
@@ -57,8 +57,8 @@ removed; `CompanionState`'s defaults are the same starter stats.
 
 Missing: anything after the tutorial's last line, and so any path from boot into the care room;
 saving the name. Supabase auth entirely: no login/signup
-scene, no token, no user record, no session restore. `GameState.user_id` / `auth_token` are
-declared and never written. `loading.gd:2` states this explicitly ("replaces login now that
+scene, no token, no user record, no session restore: v1 ships without accounts, and the unused
+`GameState.user_id` / `auth_token` were removed. `loading.gd:2` states this explicitly ("replaces login now that
 backend/auth is skipped").
 
 ### Phase 2 — Pet-care loop ⚠️
@@ -98,9 +98,10 @@ Done: paste-or-file input, word/char sanity gate, "AI is studying…" beat, dete
 extractor that turns real reviewer prose into Identification / Essay / Multiple Choice questions tagged Easy, Medium or Hard, editable
 list with confidence indicators, topic history, region data generation.
 
-Missing: real PDF parsing and `/extract`. Binary files always fall through to five canned
-questions (`review-session.md` §3). Raw-vs-edited extraction storage was not built because there is
-no extraction service yet.
+Built, not yet run against the real model: `POST /v1/extract` (Claude writes the questions and their
+answer keys from pasted text or a PDF; the server checks grounding and drops bad items), used when
+the server is on (release builds). On mocks a PDF is refused (`review-session.md` §2). Raw-vs-edited extraction storage
+was not built: the server is stateless and stores nothing.
 
 ### Phase 6 — Overworld ✅ (mock)
 
@@ -119,9 +120,10 @@ Identification one-hit-KO and counter, Essay damage from score with an enemy cou
 HP, hit-stop and camera shake, and enemy HP, counters, XP and thresholds
 from the question's difficulty tier.
 
-Gaps: no enemy or player art (the missing `bot_lv*.png` references were removed). Grading is the
-local hybrid rubric; the documented backend path differs (#7) and its responses would be dropped by
-the client parser (#9).
+Gaps: no enemy or player art (the missing `bot_lv*.png` references were removed). Multiple Choice and
+Identification are checked on the device against the answer key; essays and Identification near-misses
+go to `POST /v1/grade` with an offline mark as fallback (`battle.md` §5). The server path has been
+checked against a stubbed Claude only.
 
 ### Phase 8 — Mastery & Champion ✅
 
@@ -147,8 +149,8 @@ onboarding pacing verification on device, and any accessibility options beyond t
 ### Phase 10 — Monetization & stretch ⚠️
 
 Removed: the free-tier PDF (3/week) and grading (10/week) quotas, the premium flag, the quota
-labels and the "Weekly limit reached" pop-up (`MonetizationState`). Every AI use is unlimited. Home
-has a Crystal Shop placeholder: real-money crystal packs marked "Coming soon".
+labels and the "Weekly limit reached" pop-up (`MonetizationState`). Every AI use is unlimited. The
+placeholder Crystal Shop was removed for the free launch.
 
 Missing: a real store/IAP, server-side entitlement, async topic-deck sharing, and rewards for
 levels past 5 (levels no longer cap, but nothing new unlocks after the campaign).
@@ -187,7 +189,7 @@ The loop upload → edit → overworld → battle → mastery → Champion is pl
 |---|---|---|
 | Godot 4.6.x, "avoid 4.7" | 4.7.2 stable | 4.7 is the shipping line now; keep it |
 | `Resource`-based saves | JSON file, `"v": 5` | simpler diffs, no type safety |
-| FastAPI **or** Node backend with Claude + Supabase | FastAPI health check only | no Claude, no Supabase, no DB |
+| FastAPI **or** Node backend with Claude + Supabase | FastAPI gateway with Claude (`/v1/extract`, `/v1/grade`) | stateless: no Supabase, no DB, no accounts |
 | Supabase Auth / DB / Storage | none | auth skipped by design for now |
-| Job polling for long tasks | `job_status` signal + mock timer | no polling loop, single shared `HTTPRequest` |
+| Job polling for long tasks | `job_status` signal; synchronous requests with a per-call `HTTPRequest` and timeout | no polling loop |
 | Android + iOS export templates from day one | not configured | no `export_presets.cfg` in the repo |

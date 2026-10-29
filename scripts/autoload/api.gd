@@ -1,89 +1,218 @@
 extends Node
 ## Api — HTTP wrapper for backend calls (canonical registered version).
-## MOCK mode (default) returns canned data so client dev is never blocked.
+## MOCK mode returns canned data so client dev is never blocked; exported release builds use the server.
 ## Godot only ever talks to OUR api, never api.anthropic.com directly.
-## NOTE: internal helpers are named _http_get/_post/_put — plain `_get`
-## would collide with Object's `_get(StringName)` virtual.
+## Contract: docs/api-backend.md. Do not name a helper plain `_get`: it would override Object._get().
 
 signal job_status(job_id: String, status: String, progress: float, result: Variant)
 
-const MOCK := true
-const BASE_URL := "http://localhost:8000"
+## The deployed study server. Must be HTTPS: Android and iOS refuse plain http. Set before exporting.
+const RELEASE_URL := ""
+## true to try the local study server from the editor or a debug export instead of the mock.
+const DEV_USES_SERVER := false
+# 127.0.0.1, not localhost: localhost can resolve to IPv6 first, which uvicorn does not listen on.
+const DEV_URL := "http://127.0.0.1:8000"
+var MOCK := OS.is_debug_build() and not DEV_USES_SERVER
+var BASE_URL := DEV_URL if OS.is_debug_build() else RELEASE_URL
+# Seconds before a request counts as failed: generating a whole question bank takes the longest.
+const EXTRACT_TIMEOUT := 180.0
+const GRADE_TIMEOUT := 30.0
 
-var _http: HTTPRequest
+var _job_seq := 0
 
 func _ready() -> void:
-	_http = HTTPRequest.new()
-	add_child(_http)
-	_http.request_completed.connect(_on_request_completed)
+	if not MOCK and not BASE_URL.begins_with("https://") and not OS.is_debug_build():
+		push_error("Api: RELEASE_URL must be the deployed HTTPS study server; every AI request will fail.")
 
-func _on_request_completed(result: int, _response_code: int, _headers: PackedStringArray, body: PackedByteArray) -> void:
+## A job id no other request shares, so each screen only takes its own results (rules §5, issue #9).
+func new_job_id(kind: String) -> String:
+	_job_seq += 1
+	return "%s_%d" % [kind, _job_seq]
+
+# One HTTPRequest per call, so requests never cancel each other. Every outcome reaches job_status:
+# the server's envelope on success, "failed" with a message the player can read otherwise.
+func _request(job_id: String, method: int, endpoint: String, data: Dictionary, timeout: float) -> void:
+	var http := HTTPRequest.new()
+	http.timeout = timeout
+	add_child(http)
+	http.request_completed.connect(func(result: int, code: int, _headers: PackedStringArray, body: PackedByteArray) -> void:
+		http.queue_free()
+		_on_request_completed(job_id, result, code, body))
+	var headers := PackedStringArray(["Content-Type: application/json"])
+	if http.request(BASE_URL + endpoint, headers, method, JSON.stringify(data)) != OK:
+		http.queue_free()
+		_fail_later(job_id, "Could not start the request.")
+
+func _on_request_completed(job_id: String, result: int, code: int, body: PackedByteArray) -> void:
 	if result != HTTPRequest.RESULT_SUCCESS:
+		job_status.emit(job_id, "failed", 1.0, "No connection to the study server.")
+		return
+	if code == 429:
+		job_status.emit(job_id, "failed", 1.0, "You've reached today's AI limit. Try again tomorrow.")
+		return
+	if code < 200 or code >= 300:
+		job_status.emit(job_id, "failed", 1.0, "The study server returned an error (%d)." % code)
 		return
 	var parsed: Variant = JSON.parse_string(body.get_string_from_utf8())
-	if typeof(parsed) != TYPE_DICTIONARY:
+	if typeof(parsed) != TYPE_DICTIONARY or str((parsed as Dictionary).get("job_id", "")) != job_id:
+		job_status.emit(job_id, "failed", 1.0, "The study server sent an unreadable reply.")
 		return
 	var data: Dictionary = parsed
-	if data.has("job_id"):
-		var jid := str(data["job_id"])
-		var status := str(data.get("status", ""))
-		var progress := float(data.get("progress", 0.0))
-		job_status.emit(jid, status, progress, data.get("result", null))
+	job_status.emit(job_id, str(data.get("status", "failed")), float(data.get("progress", 1.0)), data.get("result", null))
 
-func save_topic(topic_id: String, questions: Array[Dictionary]) -> void:
-	_put("/topics/" + topic_id, {"questions": questions})
+func _fail_later(job_id: String, message: String) -> void:
+	job_status.emit.call_deferred(job_id, "failed", 1.0, message)
 
-## Canonical Phase 7 entry: grade a full question dict (carries expected answer + key_concepts).
-func grade_battle_question(q: Dictionary, answer: String) -> void:
+## Grades a typed answer: `mode` is "identification" (a near-miss the answer key did not settle) or
+## "essay". The result {score, feedback, covered?} arrives on job_status under `job_id`.
+## Contract: docs/api-backend.md §2.
+func grade_battle_question(job_id: String, q: Dictionary, answer: String, mode: String) -> void:
 	if MOCK:
-		_execute_mock_grade(q, answer)
+		_execute_mock_grade(job_id, q, answer, mode)
 		return
-	_post("/battle/grade", {
-		"type": str(q.get("type", "essay")),
+	if not GameState.ai_consent:
+		_fail_later(job_id, "AI grading is off in Settings.")
+		return
+	_request(job_id, HTTPClient.METHOD_POST, "/v1/grade", {
+		"job_id": job_id,
+		"mode": mode,
 		"question": str(q.get("text", "")),
 		"answer": answer,
-		"source": str(q.get("source", "")),
 		"expected": str(q.get("answer", "")),
-		"key_concepts": q.get("key_concepts", []),
-	})
+		"accepted": q.get("accepted", []),
+		"rubric": rubric_for(q),
+		"model_answer": str(q.get("model_answer", "")),
+		"source": str(q.get("source", "")),
+	}, GRADE_TIMEOUT)
 
-func update_mastery(topic_id: String, question_id: String, state: String) -> void:
-	_put("/mastery/" + topic_id + "/" + question_id, {"state": state})
+## Turns a reviewer into questions with their answer keys: pasted text, or a PDF's bytes (sent only
+## when the server is on; the mock reads text). The result arrives on job_status under `job_id`.
+func upload_reviewer(job_id: String, topic_name: String, source_text: String, pdf: PackedByteArray) -> void:
+	if MOCK:
+		_execute_mock_upload(job_id, topic_name, source_text)
+		return
+	if not GameState.ai_consent:
+		_fail_later(job_id, "Allow the AI to read your reviewer first.")
+		return
+	job_status.emit.call_deferred(job_id, "processing", 0.0, null)
+	var body := {"job_id": job_id, "topic_name": topic_name}
+	if pdf.is_empty():
+		body["text"] = source_text
+	else:
+		body["pdf_base64"] = Marshalls.raw_to_base64(pdf)
+	_request(job_id, HTTPClient.METHOD_POST, "/v1/extract", body, EXTRACT_TIMEOUT)
 
-## Internal
-func _auth_headers() -> Array:
-	var headers: Array = []
-	if GameState.auth_token != "":
-		headers.append("Authorization: *** " + GameState.auth_token)
-	return headers
+## Reports a generated question or AI feedback as wrong or offensive (a store requirement). `kind` is
+## "question" or "feedback"; the result arrives on job_status under `job_id`.
+func report_content(job_id: String, kind: String, text: String) -> void:
+	if MOCK:
+		job_status.emit.call_deferred(job_id, "completed", 1.0, {"ok": true})
+		return
+	_request(job_id, HTTPClient.METHOD_POST, "/v1/reports", {"job_id": job_id, "kind": kind, "text": text.left(4000)}, GRADE_TIMEOUT)
 
-func _post(endpoint: String, data: Dictionary) -> void:
-	var headers: Array = ["Content-Type: application/json"]
-	headers.append_array(_auth_headers())
-	_http.request(BASE_URL + endpoint, headers, HTTPClient.METHOD_POST, JSON.stringify(data))
+# --- Answer checking on the device (contract: docs/systems/battle.md §2) ---
 
+## Lowercase, punctuation stripped, spaces collapsed, a leading article dropped.
+func normalize_answer(s: String) -> String:
+	var out := ""
+	for ch in s.to_lower():
+		out += ch if ch.is_valid_unicode_identifier() or ch.is_valid_int() or ch == " " else " "
+	var words := out.split(" ", false)
+	if words.size() > 1 and words[0] in ["a", "an", "the"]:
+		words.remove_at(0)
+	return " ".join(words)
 
+## Typos forgiven for a key of this many letters: none up to 4, 1 up to 8, else 2; one fewer when strict.
+func _typo_allowance(length: int, strict: bool) -> int:
+	var n := 0 if length <= 4 else (1 if length <= 8 else 2)
+	return maxi(0, n - (1 if strict else 0))
 
-func _put(endpoint: String, data: Dictionary) -> void:
-	var headers: Array = ["Content-Type: application/json"]
-	headers.append_array(_auth_headers())
-	_http.request(BASE_URL + endpoint, headers, HTTPClient.METHOD_PUT, JSON.stringify(data))
+## An Identification answer against the question's answer key: {verdict: "correct" | "near" | "wrong",
+## feedback}. "near" (close, but not on the key) is for grade_battle_question to settle.
+func check_identification(q: Dictionary, given: String, strict: bool) -> Dictionary:
+	var g := normalize_answer(given)
+	var keys: Array[String] = []
+	for k in [q.get("answer", "")] + Array(q.get("accepted", [])):
+		var n := normalize_answer(str(k))
+		if n != "" and not keys.has(n):
+			keys.append(n)
+	var expected := str(q.get("answer", "")).strip_edges()
+	if g == "":
+		return {"verdict": "wrong", "feedback": "No answer — the enemy shrugs it off."}
+	if keys.is_empty():
+		return {"verdict": "near", "feedback": "This card has no answer key yet. Add one with Edit on the worlds list."}
+	for k in keys:
+		if g == k:
+			return {"verdict": "correct", "feedback": "Exact hit — that's the one!"}
+	for k in keys:
+		if _edit_distance(g, k) <= _typo_allowance(k.length(), strict):
+			return {"verdict": "correct", "feedback": "Small typo, but the idea connected. The key says %s." % expected}
+	for k in keys:
+		var shares := false
+		for w in g.split(" ", false):
+			shares = shares or (w.length() >= 3 and w in k.split(" ", false))
+		if shares or _edit_distance(g, k) <= floori(k.length() / 3.0):
+			return {"verdict": "near", "feedback": "Close — the key says %s." % expected}
+	return {"verdict": "wrong", "feedback": "That missed — the key says %s." % expected}
 
-## MOCKS — replaced by real calls when backend lands (Phase 5+)
+## The points an essay is marked on: its rubric, else one point per key idea, else its answer.
+func rubric_for(q: Dictionary) -> Array:
+	var rubric: Array = q.get("rubric", [])
+	if not rubric.is_empty():
+		return rubric
+	var ideas: Array = q.get("key_concepts", [])
+	if ideas.is_empty() and str(q.get("answer", "")).strip_edges() != "":
+		ideas = [str(q["answer"]).strip_edges()]
+	var out: Array = []
+	for idea in ideas:
+		out.append({"point": str(idea), "keywords": [str(idea)], "weight": 1.0})
+	return out
 
-func mock_upload_pdf(topic_name: String, source_text: String = "") -> void:
-	_execute_mock_upload(topic_name, source_text)
+## The offline essay mark, used by the mock and whenever the server cannot grade: a point counts when
+## one of its keywords is in the answer, and length helps only once some point is covered (so filler
+## alone scores 0). Returns {score, covered, feedback}.
+func essay_offline(q: Dictionary, answer: String) -> Dictionary:
+	var said := " %s " % normalize_answer(answer)
+	var rubric := rubric_for(q)
+	var covered: Array[bool] = []
+	var got := 0.0
+	var total := 0.0
+	var missed: Array[String] = []
+	for r: Dictionary in rubric:
+		var hit := false
+		for kw in Array(r.get("keywords", [])) + [r.get("point", "")]:
+			var k := normalize_answer(str(kw))
+			hit = hit or (k != "" and said.contains(" %s " % k))
+		covered.append(hit)
+		total += float(r.get("weight", 1.0))
+		if hit:
+			got += float(r.get("weight", 1.0))
+		else:
+			missed.append(str(r.get("point", "")))
+	var coverage := got / total if total > 0.0 else 0.0
+	var words := answer.split(" ", false).size()
+	var score := 0.0 if coverage == 0.0 else 0.7 * coverage + 0.3 * clampf(words / 30.0, 0.0, 1.0)
+	var feedback := "Full coverage — every key idea landed."
+	if rubric.is_empty():
+		feedback = "This card has no key ideas yet. Add them with Edit on the worlds list."
+	elif coverage == 0.0:
+		feedback = "None of the key ideas landed — aim at: %s." % ", ".join(missed)
+	elif not missed.is_empty():
+		feedback = "Good — still missing: %s." % ", ".join(missed)
+	return {"score": score, "covered": covered, "feedback": feedback}
 
-func _execute_mock_upload(topic_name: String, source_text: String) -> void:
+## MOCKS — the offline stand-ins for the study server (Api.MOCK)
+
+func _execute_mock_upload(job_id: String, topic_name: String, source_text: String) -> void:
 	# Simulate short processing beat like GDD §5.2 "AI is studying..."
-	call_deferred("_mock_upload_done", {"job_id": "job_001", "status": "processing"})
+	call_deferred("_mock_upload_done", {"job_id": job_id, "status": "processing"})
 	# Complete after ~0.8s via timer if tree is ready, else immediate.
 	# Questions are parsed from the USER's reviewer text; canned placeholders
 	# only apply when no usable text survived (e.g. binary PDF bytes).
 	var questions := _build_questions_from_text(topic_name, source_text)
 	var topic_id := _slug_topic_id(topic_name)
 	var payload := {
-		"job_id": "job_001",
+		"job_id": job_id,
 		"status": "completed",
 		"progress": 1.0,
 		"result": {"topic_id": topic_id, "questions": questions},
@@ -157,7 +286,7 @@ func _build_questions_from_text(_topic_name: String, source_text: String) -> Arr
 				continue
 			questions.append({
 				"id": "q%d" % (idx + 1),
-				"text": ("Which term is described here? \"%s\"" if kind == 2 else "What key term is described here? \"%s\"") % excerpt,
+				"text": ("Which term is described here? \"%s\"" if kind == 2 else "What key term is described here? \"%s\"") % _blank(excerpt, answer),
 				"type": "multiple_choice" if kind == 2 else "identification",
 				"difficulty": tier,
 				"answer": answer,
@@ -170,6 +299,11 @@ func _build_questions_from_text(_topic_name: String, source_text: String) -> Arr
 	if questions.is_empty():
 		return _fallback_questions()
 	return questions
+
+## `excerpt` with the answer term blanked out, so the question does not hand over its own answer.
+## Terms are plain words (`_extract_terms` keeps valid identifiers), so they are safe in a pattern.
+func _blank(excerpt: String, term: String) -> String:
+	return RegEx.create_from_string("(?i)\\b%s\\b" % term).sub(excerpt, "_____", true)
 
 ## Wrong options for a Multiple Choice question: top terms of the other sentences, never the answer.
 func _distractors_for(answer: String, terms_by: Array, own: int) -> Array:
@@ -271,74 +405,11 @@ func _mock_upload_done(data: Dictionary) -> void:
 func _mock_poll_done(data: Dictionary) -> void:
 	job_status.emit(str(data["job_id"]), str(data["status"]), float(data["progress"]), data["result"])
 
-## Hybrid mock rubric (Phase 7): 50% keyword/concept coverage + 50% holistic
-## judgment proxy (length/effort), so mock grading has a deterministic floor
-## instead of hardcoded answers. Real Claude grading replaces this server-side.
-
-func _execute_mock_grade(q: Dictionary, answer: String) -> void:
-	var qtype: String = str(q.get("type", "essay")).to_lower()
-	var tier: String = str(q.get("difficulty", "medium")).to_lower()
-	var score := 0.0
-	var feedback := ""
-	if qtype == "identification" or qtype == "id":
-		var expected: String = str(q.get("answer", "")).strip_edges().to_lower()
-		var given: String = answer.strip_edges().to_lower()
-		if given == "":
-			score = 0.0
-			feedback = "No answer — the enemy shrugs it off."
-		elif expected != "" and given == expected:
-			score = 1.0
-			feedback = "Exact hit — that's the one!"
-		elif expected != "" and tier != "hard" and (given.contains(expected) or expected.contains(given)):
-			score = 0.8
-			feedback = "Close enough — core term landed."
-		elif expected != "" and _fuzzy_match(given, expected, 1 if tier == "hard" else 2):
-			score = 0.7
-			feedback = "Near miss on spelling, but the idea connected."
-		elif expected == "":
-			score = 0.5 if given.length() >= 2 else 0.0
-			feedback = "No answer key — effort counts for half."
-		else:
-			score = 0.0
-			feedback = "That missed — review the concept and strike again."
-	else:
-		var concepts: Array = q.get("key_concepts", [])
-		var lowered: String = answer.strip_edges().to_lower()
-		var hits := 0
-		var missed: Array = []
-		for c in concepts:
-			var kw: String = str(c).to_lower()
-			if kw != "" and lowered.contains(kw):
-				hits += 1
-			elif kw != "":
-				missed.append(str(c))
-		var coverage := 0.0
-		if concepts.size() > 0:
-			coverage = float(hits) / float(concepts.size())
-		else:
-			coverage = 0.5 if lowered.length() >= 10 else 0.0
-		var words := lowered.split(" ", false).size()
-		var holistic: float = clampf(float(words) / 30.0, 0.0, 1.0)
-		score = 0.5 * coverage + 0.5 * holistic
-		if concepts.size() > 0 and hits == concepts.size():
-			feedback = "Full coverage — every key idea landed."
-		elif hits > 0:
-			feedback = "Good — covered %d/%d ideas, missed: %s." % [hits, concepts.size(), ", ".join(missed)]
-		elif words < 4:
-			feedback = "Too thin — explain the mechanism in your own words."
-		else:
-			feedback = "Words, but not the key ideas — aim at: %s." % ", ".join(concepts)
-	var damage := int(round(score * 100.0))
-	call_deferred("_mock_grade_done", {"score": score, "feedback": feedback, "damage": damage, "type": qtype})
-
-
-## Token-overlap fuzzy match for identification answers (typo-tolerant).
-func _fuzzy_match(a: String, b: String, max_distance: int = 2) -> bool:
-	if a == "" or b == "":
-		return false
-	if abs(a.length() - b.length()) > 3:
-		return false
-	return _edit_distance(a, b) <= max_distance
+## The mock grader: an essay gets the offline rubric mark; an Identification near-miss stays a miss,
+## since only the server can judge a synonym the answer key does not list.
+func _execute_mock_grade(job_id: String, q: Dictionary, answer: String, mode: String) -> void:
+	var data := essay_offline(q, answer) if mode == "essay" else {"score": 0.0, "feedback": check_identification(q, answer, false)["feedback"]}
+	job_status.emit.call_deferred(job_id, "completed", 1.0, data)
 
 func _edit_distance(a: String, b: String) -> int:
 	var prev: Array = []
@@ -352,9 +423,6 @@ func _edit_distance(a: String, b: String) -> int:
 			cur.append(mini(mini(int(cur[j]) + 1, int(prev[j + 1]) + 1), int(prev[j]) + cost))
 		prev = cur
 	return int(prev[b.length()])
-
-func _mock_grade_done(data: Dictionary) -> void:
-	job_status.emit("grade", "completed", 1.0, data)
 
 func mock_get_topics() -> void:
 	call_deferred("_mock_topics_done", {"topics": []})

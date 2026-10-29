@@ -212,9 +212,8 @@ thread-load the next scene while they play, so those changes hit the resource ca
 | Which trainer/gym is cleared? | `SessionManager._cleared_trainers` / `_cleared_gyms` |
 | Mastery per question? | `SessionManager._mastery` |
 | Which battle am I in? | `SessionManager.battle_topic_id` / `battle_q_index` / `battle_is_boss` / `battle_is_champion` |
-| Auth token / user id? | `GameState.auth_token` / `user_id` — **never set today** |
-| Player's name? | `GameState.player_name`, set by the tutorial; memory only, never saved |
-| Tutorial seen / food in stock? | `GameState.tutorial_done` / `food_stock`; memory only, never saved |
+| Player's name? | `GameState.player_name`, set by the tutorial; saved |
+| Tutorial seen / food in stock? | `GameState.tutorial_done` / `food_stock`; both saved |
 | Music / sound volume? | `MusicManager.music_volume` / `sfx_volume` (0–1), saved |
 
 Rule of thumb: **scenes read and call autoloads; autoloads never call scenes.** The only

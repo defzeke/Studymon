@@ -67,7 +67,7 @@ text** checkbox in `settings.tscn` calls `set_large_text()` and saves.
 | `scenes/overworld/explorer_picker.tscn` | `CanvasLayer` | `scripts/overworld/explorer_picker.gd` | "Choose your explorer" card, instanced over the region map |
 | `scenes/battle/battle.tscn` | `Control` | `scripts/battle/battle.gd`, `scripts/battle/arena_stage.gd` | 3D arena behind the battle HUD: intro, strikes, ten SFX cues |
 | `scenes/review_session/flashcards.tscn` | `Control` | `scripts/review_session/flashcards.gd` | Flashcard Sanctuary: untimed card review |
-| `scenes/ui/settings.tscn` | `Control` | `scripts/ui/settings.gd` | one card, "Sound & display" (music, sounds, large text); Back returns home. The "AI plan" card (quota, premium, debug reset) was removed |
+| `scenes/ui/settings.tscn` | `Control` | `scripts/ui/settings.gd` | two cards: "Sound & display" (music, sounds, large text) and "Privacy & data" (`ConsentCheck` with the consent text in `ConsentNote`; `PrivacyButton`, `TermsButton`, `SupportButton` opening `PRIVACY_URL` / `TERMS_URL` / `SUPPORT_URL`, disabled while empty; `DeleteDataButton`, coral, confirms then `SaveManager.delete_all()` and restarts at the tutorial); Back returns home |
 
 
 ### `splash.tscn`
@@ -316,10 +316,8 @@ soft drop shadow, like the props.
   [`companion-care.md`](systems/companion-care.md) §1.
 - **Crystals** (top right): the currency, `GameState.crystals`, with the forehead gem from the
   logo (`ui/crystal.svg`), saved (v8). Minigame rounds earn it (Kuiz Keeper 1 per goal, Sky Jump
-  1 per 50 m) and a new battery spends it (30); the fridge is still free. The pill has a teal "+"
-  and opens the **Crystal Shop** (`CrystalShop`): four real-money packs (100 / 550 / 1200 / 2500
-  crystals at $0.99 / $4.99 / $9.99 / $19.99, `CRYSTAL_PACKS`, placeholder prices) under an amber
-  "COMING SOON" badge; the price buttons are greyed out and nothing can be bought yet.
+  1 per 50 m) and a new battery spends it (30); the fridge is still free. The pill only shows the
+  balance: there is no shop (free launch, [`systems/monetization.md`](systems/monetization.md)).
 
 ### Kuiz's look (`kuiz_look.gd`)
 
@@ -471,7 +469,9 @@ Each question row is a copy of `RowTemplate` (laid out in the scene; `_make_ques
 and finds its parts by name): `Pad/Box` → `Header` (`Index`, `Confidence`, `Delete`), `Prompt`
 (`TextEdit`), `TypeRow` (`TypeLabel`, `TypeOption` with Essay / Identification / Multiple Choice in
 `QUESTION_TYPES` order, `Difficulty` filled from `SessionManager.DIFFICULTIES`), `Answer`
-(`LineEdit`), and `Wrong1`–`Wrong3`, shown only for Multiple Choice.
+(`LineEdit`), `Accepted` (`LineEdit`, "Also accept", comma-separated), shown only for Identification,
+the header's `Report` button (flags the question, `Api.report_content()`),
+and `Wrong1`–`Wrong3`, shown only for Multiple Choice.
 
 `FileDialog` uses `file_mode = 0` (open file) and `access = 2` (filesystem), with **no filters** —
 any file type can be selected. Only the first 4000 characters of a text file are shown in the paste
@@ -515,12 +515,12 @@ The HUD, top to bottom, in the home HUD's look (Off-White, Deep Slate 3 px outli
 `Battle` (`Control`) → `Camera2D`, `Background`, `Margin` → `List`: `TopBar` (flee, title),
 `EnemyCard` (sprite, name, HP), `PlayerCard` (sprite, name, HP), `QuestionCard`
 (type, text), `AnswerInput` (`TextEdit`), `SubmitButton`, `JudgingLabel`, `ResultLabel`,
-`ResultPanel` (title, XP label, retry/continue); the weekly-limit notice is a `ConfirmModal`.
+`ResultPanel` (title, XP label, retry / report / continue).
 
 The enemy and player cards sit over `ArenaStage`, the 3D scene that holds the models. The Broken
 Bot foe makes its own sounds on its clips (§2 Model sounds). For a Multiple Choice question
 `battle.gd` hides `AnswerInput` and `SubmitButton` and builds a `VBoxContainer` of four option
-`Button`s (56 px tall) in their place at runtime. `PlayerCard`'s box ends in `%GaugeRow`: four `stat_gauge.gd` rings (44 px) placed in the scene, each **named after the `CompanionState` stat it shows** (`hunger`, `energy`, `mood`, `health`; icon and ring colour set in the Inspector). `_refresh_gauges()` follows `CompanionState.stats_changed`, so a run's costs and hits show live. `stat_gauge.gd` is a `@tool` script, so the rings draw in the editor. `battle.gd`'s exports are grouped **Intro**, **Sound effects** and **Juice** (shake, flash strength, the `hurt_flash_color` / `lose_flash_color` screen flashes, the end-banner hold). After each answer `ResultPanel` is the review beat (answer, feedback, source; Next held 1.5 s or 4 s). `region_map.tscn` has a full-screen off-white fade (`FadeLayer`, `CanvasLayer` 100 → `%Fade`, transparent in the editor): out when a house or gym is entered, in on arrival. Over the island, each of the 15 houses carries a bobbing `house_icon` (`ui/icon_trainer.svg`) in its type's colour (Identification teal, Essay lilac `8D82A8`, Multiple Choice amber; faint once cleared) and a `Label3D` (type, `Easy` or stars) shown only within 4 units of the explorer; walking up to a house unfolds a dark doorway (`1E2829`) over its door.
+`Button`s (56 px tall) in their place at runtime. `PlayerCard`'s box ends in `%GaugeRow`: four `stat_gauge.gd` rings (44 px) placed in the scene, each **named after the `CompanionState` stat it shows** (`hunger`, `energy`, `mood`, `health`; icon and ring colour set in the Inspector). `_refresh_gauges()` follows `CompanionState.stats_changed`, so a run's costs and hits show live. `stat_gauge.gd` is a `@tool` script, so the rings draw in the editor. `battle.gd`'s exports are grouped **Intro**, **Sound effects** and **Juice** (shake, flash strength, the `hurt_flash_color` / `lose_flash_color` screen flashes, the end-banner hold). After each answer `ResultPanel` is the review beat (answer or model answer with ✓ / ✗ per rubric point, explanation, feedback, source; Next held 1.5 s or 4 s), with `%ReportButton` to flag the item's AI content (shown only on the review beat). `region_map.tscn` has a full-screen off-white fade (`FadeLayer`, `CanvasLayer` 100 → `%Fade`, transparent in the editor): out when a house or gym is entered, in on arrival. Over the island, each of the 15 houses carries a bobbing `house_icon` (`ui/icon_trainer.svg`) in its type's colour (Identification teal, Essay lilac `8D82A8`, Multiple Choice amber; faint once cleared) and a `Label3D` (type, `Easy` or stars) shown only within 4 units of the explorer; walking up to a house unfolds a dark doorway (`1E2829`) over its door.
 
 
 ---

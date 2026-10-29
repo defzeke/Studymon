@@ -5,13 +5,16 @@ extends Node
 signal large_text_changed(enabled: bool)
 signal crystals_changed(amount: int)
 
-var user_id: String = ""
-var auth_token: String = ""
-# shortcut: memory only while there is no backend; save it with the profile once accounts exist.
+## Saved: the name the tutorial asks for.
 var player_name: String = ""
-# shortcut: memory only like the name; the tutorial replays each launch until it is saved with the profile.
+## Saved: the tutorial plays once per install.
 var tutorial_done: bool = false
-# shortcut: memory only until Kuiz's stats and the shop's currency exist; food id -> count.
+## Saved: the player agreed to send reviewers and typed answers to the AI (asked before the first
+## upload, withdrawn in Settings). Without it nothing is sent and essays are graded on the device.
+var ai_consent := false
+## What the consent pop-up and Settings say is sent (Apple 5.1.2(i)); keep it true to the backend.
+const AI_CONSENT_TEXT := "To turn your reviewer into questions, Studymon sends the text or PDF you upload, and the essay answers you type in battles, to its study server, which passes them to Claude, an AI by Anthropic. They are used only to make and grade your questions, and Studymon does not keep them. Your worlds and progress stay on this device."
+## Saved: food id -> count in stock.
 var food_stock: Dictionary = {}
 var campaign_unlocked_flag: bool = false
 # Home's currency (top-right pill): minigame rounds earn it, a new battery spends it.
@@ -32,10 +35,6 @@ const FONT_SIZE_LARGE := 36
 const BUTTON_FONT_STANDARD := 32
 const BUTTON_FONT_LARGE := 40
 var large_text_enabled: bool = false
-
-func set_user(uid: String, token: String) -> void:
-	user_id = uid
-	auth_token = token
 
 func add_crystals(amount: int) -> void:
 	crystals = maxi(0, crystals + amount)

@@ -181,6 +181,12 @@ theme_override_font_sizes/font_size = 22
 text = "AI is fairly sure (90%)"
 horizontal_alignment = 2
 
+[node name="Report" type="Button" parent="Margin/Content/QuestionsBlock/RowTemplate/Pad/Box/Header"]
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "Report"
+
 [node name="Delete" type="Button" parent="Margin/Content/QuestionsBlock/RowTemplate/Pad/Box/Header"]
 custom_minimum_size = Vector2(56, 48)
 layout_mode = 2
@@ -221,6 +227,12 @@ layout_mode = 2
 custom_minimum_size = Vector2(0, 52)
 layout_mode = 2
 placeholder_text = "Answer / key concepts (comma-separated for Essay)"
+
+[node name="Accepted" type="LineEdit" parent="Margin/Content/QuestionsBlock/RowTemplate/Pad/Box"]
+visible = false
+custom_minimum_size = Vector2(0, 52)
+layout_mode = 2
+placeholder_text = "Also accept (comma-separated)"
 
 [node name="Wrong1" type="LineEdit" parent="Margin/Content/QuestionsBlock/RowTemplate/Pad/Box"]
 visible = false

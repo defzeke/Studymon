@@ -1,6 +1,7 @@
 extends Control
 ## Battle scene: one run (a Challenge House, Gym or the Champion Gym) of fixed items against one foe.
-## Identification and Essay are typed and graded by Api; Multiple Choice is tapped and graded locally.
+## Multiple Choice and Identification are graded on the device from the answer key; an Essay (and an
+## Identification near-miss) goes to Api, with an offline mark when the server cannot answer.
 ## Each answer is followed by a review beat; a streak strengthens Kuiz's hits; Kuiz losing all its HP
 ## ends the run with Exit / Try Again. Juice: Camera2D shake + hit-stop.
 
@@ -89,6 +90,7 @@ const HIT_STOP_BASE := 0.06
 @onready var xp_label: Label = %XPLabel
 @onready var retry_btn: Button = %RetryButton
 @onready var continue_btn: Button = %ContinueButton
+@onready var report_btn: Button = %ReportButton
 
 @onready var qscroll: Control = question_label.get_parent()
 
@@ -119,6 +121,14 @@ var _awaiting: bool = false
 var _over: bool = false
 var _phase := "answer"
 var _last_feedback := ""
+# The grade request in flight: its job id, what was typed and how it is graded, and the feedback to
+# show if the server cannot answer. Contract: docs/systems/battle.md §5.
+var _job_id := ""
+var _typed := ""
+var _grade_mode := ""
+var _offline_feedback := ""
+# The rubric points the last essay covered, for the review beat.
+var _last_covered: Array = []
 var _shake_tween: Tween
 
 func _ready() -> void:
@@ -154,6 +164,7 @@ func _ready() -> void:
 	flee_btn.pressed.connect(_on_flee)
 	retry_btn.pressed.connect(_on_retry)
 	continue_btn.pressed.connect(_on_continue)
+	report_btn.pressed.connect(_on_report)
 	Api.job_status.connect(_on_job_status)
 	if play_intro:
 		_play_intro(foe)
@@ -271,11 +282,24 @@ func _on_submit() -> void:
 		result_label.text = "Type an answer first."
 		return
 	_sfx(sfx_click)
+	_last_covered = []
+	_grade_mode = "essay"
+	_offline_feedback = ""
+	if _qtype == "identification":
+		# The answer key settles most answers on the device; only a near-miss asks the server.
+		var check := Api.check_identification(_q, answer, _tier == "hard")
+		if check["verdict"] != "near":
+			_resolve(check["verdict"] == "correct", check["feedback"])
+			return
+		_grade_mode = "identification"
+		_offline_feedback = check["feedback"]
 	_awaiting = true
+	_typed = answer
 	submit_btn.disabled = true
 	judging_label.visible = true
 	result_label.text = ""
-	Api.grade_battle_question(_q, answer)
+	_job_id = Api.new_job_id("grade")
+	Api.grade_battle_question(_job_id, _q, answer, _grade_mode)
 
 # Correct answer plus its wrong options, shuffled; empty when the row cannot be played as MC.
 func _mc_choices() -> Array[String]:
@@ -313,20 +337,25 @@ func _on_mc_pick(_button: Button, correct: bool) -> void:
 	_sfx(sfx_click)
 	_resolve(correct, "")
 
+# The server's grade. When it cannot answer (offline, an error), the device grades instead: a near-miss
+# counts as a miss, an essay gets the offline rubric mark.
 func _on_job_status(job_id: String, status: String, _progress: float, result: Variant) -> void:
-	if job_id != "grade" or status != "completed" or not _awaiting:
+	if job_id != _job_id or not _awaiting or status == "processing":
 		return
 	_awaiting = false
 	judging_label.visible = false
-	if typeof(result) != TYPE_DICTIONARY:
-		result_label.text = "Grading hiccup — try again."
-		submit_btn.disabled = false
-		return
-	var data: Dictionary = result
+	var data: Dictionary = result if status == "completed" and typeof(result) == TYPE_DICTIONARY else {}
+	if data.is_empty():
+		if _grade_mode == "identification":
+			data = {"score": 0.0, "feedback": _offline_feedback}
+		else:
+			data = Api.essay_offline(_q, _typed)
+			data["feedback"] = "Graded offline. " + str(data["feedback"])
 	var score: float = clampf(float(data.get("score", 0.0)), 0.0, 1.0)
 	var feedback: String = str(data.get("feedback", ""))
-	if _qtype == "identification":
-		_resolve(score >= 0.7, feedback)
+	_last_covered = data.get("covered", [])
+	if _grade_mode == "identification":
+		_resolve(score >= 0.5, feedback)
 	else:
 		# A failed essay still lands part of the counter: the closer it was, the softer the blow.
 		_resolve(score >= float(TIERS[_tier]["essay_pass"]), feedback, 0.4 + 0.6 * (1.0 - score))
@@ -407,8 +436,14 @@ func _show_review(correct: bool) -> void:
 	_phase = "review"
 	var text := "Answer: %s" % str(_q.get("answer", "")).strip_edges()
 	if _qtype == "essay":
-		var ideas: Array = _q.get("key_concepts", [])
-		text = "Key ideas: %s" % ", ".join(PackedStringArray(ideas.map(func(x: Variant) -> String: return str(x))))
+		text = "Model answer: %s" % str(_q.get("model_answer", _q.get("answer", ""))).strip_edges()
+		var rubric := Api.rubric_for(_q)
+		for i in rubric.size():
+			var hit := i < _last_covered.size() and bool(_last_covered[i])
+			text += "\n%s %s" % ["✓" if hit else "✗", str((rubric[i] as Dictionary).get("point", ""))]
+	var why := str(_q.get("explanation", "")).strip_edges()
+	if why != "":
+		text += "\n" + why
 	if _last_feedback != "":
 		text += "\n" + _last_feedback
 	var source := str(_q.get("source", "")).strip_edges()
@@ -417,6 +452,9 @@ func _show_review(correct: bool) -> void:
 	result_title.text = "Correct!  Streak %d" % _streak if correct else "Not quite."
 	xp_label.text = text
 	retry_btn.visible = false
+	report_btn.visible = true
+	report_btn.disabled = false
+	report_btn.text = "Report"
 	continue_btn.text = "Next"
 	continue_btn.disabled = true
 	qscroll.visible = false
@@ -541,17 +579,25 @@ func _win() -> void:
 	create_tween().tween_property(enemy_hp_bar, "value", 0.0, 0.3)
 	enemy_hp_text.text = "0/%d" % _enemy_max
 	var line := "%d/%d correct  •  best streak %d" % [_correct, _run.size(), _best_streak]
+	var cleared := true
 	if not _standalone:
 		var r := SessionManager.report_run(true, _correct, _run.size(), _best_streak)
-		line += "\nStars %d/3  •  +%d crystals  •  +%d XP" % [int(r["stars"]), int(r["coins"]), int(r["xp"])]
-		line += "\nFirst clear bonus!" if bool(r["first"]) else "\nReplay: reduced rewards."
-	result_title.text = "%s cleared!" % RUN_NAMES[_kind]
+		cleared = bool(r["cleared"])
+		if cleared:
+			line += "\nStars %d/3  •  +%d crystals  •  +%d XP" % [int(r["stars"]), int(r["coins"]), int(r["xp"])]
+			line += "\nFirst clear bonus!" if bool(r["first"]) else "\nReplay: reduced rewards."
+		else:
+			line += "\nGet %d%% right to earn a star and clear it.\n+%d crystals  •  +%d XP for the effort." % [
+				roundi(SessionManager.STAR_ACCURACY[0] * 100), int(r["coins"]), int(r["xp"])]
+	result_title.text = "%s cleared!" % RUN_NAMES[_kind] if cleared else "Kuiz made it through!"
 	xp_label.text = line
-	retry_btn.visible = false
+	retry_btn.visible = not cleared
+	retry_btn.text = "↻ Try Again"
 	continue_btn.text = "Overworld"
 	continue_btn.disabled = false
 	qscroll.visible = false
-	_end_sequence(true, "CHAMPION!" if _kind == "champion" else "VICTORY!")
+	# Without a star the foe stays up (no defeat pose), so Try Again starts from a standing foe.
+	_end_sequence(cleared, ("CHAMPION!" if _kind == "champion" else "VICTORY!") if cleared else "SURVIVED")
 
 # Kuiz is out of HP: it topples over, then the player chooses to leave or to try the run again.
 func _lose() -> void:
@@ -595,10 +641,20 @@ func _on_retry() -> void:
 	_bind_item()
 	_set_inputs(true)
 
+# Flags the item's AI-written question or feedback as wrong or offensive (Google Play's AI-content rule).
+func _on_report() -> void:
+	_sfx(sfx_click)
+	Api.report_content(Api.new_job_id("report"), "feedback", "%s
+Answer key: %s
+Feedback: %s" % [_q.get("text", ""), _q.get("answer", ""), _last_feedback])
+	report_btn.disabled = true
+	report_btn.text = "Reported"
+
 func _on_continue() -> void:
 	_sfx(sfx_click)
 	if _phase == "review":
 		_index += 1
+		report_btn.visible = false
 		result_panel.visible = false
 		_bind_item()
 		_set_inputs(true)

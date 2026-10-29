@@ -4,6 +4,9 @@ extends Control
 
 # Order matches %RowTemplate's TypeOption items; contract: docs/systems/gameplay-structure.md.
 const QUESTION_TYPES: Array[String] = ["essay", "identification", "multiple_choice"]
+const ConfirmModal := preload("res://scripts/ui/widgets/confirm_modal.gd")
+# The study server's upload cap (backend/main.py MAX_PDF_BYTES).
+const MAX_PDF_BYTES := 20 * 1024 * 1024
 
 @onready var topic_name_field: LineEdit = %TopicName
 @onready var file_btn: Button = %FileButton
@@ -20,6 +23,8 @@ const QUESTION_TYPES: Array[String] = ["essay", "identification", "multiple_choi
 @onready var file_dialog: FileDialog = %FileDialog
 
 var _studying: bool = false
+## A picked PDF, sent as it is to the study server; empty when the reviewer is text.
+var _pdf := PackedByteArray()
 
 func _ready() -> void:
 	theme = load("res://assets/theme/app_theme.tres") as Theme
@@ -58,13 +63,24 @@ func _on_file_selected(path: String) -> void:
 	f.close()
 	var txt := bytes.get_string_from_utf8()
 	if txt.length() == 0 or txt.contains("�"):
-		status_label.text = "Can't read this file as text. PDFs aren't supported yet. Paste the text instead."
+		if Api.MOCK or path.get_extension().to_lower() != "pdf":
+			status_label.text = "Can't read this file as text. Paste the text instead."
+		elif bytes.size() > MAX_PDF_BYTES:
+			status_label.text = "That PDF is over 20 MB. Split it or paste the text instead."
+		else:
+			paste_area.text = ""
+			_pdf = bytes
+			status_label.text = "PDF ready: %s. Press Study to let the AI read it." % path.get_file()
+			sanity_label.visible = false
 		return
+	_pdf = PackedByteArray()
 	paste_area.text = txt
 	status_label.text = "File loaded: %s (%d bytes)" % [path.get_file(), bytes.size()]
 	_update_sanity()
 
 func _on_paste_changed() -> void:
+	if paste_area.text.strip_edges() != "":
+		_pdf = PackedByteArray()
 	_update_sanity()
 
 func _update_sanity() -> void:
@@ -92,8 +108,11 @@ func _on_study() -> void:
 		return
 	var source_text := paste_area.text
 	var v := SessionManager.validate_source_text(source_text)
-	if not v.get("ok", false):
+	if _pdf.is_empty() and not v.get("ok", false):
 		status_label.text = str(v.get("error", "Too short"))
+		return
+	if not GameState.ai_consent:
+		ConfirmModal.open(self, "Before the AI reads your notes", GameState.AI_CONSENT_TEXT, "I agree", _on_consent, false, "Not now")
 		return
 	_studying = true
 	study_btn.disabled = true
@@ -103,7 +122,15 @@ func _on_study() -> void:
 	# Animate loading bar while we wait for mock 0.8s
 	var tw := create_tween()
 	tw.tween_property(loading_bar, "value", 85.0, 0.7)
-	SessionManager.start_upload_from_text(topic_name, source_text)
+	if _pdf.is_empty():
+		SessionManager.start_upload_from_text(topic_name, source_text)
+	else:
+		SessionManager.start_upload(topic_name, _pdf)
+
+func _on_consent() -> void:
+	GameState.ai_consent = true
+	SaveManager.save_progress()
+	_on_study()
 
 func _on_extraction_started(_job_id: String) -> void:
 	status_label.text = "AI is studying... extracting concepts"
@@ -167,6 +194,7 @@ func _make_question_row(q: Dictionary, idx: int) -> Control:
 		conf_label.modulate = Color("C97970")
 
 	(box.get_node("Header/Delete") as Button).pressed.connect(_on_delete_question.bind(idx))
+	(box.get_node("Header/Report") as Button).pressed.connect(_on_report_question.bind(idx))
 
 	var text_edit := box.get_node("Prompt") as TextEdit
 	text_edit.text = text
@@ -187,6 +215,11 @@ func _make_question_row(q: Dictionary, idx: int) -> Control:
 		ans_field.text = concepts
 		ans_field.placeholder_text = "Key concepts"
 	ans_field.text_changed.connect(_on_answer_changed.bind(idx))
+	if qtype == "identification":
+		var also := box.get_node("Accepted") as LineEdit
+		also.visible = true
+		also.text = ", ".join(PackedStringArray(Array(q.get("accepted", [])).map(func(a: Variant) -> String: return str(a))))
+		also.text_changed.connect(_on_accepted_changed.bind(idx))
 	if qtype == "multiple_choice":
 		ans_field.placeholder_text = "Correct option"
 		var wrong: Array = q.get("distractors", [])
@@ -218,10 +251,28 @@ func _on_distractor_changed(new_text: String, q_idx: int, n: int) -> void:
 func _on_answer_changed(new_text: String, idx: int) -> void:
 	SessionManager.update_question(idx, {"answer": new_text})
 
+func _on_accepted_changed(new_text: String, idx: int) -> void:
+	var accepted: Array = []
+	for a in new_text.split(",", false):
+		if a.strip_edges() != "":
+			accepted.append(a.strip_edges())
+	SessionManager.update_question(idx, {"accepted": accepted})
+
 func _on_delete_question(idx: int) -> void:
 	SessionManager.remove_question(idx)
 	_render_questions()
 	_update_play_enabled()
+
+# Flags an AI-written question as wrong or offensive (Google Play's AI-content rule); the player can
+# still delete or fix it here.
+func _on_report_question(idx: int) -> void:
+	ConfirmModal.open(self, "Report this question?", "Send it to the Studymon team as wrong or offensive. You can also fix or delete it here.", "Report", _send_report.bind(idx), true)
+
+func _send_report(idx: int) -> void:
+	var q: Dictionary = SessionManager.get_pending_questions()[idx]
+	Api.report_content(Api.new_job_id("report"), "question", "%s
+Answer: %s" % [q.get("text", ""), q.get("answer", "")])
+	status_label.text = "Thanks: question #%d was reported." % (idx + 1)
 
 func _on_add_question() -> void:
 	SessionManager.add_question("New question — tap to edit", "essay", "", [])

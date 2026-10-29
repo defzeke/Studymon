@@ -1,2 +1,4 @@
 fastapi>=0.115
 uvicorn[standard]>=0.30
+anthropic>=2.3
+pypdf>=6.0

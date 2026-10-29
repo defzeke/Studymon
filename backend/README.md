@@ -1,22 +1,35 @@
-# Studymon API (FastAPI thin proxy — Godot never calls the LLM directly)
+# Studymon API
 
-## Run (Phase 0: health check only)
+A thin, **stateless** gateway between the game and Claude: it turns a reviewer into questions with
+their answer keys, and grades essays. It holds the Claude API key (never put it in the Godot client)
+and stores nothing; worlds and answer keys live in the player's save file.
+
+Contract, models, cost and the checks it runs: [`../docs/api-backend.md`](../docs/api-backend.md).
+
+## Run
 ```
-cd backend
-uv venv && uv pip install -r requirements.txt   # or: pip install -r requirements.txt
-uvicorn main:app --reload --port 8000
-curl localhost:8000/health   # -> {"ok": true}
+copy .env.example .env        # set ANTHROPIC_API_KEY (or use `ant auth login`)
+uv run --no-project --with-requirements requirements.txt uvicorn main:app --port 8000
+curl 127.0.0.1:8000/health    # -> {"ok": true}
 ```
+Then set `const DEV_USES_SERVER := true` in `scripts/autoload/api.gd` (release builds use
+`RELEASE_URL` instead).
 
 ## Endpoints
-| Method | Path | Phase | Notes |
+| Method | Path | Body | Result |
 |---|---|---|---|
-| GET | `/health` | 0 | Liveness |
-| POST | `/extract` | 5 | PDF → Claude document input → structured concepts/questions JSON |
-| POST | `/grade` | 7 | `{type, question, answer, source_context}` → `{score_0_1, feedback}`; hybrid rubric (50% keyword coverage + 50% holistic) |
+| GET | `/health` | — | `{"ok": true}` |
+| POST | `/v1/extract` | `{job_id, topic_name, text}` or `{job_id, topic_name, pdf_base64}` | `{topic_id, questions[]}` with answer keys |
+| POST | `/v1/grade` | `{job_id, mode: "identification" \| "essay", question, answer, expected, accepted, rubric, model_answer, source}` | `{score, feedback, covered?}` |
 
-## Supabase checklist (Phase 1)
-1. Create project at supabase.com; enable Email + social providers (Auth).
-2. Tables: `profiles` (companion state), `topics` (regions), `questions` (+ mastery), `extractions` (raw vs edited).
-3. Buckets: `pdfs` (short-lived uploads for processing).
-4. Copy anon key + URL into backend `.env` (see `.env.example`, Phase 1) — never into the Godot client.
+Every response is the job envelope `{job_id, status: "completed" | "failed", progress, result}`.
+
+## Test
+```
+uv run --no-project --with-requirements requirements.txt --with pytest --with httpx python -m pytest tests
+uv run --no-project --with-requirements requirements.txt python evals/run_evals.py --yes   # calls Claude: costs money
+```
+
+## Before a public release
+No accounts means the endpoint is open: add a per-IP rate limit and set a monthly spend limit on the
+Anthropic workspace first (`../docs/launch-plan.md` §5.3).
