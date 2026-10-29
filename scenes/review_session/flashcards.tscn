@@ -379,6 +379,14 @@ theme_override_fonts/font = ExtResource("4_bold")
 theme_override_font_sizes/font_size = 20
 text = "0 left · 0 banked"
 
+[node name="TimerButton" type="Button" parent="Margin/List/TopBar"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(170, 64)
+layout_mode = 2
+size_flags_vertical = 4
+theme_override_font_sizes/font_size = 22
+text = "Focus 25:00"
+
 [node name="Progress" type="ProgressBar" parent="Margin/List"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 14)

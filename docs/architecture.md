@@ -204,7 +204,6 @@ thread-load the next scene while they play, so those changes hit the resource ca
 
 | Question | Answer lives in |
 |---|---|
-| Is the campaign unlocked? | `GameState.campaign_unlocked_flag` (mirrored from `CompanionState.campaign_ready`) |
 | What level / XP / stats? | `CompanionState` |
 | What topics exist? | `SessionManager._topics` (private, read via `get_topics_cache()`) |
 | What is being edited? | `SessionManager.pending_questions` + `editing_topic_id` |
@@ -226,7 +225,7 @@ which exist precisely so the overworld can pass a question to the battle scene a
 
 | Signal | Emitter | Listeners |
 |---|---|---|
-| `stats_changed`, `xp_changed`, `leveled_up`, `codex_entry_added`, `campaign_gate_ready`, `pomodoro_phase_changed` | `CompanionState` | nobody since the care room was removed |
+| `stats_changed`, `xp_changed`, `leveled_up`, `codex_entry_added`, `pomodoro_phase_changed` | `CompanionState` | nobody since the care room was removed |
 | `large_text_changed(enabled)` | `GameState` | nobody (settings applies it directly) |
 | `job_status(job_id, status, progress, result)` | `Api` | `SessionManager`, `battle.gd` |
 | `topics_listed`, `extraction_*`, `topic_saved`, `region_generated`, `overworld_progress_changed` | `SessionManager` | `session_list.gd`, `categorizer.gd`, `region_map.gd` |

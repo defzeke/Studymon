@@ -207,8 +207,8 @@ The save is `user://studymon_save.json`, which on Windows is:
 ```
 
 Delete it to start again at Level 1. Boot reads the save when home first opens after the tutorial;
-the old 2D care room has been removed. To test the campaign
-without earning 110 XP, set `"level": 5`, `"xp": 110`, `"campaign_ready": true` in the JSON, or call
+the old 2D care room has been removed. To test a higher level (closet unlocks) without earning the
+XP, set `"level"` and `"xp"` in the JSON (Level 5 is 110 XP), or call
 `CompanionState.add_xp(110)` from a temporary debug line. Do not commit debug lines or edited saves.
 
 ## Clean up comments

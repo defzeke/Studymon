@@ -6,7 +6,7 @@ no cloud sync.
 - **Path:** `user://studymon_save.json`
 - **Written by:** `SaveManager.save_game()` — `scripts/autoload/save_manager.gd:6`
 - **Read by:** `SaveManager.load_game()` — `scripts/autoload/save_manager.gd:24`
-- **Schema tag:** `"v": 15` (v15 keys `session.mastery` by question id (`"topic_id:question_id"`; v14 index keys `"topic_id:<index>"` are rekeyed on load) and adds `tutorial_done` (a save with a `player_name` but no flag loads as done) and `ai_consent`; v14 keys `cleared_houses` per house, `"topic_id:gym_type#house_id"`, and `best_stars` house runs `"house:topic_id:gym_type#house_id"`; a v13 house key without an id still counts toward its type; v13 replaced `session.cleared_trainers` with `cleared_houses` and added `best_stars`; a gym cleared before counts as its house cleared; v12 dropped the `monetization` block with the weekly AI limit; an older save's block is ignored; v11 added `explorer`; v10 added `battery_health` and replaced `costume` with `outfit`; a v9 `costume` loads into its slot; v9 added `dirt` and `costume`; v8 added `hunger`, `health` and `crystals`; v7 added `player_name` and `food_stock`; older saves load with defaults)
+- **Schema tag:** `"v": 15` (v15 keys `session.mastery` by question id (`"topic_id:question_id"`; v14 index keys `"topic_id:<index>"` are rekeyed on load) and adds `tutorial_done` (a save with a `player_name` but no flag loads as done) and `ai_consent`, and stops writing `campaign_ready` / `campaign_unlocked_flag` (the removed Level 5 gate; ignored on load); v14 keys `cleared_houses` per house, `"topic_id:gym_type#house_id"`, and `best_stars` house runs `"house:topic_id:gym_type#house_id"`; a v13 house key without an id still counts toward its type; v13 replaced `session.cleared_trainers` with `cleared_houses` and added `best_stars`; a gym cleared before counts as its house cleared; v12 dropped the `monetization` block with the weekly AI limit; an older save's block is ignored; v11 added `explorer`; v10 added `battery_health` and replaced `costume` with `outfit`; a v9 `costume` loads into its slot; v9 added `dirt` and `costume`; v8 added `hunger`, `health` and `crystals`; v7 added `player_name` and `food_stock`; older saves load with defaults)
 - **Loaded:** once at boot, deferred from `SaveManager._ready`
 - **Format:** `JSON.stringify` of a single `Dictionary`, pretty-print off
 
@@ -32,11 +32,9 @@ That is fine for the current scope but means there is **no type safety and no au
   "dirt": 0.0,      // v9; missing loads as 0 (clean)
   "battery_health": 100.0, // v10; missing loads as 100 (new)
   "bond": 0,
-  "campaign_ready": false,
   "codex": ["I start out knowing NOTHING — like a baby! ..."],
 
   // GameState
-  "campaign_unlocked_flag": false,
   "active_region_id": "",
   "large_text_enabled": false,
   "player_name": "",
@@ -44,6 +42,11 @@ That is fine for the current scope but means there is **no type safety and no au
   "ai_consent": false,
   "food_stock": { "apple": 3 },
   "crystals": 0,    // v8: home's currency; missing loads as 0
+  "world_slots": 3, // worlds the player can keep; bought slots are permanent; missing / below 3 loads as 3
+  "minigame_day": "2026-10-29", "minigame_crystals": 20,   // today's minigame pay toward the daily cap
+  "study_streak": 4, "study_goal_day": "2026-10-29",       // the daily study goal (monetization.md)
+  "study_cards_day": "2026-10-29", "study_cards": 6,
+  "owned_costumes": ["bow"],                               // closet costumes bought; a worn one counts as owned
   "outfit": { "head": "crown", "body": "scarf" }, // v10: closet slot -> kuiz_look.gd COSTUMES id; a missing slot is bare
   "explorer": "boy", // v11: the region map's explorer, "boy" or "girl"; missing loads as "boy"
 
@@ -79,9 +82,7 @@ Field-by-field:
 | `xp` | int | `CompanionState.xp` | Lifetime XP, not per-level |
 | `energy` / `focus` / `mood` | float | `CompanionState` | 0–100, clamped on mutation |
 | `bond` | int | `CompanionState.bond` | Increments per care tap, **never read anywhere** |
-| `campaign_ready` | bool | `CompanionState` | True once level hits 5 |
 | `codex` | string[] | `CompanionState.codex` | Curriculum lines, backfilled on load |
-| `campaign_unlocked_flag` | bool | `GameState` | Mirrors `campaign_ready` |
 | `active_region_id` | string | `GameState` | `topic_id` of the region being played |
 | `large_text_enabled` | bool | `GameState` | Applied to the Theme on load |
 | `session.mastery` | dict | `SessionManager._mastery` | Keyed `"<topic_id>:<question id>"` (v15), so editing or deleting other questions keeps it |
@@ -131,6 +132,7 @@ rows (see [`systems/review-session.md`](systems/review-session.md) §6); a v5 sa
 | `name` | string | Player-visible name, defaults to the id |
 | `question_count` | int | Denormalised `questions.size()`; `session_list.gd` reads `questions` when it is 0 |
 | `questions` | question[] | The actual question bank |
+| `source_text` | string | The reviewer text the world was built from (pasted, or read by the server from a PDF / Word / PowerPoint file); `""` for a photo or an older save. Used by "More questions" |
 
 Topic ids are **not** guaranteed unique across sessions: `session_list.gd:_on_new_world` builds
 `topic_%d % (unix_time % 100000)`, which collides roughly every 27 hours of wall-clock use. The
@@ -168,9 +170,9 @@ These live only in memory and are lost on quit or scene change:
 |---|---|---|
 | `pending_questions`, `editing_topic_id` | `SessionManager` | Reopening a topic reloads from `session.topics`; unsaved edits are lost on app exit |
 | `current_topic_id` | `SessionManager` | After a restart, the overworld falls back to its preview questions unless a topic is re-opened |
-| `last_source_text` | `SessionManager` | Reviewer text is not persisted with the topic |
+| `last_source_text` | `SessionManager` | Kept with the world it builds as `topics[].source_text` (for "More questions"); a photo reviewer has none |
 | Battle handoff (`battle_topic_id`, `battle_q_index`, `battle_is_boss`, `battle_is_champion`) | `SessionManager` | Correct by design — a battle doesn't survive a restart |
-| Pomodoro (`_pomodoro_mode`, `_pomodoro_remaining`) | `CompanionState` | A running 25-minute focus timer is lost on quit |
+| Pomodoro (`_pomodoro_mode`, `_pomodoro_remaining`) | `CompanionState` | A running 25-minute focus timer (started on the Study screen) is lost on quit |
 | Tap-cap counters (`_action_tap_counts`, `_last_hour_reset`) | `CompanionState` | Relaunching clears the hourly diminishing-returns counter — an easy exploit |
 | `GameState.player_name` | `GameState` | Set by the tutorial; saved as `player_name` (v7) |
 | `GameState.tutorial_done` | `GameState` | Set when the tutorial ends, and by the Worlds hub and Settings on open (they are only reachable from home, so running one on its own still returns to home, not the intro). **Saved** as `tutorial_done` (v15) |
@@ -187,7 +189,6 @@ These live only in memory and are lost on quit or scene change:
 file missing            → return false (nothing happens)
 not valid JSON          → return false
 CompanionState.from_dict(parsed)      # defaults for every missing key
-if level >= 5: campaign_ready = true  # reconcile old saves
 GameState.active_region_id  = parsed.get("active_region_id", "")
 if has large_text_enabled:  set it + reapply theme
 SessionManager.from_dict(parsed.get("session", {}))

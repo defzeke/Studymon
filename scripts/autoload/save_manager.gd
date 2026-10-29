@@ -3,6 +3,10 @@ extends Node
 ## (Cloud save arrives with backend/auth; format is versioned via "v".)
 
 const SAVE_PATH := "user://studymon_save.json"
+## The schema written by save_game(); history in docs/data-model.md.
+const SAVE_VERSION := 15
+# An exported save is a few KB; anything far bigger is not one.
+const MAX_IMPORT_BYTES := 5 * 1024 * 1024
 
 var _loaded := false
 
@@ -19,8 +23,7 @@ func load_once() -> void:
 
 func save_game() -> bool:
 	var data := CompanionState.to_dict()
-	data["v"] = 15
-	data["campaign_unlocked_flag"] = GameState.campaign_unlocked_flag
+	data["v"] = SAVE_VERSION
 	data["active_region_id"] = GameState.active_region_id
 	data["large_text_enabled"] = GameState.large_text_enabled
 	data["player_name"] = GameState.player_name
@@ -28,6 +31,14 @@ func save_game() -> bool:
 	data["ai_consent"] = GameState.ai_consent
 	data["food_stock"] = GameState.food_stock
 	data["crystals"] = GameState.crystals
+	data["world_slots"] = GameState.world_slots
+	data["study_streak"] = GameState.study_streak
+	data["study_goal_day"] = GameState.study_goal_day
+	data["study_cards_day"] = GameState.study_cards_day
+	data["study_cards"] = GameState.study_cards
+	data["owned_costumes"] = GameState.owned_costumes
+	data["minigame_day"] = GameState.minigame_day
+	data["minigame_crystals"] = GameState.minigame_crystals
 	data["outfit"] = GameState.outfit
 	data["explorer"] = GameState.explorer
 	data["music_volume"] = MusicManager.music_volume
@@ -45,6 +56,10 @@ func save_game() -> bool:
 func delete_all() -> void:
 	if FileAccess.file_exists(SAVE_PATH):
 		DirAccess.remove_absolute(SAVE_PATH)
+	_reset()
+
+# Every saved value back to a fresh game; the file itself is left alone.
+func _reset() -> void:
 	CompanionState.from_dict({})
 	SessionManager.from_dict({})
 	SessionManager.pending_questions = []
@@ -58,8 +73,52 @@ func delete_all() -> void:
 	GameState.explorer = "boy"
 	GameState.explorer_picked = false
 	GameState.active_region_id = ""
-	GameState.set_campaign_unlocked(false)
 	GameState.add_crystals(-GameState.crystals)
+	GameState.world_slots = GameState.FREE_WORLD_SLOTS
+	GameState.minigame_day = ""
+	GameState.minigame_crystals = 0
+	GameState.study_streak = 0
+	GameState.study_goal_day = ""
+	GameState.study_cards_day = ""
+	GameState.study_cards = 0
+	GameState.owned_costumes.clear()
+
+## Settings' Export: the current save, written to `path` (a file the player picked). Saves stay on the
+## device only, so this is how a player keeps a copy. False when it cannot be written.
+func export_to(path: String) -> bool:
+	if not save_game():
+		return false
+	var f := FileAccess.open(path, FileAccess.WRITE)
+	if f == null:
+		return false
+	f.store_string(FileAccess.get_file_as_string(SAVE_PATH))
+	f.close()
+	return true
+
+## Settings' Import: replaces the save with the Studymon save at `path` and loads it. Returns "" on
+## success, else why it was refused; a refused file leaves the current save untouched.
+func import_from(path: String) -> String:
+	var f := FileAccess.open(path, FileAccess.READ)
+	if f == null:
+		return "That file could not be opened."
+	if f.get_length() > MAX_IMPORT_BYTES:
+		return "That file is too big to be a Studymon save."
+	var text := f.get_as_text()
+	f.close()
+	var parsed: Variant = JSON.parse_string(text)
+	if typeof(parsed) != TYPE_DICTIONARY or not (parsed as Dictionary).has("v") or not (parsed as Dictionary).has("level"):
+		return "That file is not a Studymon save."
+	if int(parsed["v"]) > SAVE_VERSION:
+		return "That save comes from a newer version of Studymon. Update the app first."
+	var out := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
+	if out == null:
+		return "The save could not be written."
+	out.store_string(text)
+	out.close()
+	# A fresh game first, so keys the file lacks take their defaults.
+	_reset()
+	load_game()
+	return ""
 
 ## Progress saves never run before a load, so a scene run on its own cannot overwrite the real save.
 func save_progress() -> void:
@@ -78,8 +137,8 @@ func load_game() -> bool:
 	if typeof(parsed) != TYPE_DICTIONARY:
 		return false
 	CompanionState.from_dict(parsed)
-	if CompanionState.campaign_ready:
-		GameState.set_campaign_unlocked(true)
+	# Saves before v15 also hold "campaign_ready" / "campaign_unlocked_flag" (the removed Level 5
+	# gate); they are ignored.
 	GameState.active_region_id = str(parsed.get("active_region_id", ""))
 	GameState.player_name = str(parsed.get("player_name", ""))
 	# Saves from before v15 lack the flag; a saved name means the tutorial was already played.
@@ -90,6 +149,16 @@ func load_game() -> bool:
 		for id in stock:
 			GameState.food_stock[str(id)] = int(stock[id])
 	GameState.crystals = maxi(0, int(parsed.get("crystals", 0)))
+	GameState.world_slots = maxi(GameState.FREE_WORLD_SLOTS, int(parsed.get("world_slots", GameState.FREE_WORLD_SLOTS)))
+	GameState.minigame_day = str(parsed.get("minigame_day", ""))
+	GameState.minigame_crystals = maxi(0, int(parsed.get("minigame_crystals", 0)))
+	GameState.study_streak = maxi(0, int(parsed.get("study_streak", 0)))
+	GameState.study_goal_day = str(parsed.get("study_goal_day", ""))
+	GameState.study_cards_day = str(parsed.get("study_cards_day", ""))
+	GameState.study_cards = maxi(0, int(parsed.get("study_cards", 0)))
+	GameState.owned_costumes.clear()
+	for id in parsed.get("owned_costumes", []):
+		GameState.owned_costumes.append(str(id))
 	GameState.crystals_changed.emit(GameState.crystals)
 	GameState.explorer = str(parsed.get("explorer", "boy"))
 	GameState.outfit = {}
@@ -101,6 +170,10 @@ func load_game() -> bool:
 	var costume := str(parsed.get("costume", ""))
 	if costume != "":
 		GameState.outfit["face" if costume == "glasses" else "head"] = costume
+	# Saves from before the closet shop: whatever Kuiz already wears stays owned.
+	for id in GameState.outfit.values():
+		if not GameState.owned_costumes.has(str(id)):
+			GameState.owned_costumes.append(str(id))
 	if parsed.has("large_text_enabled"):
 		GameState.large_text_enabled = bool(parsed["large_text_enabled"])
 		GameState._apply_theme_font_size()

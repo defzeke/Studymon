@@ -46,6 +46,8 @@ var editing_topic_id: String = ""
 ## Phase 5: raw reviewer text from the last upload (paste or decoded file bytes).
 ## Stored so the mock extractor can parse USER material instead of canned defaults.
 var last_source_text: String = ""
+## True while "More questions" runs: the result is added to the world being edited, not a new one.
+var _adding := false
 var _topics: Array[Dictionary] = []
 var _active_job_id: String = ""
 # Phase 6: per-region clear state (mock-persisted in memory)
@@ -89,13 +91,45 @@ func list_topics() -> void:
 func get_topics_cache() -> Array[Dictionary]:
 	return _topics.duplicate(true)
 
+## Saves a world; its reviewer text is kept (for "More questions") unless there is none to keep.
 func add_topic_to_history(topic_id: String, topic_label: String, questions: Array[Dictionary]) -> void:
+	var source := last_source_text if last_source_text != "" else saved_source(topic_id)
+	var entry := {"id": topic_id, "name": topic_label, "question_count": questions.size(), "questions": questions.duplicate(true), "source_text": source}
 	for i in _topics.size():
 		if _topics[i].get("id", "") == topic_id:
-			_topics[i] = {"id": topic_id, "name": topic_label, "question_count": questions.size(), "questions": questions.duplicate(true)}
+			_topics[i] = entry
 			return
-	_topics.append({"id": topic_id, "name": topic_label, "question_count": questions.size(), "questions": questions.duplicate(true)})
+	_topics.append(entry)
 
+## The reviewer text a saved world was built from ("" for a photo, or a world saved before v15).
+func saved_source(topic_id: String) -> String:
+	for t in _topics:
+		if str(t.get("id", "")) == topic_id:
+			return str(t.get("source_text", ""))
+	return ""
+
+## "More questions": asks for new questions from the world's saved reviewer, added to the ones it
+## has. False when the world has no saved reviewer text.
+func start_more_questions(topic_name: String) -> bool:
+	if last_source_text.strip_edges() == "":
+		return false
+	_adding = true
+	var existing: Array[String] = []
+	for q in pending_questions:
+		existing.append(str(q.get("text", "")))
+	_active_job_id = Api.new_job_id("extract")
+	extraction_started.emit(_active_job_id)
+	Api.upload_reviewer(_active_job_id, topic_name, last_source_text, PackedByteArray(), "pdf", existing)
+	return true
+
+
+## A saved world, as opposed to one being built for the first time.
+func is_saved_world(topic_id: String) -> bool:
+	return _topics.any(func(t: Dictionary) -> bool: return str(t.get("id", "")) == topic_id)
+
+## Room for one more world (GameState.world_slots).
+func has_free_world_slot() -> bool:
+	return _topics.size() < GameState.world_slots
 
 func world_name(topic_id: String) -> String:
 	for t in _topics:
@@ -154,10 +188,11 @@ func validate_source_text(text: String) -> Dictionary:
 		return {"ok": false, "error": "Too brief — AI needs ~%d words, you have %d." % [MIN_WORDS, word_count]}
 	return {"ok": true, "words": word_count, "chars": char_count}
 
-func start_upload(topic_name: String, pdf_bytes: PackedByteArray, source_hint: String = "") -> void:
+func start_upload(topic_name: String, pdf_bytes: PackedByteArray, source_hint: String = "", file_type := "pdf") -> void:
 	# Wire reviewer input through to the extractor. Precedence: explicit hint
-	# (paste box) > decodable bytes > previous last_source_text. Bytes that are not text (a PDF) go to
-	# the server as they are; the mock cannot read them and falls back to editable placeholders.
+	# (paste box) > decodable bytes > previous last_source_text. Bytes that are not text (a PDF, photo,
+	# Word or PowerPoint file of `file_type`) go to the server as they are; the mock cannot read them
+	# and falls back to editable placeholders.
 	var hint := source_hint.strip_edges()
 	var pdf := PackedByteArray()
 	if hint != "":
@@ -171,7 +206,7 @@ func start_upload(topic_name: String, pdf_bytes: PackedByteArray, source_hint: S
 			pdf = pdf_bytes
 	_active_job_id = Api.new_job_id("extract")
 	extraction_started.emit(_active_job_id)
-	Api.upload_reviewer(_active_job_id, topic_name, last_source_text, pdf)
+	Api.upload_reviewer(_active_job_id, topic_name, last_source_text, pdf, file_type)
 
 func start_upload_from_text(topic_name: String, source_text: String) -> void:
 	var v := validate_source_text(source_text)
@@ -214,17 +249,32 @@ func _on_job_status(job_id: String, status: String, progress: float, result: Var
 						if not d.has("confidence"):
 							d["confidence"] = 0.7
 						questions.append(d)
+				if str(result.get("reviewer_text", "")) != "":
+					last_source_text = str(result["reviewer_text"])
+				if _adding:
+					_adding = false
+					var have := {}
+					for q in pending_questions:
+						have[Api.normalize_answer(str(q.get("text", "")))] = true
+					for q in questions:
+						if not have.has(Api.normalize_answer(str(q.get("text", "")))):
+							pending_questions.append(q)
+					extraction_completed.emit(editing_topic_id, pending_questions)
+					return
 				pending_questions = questions
 				editing_topic_id = topic_id
 				current_topic_id = topic_id
 				extraction_completed.emit(topic_id, questions)
 			else:
+				_adding = false
 				extraction_failed.emit(job_id, "No questions extracted")
 		"failed":
+			_adding = false
 			extraction_failed.emit(job_id, str(result))
 
 func set_editing_topic(topic_id: String, questions: Array[Dictionary]) -> void:
 	editing_topic_id = topic_id
+	last_source_text = saved_source(topic_id)
 	pending_questions = []
 	for q in questions:
 		pending_questions.append(normalize_question(q))

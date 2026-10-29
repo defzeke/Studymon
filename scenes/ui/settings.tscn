@@ -182,6 +182,24 @@ layout_mode = 2
 size_flags_horizontal = 3
 text = "Support"
 
+[node name="Backup" type="HBoxContainer" parent="Margin/Content/DataCard/Pad/Data"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="ExportButton" type="Button" parent="Margin/Content/DataCard/Pad/Data/Backup"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 56)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Export save"
+
+[node name="ImportButton" type="Button" parent="Margin/Content/DataCard/Pad/Data/Backup"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 56)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Import save"
+
 [node name="DeleteDataButton" type="Button" parent="Margin/Content/DataCard/Pad/Data"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 56)
@@ -197,3 +215,21 @@ unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 64)
 layout_mode = 2
 text = "Back"
+
+[node name="ExportDialog" type="FileDialog" parent="."]
+unique_name_in_owner = true
+title = "Export save"
+ok_button_text = "Save"
+file_mode = 4
+access = 2
+filters = PackedStringArray("*.json")
+use_native_dialog = true
+
+[node name="ImportDialog" type="FileDialog" parent="."]
+unique_name_in_owner = true
+title = "Import save"
+ok_button_text = "Open"
+file_mode = 0
+access = 2
+filters = PackedStringArray("*.json")
+use_native_dialog = true

@@ -589,6 +589,7 @@ func _win() -> void:
 		else:
 			line += "\nGet %d%% right to earn a star and clear it.\n+%d crystals  •  +%d XP for the effort." % [
 				roundi(SessionManager.STAR_ACCURACY[0] * 100), int(r["coins"]), int(r["xp"])]
+		line += _study_goal_line()
 	result_title.text = "%s cleared!" % RUN_NAMES[_kind] if cleared else "Kuiz made it through!"
 	xp_label.text = line
 	retry_btn.visible = not cleared
@@ -599,6 +600,14 @@ func _win() -> void:
 	# Without a star the foe stays up (no defeat pose), so Try Again starts from a standing foe.
 	_end_sequence(cleared, ("CHAMPION!" if _kind == "champion" else "VICTORY!") if cleared else "SURVIVED")
 
+# A finished run (cleared or not) meets the daily study goal; a fled one does not.
+func _study_goal_line() -> String:
+	var paid := GameState.note_study(0, 1)
+	if paid == 0:
+		return ""
+	SaveManager.save_progress()
+	return "\nDaily study goal met: %d-day streak  •  +%d crystals" % [GameState.study_streak, paid]
+
 # Kuiz is out of HP: it topples over, then the player chooses to leave or to try the run again.
 func _lose() -> void:
 	_over = true
@@ -607,6 +616,7 @@ func _lose() -> void:
 	if not _standalone:
 		var r := SessionManager.report_run(false, _correct, _run.size(), _best_streak)
 		line += "\n+%d crystals  •  +%d XP for the effort." % [int(r["coins"]), int(r["xp"])]
+		line += _study_goal_line()
 	result_title.text = "Kuiz is down!"
 	xp_label.text = line
 	retry_btn.text = "↻ Try Again"

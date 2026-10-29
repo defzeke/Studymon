@@ -6,6 +6,8 @@ import json
 import re
 
 import anthropic
+import docx
+import pptx
 import pypdf
 
 # Contract: docs/api-backend.md §Models. One model per route; change here only.
@@ -116,7 +118,11 @@ a 2 to 4 sentence ideal answer. "answer" is a one-line summary. "accepted" and "
 
 How many: about one question per 80 words of reviewer, at least 3 of each type and at most 45 in \
 total. For each type aim for at least 3 easy, 3 medium and 1 hard. Cover the whole reviewer rather \
-than repeating one idea."""
+than repeating one idea.
+
+Language: write every question, answer, option, rubric point, model answer and explanation in the \
+reviewer's own language (for example Filipino or English). If the reviewer mixes languages, use the \
+one most of it is written in, and keep each term exactly as the reviewer spells it."""
 
 GRADE_ID_SYSTEM = """You check one typed answer in Studymon, a study game. The game already \
 accepted exact matches and small typos; this answer is close but not on the answer key. Decide \
@@ -145,6 +151,26 @@ def pdf_text(data: bytes) -> str:
     """The PDF's text layer, or "" when it has none (a scan) or cannot be read."""
     try:
         return "\n".join(page.extract_text() or "" for page in pypdf.PdfReader(io.BytesIO(data)).pages)
+    except Exception:
+        return ""
+
+
+def office_text(data: bytes, file_type: str) -> str:
+    """The text of a Word (.docx) or PowerPoint (.pptx) reviewer, or "" when it cannot be read."""
+    try:
+        if file_type == "docx":
+            d = docx.Document(io.BytesIO(data))
+            lines = [p.text for p in d.paragraphs]
+            for table in d.tables:
+                for row in table.rows:
+                    lines.append(" | ".join(cell.text for cell in row.cells))
+            return "\n".join(line for line in lines if line.strip())
+        lines = []
+        for slide in pptx.Presentation(io.BytesIO(data)).slides:
+            for shape in slide.shapes:
+                if shape.has_text_frame and shape.text_frame.text.strip():
+                    lines.append(shape.text_frame.text)
+        return "\n".join(lines)
     except Exception:
         return ""
 
@@ -179,15 +205,21 @@ def _final(stream_kwargs: dict) -> str:
     return next(b.text for b in message.content if b.type == "text")
 
 
-def generate_questions(text: str, pdf: bytes | None) -> str:
-    """Claude's raw question-set JSON for a reviewer (pasted text, or a PDF)."""
+def generate_questions(text: str, file: bytes | None = None, media_type: str = "", existing: list | None = None) -> str:
+    """Claude's raw question-set JSON for a reviewer: text, or a PDF / photo (`file` with its MIME type)."""
     content: list = []
-    if pdf is not None:
-        content.append({"type": "document", "source": {"type": "base64", "media_type": "application/pdf",
-                                                       "data": base64.b64encode(pdf).decode()}})
-        content.append({"type": "text", "text": "<reviewer>The attached PDF is the reviewer.</reviewer>\nWrite the question bank."})
+    if file is not None:
+        kind = "document" if media_type == "application/pdf" else "image"
+        content.append({"type": kind, "source": {"type": "base64", "media_type": media_type,
+                                                 "data": base64.b64encode(file).decode()}})
+        content.append({"type": "text", "text": "<reviewer>The attached %s is the reviewer.</reviewer>\nWrite the question bank."
+                        % ("PDF" if kind == "document" else "photo of notes")})
     else:
         content.append({"type": "text", "text": "<reviewer>\n%s\n</reviewer>\nWrite the question bank." % text})
+    if existing:
+        content.append({"type": "text", "text": "The world already has these questions. Write new ones about other parts of "
+                        "the reviewer; do not repeat or rephrase them:\n<existing>\n%s\n</existing>"
+                        % "\n".join(str(e)[:300] for e in existing)})
     return _final({
         "model": EXTRACT_MODEL,
         "max_tokens": 64000,
@@ -197,12 +229,12 @@ def generate_questions(text: str, pdf: bytes | None) -> str:
     })
 
 
-def check_questions(raw: list, reviewer_text: str) -> list:
+def check_questions(raw: list, reviewer_text: str, existing: list | None = None) -> list:
     """Keeps the questions the game can trust and repairs small slips; `reviewer_text` "" skips the
-    source check (a scanned PDF). Each repair lowers the question's confidence."""
+    source check (a photo, or a scanned PDF). Each repair lowers the question's confidence."""
     reviewer = _norm(reviewer_text)
     out: list = []
-    seen: set = set()
+    seen: set = {_norm(str(e)) for e in existing or []}
     for q in raw[:MAX_QUESTIONS * 2]:
         conf = 1.0
         kind, text = q.get("type"), str(q.get("text", "")).strip()

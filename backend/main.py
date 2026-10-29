@@ -22,6 +22,11 @@ MIN_CHARS = 80
 MAX_CHARS = 200_000
 MAX_PDF_BYTES = 20 * 1024 * 1024
 MAX_PDF_PAGES = 100
+MAX_IMAGE_BYTES = 5 * 1024 * 1024
+# A reviewer file's type -> its MIME type when it goes to Claude as is; Word and PowerPoint are turned
+# into text here first.
+FILE_TYPES = {"pdf": "application/pdf", "png": "image/png", "jpeg": "image/jpeg", "webp": "image/webp",
+              "docx": "", "pptx": ""}
 MAX_ANSWER_CHARS = 4000
 # Calls per client IP per UTC day, and for everyone together. No accounts, so this and the Anthropic
 # workspace spend limit are what stop someone else spending the key. Contract: docs/api-backend.md §6.
@@ -37,7 +42,10 @@ class ExtractRequest(BaseModel):
     job_id: str = Field(max_length=64)
     topic_name: str = Field(max_length=120)
     text: str = Field("", max_length=MAX_CHARS)
-    pdf_base64: str = Field("", max_length=MAX_PDF_BYTES * 4 // 3 + 4)
+    file_base64: str = Field("", max_length=MAX_PDF_BYTES * 4 // 3 + 4)
+    file_type: Literal["", "pdf", "png", "jpeg", "webp", "docx", "pptx"] = ""
+    # "More questions" for a saved world: the questions it already has, so new ones do not repeat them.
+    existing: list[str] = Field(default_factory=list, max_length=60)
 
 
 class RubricPoint(BaseModel):
@@ -104,31 +112,44 @@ def health() -> dict:
 def extract(req: ExtractRequest, request: Request):
     if limited := over_limit(request, "extract", req.job_id):
         return limited
-    pdf = None
-    reviewer_text = req.text
-    if req.pdf_base64:
+    file, text, reviewer_text = None, req.text, req.text
+    if req.file_base64:
         try:
-            pdf = base64.b64decode(req.pdf_base64, validate=True)
+            data = base64.b64decode(req.file_base64, validate=True)
         except binascii.Error:
             return _failed(req.job_id, "That file could not be read.")
-        if len(pdf) > MAX_PDF_BYTES:
-            return _failed(req.job_id, "That PDF is over 20 MB.")
-        pages = ai.pdf_pages(pdf)
-        if pages == 0:
-            return _failed(req.job_id, "That file is not a readable PDF.")
-        if pages > MAX_PDF_PAGES:
-            return _failed(req.job_id, "That PDF has %d pages; the limit is %d." % (pages, MAX_PDF_PAGES))
-        reviewer_text = ai.pdf_text(pdf)
+        kind = req.file_type
+        if kind == "pdf":
+            if len(data) > MAX_PDF_BYTES:
+                return _failed(req.job_id, "That PDF is over 20 MB.")
+            pages = ai.pdf_pages(data)
+            if pages == 0:
+                return _failed(req.job_id, "That file is not a readable PDF.")
+            if pages > MAX_PDF_PAGES:
+                return _failed(req.job_id, "That PDF has %d pages; the limit is %d." % (pages, MAX_PDF_PAGES))
+            file, reviewer_text = data, ai.pdf_text(data)
+        elif kind in ("png", "jpeg", "webp"):
+            if len(data) > MAX_IMAGE_BYTES:
+                return _failed(req.job_id, "That photo is over 5 MB. Take it at a lower size.")
+            file, reviewer_text = data, ""
+        elif kind in ("docx", "pptx"):
+            text = reviewer_text = ai.office_text(data, kind)
+            if len(text.strip()) < MIN_CHARS:
+                return _failed(req.job_id, "That file has too little text to study from.")
+        else:
+            return _failed(req.job_id, "That file type is not supported.")
     elif len(req.text.strip()) < MIN_CHARS:
         return _failed(req.job_id, "Too short: add more material.")
     try:
-        raw = json.loads(ai.generate_questions(req.text, pdf))["questions"]
+        raw = json.loads(ai.generate_questions(text, file, FILE_TYPES.get(req.file_type, ""), req.existing))["questions"]
     except ai.AIError as e:
         return _failed(req.job_id, str(e))
-    questions = ai.check_questions(raw, reviewer_text)
+    questions = ai.check_questions(raw, reviewer_text, req.existing)
     if not questions:
         return _failed(req.job_id, "No usable questions came out of this reviewer. Try adding more detail.")
-    return _done(req.job_id, {"topic_id": topic_id(req.topic_name), "questions": questions})
+    # The reviewer's text goes back so the device can keep it for "More questions" (none for a photo).
+    return _done(req.job_id, {"topic_id": topic_id(req.topic_name), "questions": questions,
+                              "reviewer_text": reviewer_text[:MAX_CHARS]})
 
 
 @app.post("/v1/grade")

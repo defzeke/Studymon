@@ -29,12 +29,15 @@ const TIER_COLORS := {"easy": GREEN, "medium": AMBER, "hard": CORAL}
 @onready var hard_btn: Button = %HardButton
 @onready var easy_btn: Button = %EasyButton
 @onready var done_label: Label = %DoneLabel
+@onready var timer_btn: Button = %TimerButton
 
 var _topic_id: String = ""
 var _questions: Array[Dictionary] = []
 var _queue: Array = []
 var _banked: int = 0
 var _deck_size: int = 0
+# Set once this deck meets the daily study goal, for the progress line.
+var _goal_note := ""
 
 func _ready() -> void:
 	# Review is calm: the home loop, crossfading from the route theme when opened from the map.
@@ -50,7 +53,17 @@ func _ready() -> void:
 	again_btn.pressed.connect(_rate.bind("again"))
 	hard_btn.pressed.connect(_rate.bind("hard"))
 	easy_btn.pressed.connect(_rate.bind("easy"))
+	# The study timer: a 25-minute focus session (+focus for Kuiz), then a 5-minute rest; it keeps
+	# running on other screens. Contract: docs/systems/companion-care.md §6.
+	timer_btn.pressed.connect(CompanionState.start_pomodoro)
 	_show_card()
+
+func _process(_delta: float) -> void:
+	var p := CompanionState.get_pomodoro_state()
+	timer_btn.disabled = p["mode"] != ""
+	var left: int = p["remaining"] if p["mode"] != "" else p["focus_total"]
+	var label := "Rest" if p["mode"] == "rest" else "Focus"
+	timer_btn.text = "%s %02d:%02d" % [label, floori(left / 60.0), left % 60]
 
 # A rounded tag on the card: the mastery state, the type and the tier. Each copy gets its own stylebox
 # so its colour does not repaint the others.
@@ -64,7 +77,7 @@ func _tag(text: String, color: Color) -> Label:
 	return l
 
 func _show_card() -> void:
-	progress_label.text = "%d left · %d banked" % [_queue.size(), _banked]
+	progress_label.text = "%d left · %d banked · Kuiz focus %d%s" % [_queue.size(), _banked, roundi(CompanionState.focus), _goal_note]
 	progress_bar.value = float(_banked) / maxf(1.0, _deck_size)
 	if _queue.is_empty():
 		_finish()
@@ -113,6 +126,8 @@ func _rate(rating: String) -> void:
 	if _queue.is_empty():
 		return
 	var qi: int = _queue.pop_front()
+	if GameState.note_study(1, 0) > 0:
+		_goal_note = " · Daily goal met! +%d crystals" % GameState.STUDY_GOAL_CRYSTALS
 	match rating:
 		"again":
 			_queue.insert(mini(AGAIN_GAP, _queue.size()), qi)

@@ -16,14 +16,12 @@ Terms used throughout this repo, in the sense this repo means them.
 | **Hunger / Energy / Mood / Health** | The four 0–100 stats on home's HUD gauges. Energy drains fastest; Hunger, Mood and Health drain at 0.7×, 0.6× and 0.2× of `STAT_DECAY_PER_SEC`. Focus (0.8×) is also 0–100 but only flashcards use it. |
 | **Bond** | A monotonic tap counter. It is saved, but nothing gates on it yet. |
 | **XP curve** | `CompanionState.xp_to_reach(lv)`: 20 XP for Level 2, then 5 more per level (Level 5 at 110, Level 6 at 150); no cap. |
-| **Level gate** | Level 5 unlocks the campaign (`campaign_ready`). Before that, the care loop is the whole game. |
 | **Curriculum** | The five AI-literacy lines in `CompanionState.CURRICULUM`, one unlocked per level. |
 | **Tidbit** | A curriculum line or other short prompt shown in the speech bubble. The bubble is currently always hidden (issue #4). |
 | **Codex** | The accumulated list of unlocked tidbits. A five-step AI-literacy track; its UI is reachable from the care room, and a remote branch proposes cutting it. |
 | **Insight** | A retention message produced by `SessionManager.last_insight` (missed question, mastery milestone), shown in the bubble. |
 | **Pomodoro** | The 25-minute focus / 5-minute rest timer. Missing the rest costs energy and mood; finishing it grants a small bonus. |
 | **Decay** | The per-second stat drain in `CompanionState._process`. It runs on every screen because the autoload is always alive. |
-| **Campaign ready** | `CompanionState.campaign_ready`, set at Level 5. Gates the Campaign button. |
 
 ## Review material and questions
 
@@ -37,6 +35,10 @@ Terms used throughout this repo, in the sense this repo means them.
 | **Answer key** | What a question is checked against, written with the question and saved on the device: `answer`, `accepted`, `distractors`, `rubric`. See [`data-model.md`](data-model.md) §2. |
 | **Accepted answers** | `accepted`: other answers an Identification counts as exact (synonyms, abbreviations, spellings). Editable as "Also accept" in the categorizer. |
 | **Rubric** | An essay's marking guide: 3–5 `{point, keywords, weight}`. The server's score is the weight of the points the answer covers, with quoted evidence. |
+| **World slot** | Room for one saved world: 3 free, 300 crystals each after that, kept for good (`GameState.world_slots`). |
+| **Study streak** | Days in a row the daily study goal was met (one finished run or 10 flashcards); pays 15 crystals a day. |
+| **Export / Import save** | Settings' copy of `studymon_save.json` to a file the player picks, and back: the only way to move a save, since there are no accounts. |
+| **More questions** | New questions from a saved world's own reviewer text, added to the world. |
 | **AI consent** | `GameState.ai_consent`: the player's yes to sending reviewers and typed answers to the AI, asked before the first upload and withdrawable in Settings. |
 | **Daily limit** | The server's per-IP, per-day call caps (`backend/main.py` `DAILY_LIMITS`); over one, the reply is 429 and the game says to try tomorrow. |
 | **Near-miss** | An Identification answer close to the key but not on it; only these go to the server to judge. |

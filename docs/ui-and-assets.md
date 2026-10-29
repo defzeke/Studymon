@@ -67,7 +67,7 @@ text** checkbox in `settings.tscn` calls `set_large_text()` and saves.
 | `scenes/overworld/explorer_picker.tscn` | `CanvasLayer` | `scripts/overworld/explorer_picker.gd` | "Choose your explorer" card, instanced over the region map |
 | `scenes/battle/battle.tscn` | `Control` | `scripts/battle/battle.gd`, `scripts/battle/arena_stage.gd` | 3D arena behind the battle HUD: intro, strikes, ten SFX cues |
 | `scenes/review_session/flashcards.tscn` | `Control` | `scripts/review_session/flashcards.gd` | Flashcard Sanctuary: untimed card review |
-| `scenes/ui/settings.tscn` | `Control` | `scripts/ui/settings.gd` | two cards: "Sound & display" (music, sounds, large text) and "Privacy & data" (`ConsentCheck` with the consent text in `ConsentNote`; `PrivacyButton`, `TermsButton`, `SupportButton` opening `PRIVACY_URL` / `TERMS_URL` / `SUPPORT_URL`, disabled while empty; `DeleteDataButton`, coral, confirms then `SaveManager.delete_all()` and restarts at the tutorial); Back returns home |
+| `scenes/ui/settings.tscn` | `Control` | `scripts/ui/settings.gd` | two cards: "Sound & display" (music, sounds, large text) and "Privacy & data" (`ConsentCheck` with the consent text in `ConsentNote`; `PrivacyButton`, `TermsButton`, `SupportButton` opening `PRIVACY_URL` / `TERMS_URL` / `SUPPORT_URL`, disabled while empty; `ExportButton` / `ImportButton` with the native `ExportDialog` / `ImportDialog` (`.json`) for `SaveManager.export_to()` / `import_from()`; and `DeleteDataButton`, coral, confirms then `SaveManager.delete_all()` and restarts at the tutorial); Back returns home |
 
 
 ### `splash.tscn`
@@ -678,3 +678,15 @@ None known. `bot_lv1..5.png` was only read by the deleted `companion.gd`.
   ignore container sizing.
 - `unique_id` attributes appear on nodes in the newer scenes (4.7 scene format); they are editor
   metadata, not something to reproduce by hand.
+
+### Additions for world slots, More questions and the study timer
+
+- **Worlds list** (`session_list.tscn`): `%SlotsLabel` above New World reads "Worlds N / S slots ·
+  C crystals · Study streak D"; New World with every slot full opens a `ConfirmModal` to buy a slot.
+- **Categorizer**: `%MoreButton` ("More questions from this reviewer") under the Study button, shown
+  for a saved world that kept its reviewer text.
+- **Study screen** (`flashcards.tscn`): `%TimerButton` in the top bar, "Focus 25:00" / "Rest mm:ss",
+  disabled while the timer runs; `ProgressLabel` adds Kuiz's focus and the daily-goal note.
+- **Closet**: a costume not owned yet shows "Level N" (disabled) or its price in crystals; tapping a
+  priced one asks to buy it (`ConfirmModal`).
+- **Check-up tablet**: a fifth row, **Focus**.

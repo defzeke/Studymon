@@ -32,7 +32,7 @@ signal job_status(job_id: String, status: String, progress: float, result: Varia
 | Method | MOCK behaviour | Real behaviour |
 |---|---|---|
 | `new_job_id(kind)` | `"<kind>_<n>"`, unique per session | same |
-| `upload_reviewer(job_id, topic, text, pdf)` | the mock extractor (§5), 0.8 s → `job_status(job_id, "completed", …)` | `processing`, then `POST /v1/extract` |
+| `upload_reviewer(job_id, topic, text, file, file_type, existing)` | the mock extractor (§5), 0.8 s → `job_status(job_id, "completed", …)` | `processing`, then `POST /v1/extract` |
 | `grade_battle_question(job_id, q, answer, mode)` | `mode "essay"` → `essay_offline()`; `"identification"` → score 0 (a near-miss stays a miss) | `POST /v1/grade` |
 | `check_identification(q, answer, strict)` | on the device, never networked: `{verdict, feedback}` | same |
 | `essay_offline(q, answer)` / `rubric_for(q)` | the offline essay mark ([`systems/battle.md`](systems/battle.md) §5) | used when the server cannot answer |
@@ -77,17 +77,28 @@ client as a server error).
 ### `POST /v1/extract`: reviewer → questions + answer keys
 
 ```jsonc
-// request: text, or a PDF
-{"job_id": "extract_3", "topic_name": "Biology", "text": "…"}            // 80 – 200 000 chars
-{"job_id": "extract_3", "topic_name": "Biology", "pdf_base64": "…"}      // ≤ 20 MB, ≤ 100 pages
+// request: text, or a file
+{"job_id": "extract_3", "topic_name": "Biology", "text": "…"}                         // 80 – 200 000 chars
+{"job_id": "extract_3", "topic_name": "Biology", "file_base64": "…", "file_type": "pdf"}
+// optional on either: "existing": ["question text", …]  (≤ 60, "More questions": do not repeat these)
 // result
-{"topic_id": "topic_biology", "questions": [question…]}                    // question shape: §5
+{"topic_id": "topic_biology", "questions": [question…], "reviewer_text": "…"}         // question shape: §5
 ```
+
+| `file_type` | Limit | Sent to Claude as | Grounding text |
+|---|---|---|---|
+| `pdf` | 20 MB, 100 pages | a `document` block (page text and images: tables, scans) | `pypdf` text, or none for a scan |
+| `png`, `jpeg`, `webp` (a photo of notes) | 5 MB | an `image` block | none: the source check is skipped |
+| `docx`, `pptx` | 20 MB | text, converted here (`python-docx`, `python-pptx`; tables and slide text) | that text |
+
+`reviewer_text` (the text above, capped at 200 000 chars; empty for a photo) goes back so the device
+can keep it with the world for "More questions". Questions whose text is in `existing` are dropped.
 
 One streamed Claude call with a JSON-schema structured output (`ai.QUESTION_SET_SCHEMA`),
 `effort: "high"`, adaptive thinking and the server-side refusal fallback (`fallbacks: "default"`). The
 reviewer is wrapped in `<reviewer>` tags as data. The system prompt (`ai.EXTRACT_SYSTEM`) carries the
-generation rules of [`systems/gameplay-structure.md`](systems/gameplay-structure.md) §3.1.
+generation rules of [`systems/gameplay-structure.md`](systems/gameplay-structure.md) §3.1, and asks for
+everything **in the reviewer's own language** (for example Filipino or English).
 
 The server then **checks every question and drops the ones the game cannot trust** (`ai.check_questions`):
 
@@ -152,7 +163,8 @@ uv run --no-project --with-requirements requirements.txt python evals/run_evals.
 The SDK reads `ANTHROPIC_API_KEY` from the environment. To use it from the editor, set
 `Api.DEV_USES_SERVER = true` ([`skills.md`](skills.md) §*Use the real study server*).
 
-**Evals** (`backend/evals/`): four reviewers (biology, Philippine history, economics, programming) and
+**Evals** (`backend/evals/`): four reviewers (biology, Philippine history, economics, programming), the
+biology one again as a Word file and as a photo-like PNG (built at run time), and
 seven graded answers (essay perfect, partial, off-topic, filler, injection; Identification synonym,
 broader term). A reviewer passes when ≥ 80 % of its generated questions survive the checks and every
 type has ≥ 3; an answer passes when its score lands in its expected band. Run it on every prompt or

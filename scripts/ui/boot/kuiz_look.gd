@@ -9,6 +9,13 @@ extends Node
 
 ## The closet's tabs: [slot id, tab name]. Kuiz wears one costume per slot.
 const SLOTS := [["head", "Head"], ["face", "Face"], ["body", "Body"]]
+## Costumes that must be unlocked: id -> [level needed, crystals]. The rest (one per slot) are free.
+## Contract: docs/systems/monetization.md.
+const COSTUME_UNLOCKS := {
+	"beanie": [2, 60], "bow": [3, 80], "flower": [4, 100], "crown": [8, 200],
+	"shades": [3, 80], "hero_mask": [6, 150],
+	"scarf": [2, 60], "medal": [10, 250],
+}
 ## id -> [name, texture, centre, width (model units), tilt (radians), slot]
 const COSTUMES := {
 	"party_hat": ["Party hat", preload("res://assets/sprites/props/costume_party_hat.svg"), Vector3(0.0, 1.4, 0.36), 0.8, 0.0, "head"],

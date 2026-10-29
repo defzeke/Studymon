@@ -23,6 +23,7 @@ const TOWEL: Texture2D = preload("res://assets/sprites/props/towel.svg")
 const BOLD: Font = preload("res://assets/fonts/JosefinSans-Bold.ttf")
 const CHARGE_SFX: AudioStream = preload("res://assets/audio/sfx/sfx_charge.wav")
 const CHARGED_SFX: AudioStream = preload("res://assets/audio/sfx/sfx_charged.wav")
+const ConfirmModal := preload("res://scripts/ui/widgets/confirm_modal.gd")
 const SETTINGS_SCENE := "res://scenes/ui/settings.tscn"
 const WORLDS_SCENE := "res://scenes/ui/session_list.tscn"
 const FADE_TIME := 0.35
@@ -69,12 +70,13 @@ const FLING_GAP := 3.0
 const SCRUB_PER_PX := 0.06
 # The check-up's rows: [label, stat, inverted (dirt reads as cleanliness)]. The battery row is its
 # health (capacity), not its charge; the Energy gauge shows the charge.
-const CHECKS := [["Battery health", "battery_health", false], ["Frame", "health", false], ["Clean", "dirt", true], ["Fuel", "hunger", false]]
+const CHECKS := [["Battery health", "battery_health", false], ["Frame", "health", false], ["Clean", "dirt", true], ["Fuel", "hunger", false], ["Focus", "focus", false]]
 const CHECK_HINTS := {
 	"battery_health": "Battery worn out: it drains fast. Fit a new one below.",
 	"health": "Screws loose: tighten them with the screwdriver.",
 	"dirt": "Dusty and scuffed: scrub Kuiz with the towel.",
 	"hunger": "Running on empty: feed Kuiz in the Data Kitchen.",
+	"focus": "Unfocused: study flashcards or run the focus timer on the Study screen.",
 }
 
 @onready var peek: Node3D = owner as Node3D
@@ -741,15 +743,38 @@ func _costume_button(id: String, title: String, icon: Texture2D) -> Button:
 	b.vertical_icon_alignment = VERTICAL_ALIGNMENT_TOP
 	b.custom_minimum_size = Vector2(170, 170)
 	b.set_meta("costume", id)
-	b.pressed.connect(func() -> void:
-		if id == "":
-			GameState.outfit.erase(_closet_slot)
+	var unlock: Array = look.COSTUME_UNLOCKS.get(id, [])
+	if not unlock.is_empty() and not GameState.owned_costumes.has(id):
+		if CompanionState.level < int(unlock[0]):
+			b.text = "%s\nLevel %d" % [title, unlock[0]]
+			b.disabled = true
 		else:
-			GameState.outfit[_closet_slot] = id
-		SaveManager.save_progress()
-		peek.act("Happy")
-		_refresh_wardrobe())
+			b.text = "%s\n%d crystals" % [title, unlock[1]]
+		b.pressed.connect(_offer_costume.bind(id, title, int(unlock[1])))
+		return b
+	b.pressed.connect(_wear.bind(id))
 	return b
+
+func _wear(id: String) -> void:
+	if id == "":
+		GameState.outfit.erase(_closet_slot)
+	else:
+		GameState.outfit[_closet_slot] = id
+	SaveManager.save_progress()
+	peek.act("Happy")
+	_refresh_wardrobe()
+
+# A costume not owned yet: buy it with crystals, then wear it.
+func _offer_costume(id: String, title: String, price: int) -> void:
+	if GameState.crystals < price:
+		_toast("%s costs %d crystals. Clear houses and gyms to earn them." % [title, price])
+		return
+	ConfirmModal.open(self, "Buy %s?" % title, "It costs %d crystals; you have %d." % [price, GameState.crystals], "Buy", _buy_costume.bind(id, price), false)
+
+func _buy_costume(id: String, price: int) -> void:
+	if GameState.buy_costume(id, price):
+		_show_closet_slot(_closet_slot)
+		_wear(id)
 
 # The open tab and the costume worn in it show as pressed buttons.
 func _refresh_wardrobe() -> void:

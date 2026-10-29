@@ -89,7 +89,7 @@ def test_topic_id_matches_client_slug():
 def test_extract_endpoint_returns_job_envelope(monkeypatch):
     import json
     from fastapi.testclient import TestClient
-    monkeypatch.setattr(ai, "generate_questions", lambda text, pdf: json.dumps({"questions": [q()]}))
+    monkeypatch.setattr(ai, "generate_questions", lambda text, file=None, media_type="", existing=None: json.dumps({"questions": [q()]}))
     r = TestClient(main.app).post("/v1/extract", json={"job_id": "extract_7", "topic_name": "Bio", "text": REVIEWER})
     body = r.json()
     assert body["job_id"] == "extract_7" and body["status"] == "completed"
@@ -119,3 +119,69 @@ def test_forged_forwarded_for_does_not_reset_the_limit(monkeypatch):
     body = {"job_id": "r", "kind": "feedback", "text": "x"}
     assert c.post("/v1/reports", json=body, headers={"x-forwarded-for": "6.6.6.6, 5.5.5.5"}).status_code == 200
     assert c.post("/v1/reports", json=body, headers={"x-forwarded-for": "7.7.7.7, 5.5.5.5"}).status_code == 429
+
+
+def _b64(data: bytes) -> str:
+    import base64
+    return base64.b64encode(data).decode()
+
+
+def test_docx_and_pptx_become_text(monkeypatch):
+    import io
+    import json
+    import docx
+    import pptx
+    from fastapi.testclient import TestClient
+    main._used.clear()
+    seen = {}
+
+    def fake(text, file=None, media_type="", existing=None):
+        seen["text"], seen["file"] = text, file
+        return json.dumps({"questions": [q()]})
+    monkeypatch.setattr(ai, "generate_questions", fake)
+    d = docx.Document()
+    for line in REVIEWER.split(". "):
+        d.add_paragraph(line)
+    buf = io.BytesIO()
+    d.save(buf)
+    body = {"job_id": "x", "topic_name": "Bio", "file_base64": _b64(buf.getvalue()), "file_type": "docx"}
+    r = TestClient(main.app).post("/v1/extract", json=body).json()
+    assert r["status"] == "completed" and "chloroplast" in seen["text"] and seen["file"] is None
+    deck = pptx.Presentation()
+    slide = deck.slides.add_slide(deck.slide_layouts[1])
+    slide.shapes.title.text = "Cells"
+    slide.placeholders[1].text = REVIEWER
+    buf = io.BytesIO()
+    deck.save(buf)
+    body.update(file_base64=_b64(buf.getvalue()), file_type="pptx")
+    r = TestClient(main.app).post("/v1/extract", json=body).json()
+    assert r["status"] == "completed" and "mitochondria" in seen["text"]
+
+
+def test_photo_goes_as_image_and_skips_the_source_check(monkeypatch):
+    import json
+    from fastapi.testclient import TestClient
+    main._used.clear()
+    seen = {}
+
+    def fake(text, file=None, media_type="", existing=None):
+        seen["media_type"] = media_type
+        return json.dumps({"questions": [q(source="text only visible in the photo")]})
+    monkeypatch.setattr(ai, "generate_questions", fake)
+    body = {"job_id": "p", "topic_name": "Bio", "file_base64": _b64(b"\x89PNG fake"), "file_type": "png"}
+    r = TestClient(main.app).post("/v1/extract", json=body).json()
+    assert seen["media_type"] == "image/png" and r["status"] == "completed"
+    big = dict(body, file_base64=_b64(b"0" * (main.MAX_IMAGE_BYTES + 1)))
+    assert TestClient(main.app).post("/v1/extract", json=big).json()["status"] == "failed"
+
+
+def test_more_questions_skip_existing_and_return_reviewer_text(monkeypatch):
+    import json
+    from fastapi.testclient import TestClient
+    main._used.clear()
+    monkeypatch.setattr(ai, "generate_questions", lambda text, file=None, media_type="", existing=None: json.dumps({"questions": [
+        q(), q(text="Where does respiration release energy?", answer="mitochondria", source="Cellular respiration releases that energy in the mitochondria")]}))
+    body = {"job_id": "m", "topic_name": "Bio", "text": REVIEWER, "existing": ["Which organelle holds chlorophyll?"]}
+    r = TestClient(main.app).post("/v1/extract", json=body).json()
+    assert [x["text"] for x in r["result"]["questions"]] == ["Where does respiration release energy?"]
+    assert r["result"]["reviewer_text"] == REVIEWER

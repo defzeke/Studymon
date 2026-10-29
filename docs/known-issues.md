@@ -23,6 +23,7 @@ Severity: **P0** blocks the core loop · **P1** blocks a feature or silently cor
 | 20 | Stale docs, no tests/CI | **P3** |
 | 21 | ~~Theme and scene colours predate the canonical palette~~ — migrated | — |
 | 22 | Headless boot chain fails its threaded loads | **P3** |
+| 23 | Native file picker paths unverified on Android / iOS | **P1** |
 
 ---
 
@@ -153,6 +154,21 @@ copy (2026-10-26), so it predates the editor-UI pass.
 **Fix:** not yet known. First check whether it is a Godot 4.7.2 headless threaded-load bug (re-test
 on the next patch release). Until then, verify the boot chain windowed, and verify `peek.tscn` headless
 on its own.
+
+---
+
+## 23. Native file picker paths unverified on Android / iOS (P1)
+
+The categorizer's reviewer picker and Settings' Export / Import dialogs are `FileDialog`s with
+`use_native_dialog = true`, read and written with `FileAccess`. On Android the system picker can hand
+back a `content://` address, and on iOS a security-scoped path; whether `FileAccess` can open those
+has only been checked on Windows.
+
+**Impact:** if it cannot, phones cannot upload a reviewer file (pasting still works) or export / import
+a save.
+
+**Fix:** try a PDF, a photo and a .docx, plus Export and Import, on a real Android phone and iPhone
+early. If the path cannot be opened, add a picker plugin that copies the file into `user://` first.
 
 ---
 

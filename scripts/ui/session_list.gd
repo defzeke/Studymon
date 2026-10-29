@@ -9,6 +9,7 @@ const BUILDER_SCENE := "res://scenes/review_session/categorizer.tscn"
 @onready var list_box: VBoxContainer = %ListBox
 @onready var empty_label: Label = %EmptyLabel
 @onready var new_btn: Button = %NewButton
+@onready var slots_label: Label = %SlotsLabel
 @onready var back_btn: Button = %BackButton
 
 
@@ -29,6 +30,7 @@ func _on_topics_listed(topics: Array[Dictionary]) -> void:
 	for c in list_box.get_children():
 		c.queue_free()
 	empty_label.visible = topics.is_empty()
+	slots_label.text = "Worlds %d / %d slots  ·  %d crystals  ·  Study streak %d" % [topics.size(), GameState.world_slots, GameState.crystals, GameState.current_streak()]
 	for t in topics:
 		list_box.add_child(_make_card(t))
 
@@ -109,8 +111,26 @@ func _on_open_cards(topic: Dictionary) -> void:
 	SessionManager.flashcards_return = "res://scenes/ui/session_list.tscn"
 	get_tree().change_scene_to_file("res://scenes/review_session/flashcards.tscn")
 
+# Every world needs a slot: with all of them in use, offer one for crystals (contract:
+# docs/systems/monetization.md).
 func _on_new_world() -> void:
+	if not SessionManager.has_free_world_slot():
+		var title := "All %d world slots are full" % GameState.world_slots
+		if GameState.crystals >= GameState.WORLD_SLOT_PRICE:
+			ConfirmModal.open(self, title, "Buy one more slot for %d crystals? You have %d. A slot you buy is yours to keep, even after deleting a world." % [GameState.WORLD_SLOT_PRICE, GameState.crystals], "Buy slot", _buy_slot, false, "Not now")
+		else:
+			ConfirmModal.open(self, title, "One more slot costs %d crystals, and you have %d. Earn crystals by clearing houses, gyms and the Champion, or in the Playroom minigames. Or delete a world to free its slot." % [GameState.WORLD_SLOT_PRICE, GameState.crystals], "OK", Callable(), false, "")
+		return
+	_open_builder()
+
+func _buy_slot() -> void:
+	if GameState.buy_world_slot():
+		SaveManager.save_progress()
+		_open_builder()
+
+func _open_builder() -> void:
 	SessionManager.pending_questions.clear()
+	SessionManager.last_source_text = ""
 	SessionManager.editing_topic_id = "topic_%d" % (int(Time.get_unix_time_from_system()) % 100000)
 	get_tree().change_scene_to_file(BUILDER_SCENE)
 

@@ -49,10 +49,11 @@ paste box as a green ✓ or a red warning (`categorizer.gd:103-117`).
 
 The gate runs for text. A picked file is decoded as UTF-8 in `_on_file_selected` and its full text goes
 into the paste box, so it is validated like pasted text. A file that does not decode as text is a
-**PDF upload** when the server is on (`Api.MOCK` false), the extension is `.pdf` and it is at most
-20 MB (`categorizer.gd` `MAX_PDF_BYTES`): the bytes are kept in `_pdf`, the paste box is cleared, and
-the server checks pages and content. Typing in the paste box afterwards drops the PDF. On mocks, or
-for any other file, it is refused with a status message.
+**file upload** when the server is on (`Api.MOCK` false) and its extension is one of `categorizer.gd`
+`FILE_TYPES`: PDF, a photo (PNG, JPG, WebP; at most 5 MB) or Word / PowerPoint (`.docx`, `.pptx`;
+at most 20 MB). The bytes are kept in `_file` with their type, the paste box is cleared, and the
+server checks and reads them ([`../api-backend.md`](../api-backend.md) §2). Typing in the paste box
+afterwards drops the file. On mocks, or for any other file, it is refused with a status message.
 
 ---
 
@@ -222,5 +223,17 @@ world's mastery, cleared trainers/gyms and Champion (keys starting `<topic_id>:`
 |---|---|
 | Mock cannot read PDFs | On mocks a PDF is refused; it needs the server |
 | Real extraction unproven | `/v1/extract` has been checked against a stubbed Claude only; run `backend/evals/` |
-| Source text not persisted | Re-opening a topic later cannot re-run extraction on the original reviewer |
+| Photo reviewers keep no text | "More questions" needs the reviewer's text, which a photo does not have |
 | Topic id collisions | `topic_<unix%100000>` repeats every ~27.8 hours |
+
+---
+
+## 10. More questions
+
+A saved world keeps its reviewer text (`topics[].source_text`: the pasted text, or the text the server
+read from a PDF / Word / PowerPoint file and sent back as `reviewer_text`). Editing such a world shows
+**More questions from this reviewer** (`%MoreButton`) in the categorizer:
+`SessionManager.start_more_questions()` sends the saved text with the world's current question texts
+as `existing`, and the new questions are **added** to the world (deduplicated by text) instead of
+replacing it. The world keeps its id, slot and mastery. On mocks the same text regenerates the same
+questions, so nothing new is added.

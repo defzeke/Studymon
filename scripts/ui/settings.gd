@@ -1,6 +1,6 @@
 extends Control
 ## Settings, opened from the Study Room: music and sound volume, large text, and privacy & data (the
-## AI consent, the policy links, deleting the save). Every change is saved.
+## AI consent, the policy links, exporting / importing / deleting the save). Every change is saved.
 
 const ConfirmModal := preload("res://scripts/ui/widgets/confirm_modal.gd")
 ## The hosted policy pages; both stores need them reachable in the app. Set before exporting.
@@ -42,6 +42,28 @@ func _ready() -> void:
 	%DeleteDataButton.pressed.connect(func() -> void:
 		ConfirmModal.open(self, "Delete my data?", "This erases Kuiz, your worlds, questions and progress from this device. It cannot be undone.", "Delete", _delete_all, true))
 	ConfirmModal.tint_danger(%DeleteDataButton)
+	%ExportButton.pressed.connect(func() -> void:
+		%ExportDialog.current_file = "studymon_save_%s.json" % Time.get_date_string_from_system()
+		%ExportDialog.popup_centered(Vector2i(640, 760)))
+	%ImportButton.pressed.connect(func() -> void: %ImportDialog.popup_centered(Vector2i(640, 760)))
+	%ExportDialog.file_selected.connect(_export)
+	%ImportDialog.file_selected.connect(_confirm_import)
+
+func _export(path: String) -> void:
+	if SaveManager.export_to(path):
+		ConfirmModal.open(self, "Save exported", "Keep %s somewhere safe. Import it on any device to get Kuiz and your worlds back." % path.get_file(), "OK", Callable(), false, "")
+	else:
+		ConfirmModal.open(self, "Export failed", "The save could not be written there. Try another folder.", "OK", Callable(), false, "")
+
+func _confirm_import(path: String) -> void:
+	ConfirmModal.open(self, "Import this save?", "It replaces Kuiz, your worlds and progress on this device with the ones in %s." % path.get_file(), "Import", _import.bind(path), true)
+
+func _import(path: String) -> void:
+	var error := SaveManager.import_from(path)
+	if error != "":
+		ConfirmModal.open(self, "Import refused", error + " Your current save was not changed.", "OK", Callable(), false, "")
+		return
+	get_tree().change_scene_to_file("res://scenes/ui/boot/peek.tscn")
 
 # The fresh game starts at the tutorial, like a new install.
 func _delete_all() -> void:

@@ -5,13 +5,16 @@ extends Control
 # Order matches %RowTemplate's TypeOption items; contract: docs/systems/gameplay-structure.md.
 const QUESTION_TYPES: Array[String] = ["essay", "identification", "multiple_choice"]
 const ConfirmModal := preload("res://scripts/ui/widgets/confirm_modal.gd")
-# The study server's upload cap (backend/main.py MAX_PDF_BYTES).
-const MAX_PDF_BYTES := 20 * 1024 * 1024
+# Reviewer files the study server reads (extension -> its type) and its size caps (backend/main.py).
+const FILE_TYPES := {"pdf": "pdf", "png": "png", "jpg": "jpeg", "jpeg": "jpeg", "webp": "webp", "docx": "docx", "pptx": "pptx"}
+const MAX_FILE_BYTES := 20 * 1024 * 1024
+const MAX_IMAGE_BYTES := 5 * 1024 * 1024
 
 @onready var topic_name_field: LineEdit = %TopicName
 @onready var file_btn: Button = %FileButton
 @onready var paste_area: TextEdit = %PasteArea
 @onready var study_btn: Button = %StudyButton
+@onready var more_btn: Button = %MoreButton
 @onready var status_label: Label = %StatusLabel
 @onready var loading_bar: ProgressBar = %LoadingBar
 @onready var sanity_label: Label = %SanityLabel
@@ -23,8 +26,12 @@ const MAX_PDF_BYTES := 20 * 1024 * 1024
 @onready var file_dialog: FileDialog = %FileDialog
 
 var _studying: bool = false
-## A picked PDF, sent as it is to the study server; empty when the reviewer is text.
-var _pdf := PackedByteArray()
+# Questions before "More questions" ran, to report how many it added; -1 for a normal upload.
+var _count_before := -1
+## A picked reviewer file (PDF, photo, Word, PowerPoint), sent as it is to the study server; empty
+## when the reviewer is text.
+var _file := PackedByteArray()
+var _file_type := ""
 
 func _ready() -> void:
 	theme = load("res://assets/theme/app_theme.tres") as Theme
@@ -33,6 +40,7 @@ func _ready() -> void:
 	file_btn.pressed.connect(_on_pick_file)
 	file_dialog.file_selected.connect(_on_file_selected)
 	study_btn.pressed.connect(_on_study)
+	more_btn.pressed.connect(_on_more)
 	add_q_btn.pressed.connect(_on_add_question)
 	play_btn.pressed.connect(_on_play)
 	back_btn.pressed.connect(_on_back)
@@ -49,6 +57,11 @@ func _ready() -> void:
 		_render_questions()
 		status_label.text = "Loaded %d question(s) — edit before you Play." % SessionManager.pending_questions.size()
 	_update_play_enabled()
+	_refresh_more()
+
+# "More questions" shows for a saved world that kept its reviewer text.
+func _refresh_more() -> void:
+	more_btn.visible = SessionManager.is_saved_world(SessionManager.editing_topic_id) and SessionManager.last_source_text.strip_edges() != ""
 
 func _on_pick_file() -> void:
 	file_dialog.popup_centered(Vector2i(640, 760))
@@ -63,24 +76,27 @@ func _on_file_selected(path: String) -> void:
 	f.close()
 	var txt := bytes.get_string_from_utf8()
 	if txt.length() == 0 or txt.contains("�"):
-		if Api.MOCK or path.get_extension().to_lower() != "pdf":
-			status_label.text = "Can't read this file as text. Paste the text instead."
-		elif bytes.size() > MAX_PDF_BYTES:
-			status_label.text = "That PDF is over 20 MB. Split it or paste the text instead."
+		var kind: String = FILE_TYPES.get(path.get_extension().to_lower(), "")
+		var cap := MAX_IMAGE_BYTES if kind in ["png", "jpeg", "webp"] else MAX_FILE_BYTES
+		if Api.MOCK or kind == "":
+			status_label.text = "Can't read this file as text. Use a PDF, photo, Word or PowerPoint file, or paste the text."
+		elif bytes.size() > cap:
+			status_label.text = "That file is over %d MB. Use a smaller one or paste the text instead." % (cap >> 20)
 		else:
 			paste_area.text = ""
-			_pdf = bytes
-			status_label.text = "PDF ready: %s. Press Study to let the AI read it." % path.get_file()
+			_file = bytes
+			_file_type = kind
+			status_label.text = "File ready: %s. Press Study to let the AI read it." % path.get_file()
 			sanity_label.visible = false
 		return
-	_pdf = PackedByteArray()
+	_file = PackedByteArray()
 	paste_area.text = txt
 	status_label.text = "File loaded: %s (%d bytes)" % [path.get_file(), bytes.size()]
 	_update_sanity()
 
 func _on_paste_changed() -> void:
 	if paste_area.text.strip_edges() != "":
-		_pdf = PackedByteArray()
+		_file = PackedByteArray()
 	_update_sanity()
 
 func _update_sanity() -> void:
@@ -108,7 +124,7 @@ func _on_study() -> void:
 		return
 	var source_text := paste_area.text
 	var v := SessionManager.validate_source_text(source_text)
-	if _pdf.is_empty() and not v.get("ok", false):
+	if _file.is_empty() and not v.get("ok", false):
 		status_label.text = str(v.get("error", "Too short"))
 		return
 	if not GameState.ai_consent:
@@ -122,15 +138,39 @@ func _on_study() -> void:
 	# Animate loading bar while we wait for mock 0.8s
 	var tw := create_tween()
 	tw.tween_property(loading_bar, "value", 85.0, 0.7)
-	if _pdf.is_empty():
+	if _file.is_empty():
 		SessionManager.start_upload_from_text(topic_name, source_text)
 	else:
-		SessionManager.start_upload(topic_name, _pdf)
+		SessionManager.start_upload(topic_name, _file, "", _file_type)
 
 func _on_consent() -> void:
 	GameState.ai_consent = true
 	SaveManager.save_progress()
 	_on_study()
+
+func _on_consent_more() -> void:
+	GameState.ai_consent = true
+	SaveManager.save_progress()
+	_on_more()
+
+# New questions from the world's saved reviewer, added to the ones it has (a saved world only).
+func _on_more() -> void:
+	if _studying:
+		return
+	if not GameState.ai_consent:
+		ConfirmModal.open(self, "Before the AI reads your notes", GameState.AI_CONSENT_TEXT, "I agree", _on_consent_more, false, "Not now")
+		return
+	_count_before = SessionManager.pending_questions.size()
+	if not SessionManager.start_more_questions(topic_name_field.text.strip_edges()):
+		_count_before = -1
+		status_label.text = "This world has no saved reviewer text, so the AI has nothing new to read."
+		return
+	_studying = true
+	study_btn.disabled = true
+	more_btn.disabled = true
+	status_label.text = "AI is reading your reviewer again for new questions..."
+	loading_bar.visible = true
+	loading_bar.value = 12
 
 func _on_extraction_started(_job_id: String) -> void:
 	status_label.text = "AI is studying... extracting concepts"
@@ -142,8 +182,13 @@ func _on_extraction_progress(_job_id: String, progress: float) -> void:
 func _on_extraction_completed(_topic_id: String, questions: Array[Dictionary]) -> void:
 	_studying = false
 	study_btn.disabled = false
+	more_btn.disabled = false
 	loading_bar.value = 100
 	status_label.text = "AI found %d question(s) — review and edit, then Play!" % questions.size()
+	if _count_before >= 0:
+		status_label.text = "Added %d new question(s). Review them, then Play!" % (questions.size() - _count_before)
+		_count_before = -1
+	_refresh_more()
 	_render_questions()
 	_update_play_enabled()
 	# Hide bar after a beat
@@ -152,7 +197,9 @@ func _on_extraction_completed(_topic_id: String, questions: Array[Dictionary]) -
 
 func _on_extraction_failed(_job_id: String, error: String) -> void:
 	_studying = false
+	_count_before = -1
 	study_btn.disabled = false
+	more_btn.disabled = false
 	loading_bar.visible = false
 	status_label.text = "Extraction failed: " + error
 
@@ -294,6 +341,9 @@ func _on_play() -> void:
 	var topic_name := topic_name_field.text.strip_edges()
 	if topic_name == "":
 		topic_name = SessionManager.editing_topic_id
+	if not SessionManager.is_saved_world(SessionManager.editing_topic_id) and not SessionManager.has_free_world_slot():
+		status_label.text = "All %d world slots are full. Delete a world or buy a slot on the worlds list." % GameState.world_slots
+		return
 	status_label.text = "Saving world..."
 	# Confirm persists to history + emits region_generated; Phase 6 will navigate to overworld
 	SessionManager.confirm_topic(topic_name)

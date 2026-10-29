@@ -10,24 +10,25 @@ Last updated: 2026-10-29.
 
 ## In flight
 
-**Store-readiness fixes — uncommitted.** For a v1 with **no accounts** and a **free launch**
-([`launch-plan.md`](launch-plan.md) §1):
-- the placeholder Crystal Shop is removed;
-- the tutorial flag is saved;
-- release builds use the HTTPS server (`Api.RELEASE_URL`), and the editor stays on the mock;
-- the AI-consent pop-up is shown before the first upload;
-- Report buttons send to `POST /v1/reports`;
-- Settings gains Privacy / Terms / Support links and Delete my data;
-- the dead `save_topic` / `update_mastery` uploads and the auth header (#2) are deleted;
-- per-IP daily limits on the server;
-- ball throws have a 3 s cooldown, and care XP has an hourly hard cap;
-- a run only clears with ≥ 1★;
-- mastery is keyed by question id (save v15);
-- `stats_changed` is throttled (#13).
+**World slots, crystal economy, backups, reviewer formats, study goal, closet shop, focus timer
+— uncommitted.**
+- 3 free world slots, then 300 crystals per permanent slot.
+- Level-ups pay a flat 25, and minigames pay at most 60 crystals a day.
+- Settings has Export / Import save.
+- The server reads photos, Word and PowerPoint reviewers and writes in the reviewer's language.
+- "More questions" for a saved world.
+- A daily study goal and streak (15 crystals).
+- Closet costumes unlock by level and are bought with crystals.
+- The Study screen's 25-minute focus timer adds focus, which now shows on the check-up tablet.
+- Accounts are dropped for good in the docs.
+- The unused Level 5 gate (`campaign_ready`, `CAMPAIGN_LEVEL`, `campaign_gate_ready`,
+  `GameState.campaign_unlocked_flag`) is deleted: Play is open from the start, and levels unlock closet
+  costumes.
 
-Checked: `backend/tests` (12 pass), headless Godot checks (38 pass) and the scene gates. Not opened in
-the editor GUI.
-
+Checked: `backend/tests` (15 pass), headless Godot checks (27 new, 38 earlier, all pass) and the
+scene gates. Not opened in the editor GUI, and the native file picker is not yet tried on a phone
+(issue #23). Contract: [`systems/monetization.md`](systems/monetization.md), [`api-backend.md`](api-backend.md),
+[`systems/review-session.md`](systems/review-session.md) §10.
 
 **AI question generation, answer keys and answer checking — uncommitted, not run against the real
 model.** The study server (`backend/`) now has `POST /v1/extract` (Claude writes the questions and
@@ -114,7 +115,7 @@ edges. Details in [`ui-and-assets.md`](ui-and-assets.md) §1, §2 and §4.
 **Battery health, closet tabs, endless levels, happier music — committed (`3be1f49`).** The check-up tablet
 shows battery health (capacity, worn by charging; a worn battery drains energy faster) and sells a
 new battery for 30 crystals, which minigame rounds now earn. The closet has Head, Face and Body tabs,
-one costume worn per tab (five new costumes). Levels never cap (Level 5 still unlocks the campaign).
+one costume worn per tab (five new costumes). Levels never cap.
 A tired Kuiz only dozes in the Study Room. The Study Room's items keep their look while Kuiz walks
 out, the Playroom ball sits in the middle of the dock, and the home music is a bright, bouncy loop.
 Save v10. Details in [`ui-and-assets.md`](ui-and-assets.md) §2 and
@@ -193,22 +194,20 @@ switches back to `main room.mp3`. `assets/audio/loading.mp3` and its `.import` a
 
 | Work | Blocked by |
 |---|---|
-| Pricing the fridge, and gating Play at Level 5 | Waiting on the design: what the shop charges (minigames earn crystals and a new battery costs 30 for now), and whether Play waits for Level 5 |
+| Pricing the fridge | Waiting on the design: what the fridge charges (food is free for now) |
 
 ## Next: before the store release
 
-Order from the store-readiness plan; the code items above are done.
-
 | Order | Item | Needs |
 |---|---|---|
-| 1 | Run `backend/evals/` with a real key, tune prompts, record cost; pick the model per route | an Anthropic key (costs money) |
+| 1 | Run `backend/evals/` with a real key (now also a Word and a photo reviewer), tune prompts, record cost; pick the model per route | an Anthropic key (about $2–3 a run) |
 | 2 | Deploy the backend over HTTPS; set the workspace **monthly spend limit**; set `Api.RELEASE_URL` | a host (Cloud Run / Fly.io) |
 | 3 | Host the privacy policy, terms and support pages; set the three URLs in `settings.gd` | a domain or static host |
-| 4 | `export_presets.cfg` for Android (`.aab`, keystore out of git) and iOS; **start Google's 14-day closed test** | developer accounts, a Mac or macOS CI for iOS |
-| 5 | A real app icon (still Godot's default `icon.svg`), adaptive icon, iOS icon set | art |
-| 6 | Privacy labels / Data safety, age rating 13+, screenshots, review notes with a sample reviewer | store consoles |
-| 7 | Play-test the whole loop on a low-end Android phone and an iPhone (airplane mode, relaunch, large text) | devices |
-| later | App Attest / Play Integrity; Sentry; debounce saves (#14) | — |
+| 4 | `export_presets.cfg` for Android (`.aab`, keystore out of git, **user-data backup on**) and iOS; **start Google's 14-day closed test** | developer accounts, a Mac or macOS CI for iOS |
+| 5 | On real phones: pick a PDF, photo and .docx (issue #23), Export / Import a save, the whole loop | an Android phone and an iPhone |
+| 6 | A real app icon (still Godot's default `icon.svg`), adaptive icon, iOS icon set | art |
+| 7 | Privacy labels / Data safety, age rating 13+, screenshots, review notes with a sample reviewer | store consoles |
+| later | Study reminders (needs a local-notifications plugin); App Attest / Play Integrity; Sentry; debounce saves (#14) | — |
 
 **Future, not started: Phase 5**, the real backend and the App Store / Google Play launch. The game
 stays on mocks until the maintainer decides to begin. The researched plan, store requirements and

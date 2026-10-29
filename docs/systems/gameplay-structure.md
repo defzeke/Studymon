@@ -31,7 +31,7 @@ Open decisions (defaults assumed below; change here first if wrong):
 |---|---|
 | Gym layout | One gym per question type (3 gyms): two in the map's gym buildings, the third at a marker on the south road (the third building is the Champion's) |
 | Difficulty | AI-tagged per question; tiered progression inside each gym |
-| Pet care | The teammate's home loop replaced the care room; stats, the top bar and the Level 5 gate wait on its design, so Play is ungated for now |
+| Pet care | The teammate's home loop replaced the care room. **No Level 5 gate**: Play is open from the start, and levels unlock closet costumes instead |
 
 ## 2. Draft versus new structure
 
@@ -53,7 +53,7 @@ Open decisions (defaults assumed below; change here first if wrong):
 ## 3. Target structure
 
 ```text
-Care room (Feed/Pet/Play) → Level 5 → Campaign
+Home care (any level) ↔ Campaign
   → Session list → Upload reviewer (paste/file) → AI generates questions (editable)
   → Island map for that topic
        3 gyms, one per type:  Multiple Choice | Identification | Essay

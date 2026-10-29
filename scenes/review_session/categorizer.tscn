@@ -112,6 +112,13 @@ custom_minimum_size = Vector2(0, 60)
 layout_mode = 2
 text = "Extract questions with AI"
 
+[node name="MoreButton" type="Button" parent="Margin/Content/SourceCard/Pad/Source"]
+unique_name_in_owner = true
+visible = false
+custom_minimum_size = Vector2(0, 60)
+layout_mode = 2
+text = "More questions from this reviewer"
+
 [node name="StatusLabel" type="Label" parent="Margin/Content/SourceCard/Pad/Source" unique_id=1021603536]
 unique_name_in_owner = true
 layout_mode = 2

@@ -5,18 +5,16 @@ signal stats_changed
 signal xp_changed(current_xp: int, level: int)
 signal leveled_up(new_level: int)
 signal codex_entry_added(text: String)
-signal campaign_gate_ready
 signal pomodoro_phase_changed(mode: String)
 
-# Levels never cap; reaching CAMPAIGN_LEVEL unlocks the campaign. See xp_to_reach().
-const CAMPAIGN_LEVEL := 5
+# Levels never cap. See xp_to_reach().
 # Each level costs 5 XP more than the one before: Lv1->2=20, 2->3=25, 3->4=30, 4->5=35, 5->6=40...
 # At 1-2 XP per tap (feed 2, pet 1, play 2; avg ~1.66 cycling), ~65 taps to Lv5, a few minutes;
 # meets GDD "minutes, not hours" for Levels 1-5.
 const FIRST_LEVEL_XP := 20
 const LEVEL_XP_STEP := 5
-# Reaching a level pays level x this many crystals.
-const LEVEL_CRYSTALS := 10
+# Reaching a level pays this many crystals (flat, so care alone cannot outpace studying).
+const LEVEL_CRYSTALS := 25
 const STAT_MAX := 100.0
 const STAT_DECAY_PER_SEC := 0.15
 # The clock decay announces itself this often (issue #13); care actions announce at once.
@@ -57,6 +55,8 @@ const MISSED_REST_ENERGY_PENALTY := 5.0
 const MISSED_REST_MOOD_PENALTY := 3.0
 const REST_COMPLETE_ENERGY_BONUS := 6.0
 const REST_COMPLETE_MOOD_BONUS := 6.0
+# A full 25-minute focus session sharpens Kuiz: focus is what forgives the first miss in a run.
+const POMODORO_FOCUS_BONUS := 25.0
 
 var level: int = 1
 var xp: int = 0
@@ -73,7 +73,6 @@ var bond: int = 0
 ## True while a battle run is on; the clock decay is paused.
 var in_run := false
 var _decay_emit_wait := 0.0
-var campaign_ready: bool = false
 var codex: Array[String] = []
 
 # XP diminishing returns tracking
@@ -139,12 +138,9 @@ func reward_deck_done() -> void:
 func _check_level_up() -> void:
 	while xp >= xp_to_reach(level + 1):
 		level += 1
-		GameState.add_crystals(level * LEVEL_CRYSTALS)
+		GameState.add_crystals(LEVEL_CRYSTALS)
 		_unlock_tidbit(level)
 		leveled_up.emit(level)
-		if level >= CAMPAIGN_LEVEL and not campaign_ready:
-			campaign_ready = true
-			campaign_gate_ready.emit()
 
 ## Cumulative XP at which `lv` is reached (Lv1 = 0, Lv2 = 20, Lv5 = 110, Lv6 = 150...).
 static func xp_to_reach(lv: int) -> int:
@@ -280,7 +276,6 @@ func to_dict() -> Dictionary:
 		"dirt": dirt,
 		"battery_health": battery_health,
 		"bond": bond,
-		"campaign_ready": campaign_ready,
 		"codex": codex,
 	}
 
@@ -295,16 +290,12 @@ func from_dict(data: Dictionary) -> void:
 	dirt = float(data.get("dirt", 0.0))
 	battery_health = float(data.get("battery_health", 100.0))
 	bond = int(data.get("bond", 0))
-	campaign_ready = bool(data.get("campaign_ready", false))
 	codex.clear()
 	for e in data.get("codex", []):
 		codex.append(str(e))
 	# Backfill: fresh games and older saves may miss early tidbits.
 	for lv in range(1, level + 1):
 		_unlock_tidbit(lv)
-	# Reconcile: saves written at the campaign level (or by older versions) may lack the flag.
-	if level >= CAMPAIGN_LEVEL and not campaign_ready:
-		campaign_ready = true
 	# Saves from the capped curve (Lv5 max) may hold XP past Lv5: catch the levels up silently.
 	while xp >= xp_to_reach(level + 1):
 		level += 1
@@ -333,6 +324,7 @@ func _on_pomodoro_tick() -> void:
 	if _pomodoro_remaining <= 0:
 		if _pomodoro_mode == "focus":
 			# Focus ended -> rest begins
+			focus = minf(STAT_MAX, focus + POMODORO_FOCUS_BONUS)
 			_pomodoro_mode = "rest"
 			_pomodoro_remaining = POMODORO_REST_SEC
 			_rest_missed = false

@@ -8,7 +8,7 @@
 
 **Kuizmon** bridges the gap between productive studying and engaging gameplay. By uploading your study materials (PDF reviewers), your companion digests the content and generates a region of gym battles, trainer encounters, and a cumulative Champion exam. Care for your companion, keep its energy and focus high, and master your subjects to conquer the campaign!
 
-**Current state:** a playable-on-mocks vertical slice. The full loop (care → Level 5 → upload → edit questions → overworld → battle → mastery → Champion) is implemented in GDScript, with the AI backend stubbed behind `Api.MOCK`. See [`docs/known-issues.md`](docs/known-issues.md) before running it — the battle scene currently references missing pet sprites.
+**Current state:** a playable-on-mocks vertical slice. The full loop (care → upload → edit questions → overworld → battle → mastery → Champion) is implemented in GDScript, with the AI backend stubbed behind `Api.MOCK`. See [`docs/known-issues.md`](docs/known-issues.md) before running it — the battle scene currently references missing pet sprites.
 
 ---
 
@@ -55,8 +55,8 @@ res://
 
 ## 🚀 Core Gameplay Loops
 
-1. **Pre-Campaign Loop (Level 1–5):** Meet your baby AI companion, perform Pou-style care taps (*Feed*, *Pet*, *Play*) that teach beginner AI concepts, earn XP, and unlock the review campaign at Level 5.
-2. **Main Campaign Loop (Level 5+):** Upload study materials → AI extracts concepts → navigate the 3D island overworld → clear Identification and Essay encounters → face the regional Champion!
+1. **Care Loop:** Meet your baby AI companion, perform Pou-style care taps (*Feed*, *Pet*, *Play*) that teach beginner AI concepts, and earn XP; levels unlock closet costumes.
+2. **Campaign Loop (open from the start):** Upload study materials → AI extracts concepts → navigate the 3D island overworld → clear Identification and Essay encounters → face the regional Champion!
 
 Supporting systems: an hourly-capped XP curve, stat decay and a Pomodoro focus/rest cycle, a
 five-step AI-literacy codex, colourblind-safe per-question mastery that decays after 7 days, and a

@@ -85,9 +85,10 @@ func grade_battle_question(job_id: String, q: Dictionary, answer: String, mode: 
 		"source": str(q.get("source", "")),
 	}, GRADE_TIMEOUT)
 
-## Turns a reviewer into questions with their answer keys: pasted text, or a PDF's bytes (sent only
-## when the server is on; the mock reads text). The result arrives on job_status under `job_id`.
-func upload_reviewer(job_id: String, topic_name: String, source_text: String, pdf: PackedByteArray) -> void:
+## Turns a reviewer into questions with their answer keys: pasted text, or a file's bytes and its
+## type ("pdf", "png", "jpeg", "webp", "docx", "pptx"), sent only when the server is on (the mock reads
+## text). The result arrives on job_status under `job_id`.
+func upload_reviewer(job_id: String, topic_name: String, source_text: String, file: PackedByteArray, file_type := "pdf", existing: Array[String] = []) -> void:
 	if MOCK:
 		_execute_mock_upload(job_id, topic_name, source_text)
 		return
@@ -95,11 +96,12 @@ func upload_reviewer(job_id: String, topic_name: String, source_text: String, pd
 		_fail_later(job_id, "Allow the AI to read your reviewer first.")
 		return
 	job_status.emit.call_deferred(job_id, "processing", 0.0, null)
-	var body := {"job_id": job_id, "topic_name": topic_name}
-	if pdf.is_empty():
+	var body := {"job_id": job_id, "topic_name": topic_name, "existing": existing.slice(0, 60)}
+	if file.is_empty():
 		body["text"] = source_text
 	else:
-		body["pdf_base64"] = Marshalls.raw_to_base64(pdf)
+		body["file_base64"] = Marshalls.raw_to_base64(file)
+		body["file_type"] = file_type
 	_request(job_id, HTTPClient.METHOD_POST, "/v1/extract", body, EXTRACT_TIMEOUT)
 
 ## Reports a generated question or AI feedback as wrong or offensive (a store requirement). `kind` is

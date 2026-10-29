@@ -132,8 +132,9 @@ result panel says "Kuiz made it through!" with Try Again.
 
 On a clear: (items + bonuses) × star multiplier (1 star ×1.0, 2 stars ×1.25, 3 stars ×1.5; accuracy
 70 / 85 / 95 % earns 1 / 2 / 3 stars), × mood (crystals) or energy (XP). A replay of a cleared building
-pays 25 %. A defeat pays 50 % of the per-item pay only. Reaching a level pays `level × 10` crystals
-(`CompanionState.LEVEL_CRYSTALS`). A battery costs 30 crystals, so one house pays for one.
+pays 25 %. A defeat pays 50 % of the per-item pay only. Reaching a level pays a flat 25 crystals
+(`CompanionState.LEVEL_CRYSTALS`). A finished run (cleared or not, but not fled) also meets the day's
+study goal ([`monetization.md`](monetization.md)); the result panel says so when it pays. A battery costs 30 crystals, so one house pays for one.
 
 ## 5. Grading
 
