@@ -19,7 +19,7 @@ That is fine for the current scope but means there is **no type safety and no au
 
 ```jsonc
 {
-  "v": 14,
+  "v": 15,
 
   // CompanionState.to_dict()
   "level": 1,
@@ -55,7 +55,7 @@ That is fine for the current scope but means there is **no type safety and no au
 
   // SessionManager.to_dict()
   "session": {
-    "mastery": { "topic_001:0": { "state": 1, "attempts": 2, "correct": 1, "last_correct": 1760000000 } },
+    "mastery": { "topic_001:q_1760000000_42": { "state": 1, "attempts": 2, "correct": 1, "last_correct": 1760000000 } },
     "cleared_houses": ["topic_001:essay#h4"],
     "best_stars": {"house:topic_001:essay#h4": 3},
     "cleared_gyms": ["topic_001:identification"],
@@ -65,7 +65,8 @@ That is fine for the current scope but means there is **no type safety and no au
         "id": "topic_001",
         "name": "Biology 101",
         "question_count": 2,
-        "questions": [ /* see §3 */ ]
+        "questions": [ /* see §3 */ ],
+        "explorer": "boy"  // v15: picked once per world
       }
     ]
   }
@@ -76,7 +77,7 @@ Field-by-field:
 
 | Field | Type | Written from | Notes |
 |---|---|---|---|
-| `v` | int | literal `7` | Never compared on load — see §6 |
+| `v` | int | `SaveManager.SAVE_VERSION` (15) | Not compared on load; Import refuses a newer one — see §6 |
 | `level` | int | `CompanionState.level` | 1 and up, no cap |
 | `xp` | int | `CompanionState.xp` | Lifetime XP, not per-level |
 | `energy` / `focus` / `mood` | float | `CompanionState` | 0–100, clamped on mutation |
@@ -117,7 +118,7 @@ question's **answer key**: battles check answers against it on the device.
 | `source` | string | Source sentence excerpt; forwarded as `source` to a real grade call |
 
 Only `text`, `type`, `difficulty`, `answer`, `accepted`, `distractors`, `rubric` and `key_concepts`
-affect battle outcome. The answer-key keys are additive and optional, so saves keep `"v": 14`. `confidence` is purely a "how much should I double-check this" hint for the player.
+affect battle outcome. The answer-key keys are additive and optional, so they did not bump `"v"`. `confidence` is purely a "how much should I double-check this" hint for the player.
 `SessionManager.normalize_question()` applies the defaults and repairs unplayable Multiple Choice
 rows (see [`systems/review-session.md`](systems/review-session.md) §6); a v5 save needs no migration.
 
@@ -183,7 +184,8 @@ These live only in memory and are lost on quit or scene change:
 
 ## 6. Load semantics and versioning
 
-`load_game()` is deliberately forgiving — it never fails hard and never migrates:
+`load_game()` is deliberately forgiving — it never fails hard, and its only migration is v15's
+mastery rekey (`session_manager.gd:801`):
 
 ```text
 file missing            → return false (nothing happens)
@@ -197,8 +199,8 @@ SessionManager.from_dict(parsed.get("session", {}))
 
 Behaviour worth knowing:
 
-- **`"v"` is written but never read.** There is no branch on version; compatibility is achieved
-  only by `.get(key, default)`. Bump `v` when you change a field's meaning, and add a real
+- **`"v"` is read only by Import**, which refuses a save newer than `SAVE_VERSION`. `load_game()`
+  has no branch on version; compatibility is achieved by `.get(key, default)`. Bump `v` when you change a field's meaning, and add a real
   migration for anything that is not purely additive.
 - `CompanionState.from_dict()` backfills curriculum entries for every level up to the saved level
   (`companion_state.gd:160`), so old saves regain missing codex lines.

@@ -7,8 +7,9 @@ current code. Statuses follow the vocabulary in [`README.md`](README.md#status-v
 home loop, whose Play button opens the upload screen; upload → edit → island → battle →
 mastery → Champion now plays end to end, with Multiple Choice, Identification and Essay gyms and
 Easy/Medium/Hard battles ([`systems/gameplay-structure.md`](systems/gameplay-structure.md)). What is
-still missing: the store launch (future, mock first: [`launch-plan.md`](launch-plan.md)). The Flashcard Sanctuary lets players review and repair mastery. Trainers are tier-ordered, bosses are locked
-until their trainers are beaten, and the Champion always has a moveset.
+still missing: the store launch (future, mock first: [`launch-plan.md`](launch-plan.md)). The Flashcard Sanctuary lets players review and repair mastery. Trainers and bosses gave way to
+fixed-length runs: a Challenge House and a Gym per question type, then the Champion Gym
+([`systems/battle.md`](systems/battle.md)).
 
 ---
 
@@ -17,16 +18,16 @@ until their trainers are beaten, and the Champion always has a moveset.
 | Phase | Plan scope | Status | Where |
 |---|---|---|---|
 | **0** | Project skeleton, folder structure, autoloads, theme, backend health | **Implemented** (layout differs) | `project.godot`, 7 autoloads, `assets/theme/app_theme.tres`, `backend/main.py` |
-| **1** | Accounts, first login, meet-your-companion cutscene | **Partial** — 3D peek + tutorial on mocks | `scenes/ui/boot/peek.tscn`, `tutorial.gd`; no auth, name not saved, `GameState.set_user()` unused |
-| **2** | Pet-care loop: Pet/Feed/Play, stats, XP, decay, level gate, HUD strip | **Partial** — home's room actions call `care()` and its top HUD shows level, XP, hunger/energy/mood/health and crystals; no petting | `companion_state.gd`, `home.gd`; see #5 |
+| **1** | Accounts, first login, meet-your-companion cutscene | **Implemented** (no accounts, by design) — 3D peek + a name-only tutorial, run once | `scenes/ui/boot/peek.tscn`, `tutorial.gd`; `player_name` and `tutorial_done` saved |
+| **2** | Pet-care loop: Pet/Feed/Play, stats, XP, decay, level gate, HUD strip | **Implemented** (Level 5 gate removed by design) — petting, food, tune-up, ball and charging call `care()`; the top HUD shows level, XP, hunger/energy/mood/health and crystals | `companion_state.gd`, `home.gd` |
 | **3** | AI Codex + optional pop-quiz reuse | **Partial** — data only | `CURRICULUM` + `codex` array; no screen, bubble deleted with the care room |
-| **4** | Scheduler / Pomodoro with missed-rest penalty, HUD badge | **Logic only** — the panel and badge were removed | `companion_state.gd:168-241` |
+| **4** | Scheduler / Pomodoro with missed-rest penalty, HUD badge | **Implemented** — the Study screen's focus timer; focus shows on the check-up tablet | `companion_state.gd` `start_pomodoro()`, `flashcards.gd:58` |
 | **5** | Upload PDF → extraction → editable list → region | **Implemented (mock; Claude server built, untested live)** | `categorizer.gd`, `session_manager.gd`, `api.gd`, `backend/` |
 | **6** | Overworld + gym structure + trainer encounters | **Implemented (mock)** | 3D island `region_map.tscn`, `player.gd`, `joystick.gd`; three gyms (one at a marker, no building) |
 | **7** | Battle per question type, one judging pipeline | **Implemented (mock)** | `battle.gd`: Identification, Essay and Multiple Choice, per-tier HP/counter/thresholds |
 | **8** | Mastery states + 7-day decay + Champion recap | **Implemented** | `session_manager.gd`; Champion falls back to every question |
-| **9** | Polish: insights, juice, accessibility, pacing | **Partial** | particles/shake/hit-stop/colourblind badges and the large-text toggle done; bubble hidden (#4) |
-| **10** | Monetization quota + stretch | **Partial (mock)** | the client-side quota was removed; free launch, no shop; no deck sharing |
+| **9** | Polish: insights, juice, accessibility, pacing | **Partial** | particles/shake/hit-stop/colourblind badges and the large-text toggle done; no visible insight text (the bubble went with the care room) |
+| **10** | Monetization quota + stretch | **Partial (mock)** | the client-side quota was removed; free launch; crystals buy world slots, food and costumes; no real-money shop; no deck sharing |
 
 ---
 
@@ -46,33 +47,26 @@ Deviations:
   plain dictionaries and diffs readably, but it loses type safety (see `data-model.md` §6).
 - A Godot MCP editor addon was used during development and has since been removed and gitignored.
 
-### Phase 1 — Accounts & first meeting ⚠️
+### Phase 1 — Accounts & first meeting ✅ (no accounts)
 
 Done: the first meeting is `peek.tscn`. After the loading screen, the 3D Kuiz peeks up, then the
-tutorial (`tutorial.gd`) runs every launch: intro lines, a Continue button standing in for
-sign-in/register, a name prompt kept in memory, and a tour of four rooms (three of them temporary
-placeholder art). The old text cutscene (`meet_companion.tscn`) and its starter-stats mock were
-removed; `CompanionState`'s defaults are the same starter stats.
+tutorial (`tutorial.gd`) asks only for the player's name and tours the four rooms; its last line
+hands off to the home loop. The name (`player_name`) and `tutorial_done` are saved, so the tutorial
+runs once. The old text cutscene (`meet_companion.tscn`) and its starter-stats mock were removed;
+`CompanionState`'s defaults are the same starter stats.
 
-Missing: anything after the tutorial's last line, and so any path from boot into the care room;
-saving the name. Supabase auth entirely: no login/signup
-scene, no token, no user record, no session restore: v1 ships without accounts, and the unused
-`GameState.user_id` / `auth_token` were removed. `loading.gd:2` states this explicitly ("replaces login now that
-backend/auth is skipped").
+Not built, by decision: accounts. v1 ships without them ("no accounts, ever",
+[`launch-plan.md`](launch-plan.md) §1), and the unused `GameState.user_id` / `auth_token` /
+`set_user()` were removed.
 
-### Phase 2 — Pet-care loop ⚠️
+### Phase 2 — Pet-care loop ✅
 
-Done: stats with clamped ranges and per-second decay, three care actions with distinct stat
-effects, hourly diminishing returns, cumulative XP curve tuned to ~90 taps for Lv1→5, level-up
-signals, gate into `GameState`, persistent HUD strip, save/load.
+Done: stats with clamped ranges and per-second decay, care actions with distinct stat effects
+(petting, food, the screwdriver tune-up, the ball, charging), hourly diminishing returns that never
+reach zero (#5), level-up signals, endless levels that unlock closet costumes, the home HUD, save/load.
+The Level 5 campaign gate was removed: Play is open from the start.
 
-Missing / broken:
-
-- No Feed / Pet / Play controls in the scene (#8).
-- The pet is invisible (#3).
-- Diminishing returns truncates to zero XP (#5).
-- No "Did You Know?" bubble in practice — `TidbitBubble` is hidden (#4).
-- `bond` is tracked but unused.
+Gap: `bond` is tracked but unused.
 
 ### Phase 3 — AI Codex ⚠️
 
@@ -86,10 +80,10 @@ deliberately dropped; if so, remove the vestigial data too.
 ### Phase 4 — Pomodoro ✅
 
 Done: 25/5 cycles owned by `CompanionState`, skip-focus penalty, missed-rest penalty, rest-complete
-bonuses, in-scene panel, HUD badge, companion dialogue lines per phase.
+bonuses, companion dialogue lines per phase. The Study screen's focus timer starts it
+(`flashcards.gd:58`); a finished focus session adds focus, shown on the check-up tablet.
 
-Gaps: no notification/sound when a phase ends, timer state is not persisted, and the badge is only
-visible in the care room (the HUD strip is instanced there and nowhere else).
+Gaps: no notification/sound when a phase ends, and timer state is not persisted.
 
 ### Phase 5 — Review session ✅ (mock)
 
@@ -107,10 +101,9 @@ was not built: the server is stateless and stores nothing.
 Done: the 3D island (`map.glb`) under an angled top-down camera, the explorer (`boy_explorer.glb`)
 with Idle/Walk/Run on a left-hand joystick (keys too), collision built from the map's meshes,
 derived gym structure (one gym per question type) placed in the map's gym buildings with animated
-doors, trainers on the roads leading to them, the Champion in the big gym, encounter panel,
-progress/badge HUD, gym-clear particles.
-
-Missing versus the plan: a mini-map. Clear state now saves the moment a battle ends.
+doors, 15 Challenge Houses found in the map's house meshes (`map_houses.gd`), the Champion in the
+big gym, encounter panel, quest card and minimap, Kuiz following the explorer, gym-clear particles.
+Clear state saves the moment a battle ends.
 
 ### Phase 7 — Battle ✅ (mock)
 
@@ -133,7 +126,7 @@ region-complete state.
 The Champion's moveset is the Mastered questions, falling back to every question when none is, sorted
 Easy to Hard.
 
-Gap: mastery is keyed by array index, so editing a topic's questions silently re-points records
+Mastery is keyed by question id since save v15, so editing or deleting other questions keeps it
 (`data-model.md` §4).
 
 ### Phase 9 — Polish ⚠️
@@ -142,7 +135,8 @@ Done: rule-based insights (`INSIGHT_TRIGGERS`, three triggers, priority ordered)
 gym-clear `CPUParticles2D`, screen shake + hit-stop on strong hits, colourblind-safe mastery colours,
 XP curve explicitly tuned and documented, hover/press juice helper.
 
-Missing: visible insight/dialogue text (#4), SFX for hits/level-ups/gym clears,
+Missing: visible insight/dialogue text (the bubble went with the care room), SFX for level-ups and
+gym clears (battle has its own cues),
 onboarding pacing verification on device, and any accessibility options beyond the colour choices.
 
 ### Phase 10 — Monetization & stretch ⚠️
@@ -151,8 +145,10 @@ Removed: the free-tier PDF (3/week) and grading (10/week) quotas, the premium fl
 labels and the "Weekly limit reached" pop-up (`MonetizationState`). Every AI use is unlimited. The
 placeholder Crystal Shop was removed for the free launch.
 
-Missing: a real store/IAP, server-side entitlement, async topic-deck sharing, and rewards for
-levels past 5 (levels no longer cap, but nothing new unlocks after the campaign).
+Done: an in-game crystal economy (world slots, food, costumes, battery; earned from runs, level-ups,
+minigames and the study goal), [`systems/monetization.md`](systems/monetization.md).
+
+Missing: a real store/IAP, server-side entitlement, and async topic-deck sharing.
 
 ---
 
@@ -175,8 +171,8 @@ Done: the battle scene loads, progress saves after battles and topic confirmatio
 fallback, tier-ordered trainers and boss lock are in.
 
 1. ~~Care input that earns XP and the Level 5 gate~~: care earns XP, and the Level 5 gate was removed (the campaign is open from the start).
-2. Un-hide `TidbitBubble` and show it on every text assignment. *(P1)*
-3. Fix the `Authorization` scheme. *(P1)*
+2. ~~Un-hide `TidbitBubble`~~: gone with the care room; insights have no visible text yet.
+3. ~~Fix the `Authorization` scheme~~: removed with accounts (#2).
 
 The loop upload → edit → overworld → battle → mastery → Champion is playable end to end on mocks.
 
@@ -187,8 +183,8 @@ The loop upload → edit → overworld → battle → mastery → Champion is pl
 | Plan says | Reality | Note |
 |---|---|---|
 | Godot 4.6.x, "avoid 4.7" | 4.7.2 stable | 4.7 is the shipping line now; keep it |
-| `Resource`-based saves | JSON file, `"v": 5` | simpler diffs, no type safety |
+| `Resource`-based saves | JSON file, `"v": 15` | simpler diffs, no type safety |
 | FastAPI **or** Node backend with Claude + Supabase | FastAPI gateway with Claude (`/v1/extract`, `/v1/grade`) | stateless: no Supabase, no DB, no accounts |
-| Supabase Auth / DB / Storage | none | auth skipped by design for now |
+| Supabase Auth / DB / Storage | none | no accounts, ever (decided 2026-10-29) |
 | Job polling for long tasks | `job_status` signal; synchronous requests with a per-call `HTTPRequest` and timeout | no polling loop |
 | Android + iOS export templates from day one | not configured | no `export_presets.cfg` in the repo |
