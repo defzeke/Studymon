@@ -1,6 +1,6 @@
 # Known issues
 
-Last reviewed 2026-10-24 against the `world-assets` branch (Godot **4.7.2**, headless). Each entry lists the
+Last reviewed 2026-10-29 against the `world-assets` branch (Godot **4.7.2**, headless). Each entry lists the
 evidence, the player/code impact, and a concrete fix.
 
 Severity: **P0** blocks the core loop · **P1** blocks a feature or silently corrupts state ·
@@ -10,37 +10,32 @@ Severity: **P0** blocks the core loop · **P1** blocks a feature or silently cor
 
 | # | Issue | Severity |
 |---|---|---|
-| 2 | Auth header uses `***` instead of `Bearer` | **P1** |
+| 2 | ~~Auth header uses `***` instead of `Bearer`~~ — removed (no accounts in v1) | — |
 | 8 | ~~Nothing on home calls `CompanionState.care()`~~ — fixed | — |
 | 3, 4, 12, 16 | ~~Hidden rig, hidden TidbitBubble, rig `det == 0` spam, double save load~~ — gone with the care room | — |
-| 5 | Hourly diminishing returns yields **0 XP** | **P1** |
-| 7 | Client/backend endpoint drift | **P1** |
-| 9 | Real grade/extract responses are silently dropped | **P1** |
+| 5 | ~~Hourly diminishing returns yields 0 XP~~ — fixed | — |
+| 7 | ~~Client/backend endpoint drift~~ — fixed | — |
+| 9 | ~~Real grade/extract responses are silently dropped~~ — fixed | — |
 | 11 | ~~Large-text accessibility toggle is unreachable~~ — fixed | — |
-| 13 | `stats_changed` fires every frame (home's gauges listen) | **P2** |
+| 13 | ~~`stats_changed` fires every frame~~ — fixed | — |
 | 14 | Full save write on every care action | **P2** |
 | 19 | ~~Fake "Biology 101" topic seeded on every boot~~ — fixed | — |
 | 20 | Stale docs, no tests/CI | **P3** |
 | 21 | ~~Theme and scene colours predate the canonical palette~~ — migrated | — |
+| 22 | Headless boot chain fails its threaded loads | **P3** |
+| 23 | Native file picker paths unverified on Android / iOS | **P1** |
 
 ---
 
-## 2. Auth header uses `***` (P1)
+## 2. Auth header uses `***` — removed
 
-`scripts/autoload/api.gd:65`
-
-```gdscript
-headers.append("Authorization: *** " + GameState.auth_token)
-```
-
-A redaction placeholder ended up in source. Any real request carrying a token will be rejected.
-
-**Fix:** `"Authorization: Bearer " + GameState.auth_token`, and add the login flow that actually
-sets `GameState.auth_token` (currently `set_user()` has no callers).
+v1 has no accounts, so the broken header, `_auth_headers()`, `GameState.auth_token` / `user_id` and
+`set_user()` were deleted. If accounts arrive, send `Authorization: Bearer <token>`
+([`launch-plan.md`](launch-plan.md) §5.2).
 
 ---
 
-## 5. Diminishing returns yields 0 XP (P1)
+## 5. Diminishing returns yields 0 XP — fixed (now `maxi(1, roundi(base * mult))`)
 
 `scripts/autoload/companion_state.gd:107-124`
 
@@ -67,19 +62,10 @@ and persist `_action_tap_counts` / `_last_hour_reset` if the cap is meant to sur
 
 ---
 
-## 7. Client/backend endpoint drift (P1)
+## 7. Client/backend endpoint drift — fixed
 
-| Concern | `backend/README.md` | `api.gd` |
-|---|---|---|
-| Grade | `POST /grade` | `POST /battle/grade` |
-| Extract | `POST /extract` | never called |
-| Grade response | `{score_0_1, feedback}` | `{job_id, status, result:{score, feedback, damage}}` |
-
-**Impact:** neither side can be implemented against the docs without breaking the other. A backend
-built to `backend/README.md` will never be hit.
-
-**Fix:** pick the client contract (`/battle/grade` + job envelope) since the client already consumes
-it, and update `backend/README.md`. Add `/extract` to the client when `MOCK` flips.
+Both sides now use `POST /v1/extract` and `POST /v1/grade` with the job envelope, implemented in
+`backend/main.py` and called by `api.gd` when `MOCK` is off. Contract: [`api-backend.md`](api-backend.md) §2.
 
 ---
 
@@ -91,16 +77,12 @@ home action yet, so `pet` is unused.
 
 ---
 
-## 9. Real grade/extract responses are dropped (P1)
+## 9. Real grade/extract responses are dropped — fixed
 
-`api.gd:21-32` only emits `job_status` when the parsed body contains `job_id`. `battle.gd:140`
-additionally requires `job_id == "grade"`. So a real `POST /battle/grade` returning
-`{score, feedback, damage}` is silently discarded, and `_awaiting` stays `true` forever (submit
-button disabled, "judging…" label stuck).
-
-**Fix:** either standardise every backend response on the job envelope, or emit a new
-`grade_result(data)` signal for non-`job_id` payloads. Also handle non-2xx `_response_code` — right
-now 401/500/timeout are indistinguishable from success-with-no-body.
+Every request has its own `HTTPRequest` and a unique `job_id` (`Api.new_job_id()`); the server echoes
+it in the envelope. A network failure, a timeout, a non-2xx code or an unreadable reply is emitted as
+`job_status(job_id, "failed", …)` with a message, so no screen waits forever: the categorizer shows the
+message, and battle grades the answer on the device instead.
 
 ---
 
@@ -111,13 +93,10 @@ toggle.
 
 ---
 
-## 13. `stats_changed` fires every frame (P2)
+## 13. `stats_changed` fires every frame — fixed
 
-`companion_state.gd` emits inside `_process`. Home's four gauges listen, so they re-read the stats
-every frame (each gauge only redraws on a visible change, or while pulsing low).
-
-**Fix:** accumulate decay and emit at ~5 Hz, or emit only when a value actually changed. Keep the
-signal semantic ("stats changed"), not "a frame passed".
+The clock decay now emits it every `DECAY_EMIT_SEC` (0.2 s) instead of every frame; care actions
+and battle items still emit at once.
 
 ---
 
@@ -143,7 +122,8 @@ synchronous `FileAccess` write per tap.
 - Root `README.md` describes folders that do not exist (`resources/`, `tests/`, `assets/themes/`)
   and singletons that were never written (`GameManager`, `AIService`, `SoundManager`).
 - `quizmon-build-plan.md` says "Godot 4.6, avoid 4.7"; the project is 4.7.2.
-- No automated tests, no CI workflow, no formatting/lint config beyond `.editorconfig`.
+- No automated tests for the Godot client and no CI workflow. The backend has `backend/tests/` (pytest,
+  no Claude calls) and `backend/evals/` (paid, run by hand).
 
 **Fix:** the root README is corrected in this docs pass; consider a `tests/` folder with a headless
 GUT suite and a GitHub Action that runs `godot --headless --import` (which is how issues #1/#12 were
@@ -155,6 +135,40 @@ caught).
 
 The shared theme, battle, settings, categorizer, flashcards and the Worlds hub use the canonical palette.
 New inline `Color(...)` overrides should pick a palette role from [`ui-and-assets.md`](ui-and-assets.md) §1.
+
+---
+
+## 22. Headless boot chain fails its threaded loads (P3)
+
+Running `splash.tscn` or `loading.tscn` **headless** fails the scene each one loads in the background
+(`ResourceLoader.load_threaded_request`): a `preload()` in that scene's scripts reports
+`Could not preload resource file …` (a different file from run to run: `loading_screen_logo.png`,
+`kuiz_look.gd`'s costumes, `sky_jump.gd`'s backdrops), so `loading.tscn` or `peek.tscn` fails to
+parse. All those files are committed and import cleanly. The same scenes run on their own, and the
+same chain run **windowed**, load without errors. Reproduced on an untouched `git archive HEAD`
+copy (2026-10-26), so it predates the editor-UI pass.
+
+**Impact:** players are unaffected (windowed boot is clean), but the headless `splash.tscn` gate in
+[`skills.md`](skills.md) cannot pass.
+
+**Fix:** not yet known. First check whether it is a Godot 4.7.2 headless threaded-load bug (re-test
+on the next patch release). Until then, verify the boot chain windowed, and verify `peek.tscn` headless
+on its own.
+
+---
+
+## 23. Native file picker paths unverified on Android / iOS (P1)
+
+The categorizer's reviewer picker and Settings' Export / Import dialogs are `FileDialog`s with
+`use_native_dialog = true`, read and written with `FileAccess`. On Android the system picker can hand
+back a `content://` address, and on iOS a security-scoped path; whether `FileAccess` can open those
+has only been checked on Windows.
+
+**Impact:** if it cannot, phones cannot upload a reviewer file (pasting still works) or export / import
+a save.
+
+**Fix:** try a PDF, a photo and a .docx, plus Export and Import, on a real Android phone and iPhone
+early. If the path cannot be opened, add a picker plugin that copies the file into `user://` first.
 
 ---
 

@@ -5,19 +5,23 @@ signal stats_changed
 signal xp_changed(current_xp: int, level: int)
 signal leveled_up(new_level: int)
 signal codex_entry_added(text: String)
-signal campaign_gate_ready
 signal pomodoro_phase_changed(mode: String)
 
-# Levels never cap; reaching CAMPAIGN_LEVEL unlocks the campaign. See xp_to_reach().
-const CAMPAIGN_LEVEL := 5
+# Levels never cap. See xp_to_reach().
 # Each level costs 5 XP more than the one before: Lv1->2=20, 2->3=25, 3->4=30, 4->5=35, 5->6=40...
 # At 1-2 XP per tap (feed 2, pet 1, play 2; avg ~1.66 cycling), ~65 taps to Lv5, a few minutes;
 # meets GDD "minutes, not hours" for Levels 1-5.
 const FIRST_LEVEL_XP := 20
 const LEVEL_XP_STEP := 5
+# Reaching a level pays this many crystals (flat, so care alone cannot outpace studying).
+const LEVEL_CRYSTALS := 25
 const STAT_MAX := 100.0
 const STAT_DECAY_PER_SEC := 0.15
+# The clock decay announces itself this often (issue #13); care actions announce at once.
+const DECAY_EMIT_SEC := 0.2
 const DAILY_CAP_BASE_XP := 10  # per action per hour before diminishing returns
+# Past this many taps of one action in an hour it pays no XP at all, so care cannot be farmed forever.
+const HOURLY_HARD_CAP := 30
 # Home care (docs/systems/companion-care.md): food fills hunger, a fix restores health, a ball
 # throw lifts mood, and charging refills energy over time.
 const FEED_HUNGER := 12.0
@@ -34,6 +38,15 @@ const CLEAN_MOOD := 5.0
 const BATTERY_WEAR := 0.02
 const BATTERY_DRAIN_SPAN := 50.0
 const BATTERY_PRICE := 30
+# Playing a battle run moves the stats item by item instead of by the clock (decay is paused meanwhile).
+# Contract: docs/systems/battle.md §3.
+const PLAY_ENERGY := 0.5
+const PLAY_HUNGER := 0.4
+const PLAY_MOOD_RIGHT := 1.5
+const PLAY_MOOD_WRONG := 0.3
+# Each point of counter damage Kuiz takes costs this much health, never below HURT_FLOOR.
+const HURT_HEALTH := 0.3
+const HURT_FLOOR := 10.0
 
 # Pomodoro (Phase 4)
 const POMODORO_FOCUS_SEC := 25 * 60
@@ -42,6 +55,8 @@ const MISSED_REST_ENERGY_PENALTY := 5.0
 const MISSED_REST_MOOD_PENALTY := 3.0
 const REST_COMPLETE_ENERGY_BONUS := 6.0
 const REST_COMPLETE_MOOD_BONUS := 6.0
+# A full 25-minute focus session sharpens Kuiz: focus is what forgives the first miss in a run.
+const POMODORO_FOCUS_BONUS := 25.0
 
 var level: int = 1
 var xp: int = 0
@@ -55,7 +70,9 @@ var dirt: float = 0.0
 ## The battery's capacity left, 100 = new; lower drains energy faster.
 var battery_health: float = 100.0
 var bond: int = 0
-var campaign_ready: bool = false
+## True while a battle run is on; the clock decay is paused.
+var in_run := false
+var _decay_emit_wait := 0.0
 var codex: Array[String] = []
 
 # XP diminishing returns tracking
@@ -82,6 +99,9 @@ func _ready() -> void:
 	_unlock_tidbit(1)
 
 func _process(delta: float) -> void:
+	if in_run:
+		dirt = minf(STAT_MAX, dirt + DIRT_PER_SEC * delta)
+		return
 	var drain := STAT_DECAY_PER_SEC * delta
 	energy = maxf(0.0, energy - drain * battery_drain())
 	focus = maxf(0.0, focus - drain * 0.8)
@@ -89,7 +109,10 @@ func _process(delta: float) -> void:
 	hunger = maxf(0.0, hunger - drain * 0.7)
 	health = maxf(0.0, health - drain * 0.2)
 	dirt = minf(STAT_MAX, dirt + DIRT_PER_SEC * delta)
-	stats_changed.emit()
+	_decay_emit_wait -= delta
+	if _decay_emit_wait <= 0.0:
+		_decay_emit_wait = DECAY_EMIT_SEC
+		stats_changed.emit()
 	_maybe_reset_hourly_cap()
 
 func _maybe_reset_hourly_cap() -> void:
@@ -115,11 +138,9 @@ func reward_deck_done() -> void:
 func _check_level_up() -> void:
 	while xp >= xp_to_reach(level + 1):
 		level += 1
+		GameState.add_crystals(LEVEL_CRYSTALS)
 		_unlock_tidbit(level)
 		leveled_up.emit(level)
-		if level >= CAMPAIGN_LEVEL and not campaign_ready:
-			campaign_ready = true
-			campaign_gate_ready.emit()
 
 ## Cumulative XP at which `lv` is reached (Lv1 = 0, Lv2 = 20, Lv5 = 110, Lv6 = 150...).
 static func xp_to_reach(lv: int) -> int:
@@ -133,7 +154,8 @@ func _unlock_tidbit(lv: int) -> void:
 			codex.append(text)
 			codex_entry_added.emit(text)
 
-func care(action: String) -> Dictionary:
+## A care action. `food` (feed only) is the meal's {hunger, mood, focus} from home.gd FOODS.
+func care(action: String, food := {}) -> Dictionary:
 	var gained := 1
 	var deltas := {}
 	
@@ -147,28 +169,33 @@ func care(action: String) -> Dictionary:
 
 	match action:
 		"feed":
-			hunger = minf(STAT_MAX, hunger + FEED_HUNGER)
-			deltas = {"hunger": FEED_HUNGER}
-			gained = int(2 * xp_mult)
+			var fill := float(food.get("hunger", FEED_HUNGER))
+			hunger = minf(STAT_MAX, hunger + fill)
+			mood = minf(STAT_MAX, mood + float(food.get("mood", 0.0)))
+			focus = minf(STAT_MAX, focus + float(food.get("focus", 0.0)))
+			deltas = {"hunger": fill}
+			gained = maxi(1, roundi(2 * xp_mult))
 		"pet":
 			mood = minf(STAT_MAX, mood + 8.0)
 			deltas = {"mood": 8.0}
-			gained = int(1 * xp_mult)
+			gained = maxi(1, roundi(1 * xp_mult))
 		"play":
 			mood = minf(STAT_MAX, mood + PLAY_MOOD)
 			energy = maxf(0.0, energy - 2.0)
 			deltas = {"mood": PLAY_MOOD, "energy": -2.0}
-			gained = int(2 * xp_mult)
+			gained = maxi(1, roundi(2 * xp_mult))
 		"fix":
 			health = minf(STAT_MAX, health + FIX_HEALTH)
 			deltas = {"health": FIX_HEALTH}
-			gained = int(2 * xp_mult)
+			gained = maxi(1, roundi(2 * xp_mult))
 		"clean":
 			# A finished scrub (the towel already took the dirt off): a happy, fresh Kuiz.
 			mood = minf(STAT_MAX, mood + CLEAN_MOOD)
 			deltas = {"mood": CLEAN_MOOD}
-			gained = int(2 * xp_mult)
+			gained = maxi(1, roundi(2 * xp_mult))
 
+	if count >= HOURLY_HARD_CAP:
+		gained = 0
 	add_xp(gained)
 	stats_changed.emit()
 	bond += 1
@@ -187,6 +214,43 @@ func recharge(delta: float) -> void:
 	var gained := minf(STAT_MAX - energy, CHARGE_PER_SEC * delta)
 	energy += gained
 	battery_health = maxf(0.0, battery_health - gained * BATTERY_WEAR)
+
+## Battle readiness: each care stat has one job in a run. Contract: docs/systems/battle.md §Stats.
+## Health sets Kuiz's battle HP.
+func battle_max_hp() -> int:
+	return roundi(lerpf(70.0, 120.0, health / STAT_MAX))
+
+## Energy scales the XP a run pays.
+func xp_mult() -> float:
+	return lerpf(0.8, 1.2, energy / STAT_MAX)
+
+## Mood scales the crystals a run pays.
+func crystal_mult() -> float:
+	return lerpf(0.8, 1.2, mood / STAT_MAX)
+
+## Hunger softens the enemy's counters, by up to 20%.
+func counter_mult() -> float:
+	return 1.0 - 0.2 * hunger / STAT_MAX
+
+## Focus 50+ forgives the first miss of a run: it does not break the streak.
+func has_streak_shield() -> bool:
+	return focus >= 50.0
+
+## The four home stats averaged, 0 to 100.
+func readiness() -> float:
+	return (hunger + energy + mood + health) / 4.0
+
+## One battle item played: it tires and hungers Kuiz a little, and the fun lifts its mood (more when right).
+func play_item(correct: bool) -> void:
+	energy = maxf(0.0, energy - PLAY_ENERGY)
+	hunger = maxf(0.0, hunger - PLAY_HUNGER)
+	mood = minf(STAT_MAX, mood + (PLAY_MOOD_RIGHT if correct else PLAY_MOOD_WRONG))
+	stats_changed.emit()
+
+## Kuiz took a counter in battle: its health drops, but a battle never takes it below HURT_FLOOR.
+func hurt(counter: float) -> void:
+	health = maxf(minf(health, HURT_FLOOR), health - counter * HURT_HEALTH)
+	stats_changed.emit()
 
 ## How much faster than new the battery drains (1 at 100% health).
 func battery_drain() -> float:
@@ -216,7 +280,6 @@ func to_dict() -> Dictionary:
 		"dirt": dirt,
 		"battery_health": battery_health,
 		"bond": bond,
-		"campaign_ready": campaign_ready,
 		"codex": codex,
 	}
 
@@ -231,16 +294,12 @@ func from_dict(data: Dictionary) -> void:
 	dirt = float(data.get("dirt", 0.0))
 	battery_health = float(data.get("battery_health", 100.0))
 	bond = int(data.get("bond", 0))
-	campaign_ready = bool(data.get("campaign_ready", false))
 	codex.clear()
 	for e in data.get("codex", []):
 		codex.append(str(e))
 	# Backfill: fresh games and older saves may miss early tidbits.
 	for lv in range(1, level + 1):
 		_unlock_tidbit(lv)
-	# Reconcile: saves written at the campaign level (or by older versions) may lack the flag.
-	if level >= CAMPAIGN_LEVEL and not campaign_ready:
-		campaign_ready = true
 	# Saves from the capped curve (Lv5 max) may hold XP past Lv5: catch the levels up silently.
 	while xp >= xp_to_reach(level + 1):
 		level += 1
@@ -269,6 +328,7 @@ func _on_pomodoro_tick() -> void:
 	if _pomodoro_remaining <= 0:
 		if _pomodoro_mode == "focus":
 			# Focus ended -> rest begins
+			focus = minf(STAT_MAX, focus + POMODORO_FOCUS_BONUS)
 			_pomodoro_mode = "rest"
 			_pomodoro_remaining = POMODORO_REST_SEC
 			_rest_missed = false

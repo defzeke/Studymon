@@ -85,6 +85,13 @@ layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 12
 
+[node name="SlotsLabel" type="Label" parent="Margin/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "Worlds 0 / 3 slots  ·  0 crystals"
+horizontal_alignment = 1
+
 [node name="NewButton" type="Button" parent="Margin/Content" unique_id=1221856351]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 72)

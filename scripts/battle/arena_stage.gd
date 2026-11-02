@@ -43,7 +43,6 @@ extends SubViewportContainer
 @export var hover_time := 1.3
 
 @export_group("Strikes")
-## How far toward its target an attacker runs (0 = stays home, 1 = on top of it).
 ## Attacks happen in place: the attacker plays its attack clip, and after this long the blow lands.
 @export var strike_impact_time := 0.55
 ## After the blow lands, how long before the exchange counts as finished.
@@ -187,6 +186,19 @@ func enemy_defeat() -> void:
 
 func pet_hurt() -> void:
 	_play(_pet, pet_hurt_clip, true)
+
+## Kuiz has run out of HP: it plays its hurt clip once, then topples over and stays down.
+func pet_defeat() -> void:
+	_play(_pet, pet_hurt_clip, false)
+	if _pet_model != null:
+		var t := create_tween()
+		t.tween_property(_pet_model, "rotation:z", 1.45, 0.9).set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
+
+## Gets Kuiz back on its feet for Try Again.
+func pet_stand() -> void:
+	if _pet_model != null:
+		create_tween().tween_property(_pet_model, "rotation:z", 0.0, 0.3)
+	_play(_pet, idle_clip, false)
 
 func pet_hit() -> void:
 	_play(_pet, pet_hit_clip, true)

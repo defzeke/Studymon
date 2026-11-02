@@ -10,7 +10,7 @@ This repo has no test framework and no CI. Verification is a headless Godot run.
 **Prerequisite.** Godot **4.7.2** console build. It is not on `PATH` on the current machine:
 
 ```powershell
-$GODOT = "C:\Users\user\Downloads\Godot_v4.7.2-stable_win64.exe\Godot_v4.7.2-stable_win64_console.exe"
+$GODOT = "C:\Users\Mary\Tools\Godot_4.7.2\Godot_v4.7.2-stable_win64_console.exe"
 ```
 
 **Steps.**
@@ -57,7 +57,9 @@ $GODOT = "C:\Users\user\Downloads\Godot_v4.7.2-stable_win64.exe\Godot_v4.7.2-sta
 
 **Expected noise** (not new failures): `ObjectDB instances leaked at exit`, `1 resources still in
 use at exit` when `--quit-after` ends a scene mid-tween, and the rig warnings listed as issues #3 and
-#12 in [`known-issues.md`](known-issues.md). Anything else is a regression.
+#12 in [`known-issues.md`](known-issues.md). Headless `splash.tscn` / `loading.tscn` runs also fail the
+scene they load in the background (issue #22); check the boot chain windowed instead. Anything else is
+a regression.
 
 **Optional backend check** (only when working in `backend/`):
 
@@ -137,8 +139,9 @@ each. The source is [`assets/sprites/boot/kuizmon_loading.gif`](../assets/sprite
 The two live types are `"identification"` and `"essay"`; the type is also the gym bucket. A third
 type touches five places:
 
-1. **Categorizer UI** — `categorizer.gd:247-251` builds the `OptionButton` with two hard-coded
-   entries, and `_on_type_changed()` (`:273-276`) maps index → type. Add the item and the mapping.
+1. **Categorizer UI** — the type `OptionButton` is `RowTemplate/Pad/Box/TypeRow/TypeOption` in
+   `categorizer.tscn`, and `QUESTION_TYPES` in `categorizer.gd` maps its index → type
+   (`_on_type_changed()`). Add the item in the editor and the type at the same position in the list.
 2. **Mock grading** — `Api._execute_mock_grade()` (`scripts/autoload/api.gd:276-329`) branches on
    `identification` vs everything else. Add the branch, or the new type is graded as an essay.
 3. **Battle input** — `battle.gd:86` sets the placeholder and `:151` branches on type for KO juice.
@@ -182,22 +185,18 @@ Kuiz is `assets/models/kuiz.glb`; the arena foes are the scenes in `ArenaStage.f
    clip names must still match `idle_clip`, `attack_clip`, `defeat_clip` and the `pet_*_clip` exports.
 3. Add the file to the asset inventory in [`ui-and-assets.md`](ui-and-assets.md).
 
-## Wire the real backend
+## Use the real study server
 
-1. The switch is `const MOCK := true` in `scripts/autoload/api.gd:11`. Flipping it disables every mock path,
-   so the endpoints below must exist first.
-2. Contract the client already calls:
-   - `POST /battle/grade` — `{type, question, answer, source, expected, key_concepts}`
-   - `PUT /topics/{topic_id}` — `{questions: [...]}`
-   - `PUT /mastery/{topic_id}/{question_id}` — `{state}`
-   - `GET /health` — exists in the FastAPI stub.
-3. `_on_request_completed()` (`api.gd:21-32`) only emits `job_status` when the body has a `job_id`.
-   Either return `{job_id, status, progress, result}` for every call, or add a separate signal for
-   plain payloads (issue #9). Also handle non-2xx: today `401`, `500` and a timeout are
-   indistinguishable from an empty success.
-4. Keep the mock branch working while the real path lands: the game still ships on it.
-5. Update [`api-backend.md`](api-backend.md) and `backend/README.md` in the same change, or the
-   drift in issue #7 gets worse.
+The editor, the headless gates and debug exports run on the mock (`Api.MOCK` is
+`OS.is_debug_build() and not DEV_USES_SERVER`); an exported **release** build always uses the server.
+
+1. **Locally:** start the backend ([`api-backend.md`](api-backend.md) §4), set
+   `const DEV_USES_SERVER := true` in `scripts/autoload/api.gd`, and run the game. It talks to
+   `DEV_URL` (`http://127.0.0.1:8000`). Set it back to `false` before handing off.
+2. **For a release:** deploy the backend over HTTPS and set `const RELEASE_URL` to its address before
+   exporting. A release build with a non-HTTPS URL logs an error at boot, and every AI request fails.
+3. Keep the mock branch working and the response shapes in [`api-backend.md`](api-backend.md) truthful
+   (rules §5).
 
 ## Reset a save / debug progression
 
@@ -208,8 +207,8 @@ The save is `user://studymon_save.json`, which on Windows is:
 ```
 
 Delete it to start again at Level 1. Boot reads the save when home first opens after the tutorial;
-the old 2D care room has been removed. To test the campaign
-without earning 110 XP, set `"level": 5`, `"xp": 110`, `"campaign_ready": true` in the JSON, or call
+the old 2D care room has been removed. To test a higher level (closet unlocks) without earning the
+XP, set `"level"` and `"xp"` in the JSON (Level 5 is 110 XP), or call
 `CompanionState.add_xp(110)` from a temporary debug line. Do not commit debug lines or edited saves.
 
 ## Clean up comments

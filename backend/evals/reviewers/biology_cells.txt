@@ -1,0 +1,5 @@
+The cell is the basic unit of life. Prokaryotic cells, such as bacteria, have no nucleus; their DNA floats in a region called the nucleoid. Eukaryotic cells keep their DNA inside a membrane-bound nucleus.
+The plasma membrane is a phospholipid bilayer that controls what enters and leaves the cell. It is selectively permeable: small nonpolar molecules cross easily, while ions need channel proteins.
+Mitochondria produce ATP through cellular respiration, which is why they are called the powerhouse of the cell. Chloroplasts, found in plant cells, capture light energy during photosynthesis using the pigment chlorophyll.
+Ribosomes build proteins by reading messenger RNA. The rough endoplasmic reticulum is studded with ribosomes and folds proteins, while the smooth endoplasmic reticulum makes lipids and detoxifies drugs. The Golgi apparatus modifies, sorts and packages proteins for transport.
+Lysosomes contain digestive enzymes that break down worn-out organelles and food particles. Plant cells also have a cell wall made of cellulose and a large central vacuole that stores water and keeps the cell firm.

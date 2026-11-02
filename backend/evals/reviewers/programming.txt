@@ -1,0 +1,5 @@
+A variable is a named storage location that holds a value. In statically typed languages the type of a variable is checked at compile time, while dynamically typed languages check types at run time.
+A loop repeats a block of code. A for loop is used when the number of repetitions is known in advance; a while loop repeats as long as a condition stays true, so it must eventually become false or the loop never ends.
+A function groups instructions under a name so they can be reused. Parameters are the names listed in a function definition, and arguments are the actual values passed when the function is called.
+Recursion is when a function calls itself. Every recursive function needs a base case that stops the recursion; without one the program keeps calling itself until it runs out of stack memory, causing a stack overflow.
+An array stores elements of the same type in contiguous memory, so any element can be read in constant time by its index. A linked list stores elements in nodes that point to the next node, so inserting is cheap but finding the nth element requires walking the list.

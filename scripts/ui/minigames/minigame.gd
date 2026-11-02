@@ -35,9 +35,11 @@ func quit() -> void:
 ## Ends a round: pays `crystals`, and a pop-up offers another round or going back to the Playroom.
 func _game_over(title: String, message: String, crystals: int) -> void:
 	playing = false
-	GameState.add_crystals(crystals)
-	if crystals > 0:
-		message += "\n+%d crystals" % crystals
+	var paid := GameState.pay_minigame(crystals)
+	if paid > 0:
+		message += "\n+%d crystals" % paid
+	if paid < crystals:
+		message += "\nToday's minigame crystals are used up: battles still pay."
 	played.emit()
 	var again := [false]
 	var modal := ConfirmModal.open(self, title, message, "Play again", func() -> void: again[0] = true, false, "Back")

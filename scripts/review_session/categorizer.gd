@@ -2,33 +2,45 @@ extends Control
 ## Phase 5: Categorizer — Upload → AI is studying... → editable question list → Confirm → Play
 ## Implements build-plan P5: word-count sanity, confidence badges, CRUD list, region generation.
 
-# Order matches the type OptionButton; contract: docs/systems/gameplay-structure.md.
+# Order matches %RowTemplate's TypeOption items; contract: docs/systems/gameplay-structure.md.
 const QUESTION_TYPES: Array[String] = ["essay", "identification", "multiple_choice"]
+const ConfirmModal := preload("res://scripts/ui/widgets/confirm_modal.gd")
+# Reviewer files the study server reads (extension -> its type) and its size caps (backend/main.py).
+const FILE_TYPES := {"pdf": "pdf", "png": "png", "jpg": "jpeg", "jpeg": "jpeg", "webp": "webp", "docx": "docx", "pptx": "pptx"}
+const MAX_FILE_BYTES := 20 * 1024 * 1024
+const MAX_IMAGE_BYTES := 5 * 1024 * 1024
 
 @onready var topic_name_field: LineEdit = %TopicName
 @onready var file_btn: Button = %FileButton
 @onready var paste_area: TextEdit = %PasteArea
 @onready var study_btn: Button = %StudyButton
+@onready var more_btn: Button = %MoreButton
 @onready var status_label: Label = %StatusLabel
 @onready var loading_bar: ProgressBar = %LoadingBar
 @onready var sanity_label: Label = %SanityLabel
 @onready var questions_box: VBoxContainer = %QuestionsBox
+@onready var row_template: PanelContainer = %RowTemplate
 @onready var add_q_btn: Button = %AddQuestionButton
 @onready var play_btn: Button = %PlayButton
 @onready var back_btn: Button = %BackButton
 @onready var file_dialog: FileDialog = %FileDialog
 
 var _studying: bool = false
+# Questions before "More questions" ran, to report how many it added; -1 for a normal upload.
+var _count_before := -1
+## A picked reviewer file (PDF, photo, Word, PowerPoint), sent as it is to the study server; empty
+## when the reviewer is text.
+var _file := PackedByteArray()
+var _file_type := ""
 
 func _ready() -> void:
 	theme = load("res://assets/theme/app_theme.tres") as Theme
-	topic_name_field.placeholder_text = "World name (e.g. Biology 101)"
 	var saved_name := SessionManager.world_name(SessionManager.editing_topic_id)
 	topic_name_field.text = saved_name if saved_name != "" else "My New World"
-	paste_area.placeholder_text = "Paste reviewer text here — or pick a .txt/notes file..."
 	file_btn.pressed.connect(_on_pick_file)
 	file_dialog.file_selected.connect(_on_file_selected)
 	study_btn.pressed.connect(_on_study)
+	more_btn.pressed.connect(_on_more)
 	add_q_btn.pressed.connect(_on_add_question)
 	play_btn.pressed.connect(_on_play)
 	back_btn.pressed.connect(_on_back)
@@ -45,6 +57,11 @@ func _ready() -> void:
 		_render_questions()
 		status_label.text = "Loaded %d question(s) — edit before you Play." % SessionManager.pending_questions.size()
 	_update_play_enabled()
+	_refresh_more()
+
+# "More questions" shows for a saved world that kept its reviewer text.
+func _refresh_more() -> void:
+	more_btn.visible = SessionManager.is_saved_world(SessionManager.editing_topic_id) and SessionManager.last_source_text.strip_edges() != ""
 
 func _on_pick_file() -> void:
 	file_dialog.popup_centered(Vector2i(640, 760))
@@ -59,13 +76,27 @@ func _on_file_selected(path: String) -> void:
 	f.close()
 	var txt := bytes.get_string_from_utf8()
 	if txt.length() == 0 or txt.contains("�"):
-		status_label.text = "Can't read this file as text. PDFs aren't supported yet. Paste the text instead."
+		var kind: String = FILE_TYPES.get(path.get_extension().to_lower(), "")
+		var cap := MAX_IMAGE_BYTES if kind in ["png", "jpeg", "webp"] else MAX_FILE_BYTES
+		if Api.MOCK or kind == "":
+			status_label.text = "Can't read this file as text. Use a PDF, photo, Word or PowerPoint file, or paste the text."
+		elif bytes.size() > cap:
+			status_label.text = "That file is over %d MB. Use a smaller one or paste the text instead." % (cap >> 20)
+		else:
+			paste_area.text = ""
+			_file = bytes
+			_file_type = kind
+			status_label.text = "File ready: %s. Press Study to let the AI read it." % path.get_file()
+			sanity_label.visible = false
 		return
+	_file = PackedByteArray()
 	paste_area.text = txt
 	status_label.text = "File loaded: %s (%d bytes)" % [path.get_file(), bytes.size()]
 	_update_sanity()
 
 func _on_paste_changed() -> void:
+	if paste_area.text.strip_edges() != "":
+		_file = PackedByteArray()
 	_update_sanity()
 
 func _update_sanity() -> void:
@@ -93,8 +124,11 @@ func _on_study() -> void:
 		return
 	var source_text := paste_area.text
 	var v := SessionManager.validate_source_text(source_text)
-	if not v.get("ok", false):
+	if _file.is_empty() and not v.get("ok", false):
 		status_label.text = str(v.get("error", "Too short"))
+		return
+	if not GameState.ai_consent:
+		ConfirmModal.open(self, "Before the AI reads your notes", GameState.AI_CONSENT_TEXT, "I agree", _on_consent, false, "Not now")
 		return
 	_studying = true
 	study_btn.disabled = true
@@ -104,7 +138,39 @@ func _on_study() -> void:
 	# Animate loading bar while we wait for mock 0.8s
 	var tw := create_tween()
 	tw.tween_property(loading_bar, "value", 85.0, 0.7)
-	SessionManager.start_upload_from_text(topic_name, source_text)
+	if _file.is_empty():
+		SessionManager.start_upload_from_text(topic_name, source_text)
+	else:
+		SessionManager.start_upload(topic_name, _file, "", _file_type)
+
+func _on_consent() -> void:
+	GameState.ai_consent = true
+	SaveManager.save_progress()
+	_on_study()
+
+func _on_consent_more() -> void:
+	GameState.ai_consent = true
+	SaveManager.save_progress()
+	_on_more()
+
+# New questions from the world's saved reviewer, added to the ones it has (a saved world only).
+func _on_more() -> void:
+	if _studying:
+		return
+	if not GameState.ai_consent:
+		ConfirmModal.open(self, "Before the AI reads your notes", GameState.AI_CONSENT_TEXT, "I agree", _on_consent_more, false, "Not now")
+		return
+	_count_before = SessionManager.pending_questions.size()
+	if not SessionManager.start_more_questions(topic_name_field.text.strip_edges()):
+		_count_before = -1
+		status_label.text = "This world has no saved reviewer text, so the AI has nothing new to read."
+		return
+	_studying = true
+	study_btn.disabled = true
+	more_btn.disabled = true
+	status_label.text = "AI is reading your reviewer again for new questions..."
+	loading_bar.visible = true
+	loading_bar.value = 12
 
 func _on_extraction_started(_job_id: String) -> void:
 	status_label.text = "AI is studying... extracting concepts"
@@ -116,8 +182,13 @@ func _on_extraction_progress(_job_id: String, progress: float) -> void:
 func _on_extraction_completed(_topic_id: String, questions: Array[Dictionary]) -> void:
 	_studying = false
 	study_btn.disabled = false
+	more_btn.disabled = false
 	loading_bar.value = 100
 	status_label.text = "AI found %d question(s) — review and edit, then Play!" % questions.size()
+	if _count_before >= 0:
+		status_label.text = "Added %d new question(s). Review them, then Play!" % (questions.size() - _count_before)
+		_count_before = -1
+	_refresh_more()
 	_render_questions()
 	_update_play_enabled()
 	# Hide bar after a beat
@@ -126,7 +197,9 @@ func _on_extraction_completed(_topic_id: String, questions: Array[Dictionary]) -
 
 func _on_extraction_failed(_job_id: String, error: String) -> void:
 	_studying = false
+	_count_before = -1
 	study_btn.disabled = false
+	more_btn.disabled = false
 	loading_bar.visible = false
 	status_label.text = "Extraction failed: " + error
 
@@ -150,25 +223,13 @@ func _make_question_row(q: Dictionary, idx: int) -> Control:
 			parts.append(str(k))
 		concepts = ", ".join(parts)
 
-	var panel := PanelContainer.new()
-	var pad := MarginContainer.new()
-	for side in ["left", "top", "right", "bottom"]:
-		pad.add_theme_constant_override("margin_" + side, 14)
-	panel.add_child(pad)
-	var vbox := VBoxContainer.new()
-	vbox.add_theme_constant_override("separation", 10)
-	pad.add_child(vbox)
+	# The row's layout and look are %RowTemplate's; this fills one copy and wires it to the question.
+	var panel := row_template.duplicate() as PanelContainer
+	panel.visible = true
+	var box := panel.get_node("Pad/Box")
+	(box.get_node("Header/Index") as Label).text = "#%d" % (idx + 1)
 
-	var header := HBoxContainer.new()
-	var idx_label := Label.new()
-	idx_label.text = "#%d" % (idx + 1)
-	idx_label.custom_minimum_size = Vector2(40, 0)
-	header.add_child(idx_label)
-
-	var conf_label := Label.new()
-	conf_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	conf_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	conf_label.add_theme_font_size_override("font_size", 22)
+	var conf_label := box.get_node("Header/Confidence") as Label
 	if conf >= 0.85:
 		conf_label.text = "AI is fairly sure (%.0f%%)" % (conf * 100)
 		conf_label.modulate = Color("78A982")
@@ -178,66 +239,42 @@ func _make_question_row(q: Dictionary, idx: int) -> Control:
 	else:
 		conf_label.text = "Double-check (%.0f%%)" % (conf * 100)
 		conf_label.modulate = Color("C97970")
-	header.add_child(conf_label)
 
-	var del_btn := Button.new()
-	del_btn.text = "×"
-	del_btn.custom_minimum_size = Vector2(56, 48)
-	del_btn.pressed.connect(_on_delete_question.bind(idx))
-	header.add_child(del_btn)
-	vbox.add_child(header)
+	(box.get_node("Header/Delete") as Button).pressed.connect(_on_delete_question.bind(idx))
+	(box.get_node("Header/Report") as Button).pressed.connect(_on_report_question.bind(idx))
 
-	var text_edit := TextEdit.new()
+	var text_edit := box.get_node("Prompt") as TextEdit
 	text_edit.text = text
-	text_edit.custom_minimum_size = Vector2(0, 90)
-	text_edit.wrap_mode = TextEdit.LINE_WRAPPING_BOUNDARY
-	text_edit.placeholder_text = "Question prompt"
 	text_edit.text_changed.connect(_on_question_text_changed.bind(idx, text_edit))
-	vbox.add_child(text_edit)
 
-	var type_row := HBoxContainer.new()
-	var type_label := Label.new()
-	type_label.text = "Type"
-	type_label.custom_minimum_size = Vector2(70, 0)
-	type_row.add_child(type_label)
-	var type_opt := OptionButton.new()
-	type_opt.add_item("Essay", 0)
-	type_opt.add_item("Identification", 1)
-	type_opt.add_item("Multiple Choice", 2)
+	var type_opt := box.get_node("TypeRow/TypeOption") as OptionButton
 	type_opt.selected = maxi(0, QUESTION_TYPES.find(qtype))
 	type_opt.item_selected.connect(_on_type_changed.bind(idx))
-	type_opt.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	type_opt.custom_minimum_size = Vector2(0, 52)
-	type_row.add_child(type_opt)
-	var diff_opt := OptionButton.new()
+	var diff_opt := box.get_node("TypeRow/Difficulty") as OptionButton
 	for tier in SessionManager.DIFFICULTIES:
 		diff_opt.add_item(tier.capitalize())
 	diff_opt.selected = maxi(0, SessionManager.DIFFICULTIES.find(str(q.get("difficulty", "medium"))))
 	diff_opt.item_selected.connect(_on_difficulty_changed.bind(idx))
-	diff_opt.custom_minimum_size = Vector2(130, 52)
-	type_row.add_child(diff_opt)
-	vbox.add_child(type_row)
 
-	var ans_field := LineEdit.new()
+	var ans_field := box.get_node("Answer") as LineEdit
 	ans_field.text = answer
-	ans_field.placeholder_text = "Answer / key concepts (comma-separated for Essay)"
 	if concepts != "" and answer == "":
 		ans_field.text = concepts
 		ans_field.placeholder_text = "Key concepts"
 	ans_field.text_changed.connect(_on_answer_changed.bind(idx))
-	ans_field.custom_minimum_size = Vector2(0, 52)
-	vbox.add_child(ans_field)
+	if qtype == "identification":
+		var also := box.get_node("Accepted") as LineEdit
+		also.visible = true
+		also.text = ", ".join(PackedStringArray(Array(q.get("accepted", [])).map(func(a: Variant) -> String: return str(a))))
+		also.text_changed.connect(_on_accepted_changed.bind(idx))
 	if qtype == "multiple_choice":
 		ans_field.placeholder_text = "Correct option"
 		var wrong: Array = q.get("distractors", [])
 		for n in 3:
-			var wrong_field := LineEdit.new()
+			var wrong_field := box.get_node("Wrong%d" % (n + 1)) as LineEdit
+			wrong_field.visible = true
 			wrong_field.text = str(wrong[n]) if n < wrong.size() else ""
-			wrong_field.placeholder_text = "Wrong option %d" % (n + 1)
 			wrong_field.text_changed.connect(_on_distractor_changed.bind(idx, n))
-			wrong_field.custom_minimum_size = Vector2(0, 52)
-			vbox.add_child(wrong_field)
-
 
 	return panel
 
@@ -261,10 +298,28 @@ func _on_distractor_changed(new_text: String, q_idx: int, n: int) -> void:
 func _on_answer_changed(new_text: String, idx: int) -> void:
 	SessionManager.update_question(idx, {"answer": new_text})
 
+func _on_accepted_changed(new_text: String, idx: int) -> void:
+	var accepted: Array = []
+	for a in new_text.split(",", false):
+		if a.strip_edges() != "":
+			accepted.append(a.strip_edges())
+	SessionManager.update_question(idx, {"accepted": accepted})
+
 func _on_delete_question(idx: int) -> void:
 	SessionManager.remove_question(idx)
 	_render_questions()
 	_update_play_enabled()
+
+# Flags an AI-written question as wrong or offensive (Google Play's AI-content rule); the player can
+# still delete or fix it here.
+func _on_report_question(idx: int) -> void:
+	ConfirmModal.open(self, "Report this question?", "Send it to the Studymon team as wrong or offensive. You can also fix or delete it here.", "Report", _send_report.bind(idx), true)
+
+func _send_report(idx: int) -> void:
+	var q: Dictionary = SessionManager.get_pending_questions()[idx]
+	Api.report_content(Api.new_job_id("report"), "question", "%s
+Answer: %s" % [q.get("text", ""), q.get("answer", "")])
+	status_label.text = "Thanks: question #%d was reported." % (idx + 1)
 
 func _on_add_question() -> void:
 	SessionManager.add_question("New question — tap to edit", "essay", "", [])
@@ -286,6 +341,9 @@ func _on_play() -> void:
 	var topic_name := topic_name_field.text.strip_edges()
 	if topic_name == "":
 		topic_name = SessionManager.editing_topic_id
+	if not SessionManager.is_saved_world(SessionManager.editing_topic_id) and not SessionManager.has_free_world_slot():
+		status_label.text = "All %d world slots are full. Delete a world or buy a slot on the worlds list." % GameState.world_slots
+		return
 	status_label.text = "Saving world..."
 	# Confirm persists to history + emits region_generated; Phase 6 will navigate to overworld
 	SessionManager.confirm_topic(topic_name)

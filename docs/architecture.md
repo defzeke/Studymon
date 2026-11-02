@@ -96,7 +96,7 @@ res://
 │       ├── minigames/    minigame.gd, soccer.gd, sky_jump.gd (Playroom games)
 │       └── widgets/      confirm_modal.gd, stat_gauge.gd
 ├── scenes/               session_list, settings (ui/)
-│   │                     encounter_trigger, gym_burst, region_map (overworld/)
+│   │                     encounter_trigger, gym_burst, region_map, explorer_picker (overworld/)
 │   │                     categorizer, flashcards (review_session/), battle (battle/)
 │   └── ui/boot/          splash, loading, peek
 ├── backend/              main.py (FastAPI stub), requirements.txt, README.md
@@ -204,7 +204,6 @@ thread-load the next scene while they play, so those changes hit the resource ca
 
 | Question | Answer lives in |
 |---|---|
-| Is the campaign unlocked? | `GameState.campaign_unlocked_flag` (mirrored from `CompanionState.campaign_ready`) |
 | What level / XP / stats? | `CompanionState` |
 | What topics exist? | `SessionManager._topics` (private, read via `get_topics_cache()`) |
 | What is being edited? | `SessionManager.pending_questions` + `editing_topic_id` |
@@ -212,9 +211,8 @@ thread-load the next scene while they play, so those changes hit the resource ca
 | Which trainer/gym is cleared? | `SessionManager._cleared_trainers` / `_cleared_gyms` |
 | Mastery per question? | `SessionManager._mastery` |
 | Which battle am I in? | `SessionManager.battle_topic_id` / `battle_q_index` / `battle_is_boss` / `battle_is_champion` |
-| Auth token / user id? | `GameState.auth_token` / `user_id` — **never set today** |
-| Player's name? | `GameState.player_name`, set by the tutorial; memory only, never saved |
-| Tutorial seen / food in stock? | `GameState.tutorial_done` / `food_stock`; memory only, never saved |
+| Player's name? | `GameState.player_name`, set by the tutorial; saved |
+| Tutorial seen / food in stock? | `GameState.tutorial_done` / `food_stock`; both saved |
 | Music / sound volume? | `MusicManager.music_volume` / `sfx_volume` (0–1), saved |
 
 Rule of thumb: **scenes read and call autoloads; autoloads never call scenes.** The only
@@ -227,7 +225,7 @@ which exist precisely so the overworld can pass a question to the battle scene a
 
 | Signal | Emitter | Listeners |
 |---|---|---|
-| `stats_changed`, `xp_changed`, `leveled_up`, `codex_entry_added`, `campaign_gate_ready`, `pomodoro_phase_changed` | `CompanionState` | nobody since the care room was removed |
+| `stats_changed`, `xp_changed`, `leveled_up`, `codex_entry_added`, `pomodoro_phase_changed` | `CompanionState` | nobody since the care room was removed |
 | `large_text_changed(enabled)` | `GameState` | nobody (settings applies it directly) |
 | `job_status(job_id, status, progress, result)` | `Api` | `SessionManager`, `battle.gd` |
 | `topics_listed`, `extraction_*`, `topic_saved`, `region_generated`, `overworld_progress_changed` | `SessionManager` | `session_list.gd`, `categorizer.gd`, `region_map.gd` |

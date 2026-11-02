@@ -1,26 +1,30 @@
 extends Control
-## Phase 7: Battle scene (GDD §6.2) — Identification + Essay via one judging pipeline; Multiple
-## Choice is tapped and graded locally. Enemy HP, counters and thresholds follow the question's tier.
-## Flow: bound question from SessionManager -> answer input -> "judging..." beat
-## -> damage + one-line AI feedback -> enemy counter -> win/lose -> overworld.
-## Phase 8: Champion gauntlet — back-to-back battles over the moveset, final
-## step at boss HP; clearing the last one completes the region.
-## Phase 9: Juice — Camera2D screen-shake + hit-stop (brief time_scale pause) on strong essay hits.
+## Battle scene: one run (a Challenge House, Gym or the Champion Gym) of fixed items against one foe.
+## Multiple Choice and Identification are graded on the device from the answer key; an Essay (and an
+## Identification near-miss) goes to Api, with an offline mark when the server cannot answer.
+## Each answer is followed by a short beat that says only right or wrong (answers are kept for Review
+## answers at the end); a streak strengthens Kuiz's hits. Kuiz losing all its HP, or finishing below a
+## star, ends the run in defeat with Exit / Try Again. Juice: Camera2D shake + hit-stop.
 
-const PLAYER_MAX_HP := 100
-const BOSS_HP := 150
-const CHAMPION_XP_REWARD := 15
-# Contract: docs/systems/gameplay-structure.md (difficulty table).
+# Contract: docs/systems/battle.md. A run is a fixed list of items fought against one foe.
+const HP_PER_ITEM := 10
+const HEAL_ON_CORRECT := 4
+## Damage multiplier for the 1st, 2nd and 3rd+ miss in a row.
+const MISS_MULT: Array[float] = [1.0, 1.25, 1.5]
+## Seconds before Next after an answer: only the verdict shows, the answers wait for Review answers.
+const REVIEW_SEC := 0.8
+const HIT_NAMES: Array[String] = ["HIT!", "STRONG!", "HEAVY!!", "ULTIMATE!!!"]
+const RUN_NAMES := {"house": "Challenge House", "gym": "Gym", "champion": "Champion Gym"}
+const FOE_NAMES := {"house": "CHALLENGER", "gym": "GYM LEADER", "champion": "CHAMPION"}
+# Counter damage and the essay pass score, by the run's tier.
 const TIERS := {
-	"easy": {"hp": 60, "counter": 15, "xp": 5, "essay_pass": 0.5},
-	"medium": {"hp": 100, "counter": 25, "xp": 8, "essay_pass": 0.65},
-	"hard": {"hp": 150, "counter": 35, "xp": 12, "essay_pass": 0.8},
+	"easy": {"counter": 15, "essay_pass": 0.5},
+	"medium": {"counter": 25, "essay_pass": 0.65},
+	"hard": {"counter": 35, "essay_pass": 0.8},
 }
-# Phase 9 juice thresholds
-const STRONG_ESSAY_SCORE := 0.7
-const SHAKE_BASE_INTENSITY := 8.0
 const HIT_STOP_BASE := 0.06
 
+@export_group("Intro")
 ## Start-of-battle entrance (see _play_intro). Turn it off to drop straight into the fight.
 @export var play_intro := true
 @export var intro_text := "%s wants to battle!"
@@ -42,8 +46,12 @@ const HIT_STOP_BASE := 0.06
 @export var sfx_win: AudioStream
 @export var sfx_lose: AudioStream
 
+@export_group("Juice")
 @export var hit_shake := 8.0
 @export var hit_flash_strength := 0.45
+## Screen flash when Kuiz is hit, and when Kuiz goes down.
+@export var hurt_flash_color := Color(1.0, 0.35, 0.3)
+@export var lose_flash_color := Color(0.8, 0.25, 0.2)
 ## How long the VICTORY / DEFEATED banner stays before the result panel appears.
 @export var end_banner_hold := 1.5
 
@@ -54,6 +62,7 @@ const HIT_STOP_BASE := 0.06
 @onready var blocker: Control = %Blocker
 @onready var enemy_card: Control = %EnemyCard
 @onready var player_card: Control = %PlayerCard
+@onready var gauge_row: HBoxContainer = %GaugeRow
 @onready var dialogue: Control = %Dialogue
 @onready var vs_label: Label = %VsLabel
 @onready var flash: ColorRect = %Flash
@@ -81,75 +90,127 @@ const HIT_STOP_BASE := 0.06
 @onready var xp_label: Label = %XPLabel
 @onready var retry_btn: Button = %RetryButton
 @onready var continue_btn: Button = %ContinueButton
+@onready var review_btn: Button = %ReviewButton
+@onready var review_panel: Control = %ReviewPanel
+@onready var review_list: VBoxContainer = %ReviewList
+@onready var review_row: Control = %ReviewRow
 
+@onready var qscroll: Control = question_label.get_parent()
+
+var _run: Array[Dictionary] = []
+var _kind := "house"
+var _standalone := false
+var _index := 0
 var _q: Dictionary = {}
 var _qtype: String = "essay"
 var _tier: String = "medium"
 var _mc_options: Array[String] = []
-var _is_boss: bool = false
-var _is_champion: bool = false
+var _correct := 0
+var _streak := 0
+var _best_streak := 0
+var _loss_streak := 0
+var _shield_used := false
+var _hit_tier := 0
+# Questions whose mastery this run already recorded; a repeated item or a retry does not count twice.
+var _seen := {}
 var _enemy_hp: int = 0
 var _enemy_max: int = 0
-var _player_hp: int = PLAYER_MAX_HP
+var _player_hp: int = 0
+var _player_max: int = 0
 # HP last shown on the bars; a drop since then is what triggers the pet / robot reactions.
 var _shown_enemy_hp: int = 0
 var _shown_player_hp: int = 0
 var _awaiting: bool = false
 var _over: bool = false
+var _phase := "answer"
+var _last_feedback := ""
+# The grade request in flight: its job id, what was typed and how it is graded, and the feedback to
+# show if the server cannot answer. Contract: docs/systems/battle.md §5.
+var _job_id := ""
+var _typed := ""
+var _grade_mode := ""
+var _offline_feedback := ""
+# The rubric points the last essay covered, and what the player typed or tapped for this item.
+var _last_covered: Array = []
+var _given := ""
+# Every item answered this run, for Review answers: {q, type, given, correct, feedback, covered}.
+var _answers: Array[Dictionary] = []
 var _shake_tween: Tween
 
 func _ready() -> void:
-	_q = SessionManager.get_battle_question()
-	if _q.is_empty():
-		# Direct scene run fallback: easy ID question so the arena is testable solo.
-		_q = {"id": "q_preview", "text": "Preview: What is the capital of France?", "type": "identification", "answer": "Paris", "confidence": 0.9, "key_concepts": []}
-	_is_boss = bool(SessionManager.battle_is_boss)
-	_is_champion = bool(SessionManager.battle_is_champion)
-	_qtype = str(_q.get("type", "essay")).to_lower()
-	_tier = str(_q.get("difficulty", "medium")).to_lower()
-	if not TIERS.has(_tier):
-		_tier = "medium"
-	if _qtype == "multiple_choice":
-		_mc_options = _mc_choices()
-		if _mc_options.size() < 2:
-			_qtype = "identification"
-	_enemy_max = BOSS_HP if _is_boss else int(TIERS[_tier]["hp"])
+	_run = SessionManager.battle_run
+	_standalone = _run.is_empty()
+	if _standalone:
+		# Direct scene run fallback: one easy question so the arena is testable solo.
+		_run = [{"q_index": -1, "question": {"id": "q_preview", "text": "Preview: What is the capital of France?", "type": "identification", "answer": "Paris", "confidence": 0.9, "key_concepts": []}}]
+	else:
+		_kind = SessionManager.battle_kind
+	_tier = SessionManager.RUN_TIER[_kind]
+	_player_max = CompanionState.battle_max_hp()
+	_player_hp = _player_max
+	_enemy_max = _run.size() * HP_PER_ITEM
 	_enemy_hp = _enemy_max
 	enemy_hp_bar.max_value = _enemy_max
-	player_hp_bar.max_value = PLAYER_MAX_HP
+	player_hp_bar.max_value = _player_max
+	CompanionState.in_run = true
+	_refresh_gauges()
+	CompanionState.stats_changed.connect(_refresh_gauges)
 	_refresh_bars()
-	var foe := "TRAINER"
-	if _is_champion:
-		foe = "CHAMPION"
-	elif _is_boss:
-		foe = "GYM BOSS"
+	var foe: String = FOE_NAMES[_kind]
 	enemy_name.text = foe
-	# Foes carry no stored level: show their tier (+1 for a boss / Champion) so both cards match.
-	enemy_level.text = "Lv%d" % (SessionManager.DIFFICULTIES.find(_tier) + 1 + (1 if _is_boss or _is_champion else 0))
+	# Foes carry no stored level: their tier stands in so both cards match.
+	enemy_level.text = "Lv%d" % (SessionManager.DIFFICULTIES.find(_tier) + 1)
 	player_name.text = "KUIZ"
 	player_level.text = "Lv%d" % CompanionState.level
-	stage.setup(_is_boss or _is_champion)
-	if _is_champion:
-		var cp := SessionManager.champion_progress()
-		title_label.text = "CHAMPION %d/%d" % [int(cp["done"]) + 1, int(cp["total"])]
-	else:
-		title_label.text = "Boss Battle" if _is_boss else "Battle"
-	qtype_label.text = "%s · %s" % [_qtype.capitalize(), _tier.capitalize()]
-	question_label.text = str(_q.get("text", ""))
-	answer_input.placeholder_text = "Type the exact term..." if _qtype == "identification" else "Explain in your own words..."
-	if _qtype == "multiple_choice":
-		_build_mc_buttons()
+	stage.setup(_kind != "house")
+	_bind_item()
 	judging_label.visible = false
 	result_panel.visible = false
 	submit_btn.pressed.connect(_on_submit)
 	flee_btn.pressed.connect(_on_flee)
 	retry_btn.pressed.connect(_on_retry)
 	continue_btn.pressed.connect(_on_continue)
+	review_btn.pressed.connect(_show_answers)
+	%CloseButton.pressed.connect(review_panel.hide)
 	Api.job_status.connect(_on_job_status)
 	if play_intro:
 		_play_intro(foe)
 	else:
 		stage.start_hover()
+
+func _exit_tree() -> void:
+	CompanionState.in_run = false
+
+# Kuiz's care stats on its card move as the run changes them. Each gauge in %GaugeRow is named after
+# the CompanionState stat it shows.
+func _refresh_gauges() -> void:
+	for gauge in gauge_row.get_children():
+		gauge.set("value", float(CompanionState.get(gauge.name)) / CompanionState.STAT_MAX)
+
+# Shows the current item: its question, and its answer controls for the type it is played as.
+func _bind_item() -> void:
+	var item: Dictionary = _run[_index]
+	_q = item["question"]
+	_qtype = str(_q.get("type", "essay")).to_lower()
+	_mc_options = []
+	if _qtype == "multiple_choice":
+		_mc_options = _mc_choices()
+		if _mc_options.size() < 2:
+			_qtype = "identification"
+	for b in mc_box.get_children():
+		if b != mc_template:
+			b.queue_free()
+	title_label.text = "%s  %d/%d" % [RUN_NAMES[_kind], _index + 1, _run.size()]
+	qtype_label.text = "%s · Streak %d" % [_qtype.capitalize().replace("_", " "), _streak]
+	question_label.text = str(_q.get("text", ""))
+	qscroll.visible = true
+	answer_input.text = ""
+	answer_input.placeholder_text = "Type the exact term..." if _qtype == "identification" else "Explain in your own words..."
+	result_label.text = ""
+	if _qtype == "multiple_choice":
+		_build_mc_buttons()
+	_show_answer_controls(true)
+	_phase = "answer"
 
 # Start-of-battle entrance. The bots fly onto their pads (ArenaStage.play_intro), the HUD slides in
 # around them, "VS" slams down and the screen flashes when the foe lands. Controls stay locked until
@@ -228,11 +289,25 @@ func _on_submit() -> void:
 		result_label.text = "Type an answer first."
 		return
 	_sfx(sfx_click)
+	_last_covered = []
+	_given = answer
+	_grade_mode = "essay"
+	_offline_feedback = ""
+	if _qtype == "identification":
+		# The answer key settles most answers on the device; only a near-miss asks the server.
+		var check := Api.check_identification(_q, answer, _tier == "hard")
+		if check["verdict"] != "near":
+			_resolve(check["verdict"] == "correct", check["feedback"])
+			return
+		_grade_mode = "identification"
+		_offline_feedback = check["feedback"]
 	_awaiting = true
+	_typed = answer
 	submit_btn.disabled = true
 	judging_label.visible = true
 	result_label.text = ""
-	Api.grade_battle_question(_q, answer)
+	_job_id = Api.new_job_id("grade")
+	Api.grade_battle_question(_job_id, _q, answer, _grade_mode)
 
 # Correct answer plus its wrong options, shuffled; empty when the row cannot be played as MC.
 func _mc_choices() -> Array[String]:
@@ -265,56 +340,71 @@ func _set_mc_enabled(on: bool) -> void:
 		b.disabled = not on
 
 func _on_mc_pick(button: Button, correct: bool) -> void:
-	if _over:
+	if _over or _awaiting or _phase != "answer":
 		return
 	_sfx(sfx_click)
-	if correct:
-		_enemy_hp = 0
-		result_label.text = "ONE-HIT KO! That's the one."
-		_screen_shake(6.0, 0.18)
-	else:
-		button.disabled = true
-		var counter := int(TIERS[_tier]["counter"])
-		_player_hp = maxi(0, _player_hp - counter)
-		result_label.text = "Wrong! The enemy strikes back for %d." % counter
-	_finish_turn()
+	_last_covered = []
+	_given = button.text
+	_resolve(correct, "")
 
+# The server's grade. When it cannot answer (offline, an error), the device grades instead: a near-miss
+# counts as a miss, an essay gets the offline rubric mark.
 func _on_job_status(job_id: String, status: String, _progress: float, result: Variant) -> void:
-	if job_id != "grade" or status != "completed" or not _awaiting:
+	if job_id != _job_id or not _awaiting or status == "processing":
 		return
 	_awaiting = false
 	judging_label.visible = false
-	if typeof(result) != TYPE_DICTIONARY:
-		result_label.text = "Grading hiccup — try again."
-		submit_btn.disabled = false
-		return
-	var data: Dictionary = result
+	var data: Dictionary = result if status == "completed" and typeof(result) == TYPE_DICTIONARY else {}
+	if data.is_empty():
+		if _grade_mode == "identification":
+			data = {"score": 0.0, "feedback": _offline_feedback}
+		else:
+			data = Api.essay_offline(_q, _typed)
+			data["feedback"] = "Graded offline. " + str(data["feedback"])
 	var score: float = clampf(float(data.get("score", 0.0)), 0.0, 1.0)
 	var feedback: String = str(data.get("feedback", ""))
-	if _qtype == "identification":
-		if score >= 0.7:
-			_enemy_hp = 0
-			result_label.text = "ONE-HIT KO! %s" % feedback
-			# Identification KO also gets light juice — but essay strong hits are heavier.
-			_screen_shake(6.0, 0.18)
-		else:
-			var counter := int(TIERS[_tier]["counter"])
-			_player_hp = maxi(0, _player_hp - counter)
-			result_label.text = "Not quite! The enemy strikes back for %d. %s" % [counter, feedback]
+	_last_covered = data.get("covered", [])
+	if _grade_mode == "identification":
+		_resolve(score >= 0.5, feedback)
 	else:
-		var passed := score >= float(TIERS[_tier]["essay_pass"])
-		var damage: int = int(data.get("damage", int(round(score * 100.0)))) if passed else 0
-		_enemy_hp = maxi(0, _enemy_hp - damage)
-		# Phase 9: strong essay answers trigger hit-stop + Camera2D/Control shake.
-		if score >= STRONG_ESSAY_SCORE and damage > 0:
-			_trigger_strong_hit_juice(score)
-		if _enemy_hp > 0:
-			var counter := int(round(float(TIERS[_tier]["counter"]) * (0.4 + 0.6 * (1.0 - score))))
-			_player_hp = maxi(0, _player_hp - counter)
-			result_label.text = "%d dmg — %s\nEnemy hits back for %d." % [damage, feedback, counter]
+		# A failed essay still lands part of the counter: the closer it was, the softer the blow.
+		_resolve(score >= float(TIERS[_tier]["essay_pass"]), feedback, 0.4 + 0.6 * (1.0 - score))
+
+# Settles one item. Correct: the streak grows (and the hit with it), Kuiz heals a little, the foe's bar
+# drops one item's worth but never to 0 before the last item, so every item is always played. Wrong: the
+# streak breaks (the first miss of a run is forgiven when Kuiz has the focus) and the counter grows with
+# each miss in a row.
+func _resolve(correct: bool, feedback: String, miss_scale := 1.0) -> void:
+	_phase = "resolving"
+	_set_inputs(false)
+	var q_idx: int = _run[_index]["q_index"]
+	if q_idx >= 0 and not _seen.has(q_idx):
+		_seen[q_idx] = true
+		SessionManager.record_battle_outcome(SessionManager.battle_topic_id, q_idx, correct)
+	var last := _index == _run.size() - 1
+	_last_feedback = feedback
+	_answers.append({"q": _q, "type": _qtype, "given": _given, "correct": correct, "feedback": feedback, "covered": _last_covered.duplicate()})
+	CompanionState.play_item(correct)
+	if correct:
+		_correct += 1
+		_streak += 1
+		_best_streak = maxi(_best_streak, _streak)
+		_loss_streak = 0
+		_hit_tier = 0 if _streak < 3 else (1 if _streak < 5 else (2 if _streak < 8 else 3))
+		_player_hp = mini(_player_max, _player_hp + HEAL_ON_CORRECT)
+		_enemy_hp = maxi(0 if last else 1, _enemy_hp - HP_PER_ITEM)
+		result_label.text = "%s  Streak %d" % [HIT_NAMES[_hit_tier], _streak]
+	else:
+		var counter := maxi(1, roundi(float(TIERS[_tier]["counter"]) * MISS_MULT[mini(_loss_streak, MISS_MULT.size() - 1)] * miss_scale * CompanionState.counter_mult()))
+		_loss_streak += 1
+		if CompanionState.has_streak_shield() and not _shield_used and _streak > 0:
+			_shield_used = true
 		else:
-			result_label.text = "%d dmg — %s" % [damage, feedback]
-	_finish_turn()
+			_streak = 0
+		_player_hp = maxi(0, _player_hp - counter)
+		CompanionState.hurt(counter)
+		result_label.text = "Missed! The foe strikes back for %d." % counter
+	_finish_turn(correct)
 
 func _refresh_bars() -> void:
 	_shown_enemy_hp = _enemy_hp
@@ -322,11 +412,11 @@ func _refresh_bars() -> void:
 	enemy_hp_bar.value = _enemy_hp
 	player_hp_bar.value = _player_hp
 	enemy_hp_text.text = "%d/%d" % [_enemy_hp, _enemy_max]
-	player_hp_text.text = "%d/%d" % [_player_hp, PLAYER_MAX_HP]
+	player_hp_text.text = "%d/%d" % [_player_hp, _player_max]
 
 # Plays out the turn's blows, then decides what happens next. A correct answer sends Kuiz at the foe; a
-# wrong or weak one sends the foe at Kuiz (both, for a partly right essay). HP drops when each blow lands.
-func _finish_turn() -> void:
+# wrong one sends the foe at Kuiz. HP drops when each blow lands.
+func _finish_turn(correct: bool) -> void:
 	var enemy_loss := _shown_enemy_hp - _enemy_hp
 	var player_loss := _shown_player_hp - _player_hp
 	blocker.visible = true
@@ -340,32 +430,61 @@ func _finish_turn() -> void:
 		await stage.strike_hit
 		_land_hit(true, player_loss)
 		await stage.strike_finished
+	elif _player_hp > _shown_player_hp:
+		_shown_player_hp = _player_hp
+		create_tween().tween_property(player_hp_bar, "value", float(_player_hp), 0.3)
+		player_hp_text.text = "%d/%d" % [_player_hp, _player_max]
 	blocker.visible = false
-	if _enemy_hp <= 0:
-		_win()
-	elif _player_hp <= 0:
-		_lose()
+	if _player_hp <= 0:
+		_lose(false)
+	elif _index == _run.size() - 1:
+		# Finishing below a star is a defeat too; a scene run on its own has nothing to clear.
+		if _standalone or SessionManager.stars_for(float(_correct) / _run.size()) > 0:
+			_win()
+		else:
+			_lose(true)
 	else:
-		submit_btn.disabled = false
+		_show_review(correct)
+
+# The beat after an answer: only right or wrong, so the run gives nothing away; every answer is listed
+# by Review answers once the run ends.
+func _show_review(correct: bool) -> void:
+	_phase = "review"
+	result_title.text = "Correct!  Streak %d" % _streak if correct else "Not quite."
+	xp_label.text = "%d of %d answered" % [_index + 1, _run.size()]
+	retry_btn.visible = false
+	review_btn.visible = false
+	continue_btn.text = "Next"
+	continue_btn.disabled = true
+	qscroll.visible = false
+	_show_answer_controls(false)
+	result_panel.visible = true
+	await get_tree().create_timer(REVIEW_SEC).timeout
+	if is_instance_valid(continue_btn) and _phase == "review":
+		continue_btn.disabled = false
 
 # A blow connects: the bar drops, the number flies up, the screen punches.
 func _land_hit(on_pet: bool, amount: int) -> void:
 	if on_pet:
 		_shown_player_hp = _player_hp
 		create_tween().tween_property(player_hp_bar, "value", float(_player_hp), 0.3)
-		player_hp_text.text = "%d/%d" % [_player_hp, PLAYER_MAX_HP]
+		player_hp_text.text = "%d/%d" % [_player_hp, _player_max]
 		_sfx(sfx_hurt)
 		_sfx_later(sfx_wrong, 0.05)
-		_flash_screen(Color(1.0, 0.35, 0.3), hit_flash_strength)
+		_flash_screen(hurt_flash_color, hit_flash_strength)
 	else:
 		_shown_enemy_hp = _enemy_hp
 		create_tween().tween_property(enemy_hp_bar, "value", float(_enemy_hp), 0.3)
 		enemy_hp_text.text = "%d/%d" % [_enemy_hp, _enemy_max]
-		_sfx(sfx_hit)
-		_sfx_later(sfx_correct, 0.1)
-		_flash_screen(Color.WHITE, hit_flash_strength * 0.7)
-	_screen_shake(hit_shake, 0.22)
-	_pop_damage("-%d" % amount, stage.impact_point(on_pet), Color("C97970") if on_pet else Color("D6A85F"))
+		_sfx(sfx_hit, 1.0 + 0.12 * _hit_tier)
+		_sfx_later(sfx_correct, 0.1, 1.0 + 0.12 * _hit_tier)
+		_flash_screen(Color.WHITE, minf(1.0, hit_flash_strength * (0.7 + 0.25 * _hit_tier)))
+		if _hit_tier > 0:
+			_hit_stop(HIT_STOP_BASE * _hit_tier)
+	var power := 1.0 if on_pet else 1.0 + 0.6 * _hit_tier
+	_screen_shake(hit_shake * power, 0.22 + (0.0 if on_pet else 0.06 * _hit_tier))
+	var label := "-%d" % amount if on_pet else HIT_NAMES[_hit_tier]
+	_pop_damage(label, stage.impact_point(on_pet), Color("C97970") if on_pet else Color("D6A85F"))
 
 # The answer field, Fight button and choice buttons give way to the result panel, so it fits the smaller box.
 func _show_answer_controls(on: bool) -> void:
@@ -408,9 +527,8 @@ func _end_sequence(win: bool, banner: String) -> void:
 		_flash_screen(Color.WHITE, 0.6)
 	else:
 		stage.enemy_attack()
-		stage.pet_hurt()
 		_sfx(sfx_lose)
-		_flash_screen(Color(0.8, 0.25, 0.2), 0.35)
+		_flash_screen(lose_flash_color, 0.35)
 	end_banner.text = banner
 	end_banner.add_theme_color_override("font_color", Color("D6A85F") if win else Color("C97970"))
 	end_banner.pivot_offset = end_banner.size / 2.0
@@ -424,14 +542,6 @@ func _end_sequence(win: bool, banner: String) -> void:
 	create_tween().tween_property(end_banner, "modulate:a", 0.0, 0.35)
 	_show_answer_controls(false)
 	result_panel.visible = true
-# --- Phase 9: juice ---
-func _trigger_strong_hit_juice(score: float) -> void:
-	var intensity := SHAKE_BASE_INTENSITY + score * 10.0
-	var duration := 0.22 + score * 0.08
-	_screen_shake(intensity, duration)
-	var stop_dur := HIT_STOP_BASE + score * 0.04
-	_hit_stop(stop_dur)
-
 func _screen_shake(intensity: float, duration: float) -> void:
 	# Prefer Camera2D offset if present (spec requirement), fallback to Control position.
 	if cam:
@@ -463,64 +573,134 @@ func _hit_stop(duration: float) -> void:
 
 func _win() -> void:
 	_over = true
-	SessionManager.report_battle_result(true)
-	_set_mc_enabled(false)
-	var reward: int = int(TIERS[_tier]["xp"]) * (2 if _is_boss else 1)
-	var more := false
-	if _is_champion:
-		more = SessionManager.advance_champion()
-		if not more:
-			reward += CHAMPION_XP_REWARD
-	CompanionState.add_xp(reward)
-	if _is_champion and not more:
-		result_title.text = "CHAMPION DEFEATED — Region Complete!"
-		xp_label.text = "+%d XP (incl. champion bonus)  •  %s" % [reward, str(_q.get("text", "")).left(60)]
-	elif _is_champion:
-		var cp := SessionManager.champion_progress()
-		result_title.text = "Opponent down! (%d/%d)" % [int(cp["done"]), int(cp["total"])]
-		xp_label.text = "+%d XP — next challenger awaits." % reward
-	else:
-		result_title.text = "Victory!"
-		xp_label.text = "+%d XP  •  %s" % [reward, str(_q.get("text", "")).left(60)]
+	_phase = "end"
+	_enemy_hp = 0
+	create_tween().tween_property(enemy_hp_bar, "value", 0.0, 0.3)
+	enemy_hp_text.text = "0/%d" % _enemy_max
+	var line := "%d/%d correct  •  best streak %d" % [_correct, _run.size(), _best_streak]
+	if not _standalone:
+		var r := SessionManager.report_run(true, _correct, _run.size(), _best_streak)
+		line += "\nStars %d/3  •  +%d crystals  •  +%d XP" % [int(r["stars"]), int(r["coins"]), int(r["xp"])]
+		line += "\nFirst clear bonus!" if bool(r["first"]) else "\nReplay: reduced rewards."
+		line += _study_goal_line()
+	result_title.text = "%s cleared!" % RUN_NAMES[_kind]
+	xp_label.text = line
 	retry_btn.visible = false
-	continue_btn.text = "Next" if more else "Overworld"
-	SaveManager.save_progress()
-	_end_sequence(true, "CHAMPION!" if _is_champion and not more else "VICTORY!")
+	review_btn.visible = true
+	continue_btn.text = "Overworld"
+	continue_btn.disabled = false
+	qscroll.visible = false
+	_end_sequence(true, "CHAMPION!" if _kind == "champion" else "VICTORY!")
 
-func _lose() -> void:
-	_over = true
-	_set_mc_enabled(false)
-	SessionManager.report_battle_result(false)
-	result_title.text = "Defeated — review and retry!"
-	xp_label.text = "Tip: train up, then strike again."
-	retry_btn.visible = true
-	continue_btn.text = "Flee"
+# A finished run (cleared or not) meets the daily study goal; a fled one does not.
+func _study_goal_line() -> String:
+	var paid := GameState.note_study(0, 1)
+	if paid == 0:
+		return ""
 	SaveManager.save_progress()
+	return "\nDaily study goal met: %d-day streak  •  +%d crystals" % [GameState.study_streak, paid]
+
+# Defeat: Kuiz ran out of HP, or (`finished`) reached the end below a star. Kuiz topples over, the run
+# pays the defeat rate and clears nothing, and the player can review the answers, leave or try again.
+func _lose(finished: bool) -> void:
+	_over = true
+	_phase = "end"
+	var line := "%d/%d correct before falling." % [_correct, _run.size()]
+	if finished:
+		line = "Only %d/%d correct: you need %d%% to win." % [_correct, _run.size(), roundi(SessionManager.STAR_ACCURACY[0] * 100)]
+	if not _standalone:
+		var r := SessionManager.report_run(finished, _correct, _run.size(), _best_streak)
+		line += "\n+%d crystals  •  +%d XP for the effort." % [int(r["coins"]), int(r["xp"])]
+		line += _study_goal_line()
+	result_title.text = "Not enough to win" if finished else "Kuiz is down!"
+	xp_label.text = line
+	retry_btn.text = "↻ Try Again"
+	retry_btn.visible = true
+	review_btn.visible = true
+	continue_btn.text = "Exit"
+	continue_btn.disabled = false
+	qscroll.visible = false
+	stage.pet_defeat()
 	_end_sequence(false, "DEFEATED")
 
+# Review answers: every item answered this run with what was given and the right answer. Rows are
+# copies of %ReviewRow; each can be reported (Google Play's AI-content rule).
+func _show_answers() -> void:
+	_sfx(sfx_click)
+	for c in review_list.get_children():
+		if c != review_row:
+			c.queue_free()
+	for i in _answers.size():
+		var row := review_row.duplicate() as Control
+		row.visible = true
+		(row.get_node("Text") as Label).text = _answer_text(i)
+		var report := row.get_node("Report") as Button
+		report.pressed.connect(_report_answer.bind(i, report))
+		review_list.add_child(row)
+	review_panel.show()
+
+func _answer_text(i: int) -> String:
+	var a: Dictionary = _answers[i]
+	var q: Dictionary = a["q"]
+	var text := "%s  #%d  %s" % ["✓" if a["correct"] else "✗", i + 1, str(q.get("text", ""))]
+	text += "\nYour answer: %s" % (str(a["given"]) if str(a["given"]) != "" else "—")
+	if a["type"] == "essay":
+		text += "\nModel answer: %s" % str(q.get("model_answer", q.get("answer", ""))).strip_edges()
+		var covered: Array = a["covered"]
+		var rubric := Api.rubric_for(q)
+		for p in rubric.size():
+			text += "\n   %s %s" % ["✓" if p < covered.size() and bool(covered[p]) else "✗", str((rubric[p] as Dictionary).get("point", ""))]
+	else:
+		text += "\nCorrect answer: %s" % str(q.get("answer", "")).strip_edges()
+	for extra in [str(a["feedback"]), str(q.get("explanation", ""))]:
+		if extra.strip_edges() != "":
+			text += "\n" + extra.strip_edges()
+	return text
+
+func _report_answer(i: int, button: Button) -> void:
+	_sfx(sfx_click)
+	Api.report_content(Api.new_job_id("report"), "feedback", _answer_text(i))
+	button.disabled = true
+	button.text = "Reported"
+
+# Try Again: the same run reshuffled, from item 1, Kuiz at full HP.
 func _on_retry() -> void:
 	_sfx(sfx_click)
+	if not _standalone:
+		SessionManager.reshuffle_run()
+		_run = SessionManager.battle_run
+	stage.pet_stand()
+	_index = 0
+	_answers.clear()
+	review_panel.hide()
+	_correct = 0
+	_streak = 0
+	_best_streak = 0
+	_loss_streak = 0
+	_shield_used = false
+	_enemy_max = _run.size() * HP_PER_ITEM
 	_enemy_hp = _enemy_max
-	_player_hp = PLAYER_MAX_HP
+	_player_hp = _player_max
+	enemy_hp_bar.max_value = _enemy_max
 	_over = false
 	_refresh_bars()
-	answer_input.text = ""
-	result_label.text = ""
 	result_panel.visible = false
-	_show_answer_controls(true)
-	_set_mc_enabled(true)
-	submit_btn.disabled = false
+	end_banner.visible = false
+	_bind_item()
+	_set_inputs(true)
 
 func _on_continue() -> void:
 	_sfx(sfx_click)
-	# Champion gauntlet: next fight reloads the arena with the queued question.
-	if _is_champion and SessionManager.battle_is_champion:
-		get_tree().change_scene_to_file("res://scenes/battle/battle.tscn")
+	if _phase == "review":
+		_index += 1
+		result_panel.visible = false
+		_bind_item()
+		_set_inputs(true)
 		return
 	get_tree().change_scene_to_file("res://scenes/overworld/region_map.tscn")
 
+# Leaving mid-run forfeits it: no clear and no pay, but the items answered keep their mastery.
 func _on_flee() -> void:
 	_sfx(sfx_click)
-	# Abandoning the gauntlet forfeits the run (progress per-question stays).
-	SessionManager.battle_is_champion = false
+	SaveManager.save_progress()
 	get_tree().change_scene_to_file("res://scenes/overworld/region_map.tscn")

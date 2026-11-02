@@ -1,7 +1,7 @@
 # Companion care (pet loop)
 
-The pre-campaign gate. Care raises the companion level by level, with no cap; Level 5 unlocks
-the review campaign. This is the loop that carries the "raise an AI" fantasy and teaches the
+The home loop. Care raises the companion level by level, with no cap; the review campaign is open from
+the start (the old Level 5 gate was removed). This is the loop that carries the "raise an AI" fantasy and teaches the
 curriculum through `CURRICULUM` lines.
 
 - **State / logic:** `scripts/autoload/companion_state.gd` (autoload `CompanionState`)
@@ -17,7 +17,7 @@ curriculum through `CURRICULUM` lines.
 
 | Stat | Start | Range | Decay | Grown by |
 |---|---|---|---|---|
-| `hunger` | 80.0 | 0–100 | **0.105 / s** (0.7×) | `feed` +12 |
+| `hunger` | 80.0 | 0–100 | **0.105 / s** (0.7×) | `feed` +8 – 40 by food (`home.gd` `FOODS`) |
 | `energy` | 80.0 | 0–100 | **0.15 / s** × battery wear (`battery_drain()`: 1 + (100 − battery health) / 50, so ×2 at 50 %) | charging +6 / s (`recharge()`), rest complete +6, `play` −2, skip focus −3, missed rest −5 |
 | `mood` | 75.0 | 0–100 | **0.09 / s** (0.6×) | `pet` +8, `play` +8, rest complete +6, skip focus −2, missed rest −3 |
 | `health` | 100.0 | 0–100 | **0.03 / s** (0.2×) | `fix` +25 |
@@ -65,24 +65,23 @@ the floating `+N XP` tick and an extra `(tired)` suffix once `tap_count > DAILY_
 ### Diminishing returns
 
 ```gdscript
-const DAILY_CAP_BASE_XP := 10   # taps of the SAME action per hour
+const DAILY_CAP_BASE_XP := 10   # taps of the SAME action per hour at full XP
+const HOURLY_HARD_CAP := 30     # past this, the action pays no XP this hour
 if count >= 10: xp_mult = 0.3
-gained = int(2 * xp_mult)       # feed / play / fix
-gained = int(1 * xp_mult)       # pet
+gained = maxi(1, roundi(base * xp_mult))   # taps 11-30: 1 XP
+if count >= 30: gained = 0
 ```
 
-Counter resets hourly via `_maybe_reset_hourly_cap()` (`companion_state.gd:70-74`).
-
-> **This is currently a bug, not a balance knob.** `0.3` multiplied and truncated by `int()` yields
-> **0** for all three actions (`int(2*0.3) == 0`, `int(1*0.3) == 0`). After 10 taps of one action in
-> an hour, that action grants no XP at all until the hour rolls over. See `known-issues.md` #5.
+So one action pays at most 10 × its base + 20 XP an hour, and the five together cap care XP at
+roughly 190 an hour. Home also limits the two actions that are quickest to repeat: a pet and a ball
+throw count at most once every 3 s (`PET_GAP`, `FLING_GAP` in `home.gd`). The counter resets hourly
+via `_maybe_reset_hourly_cap()`; it is not saved, so a relaunch resets it too.
 
 ---
 
-## 3. XP curve and the Level 5 gate
+## 3. XP curve
 
 ```gdscript
-const CAMPAIGN_LEVEL := 5
 const FIRST_LEVEL_XP := 20   # Lv1 -> 2
 const LEVEL_XP_STEP := 5     # each level costs this much more than the one before
 static func xp_to_reach(lv)  # cumulative: 20 * (lv - 1) + 5 * (lv - 1) * (lv - 2) / 2
@@ -102,22 +101,15 @@ Levels never cap.
 | n | `xp_to_reach(n)` | 5 more each level |
 
 `_check_level_up()` loops while `xp >= xp_to_reach(level + 1)`, so a single large XP grant can
-cross several levels. Reaching 5 sets `campaign_ready = true` and emits `campaign_gate_ready` (once).
+cross several levels; each level pays `LEVEL_CRYSTALS` and unlocks its `CURRICULUM` line.
 Levels 1–5 match the old capped table (Lv5 at 110 XP), so older saves keep their level; on load any
 XP past the next threshold (from the capped days) levels Kuiz up silently.
 
 Pacing: at 1–2 XP per tap with cycling actions, ~65 taps to Level 5, a few minutes. XP always
-counts now, battle rewards included.
-
-The gate reaches `GameState` on load only:
-
-```text
-CompanionState.leveled_up(5) ─► campaign_gate_ready ─► (no listener since companion.gd was removed)
-
-```
-
-`SaveManager.load_game()` sets `campaign_unlocked_flag` from `CompanionState.campaign_ready`, which
-is what gets saved. With no care input, Level 5 is unreachable without editing the save.
+counts, battle rewards included. Levels gate closet costumes (`kuiz_look.gd` `COSTUME_UNLOCKS`), not
+Play: the `campaign_ready` flag, `CAMPAIGN_LEVEL`, the `campaign_gate_ready` signal and
+`GameState.campaign_unlocked_flag` were removed because nothing read them (saves before v15 still hold
+the keys; they are ignored).
 
 ### Other XP and stat sources
 
@@ -162,7 +154,10 @@ new battery. Details in
 
 ## 6. Pomodoro (Phase 4)
 
-Logic lives in `CompanionState`; the Pomodoro panel was deleted, so nothing starts it. One timer drives both phases.
+Logic lives in `CompanionState`. The Study screen's **Focus 25:00** button (`flashcards.gd`, `%TimerButton`)
+starts it and shows the time left; it keeps running on other screens. A finished focus session adds
+`POMODORO_FOCUS_BONUS` (25) **focus**, the stat that forgives a run's first miss, and focus also shows
+as a row on home's check-up tablet. One timer drives both phases.
 
 ```
                  start_pomodoro()
@@ -180,6 +175,7 @@ Logic lives in `CompanionState`; the Pomodoro panel was deleted, so nothing star
 |---|---|---|
 | `POMODORO_FOCUS_SEC` | 1500 | focus length |
 | `POMODORO_REST_SEC` | 300 | rest length |
+| `POMODORO_FOCUS_BONUS` | 25.0 | focus added when a focus session ends |
 | `MISSED_REST_ENERGY_PENALTY` | 5.0 | applied on `skip_pomodoro()` during rest |
 | `MISSED_REST_MOOD_PENALTY` | 3.0 | same |
 | `REST_COMPLETE_ENERGY_BONUS` | 6.0 | natural rest completion |
@@ -213,3 +209,16 @@ If you want to change pacing, these are the only knobs that matter:
 | Softer tap spam | `DAILY_CAP_BASE_XP` **and** fix the `int()` truncation |
 | Longer sessions | `POMODORO_FOCUS_SEC` / `POMODORO_REST_SEC` |
 | Harsher missed rest | `MISSED_REST_*_PENALTY` |
+
+---
+
+## 9. Stats in battle runs
+
+Each care stat has one job in a battle run ([`battle.md`](battle.md) §3): health sets Kuiz's battle HP
+(70–120), energy scales XP paid (×0.8–1.2), mood scales crystals paid (×0.8–1.2), hunger softens counter
+damage (up to −20 %) and focus 50+ forgives the first miss. While `CompanionState.in_run` is true every
+stat's clock decay is paused and each item answered costs energy 0.5 and hunger 0.4 and raises mood (+1.5 right,
++0.3 wrong), while every counter Kuiz takes costs health `counter × 0.3` (never below 10): `play_item()` and
+`hurt()`. Reaching a level pays a flat `LEVEL_CRYSTALS` (25)
+crystals. After 10 taps an action pays 1 XP (`known-issues.md` #5), and after 30 it pays none until the hour
+resets (§2).

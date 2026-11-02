@@ -9,13 +9,16 @@ extends CanvasLayer
 ## mood. Contract: docs/ui-and-assets.md §2 Home.
 
 const ROOMS: Array[String] = ["StudyRoom", "MaintenanceBay", "DataKitchen", "Playroom"]
+# The fridge: what each meal restores and costs, priced at about 0.4 crystals per hunger point (bigger
+# meals a little cheaper, a second effect a little dearer). `start` is the new player's welcome stock.
+# Contract: docs/systems/monetization.md.
 const FOODS: Array[Dictionary] = [
-	{"id": "data_chips", "name": "Data Chips", "icon": preload("res://assets/sprites/props/data_chips.svg"), "start": 3},
-	{"id": "spicy_chips", "name": "Spicy Memory Chips", "icon": preload("res://assets/sprites/props/spicy_chips.svg"), "start": 1},
-	{"id": "cache_cookie", "name": "Cache Cookie", "icon": preload("res://assets/sprites/props/cache_cookie.svg"), "start": 2},
-	{"id": "pi_pie", "name": "Pi Pie", "icon": preload("res://assets/sprites/props/pi_pie.svg"), "start": 1},
-	{"id": "byte_burger", "name": "Byte Burger", "icon": preload("res://assets/sprites/props/byte_burger.svg"), "start": 1},
-	{"id": "java_juice", "name": "Java Juice", "icon": preload("res://assets/sprites/props/java_juice.svg"), "start": 2},
+	{"id": "data_chips", "name": "Data Chips", "icon": preload("res://assets/sprites/props/data_chips.svg"), "start": 3, "hunger": 10.0, "price": 4},
+	{"id": "spicy_chips", "name": "Spicy Memory Chips", "icon": preload("res://assets/sprites/props/spicy_chips.svg"), "start": 1, "hunger": 12.0, "mood": 8.0, "price": 7},
+	{"id": "cache_cookie", "name": "Cache Cookie", "icon": preload("res://assets/sprites/props/cache_cookie.svg"), "start": 2, "hunger": 15.0, "price": 6},
+	{"id": "pi_pie", "name": "Pi Pie", "icon": preload("res://assets/sprites/props/pi_pie.svg"), "start": 1, "hunger": 25.0, "price": 9},
+	{"id": "byte_burger", "name": "Byte Burger", "icon": preload("res://assets/sprites/props/byte_burger.svg"), "start": 1, "hunger": 40.0, "price": 13},
+	{"id": "java_juice", "name": "Java Juice", "icon": preload("res://assets/sprites/props/java_juice.svg"), "start": 2, "hunger": 8.0, "focus": 10.0, "price": 8},
 ]
 const FAVORITE_FOOD := "spicy_chips"
 const SCREWDRIVER: Texture2D = preload("res://assets/sprites/props/screwdriver.svg")
@@ -23,6 +26,7 @@ const TOWEL: Texture2D = preload("res://assets/sprites/props/towel.svg")
 const BOLD: Font = preload("res://assets/fonts/JosefinSans-Bold.ttf")
 const CHARGE_SFX: AudioStream = preload("res://assets/audio/sfx/sfx_charge.wav")
 const CHARGED_SFX: AudioStream = preload("res://assets/audio/sfx/sfx_charged.wav")
+const ConfirmModal := preload("res://scripts/ui/widgets/confirm_modal.gd")
 const SETTINGS_SCENE := "res://scenes/ui/settings.tscn"
 const WORLDS_SCENE := "res://scenes/ui/session_list.tscn"
 const FADE_TIME := 0.35
@@ -51,15 +55,6 @@ const TOAST_TIME := 2.2
 # A tap on the level pill or a stat gauge shows its numbers in a card below it for this long (or
 # until tapped again).
 const LEVEL_INFO_TIME := 3.0
-# The Crystal Shop's packs: [crystals, price, tag]. shortcut: placeholder prices and no store; when
-# in-app purchases exist, take the prices from the store and enable the buttons.
-const CRYSTAL_PACKS := [
-	[100, "$0.99", ""],
-	[550, "$4.99", "+10% bonus"],
-	[1200, "$9.99", "+20% bonus"],
-	[2500, "$19.99", "Best value"],
-]
-const CRYSTAL_ICON: Texture2D = preload("res://assets/sprites/ui/crystal.svg")
 const STAT_NAMES :={"hunger": "Hunger", "energy": "Energy", "mood": "Mood", "health": "Health"}
 const STAT_HINTS := {
 	"hunger": "Feed Kuiz in the Data Kitchen",
@@ -72,16 +67,19 @@ const STAT_HINTS := {
 const PET_HOLD := 0.35
 const PET_STROKE := 70.0
 const PET_GAP := 3.0
+# A ball throw counts as play care at most once per FLING_GAP seconds.
+const FLING_GAP := 3.0
 # The towel takes this much dirt off per pixel scrubbed over Kuiz.
 const SCRUB_PER_PX := 0.06
 # The check-up's rows: [label, stat, inverted (dirt reads as cleanliness)]. The battery row is its
 # health (capacity), not its charge; the Energy gauge shows the charge.
-const CHECKS := [["Battery health", "battery_health", false], ["Frame", "health", false], ["Clean", "dirt", true], ["Fuel", "hunger", false]]
+const CHECKS := [["Battery health", "battery_health", false], ["Frame", "health", false], ["Clean", "dirt", true], ["Fuel", "hunger", false], ["Focus", "focus", false]]
 const CHECK_HINTS := {
 	"battery_health": "Battery worn out: it drains fast. Fit a new one below.",
 	"health": "Screws loose: tighten them with the screwdriver.",
 	"dirt": "Dusty and scuffed: scrub Kuiz with the towel.",
 	"hunger": "Running on empty: feed Kuiz in the Data Kitchen.",
+	"focus": "Unfocused: study flashcards or run the focus timer on the Study screen.",
 }
 
 @onready var peek: Node3D = owner as Node3D
@@ -94,7 +92,6 @@ const CHECK_HINTS := {
 @onready var xp_bar: ProgressBar = %Xp
 @onready var level_info: Control = %LevelInfo
 @onready var stat_info: Control = %StatInfo
-@onready var crystal_shop: Control = %CrystalShop
 @onready var crystal_label: Label = %CrystalLabel
 @onready var gauges := {"hunger": %Hunger, "energy": %Energy, "mood": %Mood, "health": %Health}
 # Room name (the Rooms/<Name> node in peek.tscn) -> the bar section shown in that room.
@@ -161,6 +158,7 @@ var _pet_stroke := 0.0
 var _pet_last := Vector2.ZERO
 var _petting := false
 var _pet_cared := -100.0
+var _fling_cared := -100.0
 var _held_last := Vector2.ZERO
 var _was_dirty := false
 var _closet_slot := "head"
@@ -202,10 +200,6 @@ func _ready() -> void:
 	CompanionState.stats_changed.connect(_refresh_stats)
 	CompanionState.xp_changed.connect(func(_xp: int, _level: int) -> void: _refresh_level())
 	%Level.gui_input.connect(_on_level_input)
-	%Crystals.gui_input.connect(func(e: InputEvent) -> void:
-		if _tapped(e):
-			_open_crystal_shop())
-	%CrystalClose.pressed.connect(crystal_shop.hide)
 	for stat: String in gauges:
 		gauges[stat].gui_input.connect(_on_gauge_input.bind(stat))
 	GameState.crystals_changed.connect(func(amount: int) -> void: crystal_label.text = str(amount))
@@ -255,7 +249,7 @@ func _show_room_props(room_name: String) -> void:
 	ball_slot.modulate.a = 1.0
 	_ball_grabbed = false
 	_ball_returning = false
-	for panel: Control in [shop, picker, check_panel, wardrobe, crystal_shop]:
+	for panel: Control in [shop, picker, check_panel, wardrobe]:
 		panel.hide()
 	_fix = 0.0
 	peek.look_ahead()
@@ -297,39 +291,6 @@ func _on_gauge_input(event: InputEvent, stat: String) -> void:
 	var under: Rect2 = gauges[stat].get_global_rect()
 	stat_info.position.x = clampf(under.get_center().x - stat_info.size.x / 2.0, 16.0, _view().x - stat_info.size.x - 16.0)
 	_toggle_info(stat_info, stat)
-
-# The crystal pill opens the Crystal Shop: real-money packs, shown with their prices but not for
-# sale yet ("Coming soon"; the price buttons are disabled).
-func _open_crystal_shop() -> void:
-	var packs := %CrystalPacks
-	if packs.get_child_count() == 0:
-		for pack: Array in CRYSTAL_PACKS:
-			var row := HBoxContainer.new()
-			row.add_theme_constant_override("separation", 14)
-			var icon := TextureRect.new()
-			icon.texture = CRYSTAL_ICON
-			icon.custom_minimum_size = Vector2(64, 64)
-			icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-			icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-			var label := Label.new()
-			label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-			label.text = "%d crystals" % pack[0] + ("\n" + pack[2] if pack[2] != "" else "")
-			label.add_theme_color_override("font_color", Color("29383A"))
-			label.add_theme_font_override("font", BOLD)
-			label.add_theme_font_size_override("font_size", 26)
-			var price: Button = buy_template.duplicate()
-			price.show()
-			price.text = pack[1]
-			price.disabled = true
-			price.custom_minimum_size = Vector2(140, 64)
-			price.add_theme_stylebox_override("disabled", buy_template.get_theme_stylebox("normal"))
-			price.add_theme_color_override("font_disabled_color", Color("F7F5EF", 0.75))
-			price.modulate.a = 0.6
-			row.add_child(icon)
-			row.add_child(label)
-			row.add_child(price)
-			packs.add_child(row)
-	crystal_shop.show()
 
 func _tapped(event: InputEvent) -> bool:
 	return event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT
@@ -585,12 +546,8 @@ func _build_shop() -> void:
 		label.add_theme_color_override("font_color", Color("29383A"))
 		var buy: Button = buy_template.duplicate()
 		buy.show()
-		# shortcut: buying is free until the currency exists; then charge its price here.
-		buy.pressed.connect(func() -> void:
-			GameState.food_stock[food["id"]] += 1
-			SaveManager.save_progress()
-			_refresh_shop()
-			_pick_food(0))
+		buy.text = "Buy · %d" % food["price"]
+		buy.pressed.connect(_buy_food.bind(food))
 		row.add_child(icon)
 		row.add_child(label)
 		row.add_child(buy)
@@ -604,7 +561,26 @@ func _open_shop() -> void:
 func _refresh_shop() -> void:
 	for row in shop_list.get_children():
 		var food: Dictionary = row.get_meta("food")
-		(row.get_child(1) as Label).text = "%s\nYou have %d" % [food["name"], GameState.food_stock[food["id"]]]
+		(row.get_child(1) as Label).text = "%s  +%d hunger%s\nYou have %d" % [food["name"], food["hunger"], _food_extra(food), GameState.food_stock[food["id"]]]
+		(row.get_child(2) as Button).disabled = GameState.crystals < int(food["price"])
+
+func _food_extra(food: Dictionary) -> String:
+	if food.has("focus"):
+		return ", +%d focus" % food["focus"]
+	if food.has("mood"):
+		return ", +%d mood" % food["mood"]
+	return ""
+
+# One more of a food from the fridge, for its price in crystals.
+func _buy_food(food: Dictionary) -> void:
+	if GameState.crystals < int(food["price"]):
+		_toast("Not enough crystals. Clear houses and gyms to earn them.")
+		return
+	GameState.add_crystals(-int(food["price"]))
+	GameState.food_stock[food["id"]] += 1
+	SaveManager.save_progress()
+	_refresh_shop()
+	_pick_food(0)
 
 func _eat(food: Dictionary) -> void:
 	GameState.food_stock[food["id"]] -= 1
@@ -616,7 +592,8 @@ func _eat(food: Dictionary) -> void:
 	await t.finished
 	held.hide()
 	held.scale = Vector2.ONE
-	_care("feed")
+	CompanionState.care("feed", food)
+	SaveManager.save_progress()
 	CompanionState.soil()
 	peek.act("Pet" if food["id"] == FAVORITE_FOOD else "Happy")
 
@@ -785,15 +762,38 @@ func _costume_button(id: String, title: String, icon: Texture2D) -> Button:
 	b.vertical_icon_alignment = VERTICAL_ALIGNMENT_TOP
 	b.custom_minimum_size = Vector2(170, 170)
 	b.set_meta("costume", id)
-	b.pressed.connect(func() -> void:
-		if id == "":
-			GameState.outfit.erase(_closet_slot)
+	var unlock: Array = look.COSTUME_UNLOCKS.get(id, [])
+	if not unlock.is_empty() and not GameState.owned_costumes.has(id):
+		if CompanionState.level < int(unlock[0]):
+			b.text = "%s\nLevel %d" % [title, unlock[0]]
+			b.disabled = true
 		else:
-			GameState.outfit[_closet_slot] = id
-		SaveManager.save_progress()
-		peek.act("Happy")
-		_refresh_wardrobe())
+			b.text = "%s\n%d crystals" % [title, unlock[1]]
+		b.pressed.connect(_offer_costume.bind(id, title, int(unlock[1])))
+		return b
+	b.pressed.connect(_wear.bind(id))
 	return b
+
+func _wear(id: String) -> void:
+	if id == "":
+		GameState.outfit.erase(_closet_slot)
+	else:
+		GameState.outfit[_closet_slot] = id
+	SaveManager.save_progress()
+	peek.act("Happy")
+	_refresh_wardrobe()
+
+# A costume not owned yet: buy it with crystals, then wear it.
+func _offer_costume(id: String, title: String, price: int) -> void:
+	if GameState.crystals < price:
+		_toast("%s costs %d crystals. Clear houses and gyms to earn them." % [title, price])
+		return
+	ConfirmModal.open(self, "Buy %s?" % title, "It costs %d crystals; you have %d." % [price, GameState.crystals], "Buy", _buy_costume.bind(id, price), false)
+
+func _buy_costume(id: String, price: int) -> void:
+	if GameState.buy_costume(id, price):
+		_show_closet_slot(_closet_slot)
+		_wear(id)
 
 # The open tab and the costume worn in it show as pressed buttons.
 func _refresh_wardrobe() -> void:
@@ -859,9 +859,11 @@ func _fling_ball() -> void:
 		_ball_vel = ((b[0] as Vector2) - (a[0] as Vector2)) / dt
 	_ball_vel = _ball_vel.limit_length(MAX_FLING)
 	if _ball_vel.length() > 300.0:
-		_care("play")
-		CompanionState.soil(1.5)
 		peek.act("Happy")
+		if _now() - _fling_cared > FLING_GAP:
+			_fling_cared = _now()
+			_care("play")
+			CompanionState.soil(1.5)
 
 func _step_ball(delta: float) -> void:
 	var view := _view()
