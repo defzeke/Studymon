@@ -55,7 +55,7 @@ Terms used throughout this repo, in the sense this repo means them.
 | Term | Meaning |
 |---|---|
 | **Region** | The overworld for one topic: the 3D island (`map.glb`) with its gyms, trainers and the Champion's gym, filled from the topic's questions. |
-| **Explorer** | The player's walking character on the island (`boy_explorer.glb` or `explorer_girl.glb`), steered with the on-screen joystick at the bottom-left; each world picks one, and can change it from the map. |
+| **Explorer** | The player's walking character on the island (`boy_explorer.glb` or `explorer_girl.glb`), steered with the on-screen joystick at the bottom-left; the player picks one on the way into a world, or from the map, and each world keeps its own. |
 | **Gym** | A group of encounters for one question type (`identification`, `essay`, `multiple_choice`). Clearing every gym is the Champion prerequisite. |
 | **Trainer** | A single-question encounter on a gym's road, ordered Easy to Hard. Every trainer of a gym must be beaten before its boss opens. |
 | **Boss** | The gym's hardest question, fought after its trainers; winning it clears the gym. 150 HP and double XP. |

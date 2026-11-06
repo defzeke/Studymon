@@ -31,6 +31,7 @@ extends Node3D
 @export var icon_lock: Texture2D
 
 const ExplorerPicker := preload("res://scenes/overworld/explorer_picker.tscn")
+const ConfirmModal := preload("res://scripts/ui/widgets/confirm_modal.gd")
 const TEAL := Color("4F8F89")
 const AMBER := Color("D6A85F")
 const LILAC := Color("8D82A8")
@@ -60,19 +61,18 @@ const ARRIVE_FADE_SEC := 0.8
 @onready var champion_icon: TextureRect = %ChampionIcon
 @onready var champion_value: Label = %ChampionValue
 @onready var objectives: VBoxContainer = %Objectives
-@onready var objectives_more: Label = %ObjectivesMore
 @onready var _fade: ColorRect = %Fade
 @onready var back_btn: Button = %BackButton
 @onready var study_btn: Button = %StudyButton
-@onready var encounter_panel: PanelContainer = %EncounterPanel
+@onready var encounter_panel: Control = %EncounterPanel
 @onready var encounter_title: Label = %EncounterTitle
 @onready var encounter_question: Label = %EncounterQuestion
 @onready var encounter_close_btn: Button = %EncounterCloseButton
 @onready var encounter_clear_btn: Button = %EncounterClearButton
 
-signal _arrived
-
 var _topic_id: String = ""
+var _pick_on_arrival := false
+var _leaving := false
 var _pending_encounter: Dictionary = {}
 var _gym_positions: Dictionary = {}
 var _prev_cleared_gyms: Dictionary = {}
@@ -124,21 +124,20 @@ func _ready() -> void:
 	kuiz.place_behind()
 	_build_route()
 	_refresh_progress()
-	# Each world keeps its own explorer: only a world that has none yet (a new one) asks, once.
 	var chosen := SessionManager.world_explorer(_topic_id)
 	player.set_explorer(chosen if chosen != "" else "boy")
-	if chosen == "":
-		player.locked = true
-		await _arrived
-		_open_picker("boy")
+	# Coming from home the player picks first; back from a battle or Study they carry on.
+	_pick_on_arrival = chosen == "" or SessionManager.pick_explorer
+	SessionManager.pick_explorer = false
+	player.locked = _pick_on_arrival
 
 func _arrive() -> void:
 	await get_tree().process_frame
 	await get_tree().process_frame
+	if _pick_on_arrival:
+		_open_picker(SessionManager.world_explorer(_topic_id))
 	var t := _fade.create_tween()
 	t.tween_property(_fade, "color:a", 0.0, ARRIVE_FADE_SEC).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-	await t.finished
-	_arrived.emit()
 
 func _open_picker(current: String) -> void:
 	player.locked = true
@@ -365,17 +364,34 @@ func _spawn_gym_burst(pos: Vector3) -> void:
 	add_child(p)
 	p.finished.connect(p.queue_free)
 
-# What a run is: its items, its tier and how long it takes to review.
-func _run_blurb(kind: String, gym_type: String) -> String:
-	var low := CompanionState.readiness() < 25.0
-	var items := SessionManager.run_items(kind, gym_type)
-	var have := SessionManager.get_pending_questions().size()
-	var text := "%d items · %s · at least %d minutes.\nKuiz readiness %d%%%s" % [
-		items, str(SessionManager.RUN_TIER[kind]).capitalize(), SessionManager.RUN_MINUTES[kind],
-		roundi(CompanionState.readiness()), " (low — feed and rest Kuiz first)" if low else ""]
-	if have < items:
-		text += "\nThis world has %d question%s, so they repeat. Add more with Edit on the worlds list." % [have, "" if have == 1 else "s"]
-	return text
+# Fills the pop-up: a title and tag, the run's facts for a `kind` that can be played now, and one short note.
+func _fill_encounter(title: String, tag: String, note: String, action: String, can_go: bool, kind := "", gym_type := "") -> void:
+	encounter_title.text = title
+	%EncounterTag.text = tag
+	%EncounterTag.visible = tag != ""
+	var notes: Array[String] = []
+	if note != "":
+		notes.append(note)
+	%EncounterFacts.visible = kind != ""
+	%EncounterReady.visible = kind != ""
+	if kind != "":
+		var items := SessionManager.run_items(kind, gym_type)
+		var ready := roundi(CompanionState.readiness())
+		%FactItems.text = str(items)
+		%FactLevel.text = str(SessionManager.RUN_TIER[kind]).capitalize()
+		%FactMinutes.text = "%d+" % SessionManager.RUN_MINUTES[kind]
+		%ReadyValue.text = "%d%%" % ready
+		%ReadyBar.value = ready
+		%ReadyName.text = "Kuiz readiness (low: feed and rest it)" if ready < 25 else "Kuiz readiness"
+		var have := SessionManager.get_pending_questions().size()
+		if have < items:
+			notes.append("Only %d question%s here, so they repeat." % [have, "" if have == 1 else "s"])
+	encounter_question.text = "\n".join(notes)
+	encounter_question.visible = not notes.is_empty()
+	encounter_clear_btn.text = action
+	encounter_clear_btn.disabled = false
+	encounter_clear_btn.visible = can_go
+	_show_encounter(true)
 
 func _on_house_touched(house: Dictionary) -> void:
 	var t: String = house["type"]
@@ -383,44 +399,30 @@ func _on_house_touched(house: Dictionary) -> void:
 	_pending_encounter = {"kind": "house", "gym": t, "house": house}
 	var cleared := SessionManager.is_house_cleared(_topic_id, t, id)
 	var stars := SessionManager.best_stars("house", _topic_id, "%s#%s" % [t, id])
-	encounter_title.text = "Challenge House · %s%s" % [_type_name(t), "  %s" % "★".repeat(stars) if cleared else ""]
-	var line := "\n%d of %d %s houses cleared." % [SessionManager.houses_cleared(_topic_id, t), _houses_of(t), _type_name(t)]
-	if not SessionManager.is_gym_open(_topic_id, t):
-		line += " Clear one to open the %s Gym." % _type_name(t)
-	encounter_question.text = _run_blurb("house", t) + line + ("\nReplays pay a quarter of the rewards." if cleared else "")
-	encounter_clear_btn.text = "Replay" if cleared else "Go inside"
-	encounter_clear_btn.disabled = false
-	_show_encounter(true)
+	var note := "%d of %d %s houses cleared" % [SessionManager.houses_cleared(_topic_id, t), _houses_of(t), _type_name(t)]
+	if cleared:
+		note += ". Replays pay a quarter."
+	elif not SessionManager.is_gym_open(_topic_id, t):
+		note += ". Clear one to open the gym."
+	_fill_encounter("Challenge House", _type_name(t) + ("  " + "★".repeat(stars) if cleared else ""), note, "Replay" if cleared else "Go inside", true, "house", t)
 
 func _on_gym_touched(_body: Node3D, gym_type: String) -> void:
 	_pending_encounter = {"kind": "gym", "gym": gym_type}
 	var cleared := SessionManager.is_gym_cleared(_topic_id, gym_type)
-	var open := SessionManager.is_gym_open(_topic_id, gym_type)
-	encounter_title.text = "Gym: %s%s" % [gym_type.capitalize(), " (badge earned)" if cleared else ("" if open else " — locked")]
-	if open:
-		encounter_question.text = _run_blurb("gym", gym_type) + ("\nReplays pay a quarter of the rewards." if cleared else "")
-	else:
-		encounter_question.text = "Clear any %s Challenge House first: look for the %s icons over the roofs." % [_type_name(gym_type), _type_name(gym_type)]
-	encounter_clear_btn.text = "Replay" if cleared else ("Enter Gym" if open else "Locked")
-	encounter_clear_btn.disabled = not open
-	_show_encounter(true)
+	var type_name := _type_name(gym_type)
+	if not SessionManager.is_gym_open(_topic_id, gym_type):
+		_fill_encounter("%s Gym" % type_name, "Locked", "Clear any %s house first. Look for the icons over the roofs." % type_name, "", false)
+		return
+	_fill_encounter("%s Gym" % type_name, "Badge earned" if cleared else "", "Replays pay a quarter." if cleared else "", "Replay" if cleared else "Enter Gym", true, "gym", gym_type)
 
 func _on_champion_touched(_body: Node3D) -> void:
 	_pending_encounter = {}
 	if not SessionManager.is_champion_available(_topic_id):
-		encounter_title.text = "Champion Gym (locked)"
-		encounter_question.text = "Earn every gym badge first — the Champion only faces proven players."
-		encounter_clear_btn.text = "Locked"
-		encounter_clear_btn.disabled = true
-		_show_encounter(true)
+		_fill_encounter("Champion Gym", "Locked", "Earn every gym badge first.", "", false)
 		return
 	var crowned := SessionManager.is_champion_defeated(_topic_id)
 	_pending_encounter = {"kind": "champion"}
-	encounter_title.text = "Champion Gym" + (" (crowned)" if crowned else "")
-	encounter_question.text = _run_blurb("champion", "") + "\nMultiple choice, then identification, then essay — against the toughest robot." + ("\nReplays pay a quarter of the rewards." if crowned else "")
-	encounter_clear_btn.text = "Replay" if crowned else "Challenge Champion!"
-	encounter_clear_btn.disabled = false
-	_show_encounter(true)
+	_fill_encounter("Champion Gym", "Crowned" if crowned else "The toughest robot", "Multiple choice, then identification, then essay." + (" Replays pay a quarter." if crowned else ""), "Replay" if crowned else "Challenge Champion!", true, "champion")
 
 # The explorer stands still while a panel is open.
 func _show_encounter(shown: bool) -> void:
@@ -449,6 +451,7 @@ func _on_encounter_cleared() -> void:
 		encounter_question.text = "This world has no questions yet. Add some with Edit on the worlds list."
 		encounter_clear_btn.disabled = true
 		return
+	SessionManager.battle_explorer = player.explorer
 	var entry := _pending_encounter
 	_show_encounter(false)
 	_pending_encounter = {}
@@ -537,7 +540,7 @@ func _objectives(gyms: Array[Dictionary], houses_left: int) -> Array[String]:
 		for g in gyms:
 			var t: String = str(g["type"])
 			if not SessionManager.is_gym_open(_topic_id, t):
-				steps.append("Enter a house marked %s (%d on the island)" % [_type_name(t), _houses_of(t)])
+				steps.append("Enter a house marked %s" % _type_name(t))
 			if not SessionManager.is_gym_cleared(_topic_id, t):
 				steps.append("Clear the %s Gym" % _type_name(t))
 		steps.append("Challenge the Champion Gym" if not gyms.is_empty() else "Walk into a house or gym")
@@ -548,17 +551,22 @@ func _objectives(gyms: Array[Dictionary], houses_left: int) -> Array[String]:
 	return steps
 
 # Fills the step rows placed in %Objectives (their look is set in the scene); as many steps show as
-# there are rows, and %ObjectivesMore counts the rest.
+# there are rows.
 func _show_objectives(steps: Array[String]) -> void:
-	var rows := objectives.get_children().filter(func(c: Node) -> bool: return c != objectives_more)
+	var rows := objectives.get_children()
 	for i in rows.size():
 		rows[i].visible = i < steps.size()
 		if i < steps.size():
 			(rows[i].get_node("Text") as Label).text = steps[i]
-	objectives_more.visible = steps.size() > rows.size()
-	objectives_more.text = "+%d more" % (steps.size() - rows.size())
 
+# Asks first. The pop-up goes on the HUD's layer, so it covers the HUD.
 func _on_back() -> void:
+	var was_locked: bool = player.locked
+	player.locked = true
+	var modal := ConfirmModal.open(back_btn.get_parent(), "Go home?", "Head back to the house with Kuiz? Your progress is saved.", "Go home", _go_home, false, "Stay")
+	modal.tree_exited.connect(func() -> void: player.locked = was_locked or _leaving)
+
+func _go_home() -> void:
 	SessionManager.kuiz_going_home = true
 	_leave("res://scenes/overworld/world_intro.tscn")
 
@@ -568,6 +576,7 @@ func _on_study() -> void:
 
 # Fades to %Fade's colour, then changes scene: stepping through a door feels like going in.
 func _leave(scene: String) -> void:
+	_leaving = true
 	player.locked = true
 	var t := _fade.create_tween()
 	t.tween_property(_fade, "color:a", 1.0, FADE_SEC)

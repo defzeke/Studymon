@@ -96,8 +96,9 @@ Off-White, the colour `region_map.tscn` fades through.
   screen whitens over `LEAVE_FADE_TIME` (1.1 s), then the thread-loaded map opens. The overworld theme starts
   crossfading when the scene opens.
 - **Going home:** the map's Back sets `SessionManager.kuiz_going_home`, which the scene clears as it reads
-  it. Kuiz starts on the path under "Home sweet home!", turns, the door opens, it waddles indoors, the
-  door shuts and the windows turn amber, then the Worlds hub opens. The home loop crossfades in.
+  it, after a "Go home?" pop-up. Kuiz starts on the path under "Home sweet home!", turns, the door opens, it
+  waddles indoors, the door shuts and the windows turn amber, then the pet room dissolves in
+  (`SessionManager.home_from_map`, `peek.gd:_dissolve_in()`). The home loop crossfades in.
 
 ### Scene handoffs
 
@@ -175,7 +176,8 @@ Peek                Node3D (peek.gd)
     ├── Crystals      top-right pill: crystal icon and the count
     ├── RoomPrev/Next outlined arrows either side of the room sign; walk to the previous / next room
     ├── Settings      round gear under the crystal pill, in every room; opens settings.tscn
-    ├── TimerPanel    the focus timer: time, progress bar, hint, Start / Skip, Close
+    ├── ReviewBar     under the room sign while a session runs: mode, time left, Take a break / End break
+    ├── TimerPanel    the focus timer's setup: focus and break steppers, Start focus, Close
     ├── RoomMenu      full-screen tap-to-close catcher over a Panel with RoomList: the sign's dropdown
     ├── Table         ui/dock_table.svg across the bottom: the dock the items stand on
     ├── Bar           the dock row over the table (no panel of its own): one action group per
@@ -285,7 +287,7 @@ arrives:
 |---|---|---|
 | Study Room | **Charge** (`ui/icon_charge.svg`, a toggle; the bolt pulses while on) turns the lights off: the 3D lights and ambient drop to 30 %, the night art and a dark veil fade in, and the charge sounds play. Energy refills 6 / s while it is on. Arrows, Play and Settings are disabled until it is pressed again | `State_Charging` (loops; its bolt and gem glow in the dark), then `Wake_Up` when the lights come back on |
 | Study Room | **Play**, captioned Study (`ui/icon_book.svg`), opens the Worlds hub, `session_list.tscn` | — |
-| Study Room | **Focus** (`ui/icon_timer.svg`) opens the focus timer; its caption shows the time left while one runs ([`systems/companion-care.md`](systems/companion-care.md) §6) | — |
+| Study Room | **Focus** (`ui/icon_timer.svg`) opens the focus timer's setup; its caption shows the time left while one runs ([`systems/companion-care.md`](systems/companion-care.md) §6) | — |
 | Maintenance Bay | **Check-up** (`props/tablet.svg`) opens the tablet: Battery health (`battery_health`, the battery's capacity like a phone's, not its charge; the Energy gauge shows the charge), Frame (health), Clean (100 − dirt) and Fuel (hunger) bars, off-white when fine, amber below half, coral below a quarter, and a hint naming the most urgent fix. **New battery** (30 crystals) puts battery health back to 100 % (`replace_battery()`); without enough crystals a toast says to win minigames, and at 100 % it is greyed out | `Celebrate` on a new battery |
 | Maintenance Bay | **Clean** (`props/towel.svg`): drag the towel over Kuiz and rub; every pixel scrubbed takes 0.06 dirt off, and getting Kuiz spotless in one scrub is `care("clean")` (mood +5, XP) and a "Squeaky clean!" toast | `Pet` while it is rubbed, `Celebrate` when spotless |
 | Maintenance Bay | **Tighten**: drag the **screwdriver** from the bar and hold it over Kuiz: it twists, and after 2 s the tune-up is done (`care("fix")`: health +25) and it returns to the bar | `State_Sick` (screws working loose) while it is held there, `Celebrate` when done, `Idle` if it is taken away early |
@@ -524,37 +526,32 @@ The HUD, top to bottom, in the home HUD's look (Off-White, Deep Slate 3 px outli
 
 - **Back** (top left): a 72 px round button with a slate chevron (`ui/icon_back.svg`); back to the
   worlds list.
-- **Quest card** (`QuestCard`, beside it): "Region quest" and how many of the region's tasks are
-  done ("1 / 19 done": every house, every gym and the Champion), then three task chips placed in
-  the scene under `QuestTasks`, whose values `_refresh_progress()` fills: **Houses**
-  (`ui/icon_trainer.svg`, `%HousesValue` cleared / 15 and the teal `%HousesBar`), **Gyms**
-  (`%GymBadges`: one copy of the hidden `BadgeTemplate` per gym, lit once cleared, faint until
-  then, and `%GymsValue`) and **Champion** (`%ChampionIcon`: the `icon_lock` export "Locked" until
-  every gym is cleared, then `icon_crown` "Ready!", "Crowned" once beaten).
-- **Minimap** (under the card, at the left; `minimap.gd`, 200 px): the whole island from straight
-  above, rendered once into a small SubViewport, with live dots for the explorer (teal),
-  houses, gyms (amber) and the Champion (coral).
-- **Objectives** (`Objectives`, beside the minimap, no panel): a bullet list of the next three
-  steps, in order: a house of each type whose gym is still shut ("Enter a house marked Essay (5 on the
-  island)"), the gyms, the Champion, then "Clear the other houses (n left)"; "+N more" when there are more, and
-  "Region complete!" at the end. Off-White bold text with a Deep Slate outline so it reads over
-  the map; the current step is larger with an amber bullet, the rest slightly dimmer. The rows are
-  `Step1`–`Step3` (each a `Dot` and a `Text` label, styled in the scene) and `%ObjectivesMore`; as
-  many steps show as there are `Step` rows, so adding a row in the editor shows one more.
+- **Quest card** (`QuestCard`, between Back and the minimap, one top band with them): "NEXT UP" and how many of the
+  region's tasks are done, the next objective from `_objectives()` ("Enter a house marked Essay", the gyms, the
+  Champion, then "Clear the other houses (n left)", and "Region complete!" at the end), and under it `QuestTasks`, whose
+  values `_refresh_progress()` fills: **Houses** (`ui/icon_trainer.svg`, `%HousesValue` and the teal `%HousesBar`),
+  **Gyms** (a badge per gym, `%GymsValue`) and **Champion** (crown or lock, `%ChampionValue`). As many objectives show
+  as there are `Step` rows in `%Objectives`, so adding a row in the editor shows one more.
+- **Minimap** (top right; `minimap.gd`, 168 px): the whole island from straight above, rendered once into a
+  SubViewport, with live dots for the explorer (teal), houses, gyms (amber) and the Champion (coral). A tap opens it
+  large in `%MapOverlay`, with a legend; X or a tap outside closes it.
+- **Encounter pop-up** (`%EncounterPanel`, `_fill_encounter()`): a title and tag, three facts (items, level, minutes), Kuiz's readiness as a bar, one short note, and the action. A locked gym or Champion shows only its title, tag and what opens it.
 - **Joystick** (bottom left) and **Study** (bottom right): a 124 px Off-White card with a stack of
   flashcards (`ui/icon_study.svg`) over "Study"; opens the Flashcard Sanctuary.
 
 ### `battle.tscn`
 
-`Battle` (`Control`) → `Camera2D`, `Background`, `Margin` → `List`: `TopBar` (flee, title),
-`EnemyCard` (sprite, name, HP), `PlayerCard` (sprite, name, HP), `QuestionCard`
-(type, text), `AnswerInput` (`TextEdit`), `SubmitButton`, `JudgingLabel`, `ResultLabel`,
-`ResultPanel` (title, XP label, retry / review answers / continue) and the full-screen `ReviewPanel`.
+`Battle` (`Control`) → `Camera2D`, `Floor`, `Background`, the `Stage` (`ArenaStage`, the 3D arena), `HUD` (`TopBar` with
+`FleeButton` and `TitleLabel` in a pill, `EnemyCard`, `PlayerCard`), `Dialogue` (`QuestionType`, `QuestionText`,
+`AnswerInput`, `MCBox`, `SubmitButton`, `JudgingLabel`, `ResultLabel`, and `ResultPanel` with its title, XP label, retry /
+review answers / continue), then the effects and the full-screen `ReviewPanel`: a dim over a `MenuCard`, each answer a Soft
+Sage copy of `%ReviewRow` with a teal or coral head line, the details and Report. The cards use the home HUD's look, and the
+buttons the menu theme's variations.
 
 The enemy and player cards sit over `ArenaStage`, the 3D scene that holds the models. The Broken
 Bot foe makes its own sounds on its clips (§2 Model sounds). For a Multiple Choice question
 `battle.gd` hides `AnswerInput` and `SubmitButton` and builds a `VBoxContainer` of four option
-`Button`s (56 px tall) in their place at runtime. `PlayerCard`'s box ends in `%GaugeRow`: four `stat_gauge.gd` rings (44 px) placed in the scene, each **named after the `CompanionState` stat it shows** (`hunger`, `energy`, `mood`, `health`; icon and ring colour set in the Inspector). `_refresh_gauges()` follows `CompanionState.stats_changed`, so a run's costs and hits show live. `stat_gauge.gd` is a `@tool` script, so the rings draw in the editor. `battle.gd`'s exports are grouped **Intro**, **Sound effects** and **Juice** (shake, flash strength, the `hurt_flash_color` / `lose_flash_color` screen flashes, the end-banner hold). After each answer `ResultPanel` is a short beat that shows only "Correct! Streak N" or "Not quite." and "n of N answered" (Next held 0.8 s); no answer is shown during a run. At the end (cleared or defeated) `%ReviewButton` (**Review answers**) opens `%ReviewPanel`: a scrollable `%ReviewList` of copies of the hidden `%ReviewRow` (a `Text` label with ✓ / ✗, the question, your answer, the correct answer or model answer with rubric marks, feedback and explanation, and a **Report** button), closed by `%CloseButton`. `region_map.tscn` has a full-screen off-white fade (`FadeLayer`, `CanvasLayer` 100 → `%Fade`, transparent in the editor): out when a house or gym is entered, in on arrival. Over the island, each of the 15 houses carries a bobbing `house_icon` (`ui/icon_trainer.svg`) in its type's colour (Identification teal, Essay lilac `8D82A8`, Multiple Choice amber; faint once cleared) and a `Label3D` (type, `Easy` or stars) shown only within 4 units of the explorer; walking up to a house unfolds a dark doorway (`1E2829`) over its door.
+`Button`s (56 px tall) in their place at runtime. `PlayerCard`'s box ends in `%GaugeRow`: four `stat_gauge.gd` rings (38 px) placed in the scene, each **named after the `CompanionState` stat it shows** (`hunger`, `energy`, `mood`, `health`; icon and ring colour set in the Inspector). `_refresh_gauges()` follows `CompanionState.stats_changed`, so a run's costs and hits show live. `stat_gauge.gd` is a `@tool` script, so the rings draw in the editor. `battle.gd`'s exports are grouped **Intro**, **Sound effects** and **Juice** (shake, flash strength, the `hurt_flash_color` / `lose_flash_color` screen flashes, the end-banner hold). After each answer `ResultPanel` is a short beat that shows only "Correct! Streak N" or "Not quite." and "n of N answered" (Next held 0.8 s); no answer is shown during a run. At the end (cleared or defeated) `%ReviewButton` (**Review answers**) opens `%ReviewPanel`: a scrollable `%ReviewList` of copies of the hidden `%ReviewRow` (a `Text` label with ✓ / ✗, the question, your answer, the correct answer or model answer with rubric marks, feedback and explanation, and a **Report** button), closed by `%CloseButton`. `region_map.tscn` has a full-screen off-white fade (`FadeLayer`, `CanvasLayer` 100 → `%Fade`, transparent in the editor): out when a house or gym is entered, in on arrival. Over the island, each of the 15 houses carries a bobbing `house_icon` (`ui/icon_trainer.svg`) in its type's colour (Identification teal, Essay lilac `8D82A8`, Multiple Choice amber; faint once cleared) and a `Label3D` (type, `Easy` or stars) shown only within 4 units of the explorer; walking up to a house unfolds a dark doorway (`1E2829`) over its door.
 
 
 ---
@@ -584,14 +581,13 @@ the Broken Bot's sounds are synthesised in the game itself (§2 Model sounds).
 
 `MusicManager` (autoload) owns two `AudioStreamPlayer`s:
 
-- `MusicPlayer` — silent until a scene asks for a track, and persists across scene changes. The boot
+- `MusicPlayer` — silent until a scene asks for a track, and persists across scene changes. `adventure_music` (saved) mutes the map's and battles' music from their round button or Settings; home and reviewing keep theirs. The boot
   `splash.tscn` waits two frames, so the save's volume is applied and the first frames' hitch can't
   skip the fade, then calls `play_loading()`, which starts `music/loading.wav` at 1 s and fades it in
   over `LOADING_FADE` (2 s) to `-6 dB`; `loading.tscn` keeps the same track playing, and `peek.tscn` calls
   `play_main_room()` to swap back: the loading track fades out on its own player while the home
   loop fades in, over `CROSSFADE` (2.5 s). `world_intro.gd` and `region_map.gd` call `play_overworld()` on the way into
-  the map, the same crossfade to `music/overworld.wav`; battles have no music, so it carries on
-  through them, and `session_list.gd`, `flashcards.gd` and `peek.tscn` call `play_main_room()` to
+  the map, the same crossfade to `music/overworld.wav`; `battle.gd` crossfades to `music/battle.wav`, and `session_list.gd`, `flashcards.gd` and `peek.tscn` call `play_main_room()` to
   fade back. Each track is written as a seamless loop (its note
   and reverb tails wrap onto its start) and is set to loop forward over its whole length at runtime.
   - **Home Room** (34 s, 112 bpm, C major): a sunny, bouncy tune — a marimba melody over
@@ -643,6 +639,8 @@ rasterises them sharp on high-density phones; the drawing itself is unchanged.
 | `audio/sfx/sfx_*.wav` (ten battle cues: click, whoosh, land, vs, correct, wrong, hit, hurt, win, lose; our own) | `battle.gd` exports, assigned in `battle.tscn`; played through `MusicManager.play_sfx_layered()` |
 | `sprites/battle/battle_backdrop.svg` | `battle.tscn` arena backdrop |
 | `audio/music/home_room.wav` | `MusicManager`: home loop (our own; 34 s, upbeat C major, seamless) |
+| `audio/music/focus_twinkle.wav`, `focus_london_bridge.wav`, `focus_mary_lamb.wav`, `focus_frere_jacques.wav` | `MusicManager.play_focus()`: the reviewing shuffle. Traditional public-domain tunes, our own arrangement (music box, felt chords, bass, brushed beat, 72–78 bpm, 22 kHz mono), played once each, no loop |
+| `audio/music/battle.wav` | `MusicManager.play_battle()`: our own driving A-minor loop (132 bpm, 29 s, marimba, bass, soft lead, drums; 32 kHz mono, seamless) |
 | `audio/music/loading.wav` | `MusicManager.play_loading()`: splash/loading loop (our own; 38 s, seamless) |
 | `audio/music/overworld.wav` | `MusicManager.play_overworld()`: region map (and battle) loop (our own; 46 s, G major route theme, seamless) |
 | `audio/sfx/sfx_charge.wav`, `sfx_charged.wav` | home's Charge button (our own) |
@@ -667,6 +665,8 @@ rasterises them sharp on high-density phones; the drawing itself is unchanged.
 | `sprites/rooms/data_kitchen.svg` | tutorial and home Data Kitchen (temporary placeholder) |
 | `sprites/rooms/playroom.svg` | tutorial and home Playroom; no painted ball, the real one is flung (temporary placeholder) |
 | `sprites/ui/icon_charge.svg`, `icon_book.svg`, `icon_timer.svg`, `icon_settings.svg` | home's Charge, Play (captioned Study; an open book with an amber bookmark), Focus (a tomato clock) and Settings buttons (same style as the props) |
+| `sprites/ui/icon_expand.svg`, `icon_close.svg` | the minimap's expand badge and the big map's X |
+| `sprites/ui/icon_music_on.svg`, `icon_music_off.svg` | the round music button on the map and in battle (`widgets/music_toggle.gd`) |
 | `sprites/ui/icon_more.svg`, `check_on.svg`, `check_off.svg`, `slider_grabber.svg` | the Worlds card's "more" button; the menu theme's checkbox and slider |
 | `sprites/ui/campaign.png`, `charge.png`, `settings.svg` | **unused** since home took the icons above; safe to delete |
 | `sprites/ui/arrow.svg` | home's room arrows (top) and food arrows (bar); an Off-White chevron with a Deep Slate outline, flipped for ◀ |

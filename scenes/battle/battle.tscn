@@ -19,6 +19,7 @@
 [ext_resource type="AudioStream" uid="uid://bk4yndblv0rb5" path="res://assets/audio/sfx/sfx_win.wav" id="18_win"]
 [ext_resource type="AudioStream" uid="uid://cugu6p5g0m1h6" path="res://assets/audio/sfx/sfx_lose.wav" id="19_lose"]
 [ext_resource type="Script" path="res://scripts/ui/widgets/stat_gauge.gd" id="20_gauge"]
+[ext_resource type="Script" path="res://scripts/ui/widgets/music_toggle.gd" id="25_music"]
 [ext_resource type="Texture2D" path="res://assets/sprites/props/data_chips.svg" id="21_hunger"]
 [ext_resource type="Texture2D" path="res://assets/sprites/ui/icon_charge.svg" id="22_energy"]
 [ext_resource type="Texture2D" path="res://assets/sprites/ui/stat_mood.svg" id="23_mood"]
@@ -87,55 +88,77 @@ ambient_light_color = Color(0.95, 0.9, 0.85, 1)
 ambient_light_energy = 0.75
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_hp_back"]
-bg_color = Color(0.2, 0.25, 0.26, 1)
-corner_radius_top_left = 6
-corner_radius_top_right = 6
-corner_radius_bottom_right = 6
-corner_radius_bottom_left = 6
+bg_color = Color(0.1608, 0.2196, 0.2275, 0.18)
+corner_radius_top_left = 7
+corner_radius_top_right = 7
+corner_radius_bottom_right = 7
+corner_radius_bottom_left = 7
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_hp_fill"]
-bg_color = Color(0.35, 0.8, 0.4, 1)
-corner_radius_top_left = 6
-corner_radius_top_right = 6
-corner_radius_bottom_right = 6
-corner_radius_bottom_left = 6
+bg_color = Color(0.4706, 0.6627, 0.5098, 1)
+corner_radius_top_left = 7
+corner_radius_top_right = 7
+corner_radius_bottom_right = 7
+corner_radius_bottom_left = 7
 
 [sub_resource type="Theme" id="Theme_battle"]
-Label/colors/font_color = Color(0.16, 0.22, 0.23, 1)
+Label/colors/font_color = Color(0.1608, 0.2196, 0.2275, 1)
 ProgressBar/styles/background = SubResource("StyleBoxFlat_hp_back")
 ProgressBar/styles/fill = SubResource("StyleBoxFlat_hp_fill")
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_card"]
 content_margin_left = 14.0
-content_margin_top = 8.0
+content_margin_top = 9.0
 content_margin_right = 14.0
-content_margin_bottom = 8.0
-bg_color = Color(0.97, 0.96, 0.89, 1)
-border_width_left = 4
-border_width_top = 4
-border_width_right = 4
-border_width_bottom = 4
-border_color = Color(0.16, 0.22, 0.23, 1)
-corner_radius_top_left = 12
-corner_radius_top_right = 12
-corner_radius_bottom_right = 12
-corner_radius_bottom_left = 12
+content_margin_bottom = 9.0
+bg_color = Color(0.9686, 0.9608, 0.9373, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.1608, 0.2196, 0.2275, 1)
+corner_radius_top_left = 20
+corner_radius_top_right = 20
+corner_radius_bottom_right = 20
+corner_radius_bottom_left = 20
+shadow_color = Color(0.1608, 0.2196, 0.2275, 0.25)
+shadow_size = 6
+shadow_offset = Vector2(0, 3)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_dialogue"]
-content_margin_left = 18.0
-content_margin_top = 14.0
-content_margin_right = 18.0
-content_margin_bottom = 14.0
-bg_color = Color(0.97, 0.96, 0.89, 1)
-border_width_left = 6
-border_width_top = 6
-border_width_right = 6
-border_width_bottom = 6
-border_color = Color(0.16, 0.22, 0.23, 1)
-corner_radius_top_left = 14
-corner_radius_top_right = 14
-corner_radius_bottom_right = 14
-corner_radius_bottom_left = 14
+content_margin_left = 20.0
+content_margin_top = 16.0
+content_margin_right = 20.0
+content_margin_bottom = 16.0
+bg_color = Color(0.9686, 0.9608, 0.9373, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.1608, 0.2196, 0.2275, 1)
+corner_radius_top_left = 28
+corner_radius_top_right = 28
+corner_radius_bottom_right = 28
+corner_radius_bottom_left = 28
+shadow_color = Color(0.1608, 0.2196, 0.2275, 0.25)
+shadow_size = 6
+shadow_offset = Vector2(0, 3)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_soft"]
+content_margin_left = 16.0
+content_margin_top = 12.0
+content_margin_right = 16.0
+content_margin_bottom = 12.0
+bg_color = Color(0.9098, 0.9412, 0.9176, 1)
+border_width_left = 0
+border_width_top = 0
+border_width_right = 0
+border_width_bottom = 0
+border_color = Color(0.1608, 0.2196, 0.2275, 1)
+corner_radius_top_left = 20
+corner_radius_top_right = 20
+corner_radius_bottom_right = 20
+corner_radius_bottom_left = 20
 
 [node name="Battle" type="Control" unique_id=121004192]
 layout_mode = 3
@@ -227,13 +250,13 @@ render_target_update_mode = 4
 
 [node name="Camera3D" type="Camera3D" parent="Stage/View/World" unique_id=852086257]
 unique_name_in_owner = true
-transform = Transform3D(1, 0, 0, 0, 0.9521, 0.3057, 0, -0.3057, 0.9521, 0, 3.6, 8.5)
+transform = Transform3D(1, 0, 0, 0, 0.9521, 0.3057, 0, -0.3057, 0.9521, 0, 4.1, 10.5)
 keep_aspect = 0
 fov = 40.0
 
 [node name="PetSpot" type="Marker3D" parent="Stage/View/World" unique_id=1921649533]
 unique_name_in_owner = true
-transform = Transform3D(-1.3625138, 0, 0.6273408, 0, 1.4999995, 0, -0.6273408, 0, -1.3625138, -0.6830845, -0.10930872, 3.5880132)
+transform = Transform3D(-0.9083, 0, 0.4182, 0, 1, 0, -0.4182, 0, -0.9083, -1.45, 0, 3.2)
 
 [node name="PetDust" type="CPUParticles3D" parent="Stage/View/World/PetSpot" unique_id=1894722829]
 unique_name_in_owner = true
@@ -264,6 +287,10 @@ mesh = SubResource("Mesh_shadow")
 [node name="PadTop" type="MeshInstance3D" parent="Stage/View/World/PetSpot" unique_id=1152302186]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.03, 0)
 mesh = SubResource("Mesh_pad_top")
+
+[node name="TrainerSpot" type="Marker3D" parent="Stage/View/World"]
+unique_name_in_owner = true
+transform = Transform3D(-0.982, 0, -0.19, 0, 1, 0, 0.19, 0, -0.982, -0.75, 0, 6)
 
 [node name="FoeSpot" type="Marker3D" parent="Stage/View/World" unique_id=1638244181]
 unique_name_in_owner = true
@@ -319,83 +346,117 @@ grow_vertical = 2
 mouse_filter = 2
 theme = SubResource("Theme_battle")
 
-[node name="TopBar" type="HBoxContainer" parent="HUD" unique_id=510050685]
+[node name="TopBar" type="HBoxContainer" parent="HUD"]
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
-offset_left = 12.0
-offset_top = 10.0
-offset_right = -12.0
-offset_bottom = 58.0
+offset_left = 16.0
+offset_top = 14.0
+offset_right = -16.0
+offset_bottom = 70.0
 grow_horizontal = 2
 theme_override_constants/separation = 12
 
-[node name="FleeButton" type="Button" parent="HUD/TopBar" unique_id=525637767]
+[node name="FleeButton" type="Button" parent="HUD/TopBar"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(132, 52)
+custom_minimum_size = Vector2(110, 56)
 layout_mode = 2
 size_flags_vertical = 0
+theme_type_variation = &"MenuQuiet"
+theme_override_font_sizes/font_size = 22
 text = "← Run"
 
-[node name="TitleLabel" type="Label" parent="HUD/TopBar" unique_id=1175026631]
+[node name="MusicButton" type="Button" parent="HUD/TopBar"]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(56, 56)
+layout_mode = 2
+size_flags_vertical = 0
+theme_type_variation = &"MenuRound"
+icon_alignment = 1
+expand_icon = true
+script = ExtResource("25_music")
+
+[node name="Space" type="Control" parent="HUD/TopBar"]
 layout_mode = 2
 size_flags_horizontal = 3
-text = "Battle"
-horizontal_alignment = 2
+mouse_filter = 2
 
-[node name="EnemyCard" type="PanelContainer" parent="HUD" unique_id=1474864920]
+[node name="TitlePill" type="PanelContainer" parent="HUD/TopBar"]
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_card")
+
+[node name="TitleLabel" type="Label" parent="HUD/TopBar/TitlePill"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_fonts/font = ExtResource("6_font")
+theme_override_font_sizes/font_size = 20
+text = "Battle"
+
+[node name="EnemyCard" type="PanelContainer" parent="HUD"]
 unique_name_in_owner = true
 layout_mode = 0
 offset_left = 16.0
-offset_top = 68.0
-offset_right = 350.0
-offset_bottom = 182.0
+offset_top = 84.0
+offset_right = 330.0
+offset_bottom = 84.0
 theme_override_styles/panel = SubResource("StyleBoxFlat_card")
 
-[node name="Box" type="VBoxContainer" parent="HUD/EnemyCard" unique_id=890092352]
+[node name="Box" type="VBoxContainer" parent="HUD/EnemyCard"]
 layout_mode = 2
-theme_override_constants/separation = 4
+theme_override_constants/separation = 6
 
-[node name="NameRow" type="HBoxContainer" parent="HUD/EnemyCard/Box" unique_id=1858298145]
+[node name="NameRow" type="HBoxContainer" parent="HUD/EnemyCard/Box"]
 layout_mode = 2
 
-[node name="EnemyName" type="Label" parent="HUD/EnemyCard/Box/NameRow" unique_id=1112697161]
+[node name="EnemyName" type="Label" parent="HUD/EnemyCard/Box/NameRow"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
-text = "TRAINER"
+theme_override_fonts/font = ExtResource("6_font")
+theme_override_font_sizes/font_size = 22
+text = "NAME"
 clip_text = true
 
-[node name="EnemyLevel" type="Label" parent="HUD/EnemyCard/Box/NameRow" unique_id=13985820]
+[node name="EnemyLevel" type="Label" parent="HUD/EnemyCard/Box/NameRow"]
 unique_name_in_owner = true
 layout_mode = 2
+theme_override_colors/font_color = Color(0.4078, 0.4667, 0.4706, 1)
+theme_override_fonts/font = ExtResource("6_font")
+theme_override_font_sizes/font_size = 20
 text = "Lv1"
 
-[node name="HPRow" type="HBoxContainer" parent="HUD/EnemyCard/Box" unique_id=799094901]
+[node name="HPRow" type="HBoxContainer" parent="HUD/EnemyCard/Box"]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="HPTag" type="Label" parent="HUD/EnemyCard/Box/HPRow" unique_id=1741952199]
+[node name="HPTag" type="Label" parent="HUD/EnemyCard/Box/HPRow"]
 layout_mode = 2
+theme_override_colors/font_color = Color(0.4078, 0.4667, 0.4706, 1)
+theme_override_fonts/font = ExtResource("6_font")
+theme_override_font_sizes/font_size = 16
 text = "HP"
 
-[node name="EnemyHP" type="ProgressBar" parent="HUD/EnemyCard/Box/HPRow" unique_id=1376902192]
+[node name="EnemyHP" type="ProgressBar" parent="HUD/EnemyCard/Box/HPRow"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 16)
+custom_minimum_size = Vector2(0, 14)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 4
 value = 100.0
 show_percentage = false
 
-[node name="EnemyHPText" type="Label" parent="HUD/EnemyCard/Box" unique_id=935112100]
+[node name="EnemyHPText" type="Label" parent="HUD/EnemyCard/Box/HPRow"]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(70, 0)
 layout_mode = 2
+theme_override_fonts/font = ExtResource("6_font")
+theme_override_font_sizes/font_size = 18
 text = "100/100"
 horizontal_alignment = 2
 
-[node name="PlayerCard" type="PanelContainer" parent="HUD" unique_id=1084644790]
+[node name="PlayerCard" type="PanelContainer" parent="HUD"]
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = -1
@@ -403,53 +464,64 @@ anchor_left = 1.0
 anchor_top = 0.66
 anchor_right = 1.0
 anchor_bottom = 0.66
-offset_left = -350.0
-offset_top = -130.0
+offset_left = -330.0
+offset_top = -14.0
 offset_right = -16.0
-offset_bottom = -16.0
+offset_bottom = -14.0
 grow_horizontal = 0
 grow_vertical = 0
 theme_override_styles/panel = SubResource("StyleBoxFlat_card")
 
-[node name="Box" type="VBoxContainer" parent="HUD/PlayerCard" unique_id=1014653902]
+[node name="Box" type="VBoxContainer" parent="HUD/PlayerCard"]
 layout_mode = 2
-theme_override_constants/separation = 4
+theme_override_constants/separation = 6
 
-[node name="NameRow" type="HBoxContainer" parent="HUD/PlayerCard/Box" unique_id=1348387828]
+[node name="NameRow" type="HBoxContainer" parent="HUD/PlayerCard/Box"]
 layout_mode = 2
 
-[node name="PlayerName" type="Label" parent="HUD/PlayerCard/Box/NameRow" unique_id=1428105847]
+[node name="PlayerName" type="Label" parent="HUD/PlayerCard/Box/NameRow"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
-text = "KUIZ"
+theme_override_fonts/font = ExtResource("6_font")
+theme_override_font_sizes/font_size = 22
+text = "NAME"
 clip_text = true
 
-[node name="PlayerLevel" type="Label" parent="HUD/PlayerCard/Box/NameRow" unique_id=1095304902]
+[node name="PlayerLevel" type="Label" parent="HUD/PlayerCard/Box/NameRow"]
 unique_name_in_owner = true
 layout_mode = 2
+theme_override_colors/font_color = Color(0.4078, 0.4667, 0.4706, 1)
+theme_override_fonts/font = ExtResource("6_font")
+theme_override_font_sizes/font_size = 20
 text = "Lv1"
 
-[node name="HPRow" type="HBoxContainer" parent="HUD/PlayerCard/Box" unique_id=1176702461]
+[node name="HPRow" type="HBoxContainer" parent="HUD/PlayerCard/Box"]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="HPTag" type="Label" parent="HUD/PlayerCard/Box/HPRow" unique_id=1668310894]
+[node name="HPTag" type="Label" parent="HUD/PlayerCard/Box/HPRow"]
 layout_mode = 2
+theme_override_colors/font_color = Color(0.4078, 0.4667, 0.4706, 1)
+theme_override_fonts/font = ExtResource("6_font")
+theme_override_font_sizes/font_size = 16
 text = "HP"
 
-[node name="PlayerHP" type="ProgressBar" parent="HUD/PlayerCard/Box/HPRow" unique_id=1775068969]
+[node name="PlayerHP" type="ProgressBar" parent="HUD/PlayerCard/Box/HPRow"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 16)
+custom_minimum_size = Vector2(0, 14)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 4
 value = 100.0
 show_percentage = false
 
-[node name="PlayerHPText" type="Label" parent="HUD/PlayerCard/Box" unique_id=612809208]
+[node name="PlayerHPText" type="Label" parent="HUD/PlayerCard/Box/HPRow"]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(70, 0)
 layout_mode = 2
+theme_override_fonts/font = ExtResource("6_font")
+theme_override_font_sizes/font_size = 18
 text = "100/100"
 horizontal_alignment = 2
 
@@ -459,28 +531,28 @@ layout_mode = 2
 theme_override_constants/separation = 6
 
 [node name="hunger" type="Control" parent="HUD/PlayerCard/Box/GaugeRow"]
-custom_minimum_size = Vector2(44, 44)
+custom_minimum_size = Vector2(38, 38)
 layout_mode = 2
 script = ExtResource("20_gauge")
 icon = ExtResource("21_hunger")
 color = Color(0.8392, 0.6588, 0.3725, 1)
 
 [node name="energy" type="Control" parent="HUD/PlayerCard/Box/GaugeRow"]
-custom_minimum_size = Vector2(44, 44)
+custom_minimum_size = Vector2(38, 38)
 layout_mode = 2
 script = ExtResource("20_gauge")
 icon = ExtResource("22_energy")
 color = Color(0.3098, 0.5608, 0.5373, 1)
 
 [node name="mood" type="Control" parent="HUD/PlayerCard/Box/GaugeRow"]
-custom_minimum_size = Vector2(44, 44)
+custom_minimum_size = Vector2(38, 38)
 layout_mode = 2
 script = ExtResource("20_gauge")
 icon = ExtResource("23_mood")
 color = Color(0.5529, 0.5098, 0.6588, 1)
 
 [node name="health" type="Control" parent="HUD/PlayerCard/Box/GaugeRow"]
-custom_minimum_size = Vector2(44, 44)
+custom_minimum_size = Vector2(38, 38)
 layout_mode = 2
 script = ExtResource("20_gauge")
 icon = ExtResource("24_health")
@@ -501,113 +573,138 @@ grow_vertical = 0
 theme = SubResource("Theme_battle")
 theme_override_styles/panel = SubResource("StyleBoxFlat_dialogue")
 
-[node name="Box" type="VBoxContainer" parent="Dialogue" unique_id=861685374]
+[node name="Box" type="VBoxContainer" parent="Dialogue"]
 layout_mode = 2
-theme_override_constants/separation = 8
+theme_override_constants/separation = 10
 
-[node name="QuestionType" type="Label" parent="Dialogue/Box" unique_id=1468473619]
+[node name="QuestionType" type="Label" parent="Dialogue/Box"]
 unique_name_in_owner = true
 layout_mode = 2
-text = "ESSAY"
+theme_override_colors/font_color = Color(0.4078, 0.4667, 0.4706, 1)
+theme_override_fonts/font = ExtResource("6_font")
+theme_override_font_sizes/font_size = 20
+text = "Essay"
 
-[node name="QScroll" type="ScrollContainer" parent="Dialogue/Box" unique_id=356121677]
+[node name="QScroll" type="ScrollContainer" parent="Dialogue/Box"]
 custom_minimum_size = Vector2(0, 72)
 layout_mode = 2
 size_flags_vertical = 3
 horizontal_scroll_mode = 0
 
-[node name="QuestionText" type="Label" parent="Dialogue/Box/QScroll" unique_id=1386034149]
+[node name="QuestionText" type="Label" parent="Dialogue/Box/QScroll"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
+theme_override_fonts/font = ExtResource("6_font")
+theme_override_font_sizes/font_size = 30
 text = "Question..."
 autowrap_mode = 3
 
-[node name="AnswerInput" type="TextEdit" parent="Dialogue/Box" unique_id=711044931]
+[node name="AnswerInput" type="TextEdit" parent="Dialogue/Box"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 64)
+custom_minimum_size = Vector2(0, 76)
 layout_mode = 2
 placeholder_text = "Type your answer..."
+wrap_mode = 1
 
-[node name="MCBox" type="VBoxContainer" parent="Dialogue/Box" unique_id=1475166945]
+[node name="MCBox" type="VBoxContainer" parent="Dialogue/Box"]
 unique_name_in_owner = true
 visible = false
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="McTemplate" type="Button" parent="Dialogue/Box/MCBox" unique_id=854317589]
+[node name="McTemplate" type="Button" parent="Dialogue/Box/MCBox"]
 unique_name_in_owner = true
 visible = false
 custom_minimum_size = Vector2(0, 56)
 layout_mode = 2
+theme_type_variation = &"MenuQuiet"
+theme_override_font_sizes/font_size = 24
 autowrap_mode = 3
 
-[node name="SubmitButton" type="Button" parent="Dialogue/Box" unique_id=841089349]
+[node name="SubmitButton" type="Button" parent="Dialogue/Box"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 52)
+custom_minimum_size = Vector2(0, 64)
 layout_mode = 2
+theme_type_variation = &"MenuPrimary"
+theme_override_font_sizes/font_size = 30
 text = "FIGHT"
 
-[node name="JudgingLabel" type="Label" parent="Dialogue/Box" unique_id=1017233099]
+[node name="JudgingLabel" type="Label" parent="Dialogue/Box"]
 unique_name_in_owner = true
 visible = false
 layout_mode = 2
+theme_override_colors/font_color = Color(0.4078, 0.4667, 0.4706, 1)
+theme_override_font_sizes/font_size = 22
 text = "judging..."
 horizontal_alignment = 1
 
-[node name="ResultLabel" type="Label" parent="Dialogue/Box" unique_id=1164243638]
+[node name="ResultLabel" type="Label" parent="Dialogue/Box"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 40)
 layout_mode = 2
+theme_override_colors/font_color = Color(0.2633, 0.4767, 0.4567, 1)
+theme_override_fonts/font = ExtResource("6_font")
+theme_override_font_sizes/font_size = 22
+horizontal_alignment = 1
 autowrap_mode = 3
 
-[node name="ResultPanel" type="PanelContainer" parent="Dialogue/Box" unique_id=68113693]
+[node name="ResultPanel" type="PanelContainer" parent="Dialogue/Box"]
 unique_name_in_owner = true
 visible = false
 layout_mode = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_card")
+size_flags_vertical = 6
+theme_override_styles/panel = SubResource("StyleBoxFlat_soft")
 
-[node name="RBox" type="VBoxContainer" parent="Dialogue/Box/ResultPanel" unique_id=2113730735]
+[node name="RBox" type="VBoxContainer" parent="Dialogue/Box/ResultPanel"]
 layout_mode = 2
 theme_override_constants/separation = 10
 
-[node name="ResultTitle" type="Label" parent="Dialogue/Box/ResultPanel/RBox" unique_id=802224372]
+[node name="ResultTitle" type="Label" parent="Dialogue/Box/ResultPanel/RBox"]
 unique_name_in_owner = true
 layout_mode = 2
+theme_override_fonts/font = ExtResource("6_font")
+theme_override_font_sizes/font_size = 28
 text = "Victory!"
 horizontal_alignment = 1
 
-[node name="XPLabel" type="Label" parent="Dialogue/Box/ResultPanel/RBox" unique_id=1743714759]
+[node name="XPLabel" type="Label" parent="Dialogue/Box/ResultPanel/RBox"]
 unique_name_in_owner = true
 layout_mode = 2
+theme_override_font_sizes/font_size = 22
 text = "+5 XP"
 horizontal_alignment = 1
-autowrap_mode = 2
+autowrap_mode = 3
 
-[node name="RButtons" type="HBoxContainer" parent="Dialogue/Box/ResultPanel/RBox" unique_id=1763650769]
+[node name="RButtons" type="HBoxContainer" parent="Dialogue/Box/ResultPanel/RBox"]
 layout_mode = 2
-theme_override_constants/separation = 12
+theme_override_constants/separation = 10
 
-[node name="RetryButton" type="Button" parent="Dialogue/Box/ResultPanel/RBox/RButtons" unique_id=161581583]
+[node name="RetryButton" type="Button" parent="Dialogue/Box/ResultPanel/RBox/RButtons"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 52)
+custom_minimum_size = Vector2(0, 60)
 layout_mode = 2
 size_flags_horizontal = 3
+theme_type_variation = &"MenuQuiet"
+theme_override_font_sizes/font_size = 22
 text = "↻ Retry"
 
 [node name="ReviewButton" type="Button" parent="Dialogue/Box/ResultPanel/RBox/RButtons"]
 unique_name_in_owner = true
 visible = false
-custom_minimum_size = Vector2(0, 52)
+custom_minimum_size = Vector2(0, 60)
 layout_mode = 2
 size_flags_horizontal = 3
+theme_type_variation = &"MenuQuiet"
+theme_override_font_sizes/font_size = 22
 text = "Review answers"
 
-[node name="ContinueButton" type="Button" parent="Dialogue/Box/ResultPanel/RBox/RButtons" unique_id=879944101]
+[node name="ContinueButton" type="Button" parent="Dialogue/Box/ResultPanel/RBox/RButtons"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 52)
+custom_minimum_size = Vector2(0, 60)
 layout_mode = 2
 size_flags_horizontal = 3
+theme_type_variation = &"MenuPrimary"
+theme_override_font_sizes/font_size = 22
 text = "Overworld →"
 
 [node name="VsLabel" type="Label" parent="." unique_id=2130521214]
@@ -712,65 +809,86 @@ angular_velocity_max = 360.0
 scale_amount_min = 6.0
 scale_amount_max = 12.0
 
-[node name="ReviewPanel" type="PanelContainer" parent="."]
+[node name="ReviewPanel" type="ColorRect" parent="."]
 unique_name_in_owner = true
 visible = false
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 24.0
-offset_top = 80.0
-offset_right = -24.0
-offset_bottom = -80.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_card")
+color = Color(0.1608, 0.2196, 0.2275, 0.6)
 
-[node name="Box" type="VBoxContainer" parent="ReviewPanel"]
-layout_mode = 2
-theme_override_constants/separation = 12
+[node name="Card" type="PanelContainer" parent="ReviewPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 24.0
+offset_top = 60.0
+offset_right = -24.0
+offset_bottom = -60.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_type_variation = &"MenuCard"
 
-[node name="Title" type="Label" parent="ReviewPanel/Box"]
+[node name="Box" type="VBoxContainer" parent="ReviewPanel/Card"]
 layout_mode = 2
-theme_override_fonts/font = ExtResource("6_font")
-theme_override_font_sizes/font_size = 32
+theme_override_constants/separation = 14
+
+[node name="Title" type="Label" parent="ReviewPanel/Card/Box"]
+layout_mode = 2
+theme_type_variation = &"CardTitle"
 text = "Your answers"
 horizontal_alignment = 1
 
-[node name="Scroll" type="ScrollContainer" parent="ReviewPanel/Box"]
+[node name="Scroll" type="ScrollContainer" parent="ReviewPanel/Card/Box"]
 layout_mode = 2
 size_flags_vertical = 3
 horizontal_scroll_mode = 0
 
-[node name="ReviewList" type="VBoxContainer" parent="ReviewPanel/Box/Scroll"]
+[node name="ReviewList" type="VBoxContainer" parent="ReviewPanel/Card/Box/Scroll"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_constants/separation = 18
+theme_override_constants/separation = 12
 
-[node name="ReviewRow" type="VBoxContainer" parent="ReviewPanel/Box/Scroll/ReviewList"]
+[node name="ReviewRow" type="PanelContainer" parent="ReviewPanel/Card/Box/Scroll/ReviewList"]
 unique_name_in_owner = true
 visible = false
 layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_soft")
+
+[node name="Box" type="VBoxContainer" parent="ReviewPanel/Card/Box/Scroll/ReviewList/ReviewRow"]
+layout_mode = 2
 theme_override_constants/separation = 6
 
-[node name="Text" type="Label" parent="ReviewPanel/Box/Scroll/ReviewList/ReviewRow"]
+[node name="Head" type="Label" parent="ReviewPanel/Card/Box/Scroll/ReviewList/ReviewRow/Box"]
 layout_mode = 2
-size_flags_horizontal = 3
-theme_override_font_sizes/font_size = 22
+theme_override_fonts/font = ExtResource("6_font")
+theme_override_font_sizes/font_size = 24
 text = "✓ #1 Question"
 autowrap_mode = 3
 
-[node name="Report" type="Button" parent="ReviewPanel/Box/Scroll/ReviewList/ReviewRow"]
-custom_minimum_size = Vector2(160, 48)
+[node name="Body" type="Label" parent="ReviewPanel/Card/Box/Scroll/ReviewList/ReviewRow/Box"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.1608, 0.2196, 0.2275, 1)
+theme_override_font_sizes/font_size = 22
+text = "Your answer"
+autowrap_mode = 3
+
+[node name="Report" type="Button" parent="ReviewPanel/Card/Box/Scroll/ReviewList/ReviewRow/Box"]
+custom_minimum_size = Vector2(130, 48)
 layout_mode = 2
 size_flags_horizontal = 8
+theme_type_variation = &"MenuQuiet"
 theme_override_font_sizes/font_size = 20
 text = "Report"
 
-[node name="CloseButton" type="Button" parent="ReviewPanel/Box"]
+[node name="CloseButton" type="Button" parent="ReviewPanel/Card/Box"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 60)
+custom_minimum_size = Vector2(0, 64)
 layout_mode = 2
+theme_type_variation = &"MenuPrimary"
 text = "Close"

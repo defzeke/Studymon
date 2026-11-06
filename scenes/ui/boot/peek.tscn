@@ -1674,6 +1674,59 @@ unique_name_in_owner = true
 layout_mode = 2
 theme_override_constants/separation = 8
 
+[node name="ReviewBar" type="PanelContainer" parent="Home"]
+unique_name_in_owner = true
+visible = false
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_top = 160.0
+grow_horizontal = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_pill")
+
+[node name="Row" type="HBoxContainer" parent="Home/ReviewBar"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Icon" type="TextureRect" parent="Home/ReviewBar/Row"]
+custom_minimum_size = Vector2(52, 52)
+layout_mode = 2
+size_flags_vertical = 4
+texture = ExtResource("40_timer")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Text" type="VBoxContainer" parent="Home/ReviewBar/Row"]
+layout_mode = 2
+size_flags_vertical = 4
+theme_override_constants/separation = 0
+
+[node name="ReviewMode" type="Label" parent="Home/ReviewBar/Row/Text"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.4078, 0.4667, 0.4706, 1)
+theme_override_fonts/font = ExtResource("9_bold")
+theme_override_font_sizes/font_size = 18
+text = "Reviewing"
+
+[node name="ReviewTime" type="Label" parent="Home/ReviewBar/Row/Text"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(112, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.1608, 0.2196, 0.2275, 1)
+theme_override_fonts/font = ExtResource("9_bold")
+theme_override_font_sizes/font_size = 34
+text = "25:00"
+
+[node name="TimerSkip" type="Button" parent="Home/ReviewBar/Row"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 56)
+layout_mode = 2
+size_flags_vertical = 4
+theme_type_variation = &"MenuPrimary"
+theme_override_font_sizes/font_size = 22
+text = "Take a break"
+
 [node name="TimerPanel" type="PanelContainer" parent="Home"]
 unique_name_in_owner = true
 visible = false
@@ -1682,10 +1735,10 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -280.0
-offset_top = -250.0
-offset_right = 280.0
-offset_bottom = 180.0
+offset_left = -290.0
+offset_top = -220.0
+offset_right = 290.0
+offset_bottom = 160.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_box")
@@ -1695,7 +1748,6 @@ layout_mode = 2
 theme_override_constants/separation = 14
 
 [node name="TimerTitle" type="Label" parent="Home/TimerPanel/Body"]
-unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.1608, 0.2196, 0.2275, 1)
 theme_override_fonts/font = ExtResource("9_bold")
@@ -1703,32 +1755,91 @@ theme_override_font_sizes/font_size = 34
 text = "Focus timer"
 horizontal_alignment = 1
 
-[node name="TimerTime" type="Label" parent="Home/TimerPanel/Body"]
-unique_name_in_owner = true
-layout_mode = 2
-theme_override_colors/font_color = Color(0.3098, 0.5608, 0.5373, 1)
-theme_override_fonts/font = ExtResource("9_bold")
-theme_override_font_sizes/font_size = 96
-text = "25:00"
-horizontal_alignment = 1
-
-[node name="TimerBar" type="ProgressBar" parent="Home/TimerPanel/Body"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 14)
-layout_mode = 2
-theme_type_variation = &"CardBar"
-max_value = 1.0
-show_percentage = false
-
 [node name="TimerHint" type="Label" parent="Home/TimerPanel/Body"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(480, 0)
+custom_minimum_size = Vector2(500, 0)
 layout_mode = 2
 theme_type_variation = &"CardHint"
+text = "Kuiz reviews with you. A longer session earns it more focus."
 horizontal_alignment = 1
 autowrap_mode = 3
 
-[node name="TimerAction" type="Button" parent="Home/TimerPanel/Body"]
+[node name="FocusRow" type="HBoxContainer" parent="Home/TimerPanel/Body"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Name" type="Label" parent="Home/TimerPanel/Body/FocusRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.1608, 0.2196, 0.2275, 1)
+theme_override_fonts/font = ExtResource("9_bold")
+theme_override_font_sizes/font_size = 28
+text = "Focus"
+
+[node name="FocusLess" type="Button" parent="Home/TimerPanel/Body/FocusRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(64, 64)
+layout_mode = 2
+theme_type_variation = &"MenuQuiet"
+theme_override_font_sizes/font_size = 34
+text = "-"
+
+[node name="FocusValue" type="Label" parent="Home/TimerPanel/Body/FocusRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(116, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.3098, 0.5608, 0.5373, 1)
+theme_override_fonts/font = ExtResource("9_bold")
+theme_override_font_sizes/font_size = 28
+text = "25 min"
+horizontal_alignment = 1
+
+[node name="FocusMore" type="Button" parent="Home/TimerPanel/Body/FocusRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(64, 64)
+layout_mode = 2
+theme_type_variation = &"MenuQuiet"
+theme_override_font_sizes/font_size = 34
+text = "+"
+
+[node name="BreakRow" type="HBoxContainer" parent="Home/TimerPanel/Body"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Name" type="Label" parent="Home/TimerPanel/Body/BreakRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.1608, 0.2196, 0.2275, 1)
+theme_override_fonts/font = ExtResource("9_bold")
+theme_override_font_sizes/font_size = 28
+text = "Break"
+
+[node name="BreakLess" type="Button" parent="Home/TimerPanel/Body/BreakRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(64, 64)
+layout_mode = 2
+theme_type_variation = &"MenuQuiet"
+theme_override_font_sizes/font_size = 34
+text = "-"
+
+[node name="BreakValue" type="Label" parent="Home/TimerPanel/Body/BreakRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(116, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.3098, 0.5608, 0.5373, 1)
+theme_override_fonts/font = ExtResource("9_bold")
+theme_override_font_sizes/font_size = 28
+text = "25 min"
+horizontal_alignment = 1
+
+[node name="BreakMore" type="Button" parent="Home/TimerPanel/Body/BreakRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(64, 64)
+layout_mode = 2
+theme_type_variation = &"MenuQuiet"
+theme_override_font_sizes/font_size = 34
+text = "+"
+
+[node name="TimerStart" type="Button" parent="Home/TimerPanel/Body"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 64)
 layout_mode = 2

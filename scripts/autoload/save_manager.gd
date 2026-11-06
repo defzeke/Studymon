@@ -42,6 +42,7 @@ func save_game() -> bool:
 	data["outfit"] = GameState.outfit
 	data["music_volume"] = MusicManager.music_volume
 	data["sfx_volume"] = MusicManager.sfx_volume
+	data["adventure_music"] = MusicManager.adventure_music
 	data["session"] = SessionManager.to_dict()
 	var f := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
 	if f == null:
@@ -176,6 +177,7 @@ func load_game() -> bool:
 		GameState._apply_theme_font_size()
 	MusicManager.set_music_volume(float(parsed.get("music_volume", 1.0)))
 	MusicManager.set_sfx_volume(float(parsed.get("sfx_volume", 1.0)))
+	MusicManager.adventure_music = bool(parsed.get("adventure_music", true))
 	SessionManager.from_dict(parsed.get("session", {}))
 	# Saves before v12 also hold a "monetization" block (the removed weekly AI limit); it is ignored.
 	return true

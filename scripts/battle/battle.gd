@@ -138,6 +138,7 @@ var _answers: Array[Dictionary] = []
 var _shake_tween: Tween
 
 func _ready() -> void:
+	MusicManager.play_battle()
 	_run = SessionManager.battle_run
 	_standalone = _run.is_empty()
 	if _standalone:
@@ -212,14 +213,15 @@ func _bind_item() -> void:
 	_show_answer_controls(true)
 	_phase = "answer"
 
-# Start-of-battle entrance. The bots fly onto their pads (ArenaStage.play_intro), the HUD slides in
-# around them, "VS" slams down and the screen flashes when the foe lands. Controls stay locked until
+# Start-of-battle entrance. The explorer throws Kuiz onto its pad and the foe drops in
+# (ArenaStage.play_intro), the HUD slides in around them, and when the foe lands the screen flashes and
+# "VS" slams down. Controls stay locked until
 # it ends. Every duration is an export on this node or on the Stage.
 func _play_intro(foe: String) -> void:
 	_set_inputs(false)
-	stage.play_intro()  # sets the start poses now, before the first frame
-	_sfx(sfx_whoosh)
-	_sfx_later(sfx_whoosh, stage.intro_foe_delay, 0.75)
+	stage.play_intro(SessionManager.battle_explorer)  # sets the start poses now, before the first frame
+	stage.pet_thrown.connect(func() -> void: _sfx(sfx_whoosh))
+	stage.foe_coming.connect(func() -> void: _sfx(sfx_whoosh, 0.75))
 	stage.pet_landed.connect(func() -> void: _sfx(sfx_land, 1.2, 0.7))
 	var cards: Array[Control] = [enemy_card, player_card, dialogue]
 	for c in cards:
@@ -245,9 +247,8 @@ func _play_intro(foe: String) -> void:
 		_sfx(sfx_land)
 		flash.modulate.a = intro_flash_strength
 		create_tween().tween_property(flash, "modulate:a", 0.0, 0.4)
-		_screen_shake(intro_shake, 0.3))
-	# "VS" slams in over the arena, holds, then fades.
-	get_tree().create_timer(0.85).timeout.connect(func() -> void:
+		_screen_shake(intro_shake, 0.3)
+		# "VS" slams in over the arena, holds, then fades.
 		_sfx(sfx_vs)
 		vs_label.pivot_offset = vs_label.size / 2.0
 		vs_label.scale = Vector2.ONE * 3.0
@@ -633,8 +634,12 @@ func _show_answers() -> void:
 	for i in _answers.size():
 		var row := review_row.duplicate() as Control
 		row.visible = true
-		(row.get_node("Text") as Label).text = _answer_text(i)
-		var report := row.get_node("Report") as Button
+		var lines := _answer_text(i).split("\n", true, 1)
+		var head := row.get_node("Box/Head") as Label
+		head.text = lines[0]
+		head.add_theme_color_override("font_color", Color("437A74") if _answers[i]["correct"] else Color("A8564D"))
+		(row.get_node("Box/Body") as Label).text = lines[1] if lines.size() > 1 else ""
+		var report := row.get_node("Box/Report") as Button
 		report.pressed.connect(_report_answer.bind(i, report))
 		review_list.add_child(row)
 	review_panel.show()

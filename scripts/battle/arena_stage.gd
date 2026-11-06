@@ -6,9 +6,14 @@ extends SubViewportContainer
 
 @export var pet_scene: PackedScene
 @export var foe_scenes: Array[PackedScene] = []
-@export var pet_height := 2.6
-@export var foe_height := 3.0
+@export var pet_height := 2.4
+@export var foe_height := 2.6
 @export var big_foe_scale := 1.3
+## The explorer who throws Kuiz in, and when the Throw clip lets go.
+@export var trainer_height := 2.3
+@export var trainer_throw_clip: StringName = &"Throw"
+@export var trainer_hand_bone: StringName = &"R_Wrist"
+@export var trainer_release_time := 1.0
 ## Kuiz's idle pose sits above the rest-pose bounds measured here, so it is lowered by this share of its
 ## height to stand on the pad.
 @export var pet_sink_ratio := 0.36
@@ -26,12 +31,18 @@ extends SubViewportContainer
 @export var foe_outline := 0.012
 @export var flat_self_lit := 0.85
 @export_group("Intro")
-## Where each bot starts, relative to its pad, before it moves in.
-@export var intro_pet_offset := Vector3(-9, 1.5, 4)
+## Where the foe starts, relative to its pad, before it moves in.
 @export var intro_foe_offset := Vector3(9, 3.5, -3)
-@export var intro_pet_time := 0.8
+## How long Kuiz flies, how high its arc rises and how small it leaves the hand.
+@export var intro_pet_time := 0.75
+@export var intro_arc := 1.6
+@export var intro_pet_start_scale := 0.12
 @export var intro_foe_time := 1.0
-@export var intro_foe_delay := 0.25
+@export var intro_foe_delay := 0.2
+## Before the throw starts, and how long the explorer takes to run off afterwards.
+@export var intro_wait := 0.25
+@export var intro_trainer_exit_time := 0.55
+@export var intro_trainer_exit := 6.0
 @export var intro_pad_time := 0.4
 ## The camera starts this far back and zoomed out, then settles.
 @export var intro_camera_offset := Vector3(0, 1.5, 4.5)
@@ -53,10 +64,15 @@ extends SubViewportContainer
 
 ## Foes with sounds, by the name of the glb's root node: the voice fires them on its clips.
 const FOE_VOICES := {"BrokenBot": preload("res://scripts/battle/broken_bot_voice.gd")}
+const Player := preload("res://scripts/overworld/player.gd")
 
 ## The foe has touched down: time for a flash, a shake, a dust burst.
 signal foe_landed
+## Kuiz has left the explorer's hand.
+signal pet_thrown
 signal pet_landed
+## The foe has started its entrance.
+signal foe_coming
 ## An attacker's blow has connected; `on_pet` is true when Kuiz was the one hit.
 signal strike_hit(on_pet: bool)
 ## The attacker is back on its pad.
@@ -64,6 +80,7 @@ signal strike_finished
 
 @onready var pet_spot: Node3D = %PetSpot
 @onready var foe_spot: Node3D = %FoeSpot
+@onready var trainer_spot: Node3D = %TrainerSpot
 @onready var camera: Camera3D = %Camera3D
 @onready var pet_dust: CPUParticles3D = %PetDust
 @onready var foe_dust: CPUParticles3D = %FoeDust
@@ -72,6 +89,8 @@ var _pet: AnimationPlayer
 var _foe: AnimationPlayer
 var _pet_model: Node3D
 var _foe_model: Node3D
+## The explorer on stage during the intro.
+var trainer: Node3D
 ## True from play_intro() until the bots have settled.
 var intro_running := false
 
@@ -95,12 +114,12 @@ func start_hover() -> void:
 	_hover(_pet_model, pet_hover_height)
 	_hover(_foe_model, foe_hover_height)
 
-## Both bots fly onto their pads while the camera pulls in; finishes when everything has settled.
-## Call it right after setup(), before the first frame, so nothing shows at rest first.
-func play_intro() -> void:
+## The explorer throws Kuiz onto its pad, then runs off and the foe drops in, while the camera pulls in;
+## finishes when everything has settled. Call it right after setup(), before the first frame, so nothing
+## shows at rest first. Contract: docs/systems/battle.md.
+func play_intro(explorer_id: String) -> void:
 	if _pet_model == null or _foe_model == null:
 		return
-	var pet_rest := _pet_model.position
 	var foe_rest := _foe_model.position
 	var cam_rest := camera.position
 	var fov_rest := camera.fov
@@ -110,36 +129,74 @@ func play_intro() -> void:
 			if p is MeshInstance3D:
 				pads.append(p)
 	intro_running = true
-	_pet_model.position = pet_rest + intro_pet_offset
+	_pet_model.visible = false
 	_foe_model.position = foe_rest + intro_foe_offset
-	_pet_model.rotation.y = TAU
 	camera.position = cam_rest + intro_camera_offset
 	camera.fov = fov_rest + intro_fov_extra
 	for p in pads:
 		p.scale = Vector3.ZERO
+	trainer = Player.new_model(explorer_id if Player.EXPLORERS.has(explorer_id) else "boy")
+	_place(trainer, trainer_spot, trainer_height, Vector3.ZERO)
+	var trainer_anim := _idle(trainer)
+	# The first frames are heavy and would skip a tween started now.
+	await get_tree().process_frame
+	await get_tree().process_frame
 	var t := create_tween().set_parallel()
 	t.tween_property(camera, "position", cam_rest, intro_camera_time).set_trans(Tween.TRANS_QUART).set_ease(Tween.EASE_OUT)
 	t.tween_property(camera, "fov", fov_rest, intro_camera_time).set_trans(Tween.TRANS_QUART).set_ease(Tween.EASE_OUT)
 	for i in pads.size():
 		t.tween_property(pads[i], "scale", Vector3.ONE, intro_pad_time).set_delay(i * 0.08).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	# Kuiz swoops in from the left with a full spin.
-	t.tween_property(_pet_model, "position", pet_rest, intro_pet_time).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	t.tween_property(_pet_model, "rotation:y", 0.0, intro_pet_time).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	await get_tree().create_timer(intro_wait).timeout
+	trainer_anim.play(trainer_throw_clip, 0.15)
+	await get_tree().create_timer(trainer_release_time).timeout
+	await _throw_pet()
+	_trainer_leaves(trainer_anim)
+	await get_tree().create_timer(intro_foe_delay).timeout
+	foe_coming.emit()
 	# The foe slides in from the right while dropping onto its pad with a bounce.
-	t.tween_property(_foe_model, "position:x", foe_rest.x, intro_foe_time).set_delay(intro_foe_delay).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
-	t.tween_property(_foe_model, "position:z", foe_rest.z, intro_foe_time).set_delay(intro_foe_delay).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
-	t.tween_property(_foe_model, "position:y", foe_rest.y, intro_foe_time).set_delay(intro_foe_delay).set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
-	get_tree().create_timer(intro_pet_time * 0.75).timeout.connect(func() -> void:
-		pet_dust.restart()
-		pet_landed.emit()
-		_play(_pet, pet_hit_clip, true))
-	get_tree().create_timer(intro_foe_delay + intro_foe_time * 0.4).timeout.connect(func() -> void:
+	var f := create_tween().set_parallel()
+	f.tween_property(_foe_model, "position:x", foe_rest.x, intro_foe_time).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	f.tween_property(_foe_model, "position:z", foe_rest.z, intro_foe_time).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	f.tween_property(_foe_model, "position:y", foe_rest.y, intro_foe_time).set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
+	get_tree().create_timer(intro_foe_time * 0.4).timeout.connect(func() -> void:
 		foe_dust.restart()
 		foe_landed.emit()
 		_play(_foe, attack_clip, true))
-	await t.finished
+	await f.finished
 	intro_running = false
 	start_hover()
+
+# Kuiz leaves the explorer's hand small, and grows as it arcs and spins onto its pad.
+func _throw_pet() -> void:
+	var rest := _pet_model.position
+	var rest_scale := _pet_model.scale
+	var sk: Skeleton3D = trainer.find_children("*", "Skeleton3D", true, false)[0]
+	var hand := sk.global_transform * sk.get_bone_global_pose(sk.find_bone(trainer_hand_bone))
+	var from := pet_spot.to_local(hand.origin)
+	_pet_model.position = from
+	_pet_model.scale = rest_scale * intro_pet_start_scale
+	_pet_model.rotation.y = TAU
+	_pet_model.visible = true
+	pet_thrown.emit()
+	var t := create_tween().set_parallel()
+	t.tween_method(func(k: float) -> void:
+		_pet_model.position = from.lerp(rest, k) + Vector3.UP * intro_arc * sin(k * PI), 0.0, 1.0, intro_pet_time)
+	t.tween_property(_pet_model, "scale", rest_scale, intro_pet_time).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	t.tween_property(_pet_model, "rotation:y", 0.0, intro_pet_time).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	await t.finished
+	pet_dust.restart()
+	pet_landed.emit()
+	_play(_pet, pet_hit_clip, true)
+
+func _trainer_leaves(anim: AnimationPlayer) -> void:
+	anim.get_animation(&"Run").loop_mode = Animation.LOOP_LINEAR
+	anim.play(&"Run", 0.15)
+	var t := create_tween().set_parallel()
+	t.tween_property(trainer_spot, "rotation:y", -PI / 2.0, 0.15)
+	t.tween_property(trainer_spot, "position:x", trainer_spot.position.x - intro_trainer_exit, intro_trainer_exit_time).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
+	await t.finished
+	trainer.queue_free()
+	trainer = null
 
 func enemy_attack() -> void:
 	_play(_foe, attack_clip, true)
@@ -211,13 +268,16 @@ func _add_model(scene: PackedScene, spot: Node3D, height: float, offset: Vector3
 	if scene == null:
 		return null
 	var model := scene.instantiate() as Node3D
+	_place(model, spot, height, offset)
+	return model
+
+func _place(model: Node3D, spot: Node3D, height: float, offset: Vector3) -> void:
 	spot.add_child(model)
 	var box := _bounds(model, spot)
 	var s := height / maxf(box.size.y, 0.001)
 	model.scale = Vector3.ONE * s
 	model.position = -Vector3(box.get_center().x, box.position.y, box.get_center().z) * s + offset
 	model.position.y += foot_lift
-	return model
 
 # Gives a model the look it has on the home screen. Kuiz's glb carries its shading as extras: an ink
 # outline width per mesh, vertex colours (the teal and gold) and self-lit parts. Without applying them it

@@ -49,8 +49,11 @@ const HURT_HEALTH := 0.3
 const HURT_FLOOR := 10.0
 
 # Pomodoro (Phase 4)
-const POMODORO_FOCUS_SEC := 25 * 60
-const POMODORO_REST_SEC := 5 * 60
+# The player's choice of lengths (minutes): the defaults, and what the timer panel allows.
+const POMODORO_FOCUS_MIN := 25
+const POMODORO_REST_MIN := 5
+const POMODORO_FOCUS_RANGE := Vector3i(5, 60, 5)
+const POMODORO_REST_RANGE := Vector3i(1, 30, 1)
 const MISSED_REST_ENERGY_PENALTY := 5.0
 const MISSED_REST_MOOD_PENALTY := 3.0
 const REST_COMPLETE_ENERGY_BONUS := 6.0
@@ -84,6 +87,9 @@ var _pomodoro_mode: String = ""  # "focus", "rest", ""
 var _pomodoro_remaining: int = 0
 var _pomodoro_timer: Timer
 var _pomodoro_last_tick := 0
+## Saved: the length the next focus and break run for, in minutes.
+var focus_minutes := POMODORO_FOCUS_MIN
+var rest_minutes := POMODORO_REST_MIN
 var _rest_missed: bool = false
 
 # GDD §4.3.1 curriculum
@@ -282,6 +288,8 @@ func to_dict() -> Dictionary:
 		"battery_health": battery_health,
 		"bond": bond,
 		"codex": codex,
+		"focus_minutes": focus_minutes,
+		"rest_minutes": rest_minutes,
 	}
 
 func from_dict(data: Dictionary) -> void:
@@ -295,6 +303,8 @@ func from_dict(data: Dictionary) -> void:
 	dirt = float(data.get("dirt", 0.0))
 	battery_health = float(data.get("battery_health", 100.0))
 	bond = int(data.get("bond", 0))
+	focus_minutes = _stepped(int(data.get("focus_minutes", POMODORO_FOCUS_MIN)), POMODORO_FOCUS_RANGE)
+	rest_minutes = _stepped(int(data.get("rest_minutes", POMODORO_REST_MIN)), POMODORO_REST_RANGE)
 	codex.clear()
 	for e in data.get("codex", []):
 		codex.append(str(e))
@@ -308,11 +318,21 @@ func from_dict(data: Dictionary) -> void:
 	xp_changed.emit(xp, level)
 
 # --- Pomodoro (Phase 4) ---
+## Moves the next focus or break length by `steps`, staying on the panel's range (x min, y max, z step).
+func step_focus_minutes(steps: int) -> void:
+	focus_minutes = _stepped(focus_minutes + steps * POMODORO_FOCUS_RANGE.z, POMODORO_FOCUS_RANGE)
+
+func step_rest_minutes(steps: int) -> void:
+	rest_minutes = _stepped(rest_minutes + steps * POMODORO_REST_RANGE.z, POMODORO_REST_RANGE)
+
+func _stepped(minutes: int, range_: Vector3i) -> int:
+	return clampi(snappedi(minutes, range_.z), range_.x, range_.y)
+
 func start_pomodoro() -> void:
 	if _pomodoro_mode != "":
 		return
 	_pomodoro_mode = "focus"
-	_pomodoro_remaining = POMODORO_FOCUS_SEC
+	_pomodoro_remaining = focus_minutes * 60
 	_pomodoro_last_tick = int(Time.get_unix_time_from_system())
 	_pomodoro_timer = Timer.new()
 	_pomodoro_timer.wait_time = 1.0
@@ -334,16 +354,18 @@ func _on_pomodoro_tick() -> void:
 	if _pomodoro_remaining <= 0:
 		if _pomodoro_mode == "focus":
 			# Focus ended -> rest begins
-			focus = minf(STAT_MAX, focus + POMODORO_FOCUS_BONUS)
+			# Rewards scale with the chosen length, so short sessions cannot farm them.
+			focus = minf(STAT_MAX, focus + POMODORO_FOCUS_BONUS * focus_minutes / POMODORO_FOCUS_MIN)
 			_pomodoro_mode = "rest"
-			_pomodoro_remaining = POMODORO_REST_SEC
+			_pomodoro_remaining = rest_minutes * 60
 			_rest_missed = false
 			stats_changed.emit()
 			pomodoro_phase_changed.emit("rest")
 		else:
 			# Rest ended naturally -> cycle complete, companion feels rested
-			energy = minf(STAT_MAX, energy + REST_COMPLETE_ENERGY_BONUS)
-			mood = minf(STAT_MAX, mood + REST_COMPLETE_MOOD_BONUS)
+			var rested := minf(1.0, float(rest_minutes) / POMODORO_REST_MIN)
+			energy = minf(STAT_MAX, energy + REST_COMPLETE_ENERGY_BONUS * rested)
+			mood = minf(STAT_MAX, mood + REST_COMPLETE_MOOD_BONUS * rested)
 			_stop_pomodoro()
 			stats_changed.emit()
 			pomodoro_phase_changed.emit("done")
@@ -361,7 +383,7 @@ func skip_pomodoro() -> void:
 	if _pomodoro_mode == "focus":
 		# Skipping focus: soft penalty, go to rest
 		_pomodoro_mode = "rest"
-		_pomodoro_remaining = POMODORO_REST_SEC
+		_pomodoro_remaining = rest_minutes * 60
 		energy = maxf(0.0, energy - 3.0)
 		mood = maxf(0.0, mood - 2.0)
 		stats_changed.emit()
@@ -381,8 +403,8 @@ func get_pomodoro_state() -> Dictionary:
 	return {
 		"mode": _pomodoro_mode,
 		"remaining": _pomodoro_remaining,
-		"focus_total": POMODORO_FOCUS_SEC,
-		"rest_total": POMODORO_REST_SEC,
+		"focus_total": focus_minutes * 60,
+		"rest_total": rest_minutes * 60,
 	}
 
 func is_in_rest() -> bool:

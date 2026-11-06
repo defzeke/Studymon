@@ -12,6 +12,12 @@ const PEEK := "Peek_Surprise"
 const IDLE := "Idle"
 # State_* clips are moods (charging, hungry, sick…): they loop for as long as they are asked for.
 const STATE_PREFIX := "State_"
+# The reviewing rest: the clip's book part loops, stopping short of its ding and happy ending. These
+# two times are two eye-scan lines apart, where the poses match, so the wrap does not show.
+const READ := "Learn_Something_New"
+const READ_LOOP_FROM := 1.1
+const READ_LOOP_TO := 2.35
+const READ_SPEED := 0.6
 const BLEND_TIME := 0.18
 const INK := Color("29383A")
 const FLAT_SELF_LIT := 0.85
@@ -35,6 +41,7 @@ const WHITE_HOLD_TIME := 0.35
 const WHITE_FADE_TIME := 0.9
 const REVEAL_REST_TIME := 0.45
 const IRIS_TIME := 1.0
+const HOME_FADE_TIME := 0.7
 const IRIS_END := 1.3
 const ROOM_NAMES := {
 	"StudyRoom": "The Study Room",
@@ -128,6 +135,9 @@ func _ready() -> void:
 		stage.scale = Vector3.ONE * ROOM_SCALE
 		stage.position.y = ROOM_Y
 		show_room("StudyRoom", true)
+		if SessionManager.home_from_map:
+			SessionManager.home_from_map = false
+			_dissolve_in()
 		return
 	anim.play(PEEK)
 	await anim.animation_finished
@@ -138,6 +148,10 @@ func _ready() -> void:
 # The peek clip is authored for a wider framing; re-anchor it to this screen's bottom edge so Kuiz
 # rises from it, and fade the contact shadow while the head is low.
 func _process(delta: float) -> void:
+	var reading := rest == READ and anim.current_animation == READ
+	anim.speed_scale = READ_SPEED if reading else 1.0
+	if reading and anim.current_animation_position >= READ_LOOP_TO:
+		anim.seek(READ_LOOP_FROM + anim.current_animation_position - READ_LOOP_TO, true)
 	var head_y := skeleton.get_bone_pose_position(_head).y
 	var peek := 0.0
 	if anim.current_animation == PEEK:
@@ -203,6 +217,17 @@ func _reveal() -> void:
 	revealing = false
 	revealed.emit()
 
+# Home from the map: the room dissolves in from the colour the house scene faded to.
+func _dissolve_in() -> void:
+	var cover: ColorRect = %BootWhite
+	cover.color = Color("F7F5EF")
+	cover.show()
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var t := create_tween()
+	t.tween_property(cover, "modulate:a", 0.0, HOME_FADE_TIME).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	t.tween_callback(cover.hide)
+
 func _open_iris(white: ColorRect) -> void:
 	var view := get_viewport().get_visible_rect().size
 	var mat := white.material as ShaderMaterial
@@ -222,6 +247,13 @@ func act(clip: String) -> void:
 	anim.play(clip)
 	if not clip.begins_with(STATE_PREFIX):
 		anim.queue(rest)
+
+## Reviewing: Kuiz reads, silently, until the resting clip changes. The tutorial, which uses this clip's
+## sounds, is always over by now.
+func start_reading() -> void:
+	voice.cues.erase(READ)
+	set_rest(READ)
+	act(READ)
 
 ## Changes the resting clip. If Kuiz is resting (or about to), it switches; any other clip, such as
 ## charging, plays on undisturbed.

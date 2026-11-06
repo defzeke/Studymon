@@ -35,7 +35,7 @@ mesh = SubResource("CylinderMesh_pad")
 [node name="Label" type="Label3D" parent="."]
 unique_name_in_owner = true
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.4, 0)
-pixel_size = 0.01
+pixel_size = 0.0055
 billboard = 1
 no_depth_test = true
 outline_modulate = Color(0.1608, 0.2196, 0.2275, 1)

@@ -183,7 +183,7 @@ categorizer.tscn
    └── Confirm & Play ─► confirm_topic() ─► region_generated ─► world_intro.tscn ─► region_map.tscn
 
 region_map.tscn
-   ├── Back ─► world_intro.tscn (Kuiz goes indoors) ─► session_list.tscn
+   ├── Back ─► "Go home?" ─► world_intro.tscn (Kuiz goes indoors) ─► peek.tscn (home)
    ├── walk into a Trainer/Gym/Champion Area3D ─► encounter panel
    ├── Study button / session-list Cards ─► flashcards.tscn
    └── Fight! ─► battle.tscn

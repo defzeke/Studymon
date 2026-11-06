@@ -6,6 +6,9 @@ extends "res://scripts/audio/clip_voice.gd"
 const CHARGE_TIME := 0.38
 const BLAST_START := 0.5
 const BLAST_TIME := 0.65
+# How long the charge and the blast take to die away; much shorter and their ends sound cut off.
+const CHARGE_FADE := 0.3
+const BLAST_FADE := 0.75
 const POWER_DOWN_TIME := 2.2
 const PEAK := 0.8
 
@@ -32,12 +35,12 @@ func _build(sound: String, m: Synth.Mix) -> void:
 func _charge(m: Synth.Mix) -> void:
 	var d := CHARGE_TIME
 	var out := PackedFloat32Array()
-	out.resize(int((d + 0.1) * Synth.RATE))
+	out.resize(int((d + CHARGE_FADE) * Synth.RATE))
 	var phase := 0.0
 	for i in out.size():
 		var t := float(i) / Synth.RATE
 		phase += TAU * Synth.ramp(160, 880, 0, d, t) / Synth.RATE
-		var g := Synth.ramp(1e-4, 0.45, 0, d * 0.85, t) if t < d * 0.85 else Synth.ramp(0.45, 1e-4, d * 0.85, d + 0.06, t)
+		var g := Synth.ramp(1e-4, 0.45, 0, d * 0.85, t) if t < d * 0.85 else Synth.ramp(0.45, 1e-3, d * 0.85, d + CHARGE_FADE, t)
 		out[i] = Synth.wave("triangle", phase) * g
 	m.add(0.0, out)
 
@@ -50,7 +53,7 @@ func _blast(m: Synth.Mix) -> void:
 	var hit := Synth.noise_burst(m, 0.35)
 	var lp := Synth.Biquad.new("lowpass", 7.0)
 	var out := PackedFloat32Array()
-	out.resize(int((end + 0.3) * Synth.RATE))
+	out.resize(int((end + BLAST_FADE) * Synth.RATE))
 	for i in out.size():
 		var t := float(i) / Synth.RATE
 		var wob := 55.0 * sin(TAU * 24.0 * t)
@@ -66,7 +69,7 @@ func _blast(m: Synth.Mix) -> void:
 		if t < 0.03:
 			g = Synth.ramp(1e-4, 0.9, 0, 0.03, t)
 		elif t >= end - 0.05:
-			g = Synth.ramp(0.85, 1e-4, end - 0.05, end + 0.25, t)
+			g = Synth.ramp(0.85, 1e-3, end - 0.05, end + BLAST_FADE, t)
 		out[i] = lp.step(s, Synth.ramp(3200, 700, 0, end + 0.2, t)) * g
 	m.add(0.0, out)
 

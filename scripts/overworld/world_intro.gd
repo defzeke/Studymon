@@ -1,12 +1,12 @@
 extends Node3D
 ## The walk between home and the island. Play: Kuiz's door opens and it waddles out under "Time to
 ## learn!", then the map opens. The map's Back (SessionManager.kuiz_going_home): the same in reverse,
-## Kuiz waddles back indoors, then the Worlds hub opens.
+## Kuiz waddles back indoors, then the pet room opens.
 ## Contract: docs/ui-and-assets.md §2 world_intro.tscn.
 
 const Follower := preload("res://scripts/overworld/kuiz_follower.gd")
 const MAP_SCENE := "res://scenes/overworld/region_map.tscn"
-const HUB_SCENE := "res://scenes/ui/session_list.tscn"
+const HOME_SCENE := "res://scenes/ui/boot/peek.tscn"
 const OUT_TEXT := "Time to learn!"
 const HOME_TEXT := "Home sweet home!"
 const KUIZ_SIZE := 0.85
@@ -40,7 +40,9 @@ var _phase := 0.0
 func _ready() -> void:
 	var going_home := SessionManager.kuiz_going_home
 	SessionManager.kuiz_going_home = false
-	var next := HUB_SCENE if going_home else MAP_SCENE
+	var next := HOME_SCENE if going_home else MAP_SCENE
+	SessionManager.home_from_map = going_home
+	SessionManager.pick_explorer = not going_home
 	ResourceLoader.load_threaded_request(next)
 	if going_home:
 		MusicManager.play_main_room()

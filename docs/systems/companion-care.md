@@ -152,22 +152,35 @@ new battery. Details in
 
 ---
 
+### A full Kuiz
+
+At `FULL_STAT` (95 %) hunger Kuiz is full (`home.gd:_is_full()`). Food held over it plays `Angry` instead of
+`Surprised`, and food dropped on it plays `Angry`, shows a toast from `FULL_LINES` ("I'm full!") and goes back
+to the dock: nothing is eaten, spent or saved.
+
 ## 6. Pomodoro (Phase 4)
 
-Logic lives in `CompanionState`. Two places start it and show the time left: **Focus** on the Study Room's
-table (`home.gd`, `%TimerPanel`, which can also skip a phase) and the Study screen's **Focus 25:00** button
-(`flashcards.gd`, `%TimerButton`). It keeps running on other screens, and each tick counts from the wall
-clock, because a locked phone stops the `Timer`; time away only counts toward the current phase, so the
-next phase starts on the player's return. Home toasts the end of each phase. A finished focus session adds
-`POMODORO_FOCUS_BONUS` (25) **focus**, the stat that forgives a run's first miss, and focus also shows
-as a row on home's check-up tablet. One timer drives both phases.
+Logic lives in `CompanionState`. Two places start it: **Focus** on the Study Room's table (`home.gd`,
+`%TimerPanel`, where the player sets the focus and break lengths) and the Study screen's focus button
+(`flashcards.gd`, `%TimerButton`). It keeps running on other screens, and each tick counts from the wall clock,
+because a locked phone stops the `Timer`; time away only counts toward the current phase, so the next phase starts
+on the player's return. A finished focus session adds focus, the stat that forgives a run's first miss, in
+proportion to its length (`POMODORO_FOCUS_BONUS` for 25 minutes), and focus also shows as a row on home's check-up
+tablet. One timer drives both phases.
+
+**Reviewing** (focus, on home). Start closes the panel; `%ReviewBar` under the room sign shows the time left and
+**Take a break**, and during the break the time and **End break**, in every room. Kuiz rests on `peek.READ`, the
+book part of `Learn_Something_New` on a loop (`READ_LOOP_FROM` 1.1 s to `READ_LOOP_TO` 2.35 s, two eye-scan lines apart, where the poses match), silent and at `READ_SPEED` (0.6). The music crossfades to a shuffle
+of lullabies at `FOCUS_LEVEL` (`MusicManager.play_focus()`, [`ui-and-assets.md`](../ui-and-assets.md) §4). The arrows,
+the room dropdown, Study, the gear, Charge and Focus are all refused: Kuiz plays `Angry` and a `REVIEW_LINES` toast
+says "We're reviewing, focus up!". A break lifts all of this.
 
 ```
                  start_pomodoro()
-        ""  ──────────────────────►  "focus"  (25:00)
+        ""  ──────────────────────►  "focus"  (focus_minutes)
          ▲                              │ time out
          │ skip during rest             ▼
-         │ (penalty)                 "rest"   (5:00)
+         │ (penalty)                 "rest"   (rest_minutes)
          │                              │ time out → +6 energy, +6 mood
          └──────────────────────── "done" ◄┘
                                         │
@@ -176,20 +189,19 @@ as a row on home's check-up tablet. One timer drives both phases.
 
 | Constant | Value | Effect |
 |---|---|---|
-| `POMODORO_FOCUS_SEC` | 1500 | focus length |
-| `POMODORO_REST_SEC` | 300 | rest length |
-| `POMODORO_FOCUS_BONUS` | 25.0 | focus added when a focus session ends |
+| `POMODORO_FOCUS_MIN` | 25 | default focus length, saved as `focus_minutes`; panel range `POMODORO_FOCUS_RANGE` 5–60 by 5 |
+| `POMODORO_REST_MIN` | 5 | default break length, saved as `rest_minutes`; panel range `POMODORO_REST_RANGE` 1–30 by 1 |
+| `POMODORO_FOCUS_BONUS` | 25.0 | focus added by a 25-minute session; scales with `focus_minutes` |
 | `MISSED_REST_ENERGY_PENALTY` | 5.0 | applied on `skip_pomodoro()` during rest |
 | `MISSED_REST_MOOD_PENALTY` | 3.0 | same |
-| `REST_COMPLETE_ENERGY_BONUS` | 6.0 | natural rest completion |
-| `REST_COMPLETE_MOOD_BONUS` | 6.0 | natural rest completion |
+| `REST_COMPLETE_ENERGY_BONUS` | 6.0 | natural rest completion; breaks under 5 minutes earn a share |
+| `REST_COMPLETE_MOOD_BONUS` | 6.0 | natural rest completion; breaks under 5 minutes earn a share |
 
 Skipping **focus** applies a soft −3 energy / −2 mood and jumps straight to rest (no
-missed-rest penalty). Only the focus timer auto-advances to rest; there is no notification when a
-phase ends.
+missed-rest penalty). Home toasts the end of each phase; nothing alerts the player while the app is closed.
 
-The timer is a real `Timer` node with 1 s ticks, so it is affected by `Engine.time_scale`
-(used by battle hit-stop) and by scene tree pauses; it is not a wall-clock countdown.
+The timer is a real `Timer` node with 1 s ticks that counts from the wall clock, so `Engine.time_scale` (used by
+battle hit-stop) only delays a tick.
 
 ---
 

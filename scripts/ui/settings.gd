@@ -29,6 +29,10 @@ func _ready() -> void:
 	large_text_check.toggled.connect(func(on: bool) -> void:
 		GameState.set_large_text(on)
 		SaveManager.save_game())
+	%AdventureMusicCheck.set_pressed_no_signal(MusicManager.adventure_music)
+	%AdventureMusicCheck.toggled.connect(func(on: bool) -> void:
+		MusicManager.set_adventure_music(on)
+		SaveManager.save_game())
 	consent_note.text = GameState.AI_CONSENT_TEXT
 	consent_check.set_pressed_no_signal(GameState.ai_consent)
 	consent_check.toggled.connect(func(on: bool) -> void:

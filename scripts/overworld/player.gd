@@ -29,7 +29,7 @@ const EXPLORERS := {
 
 ## Set while an encounter panel (or the explorer picker) is open.
 var locked := false
-var _explorer := "boy"
+var explorer := "boy"
 # Set while walk_into() moves the explorer; the stick and the ground ray are ignored meanwhile.
 var _scripted := false
 
@@ -53,9 +53,9 @@ static func _base_color_only(boy: Node3D) -> void:
 
 ## Swaps in the chosen explorer's model, facing the same way.
 func set_explorer(id: String) -> void:
-	if id == _explorer or not EXPLORERS.has(id):
+	if id == explorer or not EXPLORERS.has(id):
 		return
-	_explorer = id
+	explorer = id
 	var next := new_model(id)
 	next.transform = model.transform
 	model.queue_free()

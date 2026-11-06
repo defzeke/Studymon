@@ -210,3 +210,10 @@ with its id.
 | Foe look | Houses, Gyms and the Champion share `robot_1.glb` / `robot_2.glb`; only size and counters differ |
 | House doors | The map's houses have no door animation (one merged `Door` mesh); a dark doorway panel stands in for it |
 | Server grading untested live | `/v1/grade` was checked against a stubbed server only; no real Claude grade has been run yet (`backend/evals/`) |
+
+## Entrance
+
+`ArenaStage.play_intro()`: the explorer who walked in (`SessionManager.battle_explorer`) stands at `%TrainerSpot` with their back to the camera and plays `Throw`. At
+`trainer_release_time` (1 s, where the right wrist moves fastest in both explorers' clips) Kuiz appears at `trainer_hand_bone`,
+small, and arcs and spins onto its pad. The explorer then runs off, and the foe drops in. When the foe lands, the screen
+flashes and "VS" slams down. Controls unlock when it has settled. Try Again skips the entrance.

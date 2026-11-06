@@ -16,6 +16,9 @@
 [ext_resource type="Texture2D" path="res://assets/sprites/ui/icon_study.svg" id="15_study"]
 [ext_resource type="Script" path="res://scripts/overworld/kuiz_follower.gd" id="16_kuiz"]
 [ext_resource type="Texture2D" path="res://assets/sprites/ui/icon_trainer.svg" id="17_trainer"]
+[ext_resource type="Texture2D" path="res://assets/sprites/ui/icon_expand.svg" id="30_expand"]
+[ext_resource type="Texture2D" path="res://assets/sprites/ui/icon_close.svg" id="31_close"]
+[ext_resource type="Script" path="res://scripts/ui/widgets/music_toggle.gd" id="32_music"]
 [ext_resource type="Texture2D" path="res://assets/sprites/ui/icon_badge.svg" id="18_badge"]
 [ext_resource type="Texture2D" path="res://assets/sprites/ui/icon_crown.svg" id="19_crown"]
 [ext_resource type="Texture2D" path="res://assets/sprites/ui/icon_lock.svg" id="20_lock"]
@@ -42,6 +45,17 @@ corner_radius_top_left = 22
 corner_radius_top_right = 22
 corner_radius_bottom_right = 22
 corner_radius_bottom_left = 22
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_fact"]
+content_margin_left = 8.0
+content_margin_top = 12.0
+content_margin_right = 8.0
+content_margin_bottom = 8.0
+bg_color = Color(0.9098, 0.9412, 0.9176, 1)
+corner_radius_top_left = 18
+corner_radius_top_right = 18
+corner_radius_bottom_right = 18
+corner_radius_bottom_left = 18
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_card"]
 content_margin_left = 18.0
@@ -295,8 +309,8 @@ anchors_preset = 10
 anchor_right = 1.0
 offset_left = 100.0
 offset_top = 16.0
-offset_right = -16.0
-offset_bottom = 136.0
+offset_right = -196.0
+offset_bottom = 184.0
 grow_horizontal = 2
 mouse_filter = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_card")
@@ -304,7 +318,7 @@ theme_override_styles/panel = SubResource("StyleBoxFlat_card")
 [node name="Body" type="VBoxContainer" parent="HUD/QuestCard"]
 layout_mode = 2
 mouse_filter = 2
-theme_override_constants/separation = 8
+theme_override_constants/separation = 6
 
 [node name="Header" type="HBoxContainer" parent="HUD/QuestCard/Body"]
 layout_mode = 2
@@ -313,33 +327,62 @@ mouse_filter = 2
 [node name="Title" type="Label" parent="HUD/QuestCard/Body/Header"]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_colors/font_color = Color(0.1608, 0.2196, 0.2275, 1)
+theme_override_colors/font_color = Color(0.4078, 0.4667, 0.4706, 1)
 theme_override_fonts/font = ExtResource("12_bold")
-theme_override_font_sizes/font_size = 24
-text = "Region quest"
+theme_override_font_sizes/font_size = 15
+text = "NEXT UP"
 
 [node name="QuestCount" type="Label" parent="HUD/QuestCard/Body/Header"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.4078, 0.4667, 0.4706, 1)
 theme_override_fonts/font = ExtResource("12_bold")
-theme_override_font_sizes/font_size = 18
+theme_override_font_sizes/font_size = 15
 text = "0 / 0 done"
+
+[node name="Objectives" type="VBoxContainer" parent="HUD/QuestCard/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+mouse_filter = 2
+alignment = 1
+
+[node name="Step1" type="HBoxContainer" parent="HUD/QuestCard/Body/Objectives"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 8
+
+[node name="Dot" type="Label" parent="HUD/QuestCard/Body/Objectives/Step1"]
+layout_mode = 2
+size_flags_vertical = 0
+theme_override_colors/font_color = Color(0.8392, 0.6588, 0.3725, 1)
+theme_override_fonts/font = ExtResource("12_bold")
+theme_override_font_sizes/font_size = 22
+text = "●"
+
+[node name="Text" type="Label" parent="HUD/QuestCard/Body/Objectives/Step1"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.1608, 0.2196, 0.2275, 1)
+theme_override_fonts/font = ExtResource("12_bold")
+theme_override_font_sizes/font_size = 22
+text = "Objective"
+autowrap_mode = 3
 
 [node name="QuestTasks" type="HBoxContainer" parent="HUD/QuestCard/Body"]
 unique_name_in_owner = true
 layout_mode = 2
 mouse_filter = 2
-theme_override_constants/separation = 10
+theme_override_constants/separation = 12
+alignment = 1
 
 [node name="Houses" type="HBoxContainer" parent="HUD/QuestCard/Body/QuestTasks"]
 layout_mode = 2
-size_flags_horizontal = 3
 mouse_filter = 2
-theme_override_constants/separation = 8
+theme_override_constants/separation = 6
 
 [node name="Icon" type="TextureRect" parent="HUD/QuestCard/Body/QuestTasks/Houses"]
-custom_minimum_size = Vector2(44, 44)
+custom_minimum_size = Vector2(34, 34)
 layout_mode = 2
 size_flags_vertical = 4
 texture = ExtResource("17_trainer")
@@ -348,14 +391,15 @@ stretch_mode = 5
 
 [node name="Text" type="VBoxContainer" parent="HUD/QuestCard/Body/QuestTasks/Houses"]
 layout_mode = 2
-size_flags_horizontal = 3
+size_flags_vertical = 4
+mouse_filter = 2
 theme_override_constants/separation = 0
 
 [node name="Title" type="Label" parent="HUD/QuestCard/Body/QuestTasks/Houses/Text"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.4078, 0.4667, 0.4706, 1)
 theme_override_fonts/font = ExtResource("12_bold")
-theme_override_font_sizes/font_size = 15
+theme_override_font_sizes/font_size = 13
 text = "Houses"
 
 [node name="HousesValue" type="Label" parent="HUD/QuestCard/Body/QuestTasks/Houses/Text"]
@@ -363,12 +407,12 @@ unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.1608, 0.2196, 0.2275, 1)
 theme_override_fonts/font = ExtResource("12_bold")
-theme_override_font_sizes/font_size = 22
+theme_override_font_sizes/font_size = 18
 text = "0 / 0"
 
 [node name="HousesBar" type="ProgressBar" parent="HUD/QuestCard/Body/QuestTasks/Houses/Text"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 8)
+custom_minimum_size = Vector2(0, 5)
 layout_mode = 2
 theme_override_styles/background = SubResource("StyleBoxFlat_houses_back")
 theme_override_styles/fill = SubResource("StyleBoxFlat_houses_fill")
@@ -377,19 +421,18 @@ show_percentage = false
 
 [node name="Gyms" type="HBoxContainer" parent="HUD/QuestCard/Body/QuestTasks"]
 layout_mode = 2
-size_flags_horizontal = 3
 mouse_filter = 2
-theme_override_constants/separation = 8
+theme_override_constants/separation = 6
 
 [node name="GymBadges" type="HBoxContainer" parent="HUD/QuestCard/Body/QuestTasks/Gyms"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_constants/separation = 2
+theme_override_constants/separation = 1
 
 [node name="BadgeTemplate" type="TextureRect" parent="HUD/QuestCard/Body/QuestTasks/Gyms/GymBadges"]
 unique_name_in_owner = true
 visible = false
-custom_minimum_size = Vector2(30, 30)
+custom_minimum_size = Vector2(24, 24)
 layout_mode = 2
 size_flags_vertical = 4
 texture = ExtResource("18_badge")
@@ -398,14 +441,15 @@ stretch_mode = 5
 
 [node name="Text" type="VBoxContainer" parent="HUD/QuestCard/Body/QuestTasks/Gyms"]
 layout_mode = 2
-size_flags_horizontal = 3
+size_flags_vertical = 4
+mouse_filter = 2
 theme_override_constants/separation = 0
 
 [node name="Title" type="Label" parent="HUD/QuestCard/Body/QuestTasks/Gyms/Text"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.4078, 0.4667, 0.4706, 1)
 theme_override_fonts/font = ExtResource("12_bold")
-theme_override_font_sizes/font_size = 15
+theme_override_font_sizes/font_size = 13
 text = "Gyms"
 
 [node name="GymsValue" type="Label" parent="HUD/QuestCard/Body/QuestTasks/Gyms/Text"]
@@ -413,18 +457,17 @@ unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.1608, 0.2196, 0.2275, 1)
 theme_override_fonts/font = ExtResource("12_bold")
-theme_override_font_sizes/font_size = 22
+theme_override_font_sizes/font_size = 18
 text = "0 / 0"
 
 [node name="Champion" type="HBoxContainer" parent="HUD/QuestCard/Body/QuestTasks"]
 layout_mode = 2
-size_flags_horizontal = 3
 mouse_filter = 2
-theme_override_constants/separation = 8
+theme_override_constants/separation = 6
 
 [node name="ChampionIcon" type="TextureRect" parent="HUD/QuestCard/Body/QuestTasks/Champion"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(44, 44)
+custom_minimum_size = Vector2(32, 32)
 layout_mode = 2
 size_flags_vertical = 4
 texture = ExtResource("20_lock")
@@ -433,14 +476,15 @@ stretch_mode = 5
 
 [node name="Text" type="VBoxContainer" parent="HUD/QuestCard/Body/QuestTasks/Champion"]
 layout_mode = 2
-size_flags_horizontal = 3
+size_flags_vertical = 4
+mouse_filter = 2
 theme_override_constants/separation = 0
 
 [node name="Title" type="Label" parent="HUD/QuestCard/Body/QuestTasks/Champion/Text"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.4078, 0.4667, 0.4706, 1)
 theme_override_fonts/font = ExtResource("12_bold")
-theme_override_font_sizes/font_size = 15
+theme_override_font_sizes/font_size = 13
 text = "Champion"
 
 [node name="ChampionValue" type="Label" parent="HUD/QuestCard/Body/QuestTasks/Champion/Text"]
@@ -448,141 +492,53 @@ unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.1608, 0.2196, 0.2275, 1)
 theme_override_fonts/font = ExtResource("12_bold")
-theme_override_font_sizes/font_size = 22
+theme_override_font_sizes/font_size = 18
 text = "Locked"
 
-[node name="Objectives" type="VBoxContainer" parent="HUD"]
-unique_name_in_owner = true
-anchors_preset = 10
-anchor_right = 1.0
-offset_left = 232.0
-offset_top = 154.0
-offset_right = -16.0
-offset_bottom = 350.0
-grow_horizontal = 2
-mouse_filter = 2
-theme_override_constants/separation = 6
-
-[node name="Step1" type="HBoxContainer" parent="HUD/Objectives"]
-layout_mode = 2
-mouse_filter = 2
-theme_override_constants/separation = 8
-
-[node name="Dot" type="Label" parent="HUD/Objectives/Step1"]
-layout_mode = 2
-size_flags_vertical = 0
-theme_override_colors/font_color = Color(0.8392, 0.6588, 0.3725, 1)
-theme_override_colors/font_outline_color = Color(0.1608, 0.2196, 0.2275, 1)
-theme_override_constants/outline_size = 7
-theme_override_fonts/font = ExtResource("12_bold")
-theme_override_font_sizes/font_size = 22
-text = "●"
-
-[node name="Text" type="Label" parent="HUD/Objectives/Step1"]
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_colors/font_color = Color(0.9686, 0.9608, 0.9373, 1)
-theme_override_colors/font_outline_color = Color(0.1608, 0.2196, 0.2275, 1)
-theme_override_constants/outline_size = 7
-theme_override_fonts/font = ExtResource("12_bold")
-theme_override_font_sizes/font_size = 22
-text = "Current objective"
-autowrap_mode = 3
-
-[node name="Step2" type="HBoxContainer" parent="HUD/Objectives"]
-modulate = Color(1, 1, 1, 0.85)
-layout_mode = 2
-mouse_filter = 2
-theme_override_constants/separation = 8
-
-[node name="Dot" type="Label" parent="HUD/Objectives/Step2"]
-layout_mode = 2
-size_flags_vertical = 0
-theme_override_colors/font_color = Color(0.9686, 0.9608, 0.9373, 1)
-theme_override_colors/font_outline_color = Color(0.1608, 0.2196, 0.2275, 1)
-theme_override_constants/outline_size = 7
-theme_override_fonts/font = ExtResource("12_bold")
-theme_override_font_sizes/font_size = 22
-text = "●"
-
-[node name="Text" type="Label" parent="HUD/Objectives/Step2"]
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_colors/font_color = Color(0.9686, 0.9608, 0.9373, 1)
-theme_override_colors/font_outline_color = Color(0.1608, 0.2196, 0.2275, 1)
-theme_override_constants/outline_size = 7
-theme_override_fonts/font = ExtResource("12_bold")
-theme_override_font_sizes/font_size = 19
-text = "Next objective"
-autowrap_mode = 3
-
-[node name="Step3" type="HBoxContainer" parent="HUD/Objectives"]
-modulate = Color(1, 1, 1, 0.85)
-layout_mode = 2
-mouse_filter = 2
-theme_override_constants/separation = 8
-
-[node name="Dot" type="Label" parent="HUD/Objectives/Step3"]
-layout_mode = 2
-size_flags_vertical = 0
-theme_override_colors/font_color = Color(0.9686, 0.9608, 0.9373, 1)
-theme_override_colors/font_outline_color = Color(0.1608, 0.2196, 0.2275, 1)
-theme_override_constants/outline_size = 7
-theme_override_fonts/font = ExtResource("12_bold")
-theme_override_font_sizes/font_size = 22
-text = "●"
-
-[node name="Text" type="Label" parent="HUD/Objectives/Step3"]
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_colors/font_color = Color(0.9686, 0.9608, 0.9373, 1)
-theme_override_colors/font_outline_color = Color(0.1608, 0.2196, 0.2275, 1)
-theme_override_constants/outline_size = 7
-theme_override_fonts/font = ExtResource("12_bold")
-theme_override_font_sizes/font_size = 19
-text = "Later objective"
-autowrap_mode = 3
-
-[node name="ObjectivesMore" type="Label" parent="HUD/Objectives"]
-unique_name_in_owner = true
-modulate = Color(1, 1, 1, 0.75)
-layout_mode = 2
-theme_override_colors/font_color = Color(0.9686, 0.9608, 0.9373, 1)
-theme_override_colors/font_outline_color = Color(0.1608, 0.2196, 0.2275, 1)
-theme_override_constants/outline_size = 7
-theme_override_fonts/font = ExtResource("12_bold")
-theme_override_font_sizes/font_size = 17
-text = "+1 more"
-
 [node name="Minimap" type="PanelContainer" parent="HUD"]
-offset_left = 16.0
-offset_top = 150.0
-offset_right = 216.0
-offset_bottom = 350.0
-mouse_filter = 2
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -184.0
+offset_top = 16.0
+offset_right = -16.0
+offset_bottom = 184.0
+grow_horizontal = 0
 theme_override_styles/panel = SubResource("StyleBoxFlat_minimap")
 script = ExtResource("11_minimap")
 
-[node name="View" type="SubViewportContainer" parent="HUD/Minimap"]
-layout_mode = 2
-mouse_filter = 2
-stretch = true
-
-[node name="MinimapViewport" type="SubViewport" parent="HUD/Minimap/View"]
+[node name="MinimapViewport" type="SubViewport" parent="HUD/Minimap"]
 unique_name_in_owner = true
 handle_input_locally = false
-size = Vector2i(186, 186)
+size = Vector2i(600, 600)
 render_target_update_mode = 1
 
-[node name="MinimapCamera" type="Camera3D" parent="HUD/Minimap/View/MinimapViewport"]
+[node name="MinimapCamera" type="Camera3D" parent="HUD/Minimap/MinimapViewport"]
 unique_name_in_owner = true
 projection = 1
 current = true
+
+[node name="MiniPicture" type="TextureRect" parent="HUD/Minimap"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
 
 [node name="MinimapDots" type="Control" parent="HUD/Minimap"]
 unique_name_in_owner = true
 layout_mode = 2
 mouse_filter = 2
+
+[node name="ExpandHint" type="TextureRect" parent="HUD/Minimap"]
+custom_minimum_size = Vector2(32, 32)
+layout_mode = 2
+size_flags_horizontal = 8
+size_flags_vertical = 8
+mouse_filter = 2
+texture = ExtResource("30_expand")
+expand_mode = 1
+stretch_mode = 5
 
 [node name="Joystick" type="Control" parent="HUD" unique_id=1796400796]
 layout_mode = 3
@@ -590,11 +546,32 @@ anchors_preset = 2
 anchor_top = 1.0
 anchor_bottom = 1.0
 offset_left = 24.0
-offset_top = -344.0
-offset_right = 344.0
+offset_top = -264.0
+offset_right = 264.0
 offset_bottom = -24.0
 grow_vertical = 0
 script = ExtResource("5_stick")
+
+[node name="MusicButton" type="Button" parent="HUD"]
+unique_name_in_owner = true
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -204.0
+offset_top = -236.0
+offset_right = -132.0
+offset_bottom = -164.0
+grow_horizontal = 0
+grow_vertical = 0
+theme_override_styles/normal = SubResource("StyleBoxFlat_round")
+theme_override_styles/hover = SubResource("StyleBoxFlat_round")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_round_down")
+theme_override_styles/focus = SubResource("StyleBoxFlat_round")
+icon_alignment = 1
+expand_icon = true
+script = ExtResource("32_music")
 
 [node name="ExplorerButton" type="Button" parent="HUD"]
 unique_name_in_owner = true
@@ -646,57 +623,323 @@ icon = ExtResource("15_study")
 icon_alignment = 1
 vertical_icon_alignment = 0
 expand_icon = true
-[node name="EncounterPanel" type="PanelContainer" parent="HUD" unique_id=500261068]
+[node name="EncounterPanel" type="ColorRect" parent="HUD"]
 unique_name_in_owner = true
 visible = false
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -300.0
-offset_top = -220.0
-offset_right = 300.0
-offset_bottom = 220.0
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+color = Color(0.1608, 0.2196, 0.2275, 0.6)
 
-[node name="Margin" type="MarginContainer" parent="HUD/EncounterPanel" unique_id=1865631271]
+[node name="Center" type="CenterContainer" parent="HUD/EncounterPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Card" type="PanelContainer" parent="HUD/EncounterPanel/Center"]
+custom_minimum_size = Vector2(540, 0)
 layout_mode = 2
-theme_override_constants/margin_left = 20
-theme_override_constants/margin_top = 20
-theme_override_constants/margin_right = 20
-theme_override_constants/margin_bottom = 20
+theme_type_variation = &"MenuCard"
 
-[node name="List" type="VBoxContainer" parent="HUD/EncounterPanel/Margin" unique_id=1024841232]
+[node name="List" type="VBoxContainer" parent="HUD/EncounterPanel/Center/Card"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="Head" type="VBoxContainer" parent="HUD/EncounterPanel/Center/Card/List"]
+layout_mode = 2
+theme_override_constants/separation = 2
+
+[node name="EncounterTitle" type="Label" parent="HUD/EncounterPanel/Center/Card/List/Head"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(496, 0)
+layout_mode = 2
+theme_type_variation = &"CardTitle"
+text = "Challenge House"
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="EncounterTag" type="Label" parent="HUD/EncounterPanel/Center/Card/List/Head"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"CardHeader"
+theme_override_font_sizes/font_size = 24
+text = "Multiple Choice"
+horizontal_alignment = 1
+
+[node name="EncounterFacts" type="HBoxContainer" parent="HUD/EncounterPanel/Center/Card/List"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Items" type="PanelContainer" parent="HUD/EncounterPanel/Center/Card/List/EncounterFacts"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_styles/panel = SubResource("StyleBoxFlat_fact")
+
+[node name="Box" type="VBoxContainer" parent="HUD/EncounterPanel/Center/Card/List/EncounterFacts/Items"]
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="FactItems" type="Label" parent="HUD/EncounterPanel/Center/Card/List/EncounterFacts/Items/Box"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.1608, 0.2196, 0.2275, 1)
+theme_override_fonts/font = ExtResource("12_bold")
+theme_override_font_sizes/font_size = 30
+text = "0"
+horizontal_alignment = 1
+
+[node name="Name" type="Label" parent="HUD/EncounterPanel/Center/Card/List/EncounterFacts/Items/Box"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.4078, 0.4667, 0.4706, 1)
+theme_override_font_sizes/font_size = 18
+text = "items"
+horizontal_alignment = 1
+
+[node name="Level" type="PanelContainer" parent="HUD/EncounterPanel/Center/Card/List/EncounterFacts"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_styles/panel = SubResource("StyleBoxFlat_fact")
+
+[node name="Box" type="VBoxContainer" parent="HUD/EncounterPanel/Center/Card/List/EncounterFacts/Level"]
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="FactLevel" type="Label" parent="HUD/EncounterPanel/Center/Card/List/EncounterFacts/Level/Box"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.1608, 0.2196, 0.2275, 1)
+theme_override_fonts/font = ExtResource("12_bold")
+theme_override_font_sizes/font_size = 30
+text = "0"
+horizontal_alignment = 1
+
+[node name="Name" type="Label" parent="HUD/EncounterPanel/Center/Card/List/EncounterFacts/Level/Box"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.4078, 0.4667, 0.4706, 1)
+theme_override_font_sizes/font_size = 18
+text = "level"
+horizontal_alignment = 1
+
+[node name="Minutes" type="PanelContainer" parent="HUD/EncounterPanel/Center/Card/List/EncounterFacts"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_styles/panel = SubResource("StyleBoxFlat_fact")
+
+[node name="Box" type="VBoxContainer" parent="HUD/EncounterPanel/Center/Card/List/EncounterFacts/Minutes"]
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="FactMinutes" type="Label" parent="HUD/EncounterPanel/Center/Card/List/EncounterFacts/Minutes/Box"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.1608, 0.2196, 0.2275, 1)
+theme_override_fonts/font = ExtResource("12_bold")
+theme_override_font_sizes/font_size = 30
+text = "0"
+horizontal_alignment = 1
+
+[node name="Name" type="Label" parent="HUD/EncounterPanel/Center/Card/List/EncounterFacts/Minutes/Box"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.4078, 0.4667, 0.4706, 1)
+theme_override_font_sizes/font_size = 18
+text = "minutes"
+horizontal_alignment = 1
+
+[node name="EncounterReady" type="VBoxContainer" parent="HUD/EncounterPanel/Center/Card/List"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="ReadyRow" type="HBoxContainer" parent="HUD/EncounterPanel/Center/Card/List/EncounterReady"]
+layout_mode = 2
+
+[node name="ReadyName" type="Label" parent="HUD/EncounterPanel/Center/Card/List/EncounterReady/ReadyRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = &"CardBody"
+theme_override_font_sizes/font_size = 22
+text = "Kuiz readiness"
+
+[node name="ReadyValue" type="Label" parent="HUD/EncounterPanel/Center/Card/List/EncounterReady/ReadyRow"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.1608, 0.2196, 0.2275, 1)
+theme_override_fonts/font = ExtResource("12_bold")
+theme_override_font_sizes/font_size = 22
+text = "50%"
+
+[node name="ReadyBar" type="ProgressBar" parent="HUD/EncounterPanel/Center/Card/List/EncounterReady"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 14)
+layout_mode = 2
+theme_type_variation = &"CardBar"
+show_percentage = false
+
+[node name="EncounterQuestion" type="Label" parent="HUD/EncounterPanel/Center/Card/List"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(496, 0)
+layout_mode = 2
+theme_type_variation = &"CardHint"
+text = "Note"
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="EncounterClearButton" type="Button" parent="HUD/EncounterPanel/Center/Card/List"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 68)
+layout_mode = 2
+theme_type_variation = &"MenuPrimary"
+theme_override_font_sizes/font_size = 28
+text = "Go inside"
+
+[node name="EncounterCloseButton" type="Button" parent="HUD/EncounterPanel/Center/Card/List"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 60)
+layout_mode = 2
+theme_type_variation = &"MenuQuiet"
+text = "Close"
+
+[node name="MapOverlay" type="ColorRect" parent="HUD"]
+unique_name_in_owner = true
+visible = false
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.1608, 0.2196, 0.2275, 0.6)
+
+[node name="Center" type="CenterContainer" parent="HUD/MapOverlay"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="MapCard" type="PanelContainer" parent="HUD/MapOverlay/Center"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"MenuCard"
+
+[node name="Box" type="VBoxContainer" parent="HUD/MapOverlay/Center/MapCard"]
 layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="EncounterTitle" type="Label" parent="HUD/EncounterPanel/Margin/List" unique_id=1807080742]
-unique_name_in_owner = true
+[node name="Head" type="HBoxContainer" parent="HUD/MapOverlay/Center/MapCard/Box"]
 layout_mode = 2
-text = "Trainer wants to battle!"
-horizontal_alignment = 1
-autowrap_mode = 2
 
-[node name="EncounterQuestion" type="Label" parent="HUD/EncounterPanel/Margin/List" unique_id=1470408147]
-unique_name_in_owner = true
+[node name="Title" type="Label" parent="HUD/MapOverlay/Center/MapCard/Box/Head"]
 layout_mode = 2
-size_flags_vertical = 3
-text = "Question..."
-autowrap_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = &"CardTitle"
+text = "Island map"
 
-[node name="EncounterClearButton" type="Button" parent="HUD/EncounterPanel/Margin/List" unique_id=653982167]
+[node name="MapClose" type="Button" parent="HUD/MapOverlay/Center/MapCard/Box/Head"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 52)
+custom_minimum_size = Vector2(60, 60)
 layout_mode = 2
-text = "Mark Cleared (stub)"
+theme_type_variation = &"MenuRound"
+icon = ExtResource("31_close")
+icon_alignment = 1
+expand_icon = true
 
-[node name="EncounterCloseButton" type="Button" parent="HUD/EncounterPanel/Margin/List" unique_id=1573527758]
+[node name="BigPicture" type="TextureRect" parent="HUD/MapOverlay/Center/MapCard/Box"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 48)
+custom_minimum_size = Vector2(600, 600)
 layout_mode = 2
-text = "Close"
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="BigDots" type="Control" parent="HUD/MapOverlay/Center/MapCard/Box/BigPicture"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Legend" type="HBoxContainer" parent="HUD/MapOverlay/Center/MapCard/Box"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 22
+alignment = 1
+
+[node name="You" type="HBoxContainer" parent="HUD/MapOverlay/Center/MapCard/Box/Legend"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 6
+
+[node name="Dot" type="Label" parent="HUD/MapOverlay/Center/MapCard/Box/Legend/You"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.3098, 0.5608, 0.5373, 1)
+theme_override_font_sizes/font_size = 20
+text = "●"
+
+[node name="Name" type="Label" parent="HUD/MapOverlay/Center/MapCard/Box/Legend/You"]
+layout_mode = 2
+theme_type_variation = &"CardHint"
+text = "You"
+
+[node name="Houses" type="HBoxContainer" parent="HUD/MapOverlay/Center/MapCard/Box/Legend"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 6
+
+[node name="Dot" type="Label" parent="HUD/MapOverlay/Center/MapCard/Box/Legend/Houses"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.1608, 0.2196, 0.2275, 1)
+theme_override_font_sizes/font_size = 20
+text = "●"
+
+[node name="Name" type="Label" parent="HUD/MapOverlay/Center/MapCard/Box/Legend/Houses"]
+layout_mode = 2
+theme_type_variation = &"CardHint"
+text = "Houses"
+
+[node name="Gyms" type="HBoxContainer" parent="HUD/MapOverlay/Center/MapCard/Box/Legend"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 6
+
+[node name="Dot" type="Label" parent="HUD/MapOverlay/Center/MapCard/Box/Legend/Gyms"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.8392, 0.6588, 0.3725, 1)
+theme_override_font_sizes/font_size = 20
+text = "●"
+
+[node name="Name" type="Label" parent="HUD/MapOverlay/Center/MapCard/Box/Legend/Gyms"]
+layout_mode = 2
+theme_type_variation = &"CardHint"
+text = "Gyms"
+
+[node name="Champion" type="HBoxContainer" parent="HUD/MapOverlay/Center/MapCard/Box/Legend"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 6
+
+[node name="Dot" type="Label" parent="HUD/MapOverlay/Center/MapCard/Box/Legend/Champion"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7882, 0.4745, 0.4392, 1)
+theme_override_font_sizes/font_size = 20
+text = "●"
+
+[node name="Name" type="Label" parent="HUD/MapOverlay/Center/MapCard/Box/Legend/Champion"]
+layout_mode = 2
+theme_type_variation = &"CardHint"
+text = "Champion"
 
 [node name="FadeLayer" type="CanvasLayer" parent="."]
 layer = 100

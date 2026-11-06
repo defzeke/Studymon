@@ -89,9 +89,9 @@ RegionMap            Node3D (region_map.gd)
 │   ├── Explorer      instance of assets/models/boy_explorer.glb (Idle / Walk / Run looped);
 │   │                 player.gd swaps in explorer_girl.glb when she is picked
 │   └── Camera3D      (0, 7, 4.7), pitched −54°, fov 40 horizontal (keep width, portrait)
-├── HUD               BackButton (round, top-left), QuestCard (Houses / Gyms / Champion task chips
-│                     placed in the scene, values filled by code), Minimap (minimap.gd), Objectives
-│                     (Step1–Step3 rows + ObjectivesMore beside it), Joystick (bottom-left), StudyButton
+├── HUD               BackButton (round, top-left), QuestCard (the next objective in %Objectives, then
+│                     Houses / Gyms / Champion task chips placed in the scene, values filled by code),
+│                     Minimap (minimap.gd, top right), Joystick (bottom-left), StudyButton
 │                     (bottom-right icon card, opens the Flashcard Sanctuary and returns here),
 │                     EncounterPanel
 └── FadeLayer         CanvasLayer 100 → Fade, the off-white scene-change fade
@@ -188,9 +188,10 @@ The pick is saved in that world's topic record (`"explorer"`: `"boy"` or `"girl"
 without asking, and other worlds keep their own. `player.set_explorer()` swaps the model; both share
 the same rig, size (about 1 unit tall) and clips. A save from before keeps one global `"explorer"`,
 which is ignored: each of its worlds asks once.
-A world with no explorer yet asks once, when the map has finished fading in; after that the round `%ExplorerButton`
-above Study reopens `explorer_picker.tscn` with the current one selected, any time the explorer is free to move.
-The map fades in over `ARRIVE_FADE_SEC` (0.8 s), held for its first two frames.
+Coming from `world_intro.tscn` (`SessionManager.pick_explorer`), or with no explorer saved yet, the picker opens first,
+as the map starts fading in, with the current one selected; a return from a battle or Study skips it. The round
+`%ExplorerButton` above Study reopens it any time the explorer is free to move. The map fades in over
+`ARRIVE_FADE_SEC` (0.8 s), held for its first two frames.
 
 **Seasons** (`season.gd`). The island follows the real-world season, from the device's local date,
 on a Northern Hemisphere calendar (`season_for(month, day)`), so a season lasts for months and the
@@ -224,16 +225,19 @@ To drop a season, remove it from `Season` and `LOOKS`.
 **Music:** entering the map crossfades to its own route theme (`MusicManager.play_overworld()`,
 `music/overworld.wav`), which keeps playing through battles; the session list, flashcards and home
 crossfade back to the home loop.
-**Minimap** (`minimap.gd`). A 200 px Warm Off-White frame at the left, under the quest card and next pill, (Deep Slate 3 px
-outline, rounded, soft shadow, like home's HUD pills) showing the whole island from straight above.
-A 206 px `SubViewport` shares the map's `World3D`; its orthographic camera sees only layer 11,
-which `_ready()` adds to every mesh in `Map`, so the explorer, trigger labels and weather stay out.
-It is framed on the island's bounds, leaving out the water and seabed planes (wider than 150 units,
-they run to the horizon but are still drawn). The picture is rendered **once**
-(`UPDATE_ONCE`), so it costs one small extra render per visit; it keeps the season's lighting from
-that moment. Dots are drawn in 2D every frame on top: the explorer (teal on off-white), trainers
-(small off-white on slate), gyms (amber) and the Champion (coral), placed with the minimap
-camera's `unproject_position()`.
+**Minimap** (`minimap.gd`). A 168 px Warm Off-White frame at the top right, beside the quest card (Deep Slate
+outline, rounded, soft shadow, like home's HUD pills) showing the whole island from straight above, with an
+expand badge in its corner. A 600 px `SubViewport` shares the map's `World3D`; its orthographic camera sees only
+layer 11, which `_ready()` adds to every mesh in `Map`, so the explorer, trigger labels and weather stay out. It is
+framed on the island's bounds, leaving out the water and seabed planes (wider than 150 units, they run to the horizon
+but are still drawn). The picture is rendered **once** (`UPDATE_ONCE`), so it costs one extra render per visit; it
+keeps the season's lighting from that moment. Dots are drawn in 2D every frame on top: the explorer (teal on
+off-white), trainers (small off-white on slate), gyms (amber) and the Champion (coral), placed with the camera's
+`unproject_position()`.
+
+A tap opens `%MapOverlay`: the same picture at 600 px in a card that grows out of the minimap, with larger dots, a
+legend and an X. X or a tap outside closes it. The explorer stays locked while it is open, and the minimap will not
+open over anything else that locks the explorer.
 
 **Joystick** (`joystick.gd`). A 320 px square at the bottom-left; base radius 120, knob 52, dead zone
 15 %. Touch reaches it as emulated mouse events, so one finger drives it; the knob springs back on

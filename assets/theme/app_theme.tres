@@ -421,6 +421,7 @@ TextEdit/colors/font_placeholder_color = Color(0.3, 0.37, 0.38, 1)
 TextEdit/colors/font_readonly_color = Color(0.1608, 0.2196, 0.2275, 1)
 TextEdit/styles/focus = SubResource("StyleBoxFlat_input_focus")
 TextEdit/styles/normal = SubResource("StyleBoxFlat_input")
+TextEdit/styles/read_only = SubResource("StyleBoxFlat_input")
 MenuCard/base_type = &"PanelContainer"
 MenuCard/styles/panel = SubResource("Menu_card")
 MenuPill/base_type = &"PanelContainer"

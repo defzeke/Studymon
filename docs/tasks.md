@@ -10,10 +10,9 @@ Last updated: 2026-11-01.
 
 ## In flight
 
-Uncommitted, for the maintainer to commit: boot music fades in, the Kuiz reveal after loading, the
-room sign opens a dropdown of the four rooms, the world intro (Kuiz leaves its house on Play, goes back in on the map's Back), Kuiz waddles on the island, the
-boy shows base colour only, the new Study icon, the restyled Worlds, Settings and World Builder, the slower white handoff after loading, the gear on the HUD, the focus timer on the table, the restyled Flashcards, a fix for the dark flash between scenes, and changing explorer from the map. Checked windowed on Windows with a scratch
-harness; not yet played on a phone.
+Uncommitted, for the maintainer to commit: a full Kuiz refuses food, the explorer picker opens first after the
+world intro, the map HUD restyled, the minimap opens large, and the settable focus timer with Kuiz reviewing,
+lullabies and refused navigation, the map HUD as one top band, a "Go home?" confirmation, the restyled battle and encounter panel, the explorer throwing Kuiz in, a simpler encounter pop-up, softer entrance sounds, battle music, and a mute for the map and battles. Checked windowed on Windows with a scratch harness; not yet played on a phone.
 
 Everything below **Done** is on `world-assets`, pushed but not yet merged to `main` (last merged in
 PR #8).

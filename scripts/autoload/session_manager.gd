@@ -377,6 +377,8 @@ func best_stars(kind: String, topic_id: String, run_key: String) -> int:
 # A battle is a run: a fixed list of items fought against one foe. Contract: docs/systems/battle.md.
 
 var battle_topic_id: String = ""
+## The explorer who walked in, for the battle's entrance.
+var battle_explorer := "boy"
 var battle_kind: String = ""
 var battle_type: String = ""
 ## The Challenge House being played ("" for a gym or the Champion) and its number on the map.
@@ -726,6 +728,10 @@ func _questions_for(topic_id: String) -> Array:
 var flashcards_return: String = "res://scenes/ui/session_list.tscn"
 ## Set by the map's Back: world_intro.tscn plays Kuiz going indoors instead of coming out.
 var kuiz_going_home := false
+## Set by world_intro.tscn on its way to the map: the map opens with the explorer picker.
+var pick_explorer := false
+## Set by world_intro.tscn on its way home: the pet room dissolves in from the scene's fade colour.
+var home_from_map := false
 
 ## Card order for a review: Remaster, then New, Learning, Mastered; ties in question order.
 func flashcard_deck(topic_id: String) -> Array:

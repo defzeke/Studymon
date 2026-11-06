@@ -49,9 +49,14 @@ That is fine for the current scope but means there is **no type safety and no au
   "owned_costumes": ["bow"],                               // closet costumes bought; a worn one counts as owned
   "outfit": { "head": "crown", "body": "scarf" }, // v10: closet slot -> kuiz_look.gd COSTUMES id; a missing slot is bare
 
+  // CompanionState: focus timer lengths in minutes; missing keys use these defaults, bad ones are clamped
+  "focus_minutes": 25,
+  "rest_minutes": 5,
+
   // MusicManager (v5): settings sliders, 0..1; missing keys load as 1.0
   "music_volume": 1.0,
   "sfx_volume": 1.0,
+  "adventure_music": true, // the map's and battles' music; missing keys load as true
 
   // SessionManager.to_dict()
   "session": {
@@ -173,7 +178,7 @@ These live only in memory and are lost on quit or scene change:
 | `current_topic_id` | `SessionManager` | After a restart, the overworld falls back to its preview questions unless a topic is re-opened |
 | `last_source_text` | `SessionManager` | Kept with the world it builds as `topics[].source_text` (for "More questions"); a photo reviewer has none |
 | Battle handoff (`battle_topic_id`, `battle_q_index`, `battle_is_boss`, `battle_is_champion`) | `SessionManager` | Correct by design — a battle doesn't survive a restart |
-| Pomodoro (`_pomodoro_mode`, `_pomodoro_remaining`) | `CompanionState` | A running 25-minute focus timer (started on the Study screen) is lost on quit |
+| Pomodoro (`_pomodoro_mode`, `_pomodoro_remaining`) | `CompanionState` | A running focus timer (started on the Study screen) is lost on quit |
 | Tap-cap counters (`_action_tap_counts`, `_last_hour_reset`) | `CompanionState` | Relaunching clears the hourly diminishing-returns counter — an easy exploit |
 | `GameState.player_name` | `GameState` | Set by the tutorial; saved as `player_name` (v7) |
 | `GameState.tutorial_done` | `GameState` | Set when the tutorial ends, and by the Worlds hub and Settings on open (they are only reachable from home, so running one on its own still returns to home, not the intro). **Saved** as `tutorial_done` (v15) |

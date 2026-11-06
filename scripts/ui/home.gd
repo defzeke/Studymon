@@ -21,6 +21,11 @@ const FOODS: Array[Dictionary] = [
 	{"id": "java_juice", "name": "Java Juice", "icon": preload("res://assets/sprites/props/java_juice.svg"), "start": 2, "hunger": 8.0, "focus": 10.0, "price": 8},
 ]
 const FAVORITE_FOOD := "spicy_chips"
+# At this share of hunger Kuiz is full: it gets cross and the food stays in stock.
+const FULL_STAT := 0.95
+# Trying to leave while reviewing gets one of these from a cross Kuiz.
+const REVIEW_LINES: Array[String] = ["We're reviewing, focus up!", "No wandering! We're reviewing.", "Focus up! Eyes on the notes."]
+const FULL_LINES: Array[String] = ["I'm full!", "No more, I'm stuffed!", "Not another byte!", "My data banks are full!"]
 const SCREWDRIVER: Texture2D = preload("res://assets/sprites/props/screwdriver.svg")
 const TOWEL: Texture2D = preload("res://assets/sprites/props/towel.svg")
 const BOLD: Font = preload("res://assets/fonts/JosefinSans-Bold.ttf")
@@ -110,6 +115,7 @@ const CHECK_HINTS := {
 @onready var settings_btn: Button = %Settings
 @onready var focus_btn: Button = %Focus
 @onready var timer_panel: Control = %TimerPanel
+@onready var review_bar: Control = %ReviewBar
 @onready var tool_slot: TextureRect = %Tool
 @onready var towel_slot: TextureRect = %Towel
 @onready var check_panel: Control = %CheckPanel
@@ -168,6 +174,7 @@ var _fling_cared := -100.0
 var _held_last := Vector2.ZERO
 var _was_dirty := false
 var _closet_slot := "head"
+var _skipping := false
 
 func _ready() -> void:
 	visible = false
@@ -186,11 +193,16 @@ func _ready() -> void:
 	charge_btn.toggled.connect(_on_charge)
 	play_btn.pressed.connect(_on_play)
 	settings_btn.pressed.connect(func() -> void:
-		if not _busy:
+		if _can_leave():
 			get_tree().change_scene_to_file(SETTINGS_SCENE))
-	focus_btn.pressed.connect(timer_panel.show)
+	focus_btn.pressed.connect(_on_focus_pressed)
 	%TimerClose.pressed.connect(timer_panel.hide)
-	%TimerAction.pressed.connect(_on_timer_action)
+	%TimerStart.pressed.connect(_on_timer_start)
+	%TimerSkip.pressed.connect(_on_timer_skip)
+	%FocusLess.pressed.connect(_step_timer.bind(CompanionState.step_focus_minutes, -1))
+	%FocusMore.pressed.connect(_step_timer.bind(CompanionState.step_focus_minutes, 1))
+	%BreakLess.pressed.connect(_step_timer.bind(CompanionState.step_rest_minutes, -1))
+	%BreakMore.pressed.connect(_step_timer.bind(CompanionState.step_rest_minutes, 1))
 	CompanionState.pomodoro_phase_changed.connect(_on_pomodoro_phase)
 	food_prev_btn.pressed.connect(_pick_food.bind(-1))
 	food_next_btn.pressed.connect(_pick_food.bind(1))
@@ -238,6 +250,8 @@ func start() -> void:
 	_refresh_stats()
 	_refresh_level()
 	crystal_label.text = str(GameState.crystals)
+	if _reviewing():
+		_start_review()
 	for c: CanvasItem in get_children():
 		c.modulate.a = 0.0
 		create_tween().tween_property(c, "modulate:a", 1.0, FADE_TIME)
@@ -253,6 +267,9 @@ func _go(step: int) -> void:
 		_walk_to(wrapi(_room_i + step, 0, ROOMS.size()), step)
 
 func _can_walk() -> bool:
+	if _reviewing():
+		_scold()
+		return false
 	if _busy or charge_btn.button_pressed:
 		return false
 	if _dozing():
@@ -366,6 +383,8 @@ func _care(action: String) -> void:
 # is dozing, which only happens in the Study Room, and a Kuiz just woken up stays awake for a while
 # however tired it is.
 func _mood_clip() -> String:
+	if _reviewing():
+		return peek.READ
 	var can_doze := ROOMS[_room_i] == SLEEP_ROOM and _now() >= _awake_until
 	for pair: Array in MOODS:
 		if CompanionState.get(pair[0]) < CompanionState.STAT_MAX * LOW_STAT:
@@ -441,6 +460,10 @@ func _set_arrows_enabled(on: bool) -> void:
 # --- Study Room ---
 
 func _on_charge(charging: bool) -> void:
+	if charging and _reviewing():
+		charge_btn.set_pressed_no_signal(false)
+		_scold()
+		return
 	peek.set_lights(not charging)
 	_set_bar_enabled(not charging)
 	if _charge_pulse:
@@ -459,49 +482,90 @@ func _on_charge(charging: bool) -> void:
 
 # The focus timer lives in CompanionState and keeps running on other screens. Contract:
 # docs/systems/companion-care.md §6.
-func _on_timer_action() -> void:
-	if CompanionState.get_pomodoro_state()["mode"] == "":
-		CompanionState.start_pomodoro()
-	else:
-		CompanionState.skip_pomodoro()
+func _on_focus_pressed() -> void:
+	var mode: String = CompanionState.get_pomodoro_state()["mode"]
+	if mode == "focus":
+		_scold()
+	elif mode == "":
+		_refresh_timer_panel()
+		timer_panel.show()
+
+func _step_timer(step: Callable, steps: int) -> void:
+	step.call(steps)
+	_refresh_timer_panel()
+
+func _refresh_timer_panel() -> void:
+	%FocusValue.text = "%d min" % CompanionState.focus_minutes
+	%BreakValue.text = "%d min" % CompanionState.rest_minutes
+	%FocusLess.disabled = CompanionState.focus_minutes <= CompanionState.POMODORO_FOCUS_RANGE.x
+	%FocusMore.disabled = CompanionState.focus_minutes >= CompanionState.POMODORO_FOCUS_RANGE.y
+	%BreakLess.disabled = CompanionState.rest_minutes <= CompanionState.POMODORO_REST_RANGE.x
+	%BreakMore.disabled = CompanionState.rest_minutes >= CompanionState.POMODORO_REST_RANGE.y
+
+func _on_timer_start() -> void:
+	timer_panel.hide()
+	SaveManager.save_progress()
+	CompanionState.start_pomodoro()
+
+func _on_timer_skip() -> void:
+	_skipping = true
+	CompanionState.skip_pomodoro()
+	_skipping = false
+
+func _start_review() -> void:
+	peek.start_reading()
+	MusicManager.play_focus()
 
 func _on_pomodoro_phase(mode: String) -> void:
 	if not visible:
 		return
-	if mode == "rest":
+	if mode == "focus":
+		_start_review()
+		return
+	MusicManager.play_main_room()
+	peek.set_rest(_mood_clip())
+	if mode == "rest" and _skipping:
+		_toast("Break time. Skipping cost Kuiz a little energy.")
+	elif mode == "rest":
 		MusicManager.play_sfx(CHARGED_SFX)
 		peek.act("Celebrate")
-		_toast("Focus done! Take a 5-minute break.")
+		_toast("Focus done! Take a %d-minute break." % CompanionState.rest_minutes)
 	elif mode == "done":
 		MusicManager.play_sfx(CHARGED_SFX)
 		peek.act("Happy")
 		_toast("Break over. Kuiz feels rested!")
 
+# While a session runs, its time and way out sit on the HUD in every room.
 func _refresh_timer() -> void:
 	var p := CompanionState.get_pomodoro_state()
 	var mode: String = p["mode"]
-	var left: int = p["remaining"] if mode != "" else p["focus_total"]
-	var clock := "%02d:%02d" % [floori(left / 60.0), left % 60]
-	focus_btn.text = "Focus" if mode == "" else clock
-	if not timer_panel.visible:
+	review_bar.visible = mode != ""
+	focus_btn.text = "Focus"
+	if mode == "":
 		return
-	%TimerTime.text = clock
-	%TimerTitle.text = "Break time" if mode == "rest" else "Focus timer"
-	%TimerBar.value = 1.0 - float(left) / (p["rest_total"] if mode == "rest" else p["focus_total"])
-	match mode:
-		"focus":
-			%TimerAction.text = "Skip to break"
-			%TimerHint.text = "Kuiz gains focus when this ends. Skipping costs it a little energy and mood."
-		"rest":
-			%TimerAction.text = "End break"
-			%TimerHint.text = "Rest up. Ending early tires Kuiz out."
-		_:
-			%TimerAction.text = "Start focus"
-			%TimerHint.text = "%d minutes of focus, then a %d-minute break. Kuiz gains focus when you finish." % [p["focus_total"] / 60, p["rest_total"] / 60]
+	var left: int = p["remaining"]
+	var clock := "%02d:%02d" % [floori(left / 60.0), left % 60]
+	focus_btn.text = clock
+	%ReviewTime.text = clock
+	%ReviewMode.text = "Reviewing" if mode == "focus" else "Break"
+	%TimerSkip.text = "Take a break" if mode == "focus" else "End break"
 
 func _on_play() -> void:
-	if not _busy:
+	if _can_leave():
 		get_tree().change_scene_to_file(WORLDS_SCENE)
+
+func _can_leave() -> bool:
+	if _reviewing():
+		_scold()
+		return false
+	return not _busy
+
+func _reviewing() -> bool:
+	return CompanionState.get_pomodoro_state()["mode"] == "focus"
+
+func _scold() -> void:
+	peek.act("Angry")
+	_toast(REVIEW_LINES.pick_random())
 
 # --- Maintenance Bay ---
 
@@ -669,6 +733,9 @@ func _buy_food(food: Dictionary) -> void:
 	_refresh_shop()
 	_pick_food(0)
 
+func _is_full() -> bool:
+	return CompanionState.hunger >= CompanionState.STAT_MAX * FULL_STAT
+
 func _eat(food: Dictionary) -> void:
 	GameState.food_stock[food["id"]] -= 1
 	SaveManager.save_progress()
@@ -724,7 +791,7 @@ func _move_held(pos: Vector2) -> void:
 	if over and not _over_kuiz:
 		match _held_kind:
 			"food":
-				peek.act("Surprised")
+				peek.act("Angry" if _is_full() else "Surprised")
 			"tool":
 				peek.act("State_Sick")
 			"towel":
@@ -740,7 +807,10 @@ func _release_held(pos: Vector2) -> void:
 	var kind := _held_kind
 	_held_kind = ""
 	peek.look_ahead()
-	if kind == "food" and peek.hits(pos):
+	if kind == "food" and peek.hits(pos) and _is_full():
+		peek.act("Angry")
+		_toast(FULL_LINES.pick_random())
+	elif kind == "food" and peek.hits(pos):
 		await _eat(FOODS[_food_i])
 		# The last one eaten: move on to the next food in stock.
 		_pick_food(0)

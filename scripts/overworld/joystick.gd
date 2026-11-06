@@ -2,13 +2,14 @@ extends Control
 ## On-screen thumbstick for the overworld. `output` is the stick vector, length 0..1 (screen axes:
 ## +x right, +y down). Touch arrives as emulated mouse events, so one finger drives it.
 
-const BASE_RADIUS := 120.0
-const KNOB_RADIUS := 52.0
+const BASE_RADIUS := 100.0
+const KNOB_RADIUS := 44.0
 const DEAD_ZONE := 0.15
-const BASE_FILL := Color(0.1608, 0.2196, 0.2275, 0.35)
-const BASE_RING := Color(0.9686, 0.9608, 0.9373, 0.8)
+const BASE_FILL := Color(0.9686, 0.9608, 0.9373, 0.3)
+const BASE_RING := Color(0.1608, 0.2196, 0.2275, 0.75)
 const KNOB_FILL := Color(0.9686, 0.9608, 0.9373, 0.95)
-const KNOB_RING := Color(0.3098, 0.5608, 0.5373, 1)
+const KNOB_RING := Color(0.1608, 0.2196, 0.2275, 1)
+const KNOB_DOT := Color(0.3098, 0.5608, 0.5373, 1)
 
 var output := Vector2.ZERO
 var _knob := Vector2.ZERO
@@ -32,6 +33,7 @@ func _drag(pos: Vector2) -> void:
 func _draw() -> void:
 	var c := size / 2.0
 	draw_circle(c, BASE_RADIUS, BASE_FILL)
-	draw_arc(c, BASE_RADIUS, 0.0, TAU, 64, BASE_RING, 4.0, true)
+	draw_arc(c, BASE_RADIUS, 0.0, TAU, 64, BASE_RING, 3.0, true)
 	draw_circle(c + _knob, KNOB_RADIUS, KNOB_FILL)
-	draw_arc(c + _knob, KNOB_RADIUS, 0.0, TAU, 48, KNOB_RING, 5.0, true)
+	draw_arc(c + _knob, KNOB_RADIUS, 0.0, TAU, 48, KNOB_RING, 3.0, true)
+	draw_circle(c + _knob, KNOB_RADIUS * 0.3, KNOB_DOT)
