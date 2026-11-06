@@ -1,0 +1,1003 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/overworld/world_intro.gd" id="1_intro"]
+[ext_resource type="Script" path="res://scripts/ui/boot/kuiz_voice.gd" id="2_voice"]
+[ext_resource type="FontFile" path="res://assets/fonts/JosefinSans-Bold.ttf" id="3_bold"]
+
+[sub_resource type="Environment" id="Environment_intro"]
+background_mode = 1
+background_color = Color(0.749, 0.851, 0.902, 1)
+ambient_light_source = 2
+ambient_light_color = Color(0.8, 0.85, 0.88, 1)
+ambient_light_energy = 0.7
+
+[sub_resource type="StandardMaterial3D" id="Mat_grass"]
+albedo_color = Color(0.4706, 0.6627, 0.5098, 1)
+roughness = 1.0
+
+[sub_resource type="StandardMaterial3D" id="Mat_hill"]
+albedo_color = Color(0.5608, 0.7373, 0.5804, 1)
+roughness = 1.0
+
+[sub_resource type="StandardMaterial3D" id="Mat_hill_far"]
+albedo_color = Color(0.6627, 0.8039, 0.6902, 1)
+roughness = 1.0
+
+[sub_resource type="StandardMaterial3D" id="Mat_path"]
+albedo_color = Color(0.8510, 0.7451, 0.5490, 1)
+roughness = 1.0
+
+[sub_resource type="StandardMaterial3D" id="Mat_stem"]
+albedo_color = Color(0.3098, 0.5608, 0.4157, 1)
+roughness = 1.0
+
+[sub_resource type="StandardMaterial3D" id="Mat_wall"]
+albedo_color = Color(0.9373, 0.9020, 0.8235, 1)
+roughness = 1.0
+
+[sub_resource type="StandardMaterial3D" id="Mat_trim"]
+albedo_color = Color(0.4353, 0.5608, 0.6588, 1)
+roughness = 1.0
+
+[sub_resource type="StandardMaterial3D" id="Mat_beam"]
+albedo_color = Color(0.4784, 0.3529, 0.2353, 1)
+roughness = 1.0
+
+[sub_resource type="StandardMaterial3D" id="Mat_door_in"]
+albedo_color = Color(0.7098, 0.4039, 0.3725, 1)
+roughness = 1.0
+
+[sub_resource type="StandardMaterial3D" id="Mat_ridge"]
+albedo_color = Color(0.2471, 0.4784, 0.4549, 1)
+roughness = 1.0
+
+[sub_resource type="StandardMaterial3D" id="Mat_step"]
+albedo_color = Color(0.7882, 0.7647, 0.7059, 1)
+roughness = 1.0
+
+[sub_resource type="StandardMaterial3D" id="Mat_roof"]
+albedo_color = Color(0.3098, 0.5608, 0.5373, 1)
+roughness = 1.0
+
+[sub_resource type="StandardMaterial3D" id="Mat_frame"]
+albedo_color = Color(0.1608, 0.2196, 0.2275, 1)
+roughness = 1.0
+
+[sub_resource type="StandardMaterial3D" id="Mat_door"]
+albedo_color = Color(0.7882, 0.4745, 0.4392, 1)
+roughness = 1.0
+
+[sub_resource type="StandardMaterial3D" id="Mat_dark"]
+albedo_color = Color(0.1176, 0.1569, 0.1608, 1)
+roughness = 1.0
+
+[sub_resource type="StandardMaterial3D" id="Mat_knob"]
+albedo_color = Color(0.8392, 0.6588, 0.3725, 1)
+roughness = 1.0
+
+[sub_resource type="StandardMaterial3D" id="Mat_trunk"]
+albedo_color = Color(0.4784, 0.3529, 0.2353, 1)
+roughness = 1.0
+
+[sub_resource type="StandardMaterial3D" id="Mat_canopy"]
+albedo_color = Color(0.4353, 0.6510, 0.4863, 1)
+roughness = 1.0
+
+[sub_resource type="StandardMaterial3D" id="Mat_canopy2"]
+albedo_color = Color(0.3686, 0.6039, 0.4706, 1)
+roughness = 1.0
+
+[sub_resource type="StandardMaterial3D" id="Mat_pine"]
+albedo_color = Color(0.2471, 0.4784, 0.4314, 1)
+roughness = 1.0
+
+[sub_resource type="StandardMaterial3D" id="Mat_pine2"]
+albedo_color = Color(0.3098, 0.5608, 0.5373, 1)
+roughness = 1.0
+
+[sub_resource type="StandardMaterial3D" id="Mat_cloud"]
+albedo_color = Color(1.0000, 1.0000, 1.0000, 1)
+roughness = 1.0
+
+[sub_resource type="StandardMaterial3D" id="Mat_chimney"]
+albedo_color = Color(0.7882, 0.4745, 0.4392, 1)
+roughness = 1.0
+
+[sub_resource type="StandardMaterial3D" id="Mat_flower"]
+albedo_color = Color(0.8392, 0.6588, 0.3725, 1)
+roughness = 1.0
+
+[sub_resource type="StandardMaterial3D" id="Mat_flower2"]
+albedo_color = Color(0.7882, 0.4745, 0.4392, 1)
+roughness = 1.0
+
+[sub_resource type="StandardMaterial3D" id="Mat_GLASS"]
+albedo_color = Color(0.7490, 0.8510, 0.9020, 1)
+roughness = 0.4
+
+[sub_resource type="PlaneMesh" id="Mesh_ground"]
+material = SubResource("Mat_grass")
+size = Vector2(90, 70)
+
+[sub_resource type="PlaneMesh" id="Mesh_path"]
+material = SubResource("Mat_path")
+size = Vector2(1.7, 15)
+
+[sub_resource type="SphereMesh" id="Mesh_ball_hill"]
+material = SubResource("Mat_hill")
+radial_segments = 24
+rings = 12
+
+[sub_resource type="SphereMesh" id="Mesh_ball_far"]
+material = SubResource("Mat_hill_far")
+radial_segments = 24
+rings = 12
+
+[sub_resource type="BoxMesh" id="Mesh_walls"]
+material = SubResource("Mat_wall")
+size = Vector3(3.4, 2.2, 2.6)
+
+[sub_resource type="PrismMesh" id="Mesh_gable"]
+material = SubResource("Mat_wall")
+size = Vector3(3.4, 1.1, 2.6)
+
+[sub_resource type="BoxMesh" id="Mesh_roof_slab"]
+material = SubResource("Mat_roof")
+size = Vector3(2.45, 0.2, 3.1)
+
+[sub_resource type="BoxMesh" id="Mesh_ridge"]
+material = SubResource("Mat_ridge")
+size = Vector3(0.3, 0.14, 3.14)
+
+[sub_resource type="BoxMesh" id="Mesh_chimney"]
+material = SubResource("Mat_chimney")
+size = Vector3(0.42, 1.1, 0.42)
+
+[sub_resource type="BoxMesh" id="Mesh_chimney_cap"]
+material = SubResource("Mat_frame")
+size = Vector3(0.54, 0.1, 0.54)
+
+[sub_resource type="BoxMesh" id="Mesh_frame"]
+material = SubResource("Mat_beam")
+size = Vector3(1.5, 1.65, 0.06)
+
+[sub_resource type="BoxMesh" id="Mesh_doorway"]
+material = SubResource("Mat_dark")
+size = Vector3(1.3, 1.5, 0.02)
+
+[sub_resource type="BoxMesh" id="Mesh_door"]
+material = SubResource("Mat_door")
+size = Vector3(1.3, 1.46, 0.06)
+
+[sub_resource type="BoxMesh" id="Mesh_door_panel"]
+material = SubResource("Mat_door_in")
+size = Vector3(0.9, 0.5, 0.02)
+
+[sub_resource type="BoxMesh" id="Mesh_emblem"]
+material = SubResource("Mat_knob")
+size = Vector3(0.17, 0.17, 0.02)
+
+[sub_resource type="SphereMesh" id="Mesh_knob"]
+material = SubResource("Mat_knob")
+radius = 0.06
+height = 0.12
+
+[sub_resource type="BoxMesh" id="Mesh_step"]
+material = SubResource("Mat_step")
+size = Vector3(1.7, 0.04, 0.5)
+
+[sub_resource type="BoxMesh" id="Mesh_awning"]
+material = SubResource("Mat_roof")
+size = Vector3(1.8, 0.08, 0.72)
+
+[sub_resource type="BoxMesh" id="Mesh_base"]
+material = SubResource("Mat_trim")
+size = Vector3(0.95, 0.3, 0.06)
+
+[sub_resource type="BoxMesh" id="Mesh_post"]
+material = SubResource("Mat_beam")
+size = Vector3(0.14, 2.2, 0.06)
+
+[sub_resource type="BoxMesh" id="Mesh_beam"]
+material = SubResource("Mat_beam")
+size = Vector3(3.5, 0.1, 0.06)
+
+[sub_resource type="BoxMesh" id="Mesh_win_frame"]
+material = SubResource("Mat_frame")
+size = Vector3(0.6, 0.6, 0.04)
+
+[sub_resource type="BoxMesh" id="Mesh_win_glass"]
+material = SubResource("Mat_GLASS")
+size = Vector3(0.5, 0.5, 0.04)
+
+[sub_resource type="BoxMesh" id="Mesh_muntin_v"]
+material = SubResource("Mat_frame")
+size = Vector3(0.03, 0.5, 0.02)
+
+[sub_resource type="BoxMesh" id="Mesh_muntin_h"]
+material = SubResource("Mat_frame")
+size = Vector3(0.5, 0.03, 0.02)
+
+[sub_resource type="BoxMesh" id="Mesh_shutter"]
+material = SubResource("Mat_roof")
+size = Vector3(0.12, 0.6, 0.03)
+
+[sub_resource type="BoxMesh" id="Mesh_planter"]
+material = SubResource("Mat_beam")
+size = Vector3(0.7, 0.14, 0.16)
+
+[sub_resource type="CylinderMesh" id="Mesh_round_frame"]
+material = SubResource("Mat_frame")
+top_radius = 0.3
+bottom_radius = 0.3
+height = 0.04
+radial_segments = 24
+
+[sub_resource type="CylinderMesh" id="Mesh_round_glass"]
+material = SubResource("Mat_GLASS")
+top_radius = 0.23
+bottom_radius = 0.23
+height = 0.04
+radial_segments = 24
+
+[sub_resource type="CylinderMesh" id="Mesh_trunk"]
+material = SubResource("Mat_trunk")
+top_radius = 0.1
+bottom_radius = 0.14
+height = 0.8
+radial_segments = 8
+
+[sub_resource type="SphereMesh" id="Mesh_canopy"]
+material = SubResource("Mat_canopy")
+radius = 0.6
+height = 1.2
+radial_segments = 16
+rings = 8
+
+[sub_resource type="SphereMesh" id="Mesh_canopy2"]
+material = SubResource("Mat_canopy2")
+radius = 0.6
+height = 1.2
+radial_segments = 16
+rings = 8
+
+[sub_resource type="CylinderMesh" id="Mesh_pine"]
+material = SubResource("Mat_pine")
+top_radius = 0.0
+bottom_radius = 0.75
+height = 1.4
+radial_segments = 8
+
+[sub_resource type="CylinderMesh" id="Mesh_pine2"]
+material = SubResource("Mat_pine2")
+top_radius = 0.0
+bottom_radius = 0.58
+height = 1.15
+radial_segments = 8
+
+[sub_resource type="SphereMesh" id="Mesh_bush"]
+material = SubResource("Mat_canopy2")
+radius = 0.32
+height = 0.56
+radial_segments = 12
+rings = 6
+
+[sub_resource type="CylinderMesh" id="Mesh_stem"]
+material = SubResource("Mat_stem")
+top_radius = 0.012
+bottom_radius = 0.012
+height = 0.2
+radial_segments = 6
+
+[sub_resource type="SphereMesh" id="Mesh_cloud"]
+material = SubResource("Mat_cloud")
+radial_segments = 16
+rings = 8
+
+[sub_resource type="SphereMesh" id="Mesh_flower"]
+material = SubResource("Mat_flower")
+radius = 0.055
+height = 0.11
+radial_segments = 8
+rings = 4
+
+[sub_resource type="SphereMesh" id="Mesh_flower2"]
+material = SubResource("Mat_flower2")
+radius = 0.055
+height = 0.11
+radial_segments = 8
+rings = 4
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_caption"]
+content_margin_left = 36.0
+content_margin_top = 18.0
+content_margin_right = 36.0
+content_margin_bottom = 10.0
+bg_color = Color(0.1608, 0.2196, 0.2275, 0.95)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.9686, 0.9608, 0.9373, 0.9)
+corner_radius_top_left = 36
+corner_radius_top_right = 36
+corner_radius_bottom_right = 36
+corner_radius_bottom_left = 36
+
+[node name="WorldIntro" type="Node3D"]
+script = ExtResource("1_intro")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_intro")
+
+[node name="Camera3D" type="Camera3D" parent="."]
+unique_name_in_owner = true
+transform = Transform3D(1, 0, 0, 0, 0.9981, 0.061, 0, -0.061, 0.9981, 0, 2, 13)
+fov = 30.0
+
+[node name="Sun" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.866, -0.3214, 0.383, 0, 0.766, 0.6428, -0.5, -0.5567, 0.6634, 0, 0, 0)
+light_color = Color(1, 0.96, 0.88, 1)
+light_energy = 0.95
+shadow_enabled = true
+
+[node name="Voice" type="Node" parent="."]
+unique_name_in_owner = true
+script = ExtResource("2_voice")
+
+[node name="Land" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+
+[node name="Ground" type="MeshInstance3D" parent="Land"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+cast_shadow = 0
+mesh = SubResource("Mesh_ground")
+
+[node name="Path" type="MeshInstance3D" parent="Land"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.01, 6.4)
+cast_shadow = 0
+mesh = SubResource("Mesh_path")
+
+[node name="HillFarLeft" type="MeshInstance3D" parent="Land"]
+transform = Transform3D(26, 0, 0, 0, 9, 0, 0, 0, 12, -7, 0, -24)
+cast_shadow = 0
+mesh = SubResource("Mesh_ball_far")
+
+[node name="HillFarRight" type="MeshInstance3D" parent="Land"]
+transform = Transform3D(28, 0, 0, 0, 12, 0, 0, 0, 12, 9, 0, -26)
+cast_shadow = 0
+mesh = SubResource("Mesh_ball_far")
+
+[node name="HillLeft" type="MeshInstance3D" parent="Land"]
+transform = Transform3D(14, 0, 0, 0, 3.4, 0, 0, 0, 8, -6, 0, -14)
+cast_shadow = 0
+mesh = SubResource("Mesh_ball_hill")
+
+[node name="HillRight" type="MeshInstance3D" parent="Land"]
+transform = Transform3D(15, 0, 0, 0, 5, 0, 0, 0, 8, 6.5, 0, -15)
+cast_shadow = 0
+mesh = SubResource("Mesh_ball_hill")
+
+[node name="Sky" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+
+[node name="Cloud0" type="MeshInstance3D" parent="Sky"]
+transform = Transform3D(2.2, 0, 0, 0, 0.7, 0, 0, 0, 1, -2.4, 5.4, -12)
+cast_shadow = 0
+mesh = SubResource("Mesh_cloud")
+
+[node name="Cloud1" type="MeshInstance3D" parent="Sky"]
+transform = Transform3D(1.6, 0, 0, 0, 0.8, 0, 0, 0, 1, -1.5, 5.7, -12)
+cast_shadow = 0
+mesh = SubResource("Mesh_cloud")
+
+[node name="Cloud2" type="MeshInstance3D" parent="Sky"]
+transform = Transform3D(2.8, 0, 0, 0, 0.8, 0, 0, 0, 1, 2.2, 4.7, -14)
+cast_shadow = 0
+mesh = SubResource("Mesh_cloud")
+
+[node name="Cloud3" type="MeshInstance3D" parent="Sky"]
+transform = Transform3D(1.8, 0, 0, 0, 0.7, 0, 0, 0, 1, 3.3, 5, -14)
+cast_shadow = 0
+mesh = SubResource("Mesh_cloud")
+
+[node name="Cloud4" type="MeshInstance3D" parent="Sky"]
+transform = Transform3D(2.6, 0, 0, 0, 0.7, 0, 0, 0, 1, 0.3, 6.6, -18)
+cast_shadow = 0
+mesh = SubResource("Mesh_cloud")
+
+[node name="House" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+
+[node name="Walls" type="MeshInstance3D" parent="House"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.1, -2.3)
+mesh = SubResource("Mesh_walls")
+
+[node name="Gable" type="MeshInstance3D" parent="House"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.75, -2.3)
+mesh = SubResource("Mesh_gable")
+
+[node name="RoofLeft" type="MeshInstance3D" parent="House"]
+transform = Transform3D(0.8396, -0.5432, 0, 0.5432, 0.8396, 0, 0, 0, 1, -1.09, 2.73, -2.3)
+mesh = SubResource("Mesh_roof_slab")
+
+[node name="RoofRight" type="MeshInstance3D" parent="House"]
+transform = Transform3D(0.8396, 0.5432, 0, -0.5432, 0.8396, 0, 0, 0, 1, 1.09, 2.73, -2.3)
+mesh = SubResource("Mesh_roof_slab")
+
+[node name="Ridge" type="MeshInstance3D" parent="House"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.42, -2.3)
+mesh = SubResource("Mesh_ridge")
+
+[node name="Chimney" type="MeshInstance3D" parent="House"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.95, 3.25, -3)
+mesh = SubResource("Mesh_chimney")
+
+[node name="ChimneyCap" type="MeshInstance3D" parent="House"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.95, 3.84, -3)
+mesh = SubResource("Mesh_chimney_cap")
+
+[node name="Beam" type="MeshInstance3D" parent="House"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.2, -0.97)
+mesh = SubResource("Mesh_beam")
+
+[node name="PostLeft" type="MeshInstance3D" parent="House"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.66, 1.1, -0.97)
+mesh = SubResource("Mesh_post")
+
+[node name="PostRight" type="MeshInstance3D" parent="House"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.66, 1.1, -0.97)
+mesh = SubResource("Mesh_post")
+
+[node name="BaseLeft" type="MeshInstance3D" parent="House"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.22, 0.15, -0.96)
+mesh = SubResource("Mesh_base")
+
+[node name="BaseRight" type="MeshInstance3D" parent="House"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.22, 0.15, -0.96)
+mesh = SubResource("Mesh_base")
+
+[node name="DoorFrame" type="MeshInstance3D" parent="House"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.825, -0.97)
+mesh = SubResource("Mesh_frame")
+
+[node name="Doorway" type="MeshInstance3D" parent="House"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.75, -0.93)
+mesh = SubResource("Mesh_doorway")
+
+[node name="Step" type="MeshInstance3D" parent="House"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.02, -0.68)
+cast_shadow = 0
+mesh = SubResource("Mesh_step")
+
+[node name="Awning" type="MeshInstance3D" parent="House"]
+transform = Transform3D(1, 0, 0, 0, 0.9135, -0.4067, 0, 0.4067, 0.9135, 0, 1.86, -0.66)
+mesh = SubResource("Mesh_awning")
+
+[node name="WindowLeftFrame" type="MeshInstance3D" parent="House"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.2, 1.35, -0.98)
+mesh = SubResource("Mesh_win_frame")
+
+[node name="WindowLeft" type="MeshInstance3D" parent="House"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.2, 1.35, -0.96)
+mesh = SubResource("Mesh_win_glass")
+
+[node name="WindowLeftBarV" type="MeshInstance3D" parent="House"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.2, 1.35, -0.93)
+mesh = SubResource("Mesh_muntin_v")
+
+[node name="WindowLeftBarH" type="MeshInstance3D" parent="House"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.2, 1.35, -0.93)
+mesh = SubResource("Mesh_muntin_h")
+
+[node name="ShutterLeftA" type="MeshInstance3D" parent="House"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5699999999999998, 1.35, -0.96)
+mesh = SubResource("Mesh_shutter")
+
+[node name="ShutterLeftB" type="MeshInstance3D" parent="House"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.83, 1.35, -0.96)
+mesh = SubResource("Mesh_shutter")
+
+[node name="PlanterLeft" type="MeshInstance3D" parent="House"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.2, 0.98, -0.9)
+mesh = SubResource("Mesh_planter")
+
+[node name="PlanterLeftBloom0" type="MeshInstance3D" parent="House"]
+transform = Transform3D(1.3, 0, 0, 0, 1.3, 0, 0, 0, 1.3, -1.42, 1.08, -0.9)
+cast_shadow = 0
+mesh = SubResource("Mesh_flower2")
+
+[node name="PlanterLeftBloom1" type="MeshInstance3D" parent="House"]
+transform = Transform3D(1.3, 0, 0, 0, 1.3, 0, 0, 0, 1.3, -1.2, 1.08, -0.9)
+cast_shadow = 0
+mesh = SubResource("Mesh_flower")
+
+[node name="PlanterLeftBloom2" type="MeshInstance3D" parent="House"]
+transform = Transform3D(1.3, 0, 0, 0, 1.3, 0, 0, 0, 1.3, -0.98, 1.08, -0.9)
+cast_shadow = 0
+mesh = SubResource("Mesh_flower2")
+
+[node name="WindowRightFrame" type="MeshInstance3D" parent="House"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.2, 1.35, -0.98)
+mesh = SubResource("Mesh_win_frame")
+
+[node name="WindowRight" type="MeshInstance3D" parent="House"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.2, 1.35, -0.96)
+mesh = SubResource("Mesh_win_glass")
+
+[node name="WindowRightBarV" type="MeshInstance3D" parent="House"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.2, 1.35, -0.93)
+mesh = SubResource("Mesh_muntin_v")
+
+[node name="WindowRightBarH" type="MeshInstance3D" parent="House"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.2, 1.35, -0.93)
+mesh = SubResource("Mesh_muntin_h")
+
+[node name="ShutterRightA" type="MeshInstance3D" parent="House"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.83, 1.35, -0.96)
+mesh = SubResource("Mesh_shutter")
+
+[node name="ShutterRightB" type="MeshInstance3D" parent="House"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.5699999999999998, 1.35, -0.96)
+mesh = SubResource("Mesh_shutter")
+
+[node name="PlanterRight" type="MeshInstance3D" parent="House"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.2, 0.98, -0.9)
+mesh = SubResource("Mesh_planter")
+
+[node name="PlanterRightBloom0" type="MeshInstance3D" parent="House"]
+transform = Transform3D(1.3, 0, 0, 0, 1.3, 0, 0, 0, 1.3, 0.98, 1.08, -0.9)
+cast_shadow = 0
+mesh = SubResource("Mesh_flower2")
+
+[node name="PlanterRightBloom1" type="MeshInstance3D" parent="House"]
+transform = Transform3D(1.3, 0, 0, 0, 1.3, 0, 0, 0, 1.3, 1.2, 1.08, -0.9)
+cast_shadow = 0
+mesh = SubResource("Mesh_flower")
+
+[node name="PlanterRightBloom2" type="MeshInstance3D" parent="House"]
+transform = Transform3D(1.3, 0, 0, 0, 1.3, 0, 0, 0, 1.3, 1.42, 1.08, -0.9)
+cast_shadow = 0
+mesh = SubResource("Mesh_flower2")
+
+[node name="RoundFrame" type="MeshInstance3D" parent="House"]
+transform = Transform3D(1, 0, 0, 0, 0.0, -1.0, 0, 1.0, 0.0, 0, 2.62, -0.98)
+mesh = SubResource("Mesh_round_frame")
+
+[node name="RoundGlass" type="MeshInstance3D" parent="House"]
+transform = Transform3D(1, 0, 0, 0, 0.0, -1.0, 0, 1.0, 0.0, 0, 2.62, -0.96)
+mesh = SubResource("Mesh_round_glass")
+
+[node name="DoorHinge" type="Node3D" parent="House"]
+unique_name_in_owner = true
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.65, 0, -0.9)
+
+[node name="Door" type="MeshInstance3D" parent="House/DoorHinge"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.65, 0.77, 0)
+mesh = SubResource("Mesh_door")
+
+[node name="PanelHigh" type="MeshInstance3D" parent="House/DoorHinge"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.65, 1.12, 0.035)
+mesh = SubResource("Mesh_door_panel")
+
+[node name="PanelLow" type="MeshInstance3D" parent="House/DoorHinge"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.65, 0.45, 0.035)
+mesh = SubResource("Mesh_door_panel")
+
+[node name="Emblem" type="MeshInstance3D" parent="House/DoorHinge"]
+transform = Transform3D(0.7071, -0.7071, 0, 0.7071, 0.7071, 0, 0, 0, 1, 0.65, 1.12, 0.05)
+mesh = SubResource("Mesh_emblem")
+
+[node name="Knob" type="MeshInstance3D" parent="House/DoorHinge"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.14, 0.72, 0.06)
+mesh = SubResource("Mesh_knob")
+
+[node name="Trees" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+
+[node name="Pine0" type="Node3D" parent="Trees"]
+transform = Transform3D(1.5, 0, 0, 0, 1.5, 0, 0, 0, 1.5, -2.5, 0, -4.5)
+
+[node name="Trunk" type="MeshInstance3D" parent="Trees/Pine0"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.3, 0)
+mesh = SubResource("Mesh_trunk")
+
+[node name="Low" type="MeshInstance3D" parent="Trees/Pine0"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, 0)
+mesh = SubResource("Mesh_pine")
+
+[node name="High" type="MeshInstance3D" parent="Trees/Pine0"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.05, 0)
+mesh = SubResource("Mesh_pine2")
+
+[node name="Pine1" type="Node3D" parent="Trees"]
+transform = Transform3D(1.7, 0, 0, 0, 1.7, 0, 0, 0, 1.7, 2.6, 0, -5)
+
+[node name="Trunk" type="MeshInstance3D" parent="Trees/Pine1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.3, 0)
+mesh = SubResource("Mesh_trunk")
+
+[node name="Low" type="MeshInstance3D" parent="Trees/Pine1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, 0)
+mesh = SubResource("Mesh_pine")
+
+[node name="High" type="MeshInstance3D" parent="Trees/Pine1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.05, 0)
+mesh = SubResource("Mesh_pine2")
+
+[node name="Pine2" type="Node3D" parent="Trees"]
+transform = Transform3D(1.8, 0, 0, 0, 1.8, 0, 0, 0, 1.8, -3.9, 0, -8)
+
+[node name="Trunk" type="MeshInstance3D" parent="Trees/Pine2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.3, 0)
+mesh = SubResource("Mesh_trunk")
+
+[node name="Low" type="MeshInstance3D" parent="Trees/Pine2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, 0)
+mesh = SubResource("Mesh_pine")
+
+[node name="High" type="MeshInstance3D" parent="Trees/Pine2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.05, 0)
+mesh = SubResource("Mesh_pine2")
+
+[node name="Pine3" type="Node3D" parent="Trees"]
+transform = Transform3D(1.6, 0, 0, 0, 1.6, 0, 0, 0, 1.6, 4.1, 0, -6)
+
+[node name="Trunk" type="MeshInstance3D" parent="Trees/Pine3"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.3, 0)
+mesh = SubResource("Mesh_trunk")
+
+[node name="Low" type="MeshInstance3D" parent="Trees/Pine3"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, 0)
+mesh = SubResource("Mesh_pine")
+
+[node name="High" type="MeshInstance3D" parent="Trees/Pine3"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.05, 0)
+mesh = SubResource("Mesh_pine2")
+
+[node name="Pine4" type="Node3D" parent="Trees"]
+transform = Transform3D(1.9, 0, 0, 0, 1.9, 0, 0, 0, 1.9, 1.1, 0, -8)
+
+[node name="Trunk" type="MeshInstance3D" parent="Trees/Pine4"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.3, 0)
+mesh = SubResource("Mesh_trunk")
+
+[node name="Low" type="MeshInstance3D" parent="Trees/Pine4"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, 0)
+mesh = SubResource("Mesh_pine")
+
+[node name="High" type="MeshInstance3D" parent="Trees/Pine4"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.05, 0)
+mesh = SubResource("Mesh_pine2")
+
+[node name="Pine5" type="Node3D" parent="Trees"]
+transform = Transform3D(1.6, 0, 0, 0, 1.6, 0, 0, 0, 1.6, -1.1, 0, -9)
+
+[node name="Trunk" type="MeshInstance3D" parent="Trees/Pine5"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.3, 0)
+mesh = SubResource("Mesh_trunk")
+
+[node name="Low" type="MeshInstance3D" parent="Trees/Pine5"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, 0)
+mesh = SubResource("Mesh_pine")
+
+[node name="High" type="MeshInstance3D" parent="Trees/Pine5"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.05, 0)
+mesh = SubResource("Mesh_pine2")
+
+[node name="Pine6" type="Node3D" parent="Trees"]
+transform = Transform3D(1.7, 0, 0, 0, 1.7, 0, 0, 0, 1.7, -5.8, 0, -5)
+
+[node name="Trunk" type="MeshInstance3D" parent="Trees/Pine6"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.3, 0)
+mesh = SubResource("Mesh_trunk")
+
+[node name="Low" type="MeshInstance3D" parent="Trees/Pine6"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, 0)
+mesh = SubResource("Mesh_pine")
+
+[node name="High" type="MeshInstance3D" parent="Trees/Pine6"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.05, 0)
+mesh = SubResource("Mesh_pine2")
+
+[node name="Pine7" type="Node3D" parent="Trees"]
+transform = Transform3D(1.9, 0, 0, 0, 1.9, 0, 0, 0, 1.9, 6, 0, -7)
+
+[node name="Trunk" type="MeshInstance3D" parent="Trees/Pine7"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.3, 0)
+mesh = SubResource("Mesh_trunk")
+
+[node name="Low" type="MeshInstance3D" parent="Trees/Pine7"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, 0)
+mesh = SubResource("Mesh_pine")
+
+[node name="High" type="MeshInstance3D" parent="Trees/Pine7"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.05, 0)
+mesh = SubResource("Mesh_pine2")
+
+[node name="Pine8" type="Node3D" parent="Trees"]
+transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, -2, 0, -11)
+
+[node name="Trunk" type="MeshInstance3D" parent="Trees/Pine8"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.3, 0)
+mesh = SubResource("Mesh_trunk")
+
+[node name="Low" type="MeshInstance3D" parent="Trees/Pine8"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, 0)
+mesh = SubResource("Mesh_pine")
+
+[node name="High" type="MeshInstance3D" parent="Trees/Pine8"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.05, 0)
+mesh = SubResource("Mesh_pine2")
+
+[node name="Pine9" type="Node3D" parent="Trees"]
+transform = Transform3D(2.1, 0, 0, 0, 2.1, 0, 0, 0, 2.1, 3.1, 0, -11)
+
+[node name="Trunk" type="MeshInstance3D" parent="Trees/Pine9"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.3, 0)
+mesh = SubResource("Mesh_trunk")
+
+[node name="Low" type="MeshInstance3D" parent="Trees/Pine9"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, 0)
+mesh = SubResource("Mesh_pine")
+
+[node name="High" type="MeshInstance3D" parent="Trees/Pine9"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.05, 0)
+mesh = SubResource("Mesh_pine2")
+
+[node name="Round0" type="Node3D" parent="Trees"]
+transform = Transform3D(1.25, 0, 0, 0, 1.25, 0, 0, 0, 1.25, -2.3, 0, 0.2)
+
+[node name="Trunk" type="MeshInstance3D" parent="Trees/Round0"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.4, 0)
+mesh = SubResource("Mesh_trunk")
+
+[node name="Canopy" type="MeshInstance3D" parent="Trees/Round0"]
+transform = Transform3D(1.15, 0, 0, 0, 1.1, 0, 0, 0, 1.15, 0, 1.15, 0)
+mesh = SubResource("Mesh_canopy")
+
+[node name="Top" type="MeshInstance3D" parent="Trees/Round0"]
+transform = Transform3D(0.75, 0, 0, 0, 0.7, 0, 0, 0, 0.75, 0.12, 1.75, 0.05)
+mesh = SubResource("Mesh_canopy")
+
+[node name="Round1" type="Node3D" parent="Trees"]
+transform = Transform3D(1.4, 0, 0, 0, 1.4, 0, 0, 0, 1.4, 2.45, 0, 1.0)
+
+[node name="Trunk" type="MeshInstance3D" parent="Trees/Round1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.4, 0)
+mesh = SubResource("Mesh_trunk")
+
+[node name="Canopy" type="MeshInstance3D" parent="Trees/Round1"]
+transform = Transform3D(1.15, 0, 0, 0, 1.1, 0, 0, 0, 1.15, 0, 1.15, 0)
+mesh = SubResource("Mesh_canopy2")
+
+[node name="Top" type="MeshInstance3D" parent="Trees/Round1"]
+transform = Transform3D(0.75, 0, 0, 0, 0.7, 0, 0, 0, 0.75, 0.12, 1.75, 0.05)
+mesh = SubResource("Mesh_canopy2")
+
+[node name="Round2" type="Node3D" parent="Trees"]
+transform = Transform3D(1.5, 0, 0, 0, 1.5, 0, 0, 0, 1.5, -3.4, 0, -1.5)
+
+[node name="Trunk" type="MeshInstance3D" parent="Trees/Round2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.4, 0)
+mesh = SubResource("Mesh_trunk")
+
+[node name="Canopy" type="MeshInstance3D" parent="Trees/Round2"]
+transform = Transform3D(1.15, 0, 0, 0, 1.1, 0, 0, 0, 1.15, 0, 1.15, 0)
+mesh = SubResource("Mesh_canopy2")
+
+[node name="Top" type="MeshInstance3D" parent="Trees/Round2"]
+transform = Transform3D(0.75, 0, 0, 0, 0.7, 0, 0, 0, 0.75, 0.12, 1.75, 0.05)
+mesh = SubResource("Mesh_canopy2")
+
+[node name="Round3" type="Node3D" parent="Trees"]
+transform = Transform3D(1.5, 0, 0, 0, 1.5, 0, 0, 0, 1.5, 3.6, 0, -1.8)
+
+[node name="Trunk" type="MeshInstance3D" parent="Trees/Round3"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.4, 0)
+mesh = SubResource("Mesh_trunk")
+
+[node name="Canopy" type="MeshInstance3D" parent="Trees/Round3"]
+transform = Transform3D(1.15, 0, 0, 0, 1.1, 0, 0, 0, 1.15, 0, 1.15, 0)
+mesh = SubResource("Mesh_canopy")
+
+[node name="Top" type="MeshInstance3D" parent="Trees/Round3"]
+transform = Transform3D(0.75, 0, 0, 0, 0.7, 0, 0, 0, 0.75, 0.12, 1.75, 0.05)
+mesh = SubResource("Mesh_canopy")
+
+[node name="Round4" type="Node3D" parent="Trees"]
+transform = Transform3D(1.6, 0, 0, 0, 1.6, 0, 0, 0, 1.6, -5.2, 0, 2)
+
+[node name="Trunk" type="MeshInstance3D" parent="Trees/Round4"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.4, 0)
+mesh = SubResource("Mesh_trunk")
+
+[node name="Canopy" type="MeshInstance3D" parent="Trees/Round4"]
+transform = Transform3D(1.15, 0, 0, 0, 1.1, 0, 0, 0, 1.15, 0, 1.15, 0)
+mesh = SubResource("Mesh_canopy")
+
+[node name="Top" type="MeshInstance3D" parent="Trees/Round4"]
+transform = Transform3D(0.75, 0, 0, 0, 0.7, 0, 0, 0, 0.75, 0.12, 1.75, 0.05)
+mesh = SubResource("Mesh_canopy")
+
+[node name="Round5" type="Node3D" parent="Trees"]
+transform = Transform3D(1.6, 0, 0, 0, 1.6, 0, 0, 0, 1.6, 5.4, 0, 1.5)
+
+[node name="Trunk" type="MeshInstance3D" parent="Trees/Round5"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.4, 0)
+mesh = SubResource("Mesh_trunk")
+
+[node name="Canopy" type="MeshInstance3D" parent="Trees/Round5"]
+transform = Transform3D(1.15, 0, 0, 0, 1.1, 0, 0, 0, 1.15, 0, 1.15, 0)
+mesh = SubResource("Mesh_canopy2")
+
+[node name="Top" type="MeshInstance3D" parent="Trees/Round5"]
+transform = Transform3D(0.75, 0, 0, 0, 0.7, 0, 0, 0, 0.75, 0.12, 1.75, 0.05)
+mesh = SubResource("Mesh_canopy2")
+
+[node name="Garden" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+
+[node name="Bush0" type="MeshInstance3D" parent="Garden"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.35, 0.22, -0.7)
+mesh = SubResource("Mesh_bush")
+
+[node name="Bush1" type="MeshInstance3D" parent="Garden"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.4, 0.22, -0.72)
+mesh = SubResource("Mesh_bush")
+
+[node name="Stem0" type="MeshInstance3D" parent="Garden"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.05, 0.1, 0.5)
+cast_shadow = 0
+mesh = SubResource("Mesh_stem")
+
+[node name="Flower0" type="MeshInstance3D" parent="Garden"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.05, 0.22, 0.5)
+cast_shadow = 0
+mesh = SubResource("Mesh_flower")
+
+[node name="Stem1" type="MeshInstance3D" parent="Garden"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.2, 0.1, 1.3)
+cast_shadow = 0
+mesh = SubResource("Mesh_stem")
+
+[node name="Flower1" type="MeshInstance3D" parent="Garden"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.2, 0.22, 1.3)
+cast_shadow = 0
+mesh = SubResource("Mesh_flower2")
+
+[node name="Stem2" type="MeshInstance3D" parent="Garden"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1, 0.1, 2.3)
+cast_shadow = 0
+mesh = SubResource("Mesh_stem")
+
+[node name="Flower2" type="MeshInstance3D" parent="Garden"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1, 0.22, 2.3)
+cast_shadow = 0
+mesh = SubResource("Mesh_flower")
+
+[node name="Stem3" type="MeshInstance3D" parent="Garden"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.05, 0.1, 0.1)
+cast_shadow = 0
+mesh = SubResource("Mesh_stem")
+
+[node name="Flower3" type="MeshInstance3D" parent="Garden"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.05, 0.22, 0.1)
+cast_shadow = 0
+mesh = SubResource("Mesh_flower2")
+
+[node name="Stem4" type="MeshInstance3D" parent="Garden"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.2, 0.1, 1.6)
+cast_shadow = 0
+mesh = SubResource("Mesh_stem")
+
+[node name="Flower4" type="MeshInstance3D" parent="Garden"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.2, 0.22, 1.6)
+cast_shadow = 0
+mesh = SubResource("Mesh_flower")
+
+[node name="Stem5" type="MeshInstance3D" parent="Garden"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0.1, 2.9)
+cast_shadow = 0
+mesh = SubResource("Mesh_stem")
+
+[node name="Flower5" type="MeshInstance3D" parent="Garden"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0.22, 2.9)
+cast_shadow = 0
+mesh = SubResource("Mesh_flower2")
+
+[node name="Stem6" type="MeshInstance3D" parent="Garden"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.25, 0.1, 3.6)
+cast_shadow = 0
+mesh = SubResource("Mesh_stem")
+
+[node name="Flower6" type="MeshInstance3D" parent="Garden"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.25, 0.22, 3.6)
+cast_shadow = 0
+mesh = SubResource("Mesh_flower2")
+
+[node name="Stem7" type="MeshInstance3D" parent="Garden"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.25, 0.1, 4.1)
+cast_shadow = 0
+mesh = SubResource("Mesh_stem")
+
+[node name="Flower7" type="MeshInstance3D" parent="Garden"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.25, 0.22, 4.1)
+cast_shadow = 0
+mesh = SubResource("Mesh_flower")
+
+[node name="Stem8" type="MeshInstance3D" parent="Garden"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.98, 0.1, -0.35)
+cast_shadow = 0
+mesh = SubResource("Mesh_stem")
+
+[node name="Flower8" type="MeshInstance3D" parent="Garden"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.98, 0.22, -0.35)
+cast_shadow = 0
+mesh = SubResource("Mesh_flower2")
+
+[node name="Stem9" type="MeshInstance3D" parent="Garden"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0.1, -0.5)
+cast_shadow = 0
+mesh = SubResource("Mesh_stem")
+
+[node name="Flower9" type="MeshInstance3D" parent="Garden"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0.22, -0.5)
+cast_shadow = 0
+mesh = SubResource("Mesh_flower")
+
+[node name="Stem10" type="MeshInstance3D" parent="Garden"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.6, 0.1, 2.7)
+cast_shadow = 0
+mesh = SubResource("Mesh_stem")
+
+[node name="Flower10" type="MeshInstance3D" parent="Garden"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.6, 0.22, 2.7)
+cast_shadow = 0
+mesh = SubResource("Mesh_flower")
+
+[node name="Stem11" type="MeshInstance3D" parent="Garden"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.65, 0.1, 3.3)
+cast_shadow = 0
+mesh = SubResource("Mesh_stem")
+
+[node name="Flower11" type="MeshInstance3D" parent="Garden"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.65, 0.22, 3.3)
+cast_shadow = 0
+mesh = SubResource("Mesh_flower2")
+
+[node name="KuizSpot" type="Node3D" parent="."]
+unique_name_in_owner = true
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+
+[node name="Overlay" type="CanvasLayer" parent="."]
+
+[node name="Caption" type="PanelContainer" parent="Overlay"]
+unique_name_in_owner = true
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 0.86
+anchor_right = 0.5
+anchor_bottom = 0.86
+grow_horizontal = 2
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_caption")
+
+[node name="CaptionLabel" type="Label" parent="Overlay/Caption"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_fonts/font = ExtResource("3_bold")
+theme_override_font_sizes/font_size = 48
+text = "Time to learn!"
+horizontal_alignment = 1
+
+[node name="Fade" type="ColorRect" parent="Overlay"]
+unique_name_in_owner = true
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.9686, 0.9608, 0.9373, 1)

@@ -83,6 +83,7 @@ var _last_hour_reset: int = 0
 var _pomodoro_mode: String = ""  # "focus", "rest", ""
 var _pomodoro_remaining: int = 0
 var _pomodoro_timer: Timer
+var _pomodoro_last_tick := 0
 var _rest_missed: bool = false
 
 # GDD §4.3.1 curriculum
@@ -312,6 +313,7 @@ func start_pomodoro() -> void:
 		return
 	_pomodoro_mode = "focus"
 	_pomodoro_remaining = POMODORO_FOCUS_SEC
+	_pomodoro_last_tick = int(Time.get_unix_time_from_system())
 	_pomodoro_timer = Timer.new()
 	_pomodoro_timer.wait_time = 1.0
 	_pomodoro_timer.autostart = true
@@ -323,8 +325,12 @@ func start_pomodoro() -> void:
 	stats_changed.emit()
 	pomodoro_phase_changed.emit("focus")
 
+# shortcut: time away counts toward the current phase only, carry it into the next if a full cycle while locked matters
 func _on_pomodoro_tick() -> void:
-	_pomodoro_remaining -= 1
+	# A locked phone stops the Timer, so count from the clock.
+	var now := int(Time.get_unix_time_from_system())
+	_pomodoro_remaining -= maxi(1, now - _pomodoro_last_tick)
+	_pomodoro_last_tick = now
 	if _pomodoro_remaining <= 0:
 		if _pomodoro_mode == "focus":
 			# Focus ended -> rest begins

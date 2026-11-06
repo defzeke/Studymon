@@ -1,8 +1,8 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene format=3]
 
 [ext_resource type="Script" path="res://scripts/ui/settings.gd" id="1"]
 [ext_resource type="Texture2D" path="res://assets/sprites/rooms/study_room.svg" id="2"]
-[ext_resource type="FontFile" path="res://assets/fonts/JosefinSans-Bold.ttf" id="3"]
+[ext_resource type="Texture2D" path="res://assets/sprites/ui/icon_back.svg" id="3"]
 
 [node name="Settings" type="Control"]
 layout_mode = 3
@@ -20,7 +20,6 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-modulate = Color(0.92, 0.92, 0.92, 1)
 texture = ExtResource("2")
 expand_mode = 1
 stretch_mode = 6
@@ -33,7 +32,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-color = Color(0.1608, 0.2196, 0.2275, 0.88)
+color = Color(0.3098, 0.5608, 0.5373, 0.9)
 
 [node name="Margin" type="MarginContainer" parent="."]
 layout_mode = 1
@@ -51,170 +50,172 @@ theme_override_constants/margin_bottom = 24
 layout_mode = 2
 theme_override_constants/separation = 16
 
-[node name="Title" type="Label" parent="Margin/Content"]
+[node name="TopBar" type="HBoxContainer" parent="Margin/Content"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.8392, 0.6588, 0.3725, 1)
-theme_override_fonts/font = ExtResource("3")
-theme_override_font_sizes/font_size = 44
+
+[node name="BackButton" type="Button" parent="Margin/Content/TopBar"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(64, 64)
+layout_mode = 2
+theme_type_variation = &"MenuRound"
+icon = ExtResource("3")
+icon_alignment = 1
+expand_icon = true
+
+[node name="Title" type="Label" parent="Margin/Content/TopBar"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = &"MenuTitle"
 text = "Settings"
 horizontal_alignment = 1
 
+[node name="Balance" type="Control" parent="Margin/Content/TopBar"]
+custom_minimum_size = Vector2(64, 64)
+layout_mode = 2
+
 [node name="SoundCard" type="PanelContainer" parent="Margin/Content"]
 layout_mode = 2
+theme_type_variation = &"MenuCard"
 
-[node name="Pad" type="MarginContainer" parent="Margin/Content/SoundCard"]
-layout_mode = 2
-theme_override_constants/margin_left = 20
-theme_override_constants/margin_top = 16
-theme_override_constants/margin_right = 20
-theme_override_constants/margin_bottom = 16
-
-[node name="Sound" type="VBoxContainer" parent="Margin/Content/SoundCard/Pad"]
+[node name="Sound" type="VBoxContainer" parent="Margin/Content/SoundCard"]
 layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="SoundHeader" type="Label" parent="Margin/Content/SoundCard/Pad/Sound"]
+[node name="SoundHeader" type="Label" parent="Margin/Content/SoundCard/Sound"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.8392, 0.6588, 0.3725, 1)
-theme_override_fonts/font = ExtResource("3")
+theme_type_variation = &"CardHeader"
 text = "Sound & display"
 
-[node name="MusicRow" type="HBoxContainer" parent="Margin/Content/SoundCard/Pad/Sound"]
+[node name="MusicRow" type="HBoxContainer" parent="Margin/Content/SoundCard/Sound"]
 layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="MusicLabel" type="Label" parent="Margin/Content/SoundCard/Pad/Sound/MusicRow"]
+[node name="MusicLabel" type="Label" parent="Margin/Content/SoundCard/Sound/MusicRow"]
 custom_minimum_size = Vector2(140, 0)
 layout_mode = 2
+theme_type_variation = &"CardBody"
 text = "Music"
 
-[node name="MusicSlider" type="HSlider" parent="Margin/Content/SoundCard/Pad/Sound/MusicRow"]
+[node name="MusicSlider" type="HSlider" parent="Margin/Content/SoundCard/Sound/MusicRow"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
+theme_type_variation = &"CardSlider"
 size_flags_horizontal = 3
 size_flags_vertical = 4
 max_value = 1.0
 step = 0.05
 value = 1.0
 
-[node name="SoundsRow" type="HBoxContainer" parent="Margin/Content/SoundCard/Pad/Sound"]
+[node name="SoundsRow" type="HBoxContainer" parent="Margin/Content/SoundCard/Sound"]
 layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="SoundsLabel" type="Label" parent="Margin/Content/SoundCard/Pad/Sound/SoundsRow"]
+[node name="SoundsLabel" type="Label" parent="Margin/Content/SoundCard/Sound/SoundsRow"]
 custom_minimum_size = Vector2(140, 0)
 layout_mode = 2
+theme_type_variation = &"CardBody"
 text = "Sounds"
 
-[node name="SoundsSlider" type="HSlider" parent="Margin/Content/SoundCard/Pad/Sound/SoundsRow"]
+[node name="SoundsSlider" type="HSlider" parent="Margin/Content/SoundCard/Sound/SoundsRow"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
+theme_type_variation = &"CardSlider"
 size_flags_horizontal = 3
 size_flags_vertical = 4
 max_value = 1.0
 step = 0.05
 value = 1.0
 
-[node name="LargeTextCheck" type="CheckBox" parent="Margin/Content/SoundCard/Pad/Sound"]
+[node name="LargeTextCheck" type="CheckBox" parent="Margin/Content/SoundCard/Sound"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 52)
 layout_mode = 2
+theme_type_variation = &"CardCheck"
 text = "Large text"
 
 [node name="DataCard" type="PanelContainer" parent="Margin/Content"]
 layout_mode = 2
+theme_type_variation = &"MenuCard"
 
-[node name="Pad" type="MarginContainer" parent="Margin/Content/DataCard"]
-layout_mode = 2
-theme_override_constants/margin_left = 20
-theme_override_constants/margin_top = 16
-theme_override_constants/margin_right = 20
-theme_override_constants/margin_bottom = 16
-
-[node name="Data" type="VBoxContainer" parent="Margin/Content/DataCard/Pad"]
+[node name="Data" type="VBoxContainer" parent="Margin/Content/DataCard"]
 layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="DataHeader" type="Label" parent="Margin/Content/DataCard/Pad/Data"]
+[node name="DataHeader" type="Label" parent="Margin/Content/DataCard/Data"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.8392, 0.6588, 0.3725, 1)
-theme_override_fonts/font = ExtResource("3")
+theme_type_variation = &"CardHeader"
 text = "Privacy & data"
 
-[node name="ConsentCheck" type="CheckBox" parent="Margin/Content/DataCard/Pad/Data"]
+[node name="ConsentCheck" type="CheckBox" parent="Margin/Content/DataCard/Data"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 52)
 layout_mode = 2
+theme_type_variation = &"CardCheck"
 text = "Let the AI read my reviewers and answers"
 autowrap_mode = 3
 
-[node name="ConsentNote" type="Label" parent="Margin/Content/DataCard/Pad/Data"]
+[node name="ConsentNote" type="Label" parent="Margin/Content/DataCard/Data"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(560, 0)
 layout_mode = 2
-theme_override_font_sizes/font_size = 20
+theme_type_variation = &"CardHint"
 autowrap_mode = 3
 
-[node name="Links" type="HBoxContainer" parent="Margin/Content/DataCard/Pad/Data"]
+[node name="Links" type="HBoxContainer" parent="Margin/Content/DataCard/Data"]
 layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="PrivacyButton" type="Button" parent="Margin/Content/DataCard/Pad/Data/Links"]
+[node name="PrivacyButton" type="Button" parent="Margin/Content/DataCard/Data/Links"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 56)
 layout_mode = 2
+theme_type_variation = &"MenuQuiet"
 size_flags_horizontal = 3
 text = "Privacy"
 
-[node name="TermsButton" type="Button" parent="Margin/Content/DataCard/Pad/Data/Links"]
+[node name="TermsButton" type="Button" parent="Margin/Content/DataCard/Data/Links"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 56)
 layout_mode = 2
+theme_type_variation = &"MenuQuiet"
 size_flags_horizontal = 3
 text = "Terms"
 
-[node name="SupportButton" type="Button" parent="Margin/Content/DataCard/Pad/Data/Links"]
+[node name="SupportButton" type="Button" parent="Margin/Content/DataCard/Data/Links"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 56)
 layout_mode = 2
+theme_type_variation = &"MenuQuiet"
 size_flags_horizontal = 3
 text = "Support"
 
-[node name="Backup" type="HBoxContainer" parent="Margin/Content/DataCard/Pad/Data"]
+[node name="Backup" type="HBoxContainer" parent="Margin/Content/DataCard/Data"]
 layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="ExportButton" type="Button" parent="Margin/Content/DataCard/Pad/Data/Backup"]
+[node name="ExportButton" type="Button" parent="Margin/Content/DataCard/Data/Backup"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 56)
 layout_mode = 2
+theme_type_variation = &"MenuQuiet"
 size_flags_horizontal = 3
 text = "Export save"
 
-[node name="ImportButton" type="Button" parent="Margin/Content/DataCard/Pad/Data/Backup"]
+[node name="ImportButton" type="Button" parent="Margin/Content/DataCard/Data/Backup"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 56)
 layout_mode = 2
+theme_type_variation = &"MenuQuiet"
 size_flags_horizontal = 3
 text = "Import save"
 
-[node name="DeleteDataButton" type="Button" parent="Margin/Content/DataCard/Pad/Data"]
+[node name="DeleteDataButton" type="Button" parent="Margin/Content/DataCard/Data"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 56)
 layout_mode = 2
 text = "Delete my data"
-
-[node name="Spacer" type="Control" parent="Margin/Content"]
-layout_mode = 2
-size_flags_vertical = 3
-
-[node name="BackButton" type="Button" parent="Margin/Content"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 64)
-layout_mode = 2
-text = "Back"
 
 [node name="ExportDialog" type="FileDialog" parent="."]
 unique_name_in_owner = true

@@ -6,6 +6,7 @@ extends Node3D
 ## Rendering mirrors the KUIZMON Pet Bot artifact: docs/ui-and-assets.md §2 peek.tscn.
 
 signal peeked
+signal revealed
 
 const PEEK := "Peek_Surprise"
 const IDLE := "Idle"
@@ -29,6 +30,12 @@ const LEAN := 0.12
 const HOP := 0.18
 const HOVER := 0.06
 const FADE_TIME := 0.35
+# The first opening: the white cover holds, dissolves off Kuiz, Kuiz rests a beat, then the iris opens.
+const WHITE_HOLD_TIME := 0.35
+const WHITE_FADE_TIME := 0.9
+const REVEAL_REST_TIME := 0.45
+const IRIS_TIME := 1.0
+const IRIS_END := 1.3
 const ROOM_NAMES := {
 	"StudyRoom": "The Study Room",
 	"MaintenanceBay": "The Maintenance Bay",
@@ -65,6 +72,8 @@ const HEAD_RADIUS := 1.15
 var room := "White"
 ## The clip Kuiz settles into between one-shots: Idle, or the mood home picks from its stats.
 var rest := IDLE
+## True during the first opening's reveal; home holds its HUD back until `revealed`.
+var revealing := false
 
 var _head := -1
 # Prop blend shapes (hearts, confetti, screws, bubbles…) not keyed by the current clip.
@@ -75,8 +84,12 @@ var _hover: Tween
 var _look := Vector2.INF
 var _energy: Array[float] = []
 var _ambient := 0.0
+# Static so only the first opening this session, the one that follows the loading screen, reveals.
+static var _opened := false
 
 func _ready() -> void:
+	var first_open := not _opened
+	_opened = true
 	MusicManager.play_main_room()
 	voice.anim = anim
 	%Look.attach(kuiz)
@@ -109,6 +122,9 @@ func _ready() -> void:
 	_ambient = env.ambient_light_energy
 	if GameState.tutorial_done:
 		anim.play(IDLE)
+		if first_open:
+			_reveal()
+			return
 		stage.scale = Vector3.ONE * ROOM_SCALE
 		stage.position.y = ROOM_Y
 		show_room("StudyRoom", true)
@@ -156,6 +172,46 @@ func _hide_props() -> void:
 				_props.append(shape)
 	for shape: Array in _props:
 		(shape[0] as MeshInstance3D).set_blend_shape_value(shape[1], 0.0)
+
+# Loading hands off on white: Kuiz pops up on it and jumps, and the Study Room opens out around it.
+# Contract: docs/architecture.md §7.
+func _reveal() -> void:
+	revealing = true
+	room = "StudyRoom"
+	room_label.text = ROOM_NAMES[room]
+	var white: ColorRect = rooms.get_node("White")
+	rooms.get_node(room).modulate.a = 1.0
+	rooms.move_child(white, -1)
+	stage.scale = Vector3.ONE * CLOSE_SCALE * 0.9
+	stage.position.y = CLOSE_Y
+	var cover: ColorRect = %BootWhite
+	cover.show()
+	# The first frames are heavy and would skip a tween started now.
+	await get_tree().process_frame
+	await get_tree().process_frame
+	await get_tree().create_timer(WHITE_HOLD_TIME).timeout
+	var emerge := create_tween().set_parallel().set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	emerge.tween_property(cover, "modulate:a", 0.0, WHITE_FADE_TIME)
+	emerge.tween_property(stage, "scale", Vector3.ONE * CLOSE_SCALE, WHITE_FADE_TIME)
+	await emerge.finished
+	cover.hide()
+	await get_tree().create_timer(REVEAL_REST_TIME).timeout
+	await jump(_open_iris.bind(white))
+	act("Happy")
+	# The landing beats the iris; the HUD waits until the room is fully open.
+	await get_tree().create_timer(IRIS_TIME * 0.5).timeout
+	revealing = false
+	revealed.emit()
+
+func _open_iris(white: ColorRect) -> void:
+	var view := get_viewport().get_visible_rect().size
+	var mat := white.material as ShaderMaterial
+	mat.set_shader_parameter("center", head_point() / view)
+	mat.set_shader_parameter("aspect", view.x / view.y)
+	var t := create_tween()
+	t.tween_method(func(r: float) -> void: mat.set_shader_parameter("radius", r), 0.0, IRIS_END, IRIS_TIME).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	t.tween_callback(func() -> void: white.modulate.a = 0.0)
+	create_tween().tween_property(room_sign, "modulate:a", 1.0, FADE_TIME).set_delay(IRIS_TIME)
 
 ## Plays a clip: a one-shot falls back into the resting clip, a State_* mood keeps looping.
 ## Asking for Idle means "rest".

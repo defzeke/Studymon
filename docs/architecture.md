@@ -75,7 +75,7 @@ res://
 │       │                 data_kitchen.svg, playroom.svg; soccer_field.svg, sky_jump.svg,
 │       │                 sky_space.svg, sky_galaxy.svg, sky_deep.svg
 │       ├── battle/       battle_backdrop.svg
-│       └── ui/           arrow.svg, icon_charge.svg, icon_upload.svg, icon_settings.svg,
+│       └── ui/           arrow.svg, icon_charge.svg, icon_book.svg, icon_settings.svg,
 │                         crystal.svg, stat_mood.svg, stat_health.svg, icon_games.svg,
 │                         game_soccer.svg, game_jump.svg, dock_table.svg,
 │                         icon_back.svg, icon_trainer.svg, icon_badge.svg, icon_crown.svg,
@@ -160,27 +160,30 @@ splash.tscn  (main scene)
    │  ~2.55 s: 60-frame intro, hold, fade out
    ▼
 loading.tscn
-   │  ~7.6 s scripted fill, 0.4 s fade to white
+   │  ~7.6 s scripted fill, 0.9 s fade to white
    ▼
 peek.tscn  (3D Kuiz over 2D rooms; the hub)
    │  Kuiz peeks (5.7 s), then the tutorial: intro, profile Continue, name, and a tour of the
    │  Study Room, Maintenance Bay, Data Kitchen and Playroom. A tap after the last line starts
-   │  the home loop; once the tutorial is done this session, the scene opens straight into it.
-   ├── ◀ / ▶   walk between the four rooms
+   │  the home loop; once the tutorial is done, the scene opens straight into it, with the
+   │  Kuiz reveal on the session's first opening.
+   ├── ◀ / ▶ or the room sign's dropdown   walk between the four rooms
    ├── Play     ─► session_list.tscn  (Worlds hub)
-   └── Settings ─► settings.tscn ──► back to peek.tscn
+   ├── Focus    the focus timer (a panel on home)
+   └── gear, any room ─► settings.tscn ──► back to peek.tscn
 
 
 session_list.tscn  (Worlds hub; home Play opens it)
-   ├── Saved worlds: Play ─► region_map.tscn · Cards ─► flashcards.tscn · Edit ─► categorizer.tscn
+   ├── Saved worlds: Play ─► world_intro.tscn ─► region_map.tscn · Cards ─► flashcards.tscn · Edit ─► categorizer.tscn
    │                 Reset progress / Delete (confirmed) ─► SessionManager.reset_topic_progress / delete_topic
    ├── + New World ─► categorizer.tscn (World Builder)  (editing_topic_id = topic_<unix%100000>)
    └── Back ─► peek.tscn (home)
 
 categorizer.tscn
-   └── Confirm & Play ─► confirm_topic() ─► region_generated ─► region_map.tscn
+   └── Confirm & Play ─► confirm_topic() ─► region_generated ─► world_intro.tscn ─► region_map.tscn
 
 region_map.tscn
+   ├── Back ─► world_intro.tscn (Kuiz goes indoors) ─► session_list.tscn
    ├── walk into a Trainer/Gym/Champion Area3D ─► encounter panel
    ├── Study button / session-list Cards ─► flashcards.tscn
    └── Fight! ─► battle.tscn
@@ -239,25 +242,29 @@ operation must pick a unique `job_id` or it will be consumed by the wrong listen
 
 ## 7. Boot sequence
 
-1. `splash.tscn` `_ready()` — calls `MusicManager.play_loading()` (starts `loading.mp3` at 1 s and
-   fades it in over 1 s), starts a threaded load of `loading.tscn`, slices `kuizmon_splash.png` into
-   60 `AtlasTexture` frames and starts playback at 30 ms/frame. After 1.8 s it holds the last frame
-   for 0.5 s, fades the logo to white over 0.25 s, then changes to the already-loaded
-   `loading.tscn`.
+1. `splash.tscn` `_ready()` — starts a threaded load of `loading.tscn`, slices `kuizmon_splash.png`
+   into 60 `AtlasTexture` frames and starts playback at 30 ms/frame. Two frames in, it calls
+   `MusicManager.play_loading()` (starts `loading.wav` at 1 s and fades it in over 2 s). After 1.8 s
+   it holds the last frame for 0.5 s, fades the logo to white over 0.25 s, then changes to the
+   already-loaded `loading.tscn`.
 2. `loading.tscn` `_ready()` — loads theme, starts a threaded load of `peek.tscn`, calls
    `MusicManager.play_loading()` (a no-op while the same track is already playing), fades its white
    `Fade` overlay out over 0.4 s, and starts tip rotation.
 3. ~7.6 s tween: 0 → 96 % in 5 s, hold 0.6 s, crawl to 100 % in 2 s.
-4. `loading.gd:_advance()` — fades `Fade` back to white over 0.4 s, then changes to `peek.tscn`.
-5. `peek.tscn` `_ready()` — switches the BGM back to `main room.mp3`, applies the artifact look to
+4. `loading.gd:_advance()` — fades `Fade` back to white over 0.9 s, then changes to `peek.tscn`.
+5. `peek.tscn` `_ready()` — crossfades the BGM to `home_room.wav`, applies the artifact look to
    Kuiz (vertex colours, ink outline, flat self-lit parts, additive glows; see
-   [`ui-and-assets.md`](ui-and-assets.md) §2), then plays
-   `Peek_Surprise` → looping `Idle`, and `peeked` starts `tutorial.gd`. A tap after its last line
-   emits `finished`, and `home.gd` takes over.
-6. `home.gd:start()` — `SaveManager.load_once()` reads the save the first time home opens in a
-   session (later calls keep the in-memory state, which may be newer), then shows the bar.
+   [`ui-and-assets.md`](ui-and-assets.md) §2). With the tutorial done, the session's first opening runs the reveal:
+   `%BootWhite` holds pure white for 0.35 s, then dissolves off a large Kuiz over 0.9 s while it
+   grows slightly. After a 0.45 s rest Kuiz jumps, and at the top of the jump a teal-ringed circle opens
+   from its head over `IRIS_TIME` (1 s) to show the Study Room (a shader on `Rooms/White`), and it
+   lands at room size and plays `Happy`. Later openings go straight to the room. With the tutorial not
+   done it plays `Peek_Surprise` → looping `Idle`, and `peeked` starts `tutorial.gd`. A tap after its
+   last line emits `finished`, and `home.gd` takes over.
+6. `home.gd:start()` — shows the bar and HUD; after the reveal (`peek.revealed`) the HUD drops in from
+   the top and the dock rises from the bottom.
 
-**The save is read when home first opens**, not during splash/loading/tutorial. A first-time companion starts from
+**The save is read at boot**, by a deferred `SaveManager.load_once()` from its `_ready()`. A first-time companion starts from
 `CompanionState`'s own defaults (level 1, energy 80, focus 70, mood 75, first codex line).
 
 There is no login, no token exchange, and no read of `GameState.user_id` anywhere in the codebase —

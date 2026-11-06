@@ -34,14 +34,29 @@ var _explorer := "boy"
 var _scripted := false
 
 func _ready() -> void:
+	_base_color_only(model)
 	_start_clips()
+
+## A new explorer model, ready to show.
+static func new_model(id: String) -> Node3D:
+	var made: Node3D = EXPLORERS[id].instantiate()
+	if id == "boy":
+		_base_color_only(made)
+	return made
+
+# The boy's normal map is noisy across its UV islands and blotches his jacket; his base colour reads clean.
+static func _base_color_only(boy: Node3D) -> void:
+	for mi: MeshInstance3D in boy.find_children("*", "MeshInstance3D", true, false):
+		var mat := mi.get_active_material(0) as BaseMaterial3D
+		if mat:
+			mat.normal_enabled = false
 
 ## Swaps in the chosen explorer's model, facing the same way.
 func set_explorer(id: String) -> void:
 	if id == _explorer or not EXPLORERS.has(id):
 		return
 	_explorer = id
-	var next: Node3D = EXPLORERS[id].instantiate()
+	var next := new_model(id)
 	next.transform = model.transform
 	model.queue_free()
 	model.name = "Old"

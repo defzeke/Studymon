@@ -168,8 +168,12 @@ it moves. `locked` freezes it while an encounter panel or the explorer picker is
 
 **Kuiz** (`kuiz_follower.gd`). Kuiz follows the explorer like a partner in a Pokémon game: a
 0.6-unit `kuiz.glb` dressed as at home and in battle (ink outline, thicker at this size, vertex
-colours, self-lit parts; `Antenna_*` tracks off), playing `Idle` and floating 0.32 above the
-ground with a gentle bob. The explorer drops a breadcrumb every 0.08 units it moves; Kuiz heads for
+colours, self-lit parts; `Antenna_*` tracks off), playing `Idle`. Still, it floats 0.32 above the
+ground with a gentle bob. Moving faster than `HOP_FROM` (0.4 u/s), it waddles instead: one hop per
+`HOP_LENGTH` (0.7 units) travelled, up by `HOP_HEIGHT` (0.14), landing on alternate sides
+`WADDLE_WIDTH` (0.13) off its path, leaning and toeing out that way, and squashing as it lands.
+`waddle()` moves the model, not the follower node, whose catch-up smoothing would flatten it;
+`world_intro.gd` uses the same function. The explorer drops a breadcrumb every 0.08 units it moves; Kuiz heads for
 the point 0.85 back along that trail, so it rounds corners the way the explorer did instead of
 cutting through walls, catching up smoothly (it trails a little further while running). It faces
 where it is going and, once the explorer stops, turns to face them. It has no collision and stays
@@ -184,6 +188,9 @@ The pick is saved in that world's topic record (`"explorer"`: `"boy"` or `"girl"
 without asking, and other worlds keep their own. `player.set_explorer()` swaps the model; both share
 the same rig, size (about 1 unit tall) and clips. A save from before keeps one global `"explorer"`,
 which is ignored: each of its worlds asks once.
+A world with no explorer yet asks once, when the map has finished fading in; after that the round `%ExplorerButton`
+above Study reopens `explorer_picker.tscn` with the current one selected, any time the explorer is free to move.
+The map fades in over `ARRIVE_FADE_SEC` (0.8 s), held for its first two frames.
 
 **Seasons** (`season.gd`). The island follows the real-world season, from the device's local date,
 on a Northern Hemisphere calendar (`season_for(month, day)`), so a season lasts for months and the

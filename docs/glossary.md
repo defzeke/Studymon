@@ -55,7 +55,7 @@ Terms used throughout this repo, in the sense this repo means them.
 | Term | Meaning |
 |---|---|
 | **Region** | The overworld for one topic: the 3D island (`map.glb`) with its gyms, trainers and the Champion's gym, filled from the topic's questions. |
-| **Explorer** | The player's walking character on the island (`boy_explorer.glb` or `explorer_girl.glb`), steered with the on-screen joystick at the bottom-left; each world picks one, once. |
+| **Explorer** | The player's walking character on the island (`boy_explorer.glb` or `explorer_girl.glb`), steered with the on-screen joystick at the bottom-left; each world picks one, and can change it from the map. |
 | **Gym** | A group of encounters for one question type (`identification`, `essay`, `multiple_choice`). Clearing every gym is the Champion prerequisite. |
 | **Trainer** | A single-question encounter on a gym's road, ordered Easy to Hard. Every trainer of a gym must be beaten before its boss opens. |
 | **Boss** | The gym's hardest question, fought after its trainers; winning it clears the gym. 150 HP and double XP. |
@@ -79,6 +79,7 @@ Terms used throughout this repo, in the sense this repo means them.
 |---|---|
 | **Autoload** | A singleton registered in `[autoload]` in `project.godot`. Six exist: `SaveManager`, `GameState`, `Api`, `CompanionState`, `SessionManager`, `MusicManager`. |
 | **Splash** | The white intro screen (`splash.tscn`) that plays the 60-frame Kuizmon animation, then loads the loading screen. |
+| **World intro** | The scene between home and the overworld (`world_intro.tscn`): on Play, Kuiz leaves its house under "Time to learn!". The map's Back plays it in reverse, Kuiz going back indoors. |
 | **Main scene** | `res://scenes/ui/boot/splash.tscn`. It hands off to `loading.tscn`, then `peek.tscn` (tutorial, then home). |
 | **Peek** | `peek.tscn`: the 3D Kuiz head (`assets/models/kuiz.glb`) peeking up on white after the loading screen. The tutorial then runs in the same scene. |
 | **Sanctuary** | The Flashcard Sanctuary (`flashcards.tscn`): untimed card review of a topic. Again / Hard / Easy; Easy lifts a New or Remaster card to Learning, never to Mastered. |

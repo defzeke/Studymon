@@ -42,6 +42,8 @@ const DOORWAY := Color("1E2829")
 const HOUSE_LABEL_HEIGHT := 2.6
 ## Entering a house or gym fades the screen to %Fade's colour over FADE_SEC; coming back fades it in.
 const FADE_SEC := 0.35
+## Arriving: held for the first heavy frames, which would skip a tween, then this long.
+const ARRIVE_FADE_SEC := 0.8
 
 @onready var map: Node3D = %Map
 @onready var player: CharacterBody3D = %Player
@@ -68,6 +70,8 @@ const FADE_SEC := 0.35
 @onready var encounter_close_btn: Button = %EncounterCloseButton
 @onready var encounter_clear_btn: Button = %EncounterClearButton
 
+signal _arrived
+
 var _topic_id: String = ""
 var _pending_encounter: Dictionary = {}
 var _gym_positions: Dictionary = {}
@@ -86,7 +90,7 @@ func _enter_tree() -> void:
 
 func _ready() -> void:
 	_fade.color.a = 1.0
-	_fade.create_tween().tween_property(_fade, "color:a", 0.0, FADE_SEC)
+	_arrive()
 	_topic_id = SessionManager.current_topic_id
 	if _topic_id == "":
 		_topic_id = SessionManager.editing_topic_id
@@ -105,6 +109,7 @@ func _ready() -> void:
 		map_anim = map.find_child("AnimationPlayer", true, false) as AnimationPlayer
 	back_btn.pressed.connect(_on_back)
 	study_btn.pressed.connect(_on_study)
+	%ExplorerButton.pressed.connect(_on_change_explorer)
 	encounter_close_btn.pressed.connect(_on_encounter_close)
 	encounter_clear_btn.pressed.connect(_on_encounter_cleared)
 	_show_encounter(false)
@@ -124,9 +129,28 @@ func _ready() -> void:
 	player.set_explorer(chosen if chosen != "" else "boy")
 	if chosen == "":
 		player.locked = true
-		var picker := ExplorerPicker.instantiate()
-		picker.picked.connect(_on_explorer_picked)
-		add_child(picker)
+		await _arrived
+		_open_picker("boy")
+
+func _arrive() -> void:
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var t := _fade.create_tween()
+	t.tween_property(_fade, "color:a", 0.0, ARRIVE_FADE_SEC).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	await t.finished
+	_arrived.emit()
+
+func _open_picker(current: String) -> void:
+	player.locked = true
+	var picker := ExplorerPicker.instantiate()
+	picker.current = current
+	picker.picked.connect(_on_explorer_picked)
+	add_child(picker)
+
+# Any time on the map, except over an encounter panel or while leaving.
+func _on_change_explorer() -> void:
+	if not player.locked:
+		_open_picker(SessionManager.world_explorer(_topic_id))
 
 func _on_explorer_picked(id: String) -> void:
 	SessionManager.set_world_explorer(_topic_id, id)
@@ -535,7 +559,8 @@ func _show_objectives(steps: Array[String]) -> void:
 	objectives_more.text = "+%d more" % (steps.size() - rows.size())
 
 func _on_back() -> void:
-	_leave("res://scenes/ui/session_list.tscn")
+	SessionManager.kuiz_going_home = true
+	_leave("res://scenes/overworld/world_intro.tscn")
 
 func _on_study() -> void:
 	SessionManager.flashcards_return = "res://scenes/overworld/region_map.tscn"
@@ -547,4 +572,6 @@ func _leave(scene: String) -> void:
 	var t := _fade.create_tween()
 	t.tween_property(_fade, "color:a", 1.0, FADE_SEC)
 	await t.finished
+	# The engine draws one empty frame between scenes, and holds it while the next one loads.
+	RenderingServer.set_default_clear_color(Color(_fade.color, 1.0))
 	get_tree().change_scene_to_file(scene)

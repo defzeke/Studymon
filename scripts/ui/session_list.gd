@@ -1,9 +1,9 @@
 extends Control
-## Worlds hub: the saved worlds (play, cards, edit, reset, delete) and a New World button into the builder.
+## Worlds hub: a card per saved world (Play, Cards; the rest behind its "more" button) and New World.
 ## A world is a topic; contract: docs/ui-and-assets.md §2 Worlds.
 
 const ConfirmModal := preload("res://scripts/ui/widgets/confirm_modal.gd")
-const REGION_SCENE := "res://scenes/overworld/region_map.tscn"
+const INTRO_SCENE := "res://scenes/overworld/world_intro.tscn"
 const BUILDER_SCENE := "res://scenes/review_session/categorizer.tscn"
 
 @onready var list_box: VBoxContainer = %ListBox
@@ -11,15 +11,28 @@ const BUILDER_SCENE := "res://scenes/review_session/categorizer.tscn"
 @onready var new_btn: Button = %NewButton
 @onready var slots_label: Label = %SlotsLabel
 @onready var back_btn: Button = %BackButton
+@onready var card_template: PanelContainer = %CardTemplate
+@onready var world_menu: Control = %WorldMenu
+
+var _menu_topic := {}
 
 
 func _ready() -> void:
 	theme = load("res://assets/theme/app_theme.tres") as Theme
+	# Loaded ahead so Play doesn't stall on Kuiz's model.
+	ResourceLoader.load_threaded_request(INTRO_SCENE)
 	GameState.tutorial_done = true  # only reachable from home, so Back must not replay the intro
 	# Coming back from the region map, the route theme crossfades back to the home loop.
 	MusicManager.play_main_room()
 	new_btn.pressed.connect(_on_new_world)
 	back_btn.pressed.connect(_on_back)
+	world_menu.gui_input.connect(func(event: InputEvent) -> void:
+		if event is InputEventMouseButton and event.pressed:
+			world_menu.hide())
+	%MenuClose.pressed.connect(world_menu.hide)
+	%MenuEdit.pressed.connect(func() -> void: _on_edit(_menu_topic))
+	%MenuReset.pressed.connect(_ask_reset)
+	%MenuDelete.pressed.connect(_ask_delete)
 	SessionManager.topics_listed.connect(_on_topics_listed)
 	SessionManager.list_topics()
 	_on_topics_listed(SessionManager.get_topics_cache())
@@ -28,62 +41,45 @@ func _on_topics_listed(topics: Array[Dictionary]) -> void:
 	for c in list_box.get_children():
 		c.queue_free()
 	empty_label.visible = topics.is_empty()
-	slots_label.text = "Worlds %d / %d slots  ·  %d crystals  ·  Study streak %d" % [topics.size(), GameState.world_slots, GameState.crystals, GameState.current_streak()]
+	slots_label.text = "%d of %d world slots  ·  Study streak %d" % [topics.size(), GameState.world_slots, GameState.current_streak()]
+	%CrystalLabel.text = str(GameState.crystals)
 	for t in topics:
 		list_box.add_child(_make_card(t))
 
+# The card's look and layout are %CardTemplate's; this fills one copy.
 func _make_card(topic: Dictionary) -> Control:
 	var id := str(topic.get("id", ""))
 	var progress := SessionManager.topic_progress(id)
 	var total := int(progress["questions"])
-	var card := PanelContainer.new()
-	var pad := MarginContainer.new()
-	for side in ["left", "top", "right", "bottom"]:
-		pad.add_theme_constant_override("margin_" + side, 16)
-	card.add_child(pad)
-	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 10)
-	pad.add_child(box)
-	var name_label := Label.new()
-	name_label.text = str(topic.get("name", id))
-	name_label.clip_text = true
-	name_label.add_theme_font_override("font", theme.get_font("font", "Button"))
-	name_label.add_theme_color_override("font_color", Color("D6A85F"))
-	box.add_child(name_label)
-	var info := Label.new()
-	info.text = "%d questions · %d houses · %d/%d gyms cleared" % [total, int(progress["houses"]), int(progress["gyms"]), int(progress["gyms_total"])]
-	info.modulate = Color("E8F0EA", 0.75)
-	info.add_theme_font_size_override("font_size", 22)
-	box.add_child(info)
-	var main_row := HBoxContainer.new()
-	main_row.add_theme_constant_override("separation", 8)
-	box.add_child(main_row)
-	var play := _button("Play", main_row, _on_play_world.bind(topic), total == 0)
-	play.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_button("Cards", main_row, _on_open_cards.bind(topic), total == 0)
-	_button("Edit", main_row, _on_edit.bind(topic))
-	var danger_row := HBoxContainer.new()
-	danger_row.add_theme_constant_override("separation", 8)
-	box.add_child(danger_row)
-	var reset := _button("Reset progress", danger_row, _ask.bind("Reset progress?", "\"%s\" loses its cleared houses, gyms, mastery and Champion. Your questions are kept." % name_label.text, "Reset", SessionManager.reset_topic_progress.bind(id)))
-	var delete := _button("Delete", danger_row, _ask.bind("Delete world?", "\"%s\" and all its progress will be removed. This cannot be undone." % name_label.text, "Delete", SessionManager.delete_topic.bind(id)))
-	reset.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	delete.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	ConfirmModal.tint_danger(delete)
+	var card := card_template.duplicate() as PanelContainer
+	card.visible = true
+	(card.get_node("Box/Head/Name") as Label).text = str(topic.get("name", id))
+	(card.get_node("Box/Info") as Label).text = "%s  ·  %s  ·  %d of %d gyms" % [_count(total, "question"), _count(int(progress["houses"]), "house"), int(progress["gyms"]), int(progress["gyms_total"])]
+	(card.get_node("Box/Gyms") as ProgressBar).value = float(progress["gyms"]) / maxi(1, int(progress["gyms_total"]))
+	var play := card.get_node("Box/Actions/Play") as Button
+	play.disabled = total == 0
+	play.pressed.connect(_on_play_world.bind(topic))
+	var cards := card.get_node("Box/Actions/Cards") as Button
+	cards.disabled = total == 0
+	cards.pressed.connect(_on_open_cards.bind(topic))
+	(card.get_node("Box/Head/More") as Button).pressed.connect(_open_menu.bind(topic))
 	return card
 
-func _button(text: String, parent: Control, on_pressed: Callable, disabled := false) -> Button:
-	var b := Button.new()
-	b.text = text
-	b.custom_minimum_size = Vector2(0, 64)
-	b.disabled = disabled
-	b.pressed.connect(on_pressed)
-	parent.add_child(b)
-	return b
+func _count(n: int, noun: String) -> String:
+	return "%d %s%s" % [n, noun, "" if n == 1 else "s"]
 
+func _open_menu(topic: Dictionary) -> void:
+	_menu_topic = topic
+	%MenuTitle.text = str(topic.get("name", ""))
+	world_menu.show()
 
-func _ask(title: String, message: String, confirm_text: String, action: Callable) -> void:
-	ConfirmModal.open(self, title, message, confirm_text, action, true)
+func _ask_reset() -> void:
+	world_menu.hide()
+	ConfirmModal.open(self, "Reset progress?", "\"%s\" loses its cleared houses, gyms, mastery and Champion. Your questions are kept." % %MenuTitle.text, "Reset", SessionManager.reset_topic_progress.bind(str(_menu_topic.get("id", ""))), true)
+
+func _ask_delete() -> void:
+	world_menu.hide()
+	ConfirmModal.open(self, "Delete world?", "\"%s\" and all its progress will be removed. This cannot be undone." % %MenuTitle.text, "Delete", SessionManager.delete_topic.bind(str(_menu_topic.get("id", ""))), true)
 
 func _load_topic(topic: Dictionary) -> void:
 	var questions: Array[Dictionary] = []
@@ -97,7 +93,7 @@ func _on_play_world(topic: Dictionary) -> void:
 	var id := str(topic.get("id", ""))
 	SessionManager.current_topic_id = id
 	GameState.set_active_region(id)
-	get_tree().change_scene_to_file(REGION_SCENE)
+	get_tree().change_scene_to_file(INTRO_SCENE)
 
 func _on_edit(topic: Dictionary) -> void:
 	_load_topic(topic)

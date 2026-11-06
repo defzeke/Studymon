@@ -39,6 +39,8 @@ const FONT_SIZE_STANDARD := 28
 const FONT_SIZE_LARGE := 36
 const BUTTON_FONT_STANDARD := 32
 const BUTTON_FONT_LARGE := 40
+const MENU_BUTTON_FONT_STANDARD := 26
+const MENU_BUTTON_FONT_LARGE := 32
 var large_text_enabled: bool = false
 
 func add_crystals(amount: int) -> void:
@@ -131,6 +133,8 @@ func _apply_theme_font_size() -> void:
 		return
 	theme.default_font_size = FONT_SIZE_LARGE if large_text_enabled else FONT_SIZE_STANDARD
 	theme.set_font_size("font_size", "Button", BUTTON_FONT_LARGE if large_text_enabled else BUTTON_FONT_STANDARD)
+	for type: String in ["MenuPrimary", "MenuQuiet", "MenuDanger", "CardOption"]:
+		theme.set_font_size("font_size", type, MENU_BUTTON_FONT_LARGE if large_text_enabled else MENU_BUTTON_FONT_STANDARD)
 	# Propagate to already-instantiated tree: root theme override ensures inheritance.
 	if get_tree() and get_tree().root:
 		get_tree().root.theme = theme

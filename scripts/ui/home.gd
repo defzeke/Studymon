@@ -1,6 +1,6 @@
 extends CanvasLayer
-## The home loop after the tutorial: the top arrows walk Kuiz between the four rooms, and each room
-## has its own care action in the bottom bar. Study Room: charge (lights off) / play (opens the Worlds hub) / settings.
+## The home loop after the tutorial: the top arrows and the room sign's dropdown walk Kuiz between
+## the four rooms, and each room has its own care action in the bottom bar. Study Room: charge (lights off) / play (opens the Worlds hub) / focus timer. The gear by the HUD opens Settings.
 ## Maintenance Bay: the tablet's check-up (and a new battery for crystals), the screwdriver (hold it over Kuiz to tighten its frame)
 ## and the towel (scrub the dirt off). Data Kitchen: drag food in stock to Kuiz; the fridge restocks
 ## it. Playroom: drag the ball out of the dock and fling it (it rolls back once it settles), the
@@ -30,6 +30,8 @@ const ConfirmModal := preload("res://scripts/ui/widgets/confirm_modal.gd")
 const SETTINGS_SCENE := "res://scenes/ui/settings.tscn"
 const WORLDS_SCENE := "res://scenes/ui/session_list.tscn"
 const FADE_TIME := 0.35
+const SLIDE_IN := 180.0
+const SLIDE_TIME := 0.5
 const HELD_SIZE := Vector2(120, 120)
 # Screwdriver: seconds of holding it over Kuiz to finish a tune-up, and its twist while working.
 const FIX_TIME := 2.0
@@ -88,6 +90,8 @@ const CHECK_HINTS := {
 @onready var prev_btn: BaseButton = %RoomPrev
 @onready var next_btn: BaseButton = %RoomNext
 @onready var room_sign: Control = %RoomSign
+@onready var room_menu: Control = %RoomMenu
+@onready var room_list: VBoxContainer = %RoomList
 @onready var level_label: Label = %Number
 @onready var xp_bar: ProgressBar = %Xp
 @onready var level_info: Control = %LevelInfo
@@ -104,6 +108,8 @@ const CHECK_HINTS := {
 @onready var charge_btn: Button = %Charge
 @onready var play_btn: Button = %Play
 @onready var settings_btn: Button = %Settings
+@onready var focus_btn: Button = %Focus
+@onready var timer_panel: Control = %TimerPanel
 @onready var tool_slot: TextureRect = %Tool
 @onready var towel_slot: TextureRect = %Towel
 @onready var check_panel: Control = %CheckPanel
@@ -169,11 +175,23 @@ func _ready() -> void:
 		GameState.food_stock.get_or_add(food["id"], food["start"])
 	prev_btn.pressed.connect(_go.bind(-1))
 	next_btn.pressed.connect(_go.bind(1))
+	room_sign.gui_input.connect(_on_sign_input)
+	room_menu.gui_input.connect(func(event: InputEvent) -> void:
+		if _tapped(event):
+			room_menu.hide())
+	for i in ROOMS.size():
+		var entry := _closet_button(peek.ROOM_NAMES[ROOMS[i]])
+		entry.pressed.connect(_pick_room.bind(i))
+		room_list.add_child(entry)
 	charge_btn.toggled.connect(_on_charge)
 	play_btn.pressed.connect(_on_play)
 	settings_btn.pressed.connect(func() -> void:
 		if not _busy:
 			get_tree().change_scene_to_file(SETTINGS_SCENE))
+	focus_btn.pressed.connect(timer_panel.show)
+	%TimerClose.pressed.connect(timer_panel.hide)
+	%TimerAction.pressed.connect(_on_timer_action)
+	CompanionState.pomodoro_phase_changed.connect(_on_pomodoro_phase)
 	food_prev_btn.pressed.connect(_pick_food.bind(-1))
 	food_next_btn.pressed.connect(_pick_food.bind(1))
 	food_icon.gui_input.connect(_on_slot_input.bind("food"))
@@ -211,6 +229,9 @@ func _ready() -> void:
 ## Shows the HUD and bar in the Study Room; the save is read the first time home opens this session.
 func start() -> void:
 	SaveManager.load_once()
+	var revealing: bool = peek.revealing
+	if revealing:
+		await peek.revealed
 	visible = true
 	_room_i = 0
 	_show_room_props(ROOMS[0])
@@ -220,22 +241,46 @@ func start() -> void:
 	for c: CanvasItem in get_children():
 		c.modulate.a = 0.0
 		create_tween().tween_property(c, "modulate:a", 1.0, FADE_TIME)
+		# After the boot reveal the HUD drops in from the top and the dock rises from the bottom.
+		if revealing and c is Control and c.visible:
+			var rest_y: float = c.position.y
+			var away := -SLIDE_IN if rest_y < _view().y / 2.0 else SLIDE_IN
+			create_tween().tween_property(c, "position:y", rest_y, SLIDE_TIME).from(rest_y + away).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	await peek.to_room_pose()
 
 func _go(step: int) -> void:
-	if _busy:
-		return
+	if _can_walk():
+		_walk_to(wrapi(_room_i + step, 0, ROOMS.size()), step)
+
+func _can_walk() -> bool:
+	if _busy or charge_btn.button_pressed:
+		return false
 	if _dozing():
 		_toast("Shh… Kuiz is sleeping. Tap Kuiz to wake it up.")
-		return
+		return false
+	return true
+
+func _walk_to(room_i: int, dir: int) -> void:
 	# Only the arrows lock during the walk; the room's items keep their look (_busy ignores them).
 	_busy = true
 	_set_arrows_enabled(false)
 	_drop_held()
-	_room_i = wrapi(_room_i + step, 0, ROOMS.size())
-	await peek.walk(_enter.bind(ROOMS[_room_i]), step)
+	_room_i = room_i
+	await peek.walk(_enter.bind(ROOMS[_room_i]), dir)
 	_set_arrows_enabled(true)
 	_busy = false
+
+# The sign sits on the Top layer, which stays up during the tutorial, so home checks it is showing.
+func _on_sign_input(event: InputEvent) -> void:
+	if _tapped(event) and visible and _can_walk():
+		for i in ROOMS.size():
+			_press_look(room_list.get_child(i), i == _room_i)
+		room_menu.show()
+
+func _pick_room(room_i: int) -> void:
+	room_menu.hide()
+	if room_i != _room_i:
+		_walk_to(room_i, signi(room_i - _room_i))
 
 func _enter(room_name: String) -> void:
 	peek.show_room(room_name)
@@ -249,7 +294,7 @@ func _show_room_props(room_name: String) -> void:
 	ball_slot.modulate.a = 1.0
 	_ball_grabbed = false
 	_ball_returning = false
-	for panel: Control in [shop, picker, check_panel, wardrobe]:
+	for panel: Control in [shop, picker, check_panel, wardrobe, timer_panel]:
 		panel.hide()
 	_fix = 0.0
 	peek.look_ahead()
@@ -386,7 +431,7 @@ func _toast(text: String) -> void:
 
 func _set_bar_enabled(on: bool) -> void:
 	_set_arrows_enabled(on)
-	for b: BaseButton in [play_btn, settings_btn]:
+	for b: BaseButton in [play_btn, settings_btn, focus_btn]:
 		b.disabled = not on
 
 func _set_arrows_enabled(on: bool) -> void:
@@ -411,6 +456,48 @@ func _on_charge(charging: bool) -> void:
 		_charge_pulse.tween_property(charge_btn, "scale", Vector2.ONE, 0.5).set_trans(Tween.TRANS_SINE)
 	else:
 		peek.act("Wake_Up")
+
+# The focus timer lives in CompanionState and keeps running on other screens. Contract:
+# docs/systems/companion-care.md §6.
+func _on_timer_action() -> void:
+	if CompanionState.get_pomodoro_state()["mode"] == "":
+		CompanionState.start_pomodoro()
+	else:
+		CompanionState.skip_pomodoro()
+
+func _on_pomodoro_phase(mode: String) -> void:
+	if not visible:
+		return
+	if mode == "rest":
+		MusicManager.play_sfx(CHARGED_SFX)
+		peek.act("Celebrate")
+		_toast("Focus done! Take a 5-minute break.")
+	elif mode == "done":
+		MusicManager.play_sfx(CHARGED_SFX)
+		peek.act("Happy")
+		_toast("Break over. Kuiz feels rested!")
+
+func _refresh_timer() -> void:
+	var p := CompanionState.get_pomodoro_state()
+	var mode: String = p["mode"]
+	var left: int = p["remaining"] if mode != "" else p["focus_total"]
+	var clock := "%02d:%02d" % [floori(left / 60.0), left % 60]
+	focus_btn.text = "Focus" if mode == "" else clock
+	if not timer_panel.visible:
+		return
+	%TimerTime.text = clock
+	%TimerTitle.text = "Break time" if mode == "rest" else "Focus timer"
+	%TimerBar.value = 1.0 - float(left) / (p["rest_total"] if mode == "rest" else p["focus_total"])
+	match mode:
+		"focus":
+			%TimerAction.text = "Skip to break"
+			%TimerHint.text = "Kuiz gains focus when this ends. Skipping costs it a little energy and mood."
+		"rest":
+			%TimerAction.text = "End break"
+			%TimerHint.text = "Rest up. Ending early tires Kuiz out."
+		_:
+			%TimerAction.text = "Start focus"
+			%TimerHint.text = "%d minutes of focus, then a %d-minute break. Kuiz gains focus when you finish." % [p["focus_total"] / 60, p["rest_total"] / 60]
 
 func _on_play() -> void:
 	if not _busy:
@@ -689,6 +776,7 @@ func _process(delta: float) -> void:
 	_pet()
 	if check_panel.visible:
 		_refresh_checkup()
+	_refresh_timer()
 	if _held_kind == "tool" and _over_kuiz:
 		_fix += delta
 		held.rotation = sin(_fix * 14.0) * TWIST

@@ -7,7 +7,7 @@ const MAIN_ROOM_TRACK: AudioStream = preload("res://assets/audio/music/home_room
 const LOADING_TRACK: AudioStream = preload("res://assets/audio/music/loading.wav")
 const OVERWORLD_TRACK: AudioStream = preload("res://assets/audio/music/overworld.wav")
 const LOADING_OFFSET := 1.0
-const LOADING_FADE := 1.0
+const LOADING_FADE := 2.0
 # Swapping to the home loop or the region map's route theme: the old track fades out while the new
 # one fades in over this long.
 const CROSSFADE := 2.5
@@ -27,7 +27,6 @@ func _ready() -> void:
 	_player = AudioStreamPlayer.new()
 	_player.name = "MusicPlayer"
 	add_child(_player)
-	_play_track(MAIN_ROOM_TRACK)
 	_sfx = AudioStreamPlayer.new()
 	_sfx.name = "SfxPlayer"
 	add_child(_sfx)

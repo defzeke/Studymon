@@ -110,10 +110,10 @@ func _update_sanity() -> void:
 	if v.get("ok", false):
 		var words: int = int(v.get("words", 0))
 		sanity_label.text = "✓ %d words — good to study." % words
-		sanity_label.modulate = Color(0.6, 1.0, 0.6)
+		sanity_label.add_theme_color_override("font_color", Color("4F8F89"))
 	else:
 		sanity_label.text = str(v.get("error", "Too short"))
-		sanity_label.modulate = Color(1.0, 0.6, 0.6)
+		sanity_label.add_theme_color_override("font_color", Color("C97970"))
 
 func _on_study() -> void:
 	if _studying:
@@ -226,19 +226,19 @@ func _make_question_row(q: Dictionary, idx: int) -> Control:
 	# The row's layout and look are %RowTemplate's; this fills one copy and wires it to the question.
 	var panel := row_template.duplicate() as PanelContainer
 	panel.visible = true
-	var box := panel.get_node("Pad/Box")
+	var box := panel.get_node("Box")
 	(box.get_node("Header/Index") as Label).text = "#%d" % (idx + 1)
 
 	var conf_label := box.get_node("Header/Confidence") as Label
 	if conf >= 0.85:
 		conf_label.text = "AI is fairly sure (%.0f%%)" % (conf * 100)
-		conf_label.modulate = Color("78A982")
+		conf_label.add_theme_color_override("font_color", Color("4F8F89"))
 	elif conf >= 0.6:
 		conf_label.text = "Check this one (%.0f%%)" % (conf * 100)
-		conf_label.modulate = Color("D6A85F")
+		conf_label.add_theme_color_override("font_color", Color("29383A"))
 	else:
 		conf_label.text = "Double-check (%.0f%%)" % (conf * 100)
-		conf_label.modulate = Color("C97970")
+		conf_label.add_theme_color_override("font_color", Color("C97970"))
 
 	(box.get_node("Header/Delete") as Button).pressed.connect(_on_delete_question.bind(idx))
 	(box.get_node("Header/Report") as Button).pressed.connect(_on_report_question.bind(idx))
@@ -354,7 +354,7 @@ func _on_region_generated(topic_id: String, map_data: Dictionary) -> void:
 	status_label.text = "Region ready! %d gym(s): %s — entering overworld..." % [gyms.size(), ", ".join(gyms)]
 	GameState.set_active_region(topic_id)
 	await get_tree().create_timer(0.6).timeout
-	get_tree().change_scene_to_file("res://scenes/overworld/region_map.tscn")
+	get_tree().change_scene_to_file("res://scenes/overworld/world_intro.tscn")
 
 func _on_back() -> void:
 	get_tree().change_scene_to_file("res://scenes/ui/session_list.tscn")

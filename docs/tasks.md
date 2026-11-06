@@ -10,8 +10,13 @@ Last updated: 2026-11-01.
 
 ## In flight
 
-Nothing uncommitted. Everything below **Done** is on `world-assets`, pushed but not yet merged to
-`main` (last merged in PR #8).
+Uncommitted, for the maintainer to commit: boot music fades in, the Kuiz reveal after loading, the
+room sign opens a dropdown of the four rooms, the world intro (Kuiz leaves its house on Play, goes back in on the map's Back), Kuiz waddles on the island, the
+boy shows base colour only, the new Study icon, the restyled Worlds, Settings and World Builder, the slower white handoff after loading, the gear on the HUD, the focus timer on the table, the restyled Flashcards, a fix for the dark flash between scenes, and changing explorer from the map. Checked windowed on Windows with a scratch
+harness; not yet played on a phone.
+
+Everything below **Done** is on `world-assets`, pushed but not yet merged to `main` (last merged in
+PR #8).
 
 Still unverified across the committed work: none of the 2026-10-26 → 10-29 batches has been opened in
 the editor GUI or played on a phone; checks were headless (79 Godot checks, 15 `backend/tests`) and

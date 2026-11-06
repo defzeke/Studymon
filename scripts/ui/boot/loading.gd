@@ -21,7 +21,7 @@ const FILL_TIME: float = 5.0
 const HOLD_TIME: float = 0.6
 const CRAWL_TIME: float = 2.0
 const FADE_IN_TIME: float = 0.4
-const FADE_OUT_TIME: float = 0.4
+const FADE_OUT_TIME: float = 0.9
 const LOGO_BOB: float = 12.0
 const LOGO_BOB_TIME: float = 1.6
 # The animated logo (loading_screen_logo.gif, its white backdrop keyed out) as a sheet of 60 frames,
@@ -109,8 +109,10 @@ func _advance() -> void:
 		_tip_timer.stop()
 	fade.show()
 	var t := create_tween()
-	t.tween_property(fade, "modulate:a", 1.0, FADE_OUT_TIME).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
+	t.tween_property(fade, "modulate:a", 1.0, FADE_OUT_TIME).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 	await t.finished
+	# The engine draws one empty frame between scenes, and holds it while the next one loads.
+	RenderingServer.set_default_clear_color(fade.color)
 	# Holding the threaded result keeps it in the resource cache, so the change below doesn't block.
 	var _next := ResourceLoader.load_threaded_get(NEXT_SCENE)
 	get_tree().change_scene_to_file(NEXT_SCENE)

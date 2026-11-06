@@ -1,5 +1,5 @@
 extends CanvasLayer
-## "Choose your explorer": shown over the region map the first time a world is played (each world keeps its own). Each card is a live 3D preview
+## "Choose your explorer": shown over the region map the first time a world is played, and from its explorer button. Each card is a live 3D preview
 ## of an explorer (its own small world, idling; the chosen one cheers). "Let's go!" emits `picked`
 ## with the id from player.gd's EXPLORERS. Layout lives in explorer_picker.tscn; one card per explorer
 ## is copied from %CardTemplate. Contract: docs/systems/overworld.md §3 Explorer.
@@ -17,12 +17,15 @@ const NAMES := {"boy": "Boy", "girl": "Girl"}
 @onready var cards: HBoxContainer = %Cards
 @onready var card_template: PanelContainer = %CardTemplate
 
+## The explorer selected when the picker opens.
+var current := "boy"
+
 var _choice := ""
 var _cards := {}
 var _anims := {}
 
 func _ready() -> void:
-	_choice = "boy"
+	_choice = current if Player.EXPLORERS.has(current) else "boy"
 	for id: String in Player.EXPLORERS:
 		cards.add_child(_card(id))
 	%GoButton.pressed.connect(_go)
@@ -40,7 +43,7 @@ func _card(id: String) -> Control:
 	card.gui_input.connect(func(e: InputEvent) -> void:
 		if e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT:
 			_select(id))
-	var model: Node3D = Player.EXPLORERS[id].instantiate()
+	var model := Player.new_model(id)
 	model.rotation_degrees.y = -18.0
 	card.get_node("Box/View/Viewport").add_child(model)
 	var anim: AnimationPlayer = model.find_child("AnimationPlayer", true, false)

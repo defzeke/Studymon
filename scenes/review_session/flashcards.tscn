@@ -4,6 +4,8 @@
 [ext_resource type="Texture2D" path="res://assets/sprites/rooms/study_room.svg" id="2_room"]
 [ext_resource type="Texture2D" path="res://assets/sprites/ui/icon_back.svg" id="3_back"]
 [ext_resource type="FontFile" path="res://assets/fonts/JosefinSans-Bold.ttf" id="4_bold"]
+[ext_resource type="Texture2D" path="res://assets/sprites/ui/icon_timer.svg" id="5_timer"]
+[ext_resource type="Texture2D" path="res://assets/sprites/ui/crystal.svg" id="6_gem"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_card"]
 content_margin_left = 28.0
@@ -20,146 +22,39 @@ corner_radius_top_left = 32
 corner_radius_top_right = 32
 corner_radius_bottom_right = 32
 corner_radius_bottom_left = 32
-shadow_color = Color(0.1608, 0.2196, 0.2275, 0.35)
-shadow_size = 12
-shadow_offset = Vector2(0, 6)
+shadow_color = Color(0.1608, 0.2196, 0.2275, 0.3)
+shadow_size = 10
+shadow_offset = Vector2(0, 5)
 
-[sub_resource type="StyleBoxLine" id="StyleBoxLine_sep"]
-color = Color(0.1608, 0.2196, 0.2275, 0.18)
-thickness = 3
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_progress_back"]
-bg_color = Color(0.9686, 0.9608, 0.9373, 0.25)
-corner_radius_top_left = 7
-corner_radius_top_right = 7
-corner_radius_bottom_right = 7
-corner_radius_bottom_left = 7
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_progress_fill"]
-bg_color = Color(0.3098, 0.5608, 0.5373, 1)
-corner_radius_top_left = 7
-corner_radius_top_right = 7
-corner_radius_bottom_right = 7
-corner_radius_bottom_left = 7
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_back"]
-content_margin_left = 12.0
-content_margin_top = 12.0
-content_margin_right = 12.0
-content_margin_bottom = 12.0
-bg_color = Color(0.9686, 0.9608, 0.9373, 1)
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_under"]
+bg_color = Color(0.9098, 0.9412, 0.9176, 1)
 border_width_left = 3
 border_width_top = 3
 border_width_right = 3
 border_width_bottom = 3
 border_color = Color(0.1608, 0.2196, 0.2275, 1)
-corner_radius_top_left = 36
-corner_radius_top_right = 36
-corner_radius_bottom_right = 36
-corner_radius_bottom_left = 36
+corner_radius_top_left = 32
+corner_radius_top_right = 32
+corner_radius_bottom_right = 32
+corner_radius_bottom_left = 32
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_back_hover"]
-content_margin_left = 12.0
-content_margin_top = 12.0
-content_margin_right = 12.0
-content_margin_bottom = 12.0
-bg_color = Color(0.9711, 0.9639, 0.9423, 1)
-border_width_left = 3
-border_width_top = 3
-border_width_right = 3
-border_width_bottom = 3
-border_color = Color(0.1608, 0.2196, 0.2275, 1)
-corner_radius_top_left = 36
-corner_radius_top_right = 36
-corner_radius_bottom_right = 36
-corner_radius_bottom_left = 36
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_back_down"]
-content_margin_left = 12.0
-content_margin_top = 12.0
-content_margin_right = 12.0
-content_margin_bottom = 12.0
-bg_color = Color(0.8233, 0.8167, 0.7967, 1)
-border_width_left = 3
-border_width_top = 3
-border_width_right = 3
-border_width_bottom = 3
-border_color = Color(0.1608, 0.2196, 0.2275, 1)
-corner_radius_top_left = 36
-corner_radius_top_right = 36
-corner_radius_bottom_right = 36
-corner_radius_bottom_left = 36
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_flip"]
-content_margin_left = 12.0
-content_margin_top = 12.0
-content_margin_right = 12.0
-content_margin_bottom = 12.0
-bg_color = Color(0.3098, 0.5608, 0.5373, 1)
-border_width_left = 3
-border_width_top = 3
-border_width_right = 3
-border_width_bottom = 3
-border_color = Color(0.1608, 0.2196, 0.2275, 1)
-corner_radius_top_left = 24
-corner_radius_top_right = 24
-corner_radius_bottom_right = 24
-corner_radius_bottom_left = 24
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_flip_hover"]
-content_margin_left = 12.0
-content_margin_top = 12.0
-content_margin_right = 12.0
-content_margin_bottom = 12.0
-bg_color = Color(0.365, 0.5959, 0.5743, 1)
-border_width_left = 3
-border_width_top = 3
-border_width_right = 3
-border_width_bottom = 3
-border_color = Color(0.1608, 0.2196, 0.2275, 1)
-corner_radius_top_left = 24
-corner_radius_top_right = 24
-corner_radius_bottom_right = 24
-corner_radius_bottom_left = 24
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_flip_down"]
-content_margin_left = 12.0
-content_margin_top = 12.0
-content_margin_right = 12.0
-content_margin_bottom = 12.0
-bg_color = Color(0.2633, 0.4767, 0.4567, 1)
-border_width_left = 3
-border_width_top = 3
-border_width_right = 3
-border_width_bottom = 3
-border_color = Color(0.1608, 0.2196, 0.2275, 1)
-corner_radius_top_left = 24
-corner_radius_top_right = 24
-corner_radius_bottom_right = 24
-corner_radius_bottom_left = 24
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_answer"]
+content_margin_left = 20.0
+content_margin_top = 18.0
+content_margin_right = 20.0
+content_margin_bottom = 16.0
+bg_color = Color(0.9098, 0.9412, 0.9176, 1)
+corner_radius_top_left = 22
+corner_radius_top_right = 22
+corner_radius_bottom_right = 22
+corner_radius_bottom_left = 22
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_again"]
 content_margin_left = 12.0
-content_margin_top = 12.0
+content_margin_top = 8.0
 content_margin_right = 12.0
-content_margin_bottom = 12.0
+content_margin_bottom = 4.0
 bg_color = Color(0.7882, 0.4745, 0.4392, 1)
-border_width_left = 3
-border_width_top = 3
-border_width_right = 3
-border_width_bottom = 3
-border_color = Color(0.1608, 0.2196, 0.2275, 1)
-corner_radius_top_left = 24
-corner_radius_top_right = 24
-corner_radius_bottom_right = 24
-corner_radius_bottom_left = 24
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_again_hover"]
-content_margin_left = 12.0
-content_margin_top = 12.0
-content_margin_right = 12.0
-content_margin_bottom = 12.0
-bg_color = Color(0.8052, 0.5165, 0.4841, 1)
 border_width_left = 3
 border_width_top = 3
 border_width_right = 3
@@ -172,9 +67,9 @@ corner_radius_bottom_left = 24
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_again_down"]
 content_margin_left = 12.0
-content_margin_top = 12.0
+content_margin_top = 8.0
 content_margin_right = 12.0
-content_margin_bottom = 12.0
+content_margin_bottom = 4.0
 bg_color = Color(0.67, 0.4033, 0.3733, 1)
 border_width_left = 3
 border_width_top = 3
@@ -188,26 +83,10 @@ corner_radius_bottom_left = 24
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_hard"]
 content_margin_left = 12.0
-content_margin_top = 12.0
+content_margin_top = 8.0
 content_margin_right = 12.0
-content_margin_bottom = 12.0
+content_margin_bottom = 4.0
 bg_color = Color(0.8392, 0.6588, 0.3725, 1)
-border_width_left = 3
-border_width_top = 3
-border_width_right = 3
-border_width_bottom = 3
-border_color = Color(0.1608, 0.2196, 0.2275, 1)
-corner_radius_top_left = 24
-corner_radius_top_right = 24
-corner_radius_bottom_right = 24
-corner_radius_bottom_left = 24
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_hard_hover"]
-content_margin_left = 12.0
-content_margin_top = 12.0
-content_margin_right = 12.0
-content_margin_bottom = 12.0
-bg_color = Color(0.8521, 0.6861, 0.4227, 1)
 border_width_left = 3
 border_width_top = 3
 border_width_right = 3
@@ -220,9 +99,9 @@ corner_radius_bottom_left = 24
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_hard_down"]
 content_margin_left = 12.0
-content_margin_top = 12.0
+content_margin_top = 8.0
 content_margin_right = 12.0
-content_margin_bottom = 12.0
+content_margin_bottom = 4.0
 bg_color = Color(0.7133, 0.56, 0.3167, 1)
 border_width_left = 3
 border_width_top = 3
@@ -236,26 +115,10 @@ corner_radius_bottom_left = 24
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_easy"]
 content_margin_left = 12.0
-content_margin_top = 12.0
+content_margin_top = 8.0
 content_margin_right = 12.0
-content_margin_bottom = 12.0
+content_margin_bottom = 4.0
 bg_color = Color(0.4706, 0.6627, 0.5098, 1)
-border_width_left = 3
-border_width_top = 3
-border_width_right = 3
-border_width_bottom = 3
-border_color = Color(0.1608, 0.2196, 0.2275, 1)
-corner_radius_top_left = 24
-corner_radius_top_right = 24
-corner_radius_bottom_right = 24
-corner_radius_bottom_left = 24
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_easy_hover"]
-content_margin_left = 12.0
-content_margin_top = 12.0
-content_margin_right = 12.0
-content_margin_bottom = 12.0
-bg_color = Color(0.5129, 0.6897, 0.549, 1)
 border_width_left = 3
 border_width_top = 3
 border_width_right = 3
@@ -268,9 +131,9 @@ corner_radius_bottom_left = 24
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_easy_down"]
 content_margin_left = 12.0
-content_margin_top = 12.0
+content_margin_top = 8.0
 content_margin_right = 12.0
-content_margin_bottom = 12.0
+content_margin_bottom = 4.0
 bg_color = Color(0.4, 0.5633, 0.4333, 1)
 border_width_left = 3
 border_width_top = 3
@@ -320,7 +183,8 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0.1608, 0.2196, 0.2275, 0.6)
+mouse_filter = 2
+color = Color(0.3098, 0.5608, 0.5373, 0.9)
 
 [node name="Margin" type="MarginContainer" parent="."]
 layout_mode = 1
@@ -340,20 +204,13 @@ theme_override_constants/separation = 18
 
 [node name="TopBar" type="HBoxContainer" parent="Margin/List"]
 layout_mode = 2
-theme_override_constants/separation = 16
+theme_override_constants/separation = 14
 
 [node name="BackButton" type="Button" parent="Margin/List/TopBar"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(72, 72)
+custom_minimum_size = Vector2(64, 64)
 layout_mode = 2
-theme_override_colors/font_color = Color(0.9686, 0.9608, 0.9373, 1)
-theme_override_colors/font_hover_color = Color(0.9686, 0.9608, 0.9373, 1)
-theme_override_colors/font_pressed_color = Color(0.9686, 0.9608, 0.9373, 1)
-theme_override_colors/font_focus_color = Color(0.9686, 0.9608, 0.9373, 1)
-theme_override_styles/normal = SubResource("StyleBoxFlat_back")
-theme_override_styles/hover = SubResource("StyleBoxFlat_back_hover")
-theme_override_styles/pressed = SubResource("StyleBoxFlat_back_down")
-theme_override_styles/focus = SubResource("StyleBoxFlat_back")
+theme_type_variation = &"MenuRound"
 icon = ExtResource("3_back")
 icon_alignment = 1
 expand_icon = true
@@ -375,44 +232,91 @@ text = "Flashcards"
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.9098, 0.9412, 0.9176, 1)
-theme_override_fonts/font = ExtResource("4_bold")
 theme_override_font_sizes/font_size = 20
 text = "0 left · 0 banked"
+clip_text = true
 
 [node name="TimerButton" type="Button" parent="Margin/List/TopBar"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(170, 64)
+custom_minimum_size = Vector2(0, 64)
 layout_mode = 2
 size_flags_vertical = 4
+theme_type_variation = &"MenuQuiet"
 theme_override_font_sizes/font_size = 22
 text = "Focus 25:00"
+icon = ExtResource("5_timer")
+expand_icon = true
 
 [node name="Progress" type="ProgressBar" parent="Margin/List"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 14)
 layout_mode = 2
-theme_override_styles/background = SubResource("StyleBoxFlat_progress_back")
-theme_override_styles/fill = SubResource("StyleBoxFlat_progress_fill")
+theme_type_variation = &"CardBar"
 max_value = 1.0
 show_percentage = false
 
-[node name="CardPanel" type="PanelContainer" parent="Margin/List"]
+[node name="CardArea" type="Control" parent="Margin/List"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 3
+
+[node name="UnderFar" type="Panel" parent="Margin/List/CardArea"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_top = 0.05
+anchor_right = 1.0
+anchor_bottom = 0.97
+offset_left = 16.0
+offset_right = -16.0
+grow_horizontal = 2
+grow_vertical = 2
+rotation = 0.04
+theme_override_styles/panel = SubResource("StyleBoxFlat_under")
+
+[node name="UnderNear" type="Panel" parent="Margin/List/CardArea"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_top = 0.05
+anchor_right = 1.0
+anchor_bottom = 0.97
+offset_left = 8.0
+offset_right = -8.0
+grow_horizontal = 2
+grow_vertical = 2
+rotation = -0.03
+theme_override_styles/panel = SubResource("StyleBoxFlat_under")
+
+[node name="CardPanel" type="PanelContainer" parent="Margin/List/CardArea"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_top = 0.03
+anchor_right = 1.0
+anchor_bottom = 0.95
+grow_horizontal = 2
+grow_vertical = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_card")
 
-[node name="CardBox" type="VBoxContainer" parent="Margin/List/CardPanel"]
+[node name="Scroll" type="ScrollContainer" parent="Margin/List/CardArea/CardPanel"]
 layout_mode = 2
-theme_override_constants/separation = 14
+horizontal_scroll_mode = 0
 
-[node name="Tags" type="HBoxContainer" parent="Margin/List/CardPanel/CardBox"]
+[node name="CardBox" type="VBoxContainer" parent="Margin/List/CardArea/CardPanel/Scroll"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 16
+
+[node name="Tags" type="HBoxContainer" parent="Margin/List/CardArea/CardPanel/Scroll/CardBox"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_constants/separation = 8
 alignment = 1
 
-[node name="TagTemplate" type="Label" parent="Margin/List/CardPanel/CardBox/Tags"]
+[node name="TagTemplate" type="Label" parent="Margin/List/CardArea/CardPanel/Scroll/CardBox/Tags"]
 unique_name_in_owner = true
 visible = false
 layout_mode = 2
@@ -422,38 +326,44 @@ theme_override_font_sizes/font_size = 18
 theme_override_styles/normal = SubResource("StyleBoxFlat_tag")
 text = "Tag"
 
-[node name="QuestionTag" type="Label" parent="Margin/List/CardPanel/CardBox"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.4078, 0.4667, 0.4706, 1)
-theme_override_fonts/font = ExtResource("4_bold")
-theme_override_font_sizes/font_size = 18
-text = "QUESTION"
-horizontal_alignment = 1
-
-[node name="FrontLabel" type="Label" parent="Margin/List/CardPanel/CardBox"]
-unique_name_in_owner = true
+[node name="SpacerTop" type="Control" parent="Margin/List/CardArea/CardPanel/Scroll/CardBox"]
 layout_mode = 2
 size_flags_vertical = 3
+
+[node name="Gem" type="TextureRect" parent="Margin/List/CardArea/CardPanel/Scroll/CardBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 72)
+layout_mode = 2
+texture = ExtResource("6_gem")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="FrontLabel" type="Label" parent="Margin/List/CardArea/CardPanel/Scroll/CardBox"]
+unique_name_in_owner = true
+layout_mode = 2
 theme_override_colors/font_color = Color(0.1608, 0.2196, 0.2275, 1)
 theme_override_fonts/font = ExtResource("4_bold")
-theme_override_font_sizes/font_size = 34
+theme_override_font_sizes/font_size = 38
 text = "Question"
 horizontal_alignment = 1
 vertical_alignment = 1
 autowrap_mode = 3
 
-[node name="Back" type="VBoxContainer" parent="Margin/List/CardPanel/CardBox"]
+[node name="SpacerBottom" type="Control" parent="Margin/List/CardArea/CardPanel/Scroll/CardBox"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Back" type="PanelContainer" parent="Margin/List/CardArea/CardPanel/Scroll/CardBox"]
 unique_name_in_owner = true
 visible = false
 layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_answer")
+
+[node name="AnswerBox" type="VBoxContainer" parent="Margin/List/CardArea/CardPanel/Scroll/CardBox/Back"]
+layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="Sep" type="HSeparator" parent="Margin/List/CardPanel/CardBox/Back"]
-unique_name_in_owner = true
-layout_mode = 2
-theme_override_styles/separator = SubResource("StyleBoxLine_sep")
-
-[node name="AnswerTag" type="Label" parent="Margin/List/CardPanel/CardBox/Back"]
+[node name="AnswerTag" type="Label" parent="Margin/List/CardArea/CardPanel/Scroll/CardBox/Back/AnswerBox"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.4078, 0.4667, 0.4706, 1)
 theme_override_fonts/font = ExtResource("4_bold")
@@ -461,32 +371,31 @@ theme_override_font_sizes/font_size = 18
 text = "ANSWER"
 horizontal_alignment = 1
 
-[node name="AnswerLabel" type="Label" parent="Margin/List/CardPanel/CardBox/Back"]
+[node name="AnswerLabel" type="Label" parent="Margin/List/CardArea/CardPanel/Scroll/CardBox/Back/AnswerBox"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_colors/font_color = Color(0.3098, 0.5608, 0.5373, 1)
+theme_override_colors/font_color = Color(0.2633, 0.4767, 0.4567, 1)
 theme_override_fonts/font = ExtResource("4_bold")
-theme_override_font_sizes/font_size = 28
+theme_override_font_sizes/font_size = 30
 text = "Answer"
 horizontal_alignment = 1
 autowrap_mode = 3
 
-[node name="SourceLabel" type="Label" parent="Margin/List/CardPanel/CardBox/Back"]
+[node name="SourceLabel" type="Label" parent="Margin/List/CardArea/CardPanel/Scroll/CardBox/Back/AnswerBox"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_colors/font_color = Color(0.4078, 0.4667, 0.4706, 1)
-theme_override_font_sizes/font_size = 22
+theme_type_variation = &"CardHint"
 horizontal_alignment = 1
 autowrap_mode = 3
 
-[node name="DoneLabel" type="Label" parent="Margin/List/CardPanel/CardBox"]
+[node name="DoneLabel" type="Label" parent="Margin/List/CardArea/CardPanel/Scroll/CardBox"]
 unique_name_in_owner = true
 visible = false
 layout_mode = 2
 size_flags_vertical = 3
 theme_override_colors/font_color = Color(0.1608, 0.2196, 0.2275, 1)
 theme_override_fonts/font = ExtResource("4_bold")
-theme_override_font_sizes/font_size = 32
+theme_override_font_sizes/font_size = 34
 text = "Deck complete"
 horizontal_alignment = 1
 vertical_alignment = 1
@@ -494,18 +403,10 @@ autowrap_mode = 3
 
 [node name="FlipButton" type="Button" parent="Margin/List"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 84)
+custom_minimum_size = Vector2(0, 80)
 layout_mode = 2
-theme_override_colors/font_color = Color(0.9686, 0.9608, 0.9373, 1)
-theme_override_colors/font_hover_color = Color(0.9686, 0.9608, 0.9373, 1)
-theme_override_colors/font_pressed_color = Color(0.9686, 0.9608, 0.9373, 1)
-theme_override_colors/font_focus_color = Color(0.9686, 0.9608, 0.9373, 1)
-theme_override_fonts/font = ExtResource("4_bold")
-theme_override_font_sizes/font_size = 32
-theme_override_styles/normal = SubResource("StyleBoxFlat_flip")
-theme_override_styles/hover = SubResource("StyleBoxFlat_flip_hover")
-theme_override_styles/pressed = SubResource("StyleBoxFlat_flip_down")
-theme_override_styles/focus = SubResource("StyleBoxFlat_flip")
+theme_type_variation = &"MenuPrimary"
+theme_override_font_sizes/font_size = 30
 text = "Show answer"
 
 [node name="RateRow" type="HBoxContainer" parent="Margin/List"]
@@ -516,51 +417,48 @@ theme_override_constants/separation = 12
 
 [node name="AgainButton" type="Button" parent="Margin/List/RateRow"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 84)
+custom_minimum_size = Vector2(0, 80)
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_colors/font_color = Color(0.9686, 0.9608, 0.9373, 1)
 theme_override_colors/font_hover_color = Color(0.9686, 0.9608, 0.9373, 1)
 theme_override_colors/font_pressed_color = Color(0.9686, 0.9608, 0.9373, 1)
 theme_override_colors/font_focus_color = Color(0.9686, 0.9608, 0.9373, 1)
-theme_override_fonts/font = ExtResource("4_bold")
 theme_override_font_sizes/font_size = 28
 theme_override_styles/normal = SubResource("StyleBoxFlat_again")
-theme_override_styles/hover = SubResource("StyleBoxFlat_again_hover")
+theme_override_styles/hover = SubResource("StyleBoxFlat_again")
 theme_override_styles/pressed = SubResource("StyleBoxFlat_again_down")
 theme_override_styles/focus = SubResource("StyleBoxFlat_again")
 text = "Again"
 
 [node name="HardButton" type="Button" parent="Margin/List/RateRow"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 84)
+custom_minimum_size = Vector2(0, 80)
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_colors/font_color = Color(0.9686, 0.9608, 0.9373, 1)
-theme_override_colors/font_hover_color = Color(0.9686, 0.9608, 0.9373, 1)
-theme_override_colors/font_pressed_color = Color(0.9686, 0.9608, 0.9373, 1)
-theme_override_colors/font_focus_color = Color(0.9686, 0.9608, 0.9373, 1)
-theme_override_fonts/font = ExtResource("4_bold")
+theme_override_colors/font_color = Color(0.1608, 0.2196, 0.2275, 1)
+theme_override_colors/font_hover_color = Color(0.1608, 0.2196, 0.2275, 1)
+theme_override_colors/font_pressed_color = Color(0.1608, 0.2196, 0.2275, 1)
+theme_override_colors/font_focus_color = Color(0.1608, 0.2196, 0.2275, 1)
 theme_override_font_sizes/font_size = 28
 theme_override_styles/normal = SubResource("StyleBoxFlat_hard")
-theme_override_styles/hover = SubResource("StyleBoxFlat_hard_hover")
+theme_override_styles/hover = SubResource("StyleBoxFlat_hard")
 theme_override_styles/pressed = SubResource("StyleBoxFlat_hard_down")
 theme_override_styles/focus = SubResource("StyleBoxFlat_hard")
 text = "Hard"
 
 [node name="EasyButton" type="Button" parent="Margin/List/RateRow"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 84)
+custom_minimum_size = Vector2(0, 80)
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_colors/font_color = Color(0.9686, 0.9608, 0.9373, 1)
-theme_override_colors/font_hover_color = Color(0.9686, 0.9608, 0.9373, 1)
-theme_override_colors/font_pressed_color = Color(0.9686, 0.9608, 0.9373, 1)
-theme_override_colors/font_focus_color = Color(0.9686, 0.9608, 0.9373, 1)
-theme_override_fonts/font = ExtResource("4_bold")
+theme_override_colors/font_color = Color(0.1608, 0.2196, 0.2275, 1)
+theme_override_colors/font_hover_color = Color(0.1608, 0.2196, 0.2275, 1)
+theme_override_colors/font_pressed_color = Color(0.1608, 0.2196, 0.2275, 1)
+theme_override_colors/font_focus_color = Color(0.1608, 0.2196, 0.2275, 1)
 theme_override_font_sizes/font_size = 28
 theme_override_styles/normal = SubResource("StyleBoxFlat_easy")
-theme_override_styles/hover = SubResource("StyleBoxFlat_easy_hover")
+theme_override_styles/hover = SubResource("StyleBoxFlat_easy")
 theme_override_styles/pressed = SubResource("StyleBoxFlat_easy_down")
 theme_override_styles/focus = SubResource("StyleBoxFlat_easy")
 text = "Easy"

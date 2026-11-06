@@ -64,6 +64,7 @@ text** checkbox in `settings.tscn` calls `set_large_text()` and saves.
 | `scenes/ui/session_list.tscn` | `Control` | `scripts/ui/session_list.gd` | Worlds hub: saved worlds (play, cards, edit, reset, delete) and New World |
 | `scenes/review_session/categorizer.tscn` | `Control` | `scripts/review_session/categorizer.gd` | upload + question editor |
 | `scenes/overworld/region_map.tscn` | `Node3D` | `scripts/overworld/region_map.gd` (+ `player.gd`, `joystick.gd`) | 3D island: explorer, Challenge Houses, gyms, champion |
+| `scenes/overworld/world_intro.tscn` | `Node3D` | `scripts/overworld/world_intro.gd` | Between home and the island: Kuiz leaves its house on Play, and goes back in on the map's Back |
 | `scenes/overworld/explorer_picker.tscn` | `CanvasLayer` | `scripts/overworld/explorer_picker.gd` | "Choose your explorer" card, instanced over the region map |
 | `scenes/battle/battle.tscn` | `Control` | `scripts/battle/battle.gd`, `scripts/battle/arena_stage.gd` | 3D arena behind the battle HUD: intro, strikes, ten SFX cues |
 | `scenes/review_session/flashcards.tscn` | `Control` | `scripts/review_session/flashcards.gd` | Flashcard Sanctuary: untimed card review |
@@ -81,6 +82,30 @@ on a worker thread while the animation plays. `_finish()` holds the result of
 `load_threaded_get()` and then calls `change_scene_to_file()`, which hits the resource cache instead
 of blocking on disk.
 
+### `world_intro.tscn`
+
+The walk between home and the island, on a set built from primitive meshes in the scene: Kuiz's house
+(`House`: a gabled cottage with shutters, flower boxes, an awning and its door on `%DoorHinge`), `Trees`,
+`Garden`, hills and clouds. It opens and closes on
+Off-White, the colour `region_map.tscn` fades through.
+
+- **Coming out:** the Worlds hub's **Play** and the World Builder's **Confirm & Play** open it; the hub
+  thread-loads it ahead so the tap doesn't stall. The door swings open, Kuiz waddles (`Follower.waddle()`)
+  from behind the doorway down the path, the door shuts, and Kuiz plays `Happy` over a `%Caption` reading
+  "Time to learn!". After `HOLD_TIME` (1.2 s) the caption fades and Kuiz sets off down the path as the
+  screen whitens over `LEAVE_FADE_TIME` (1.1 s), then the thread-loaded map opens. The overworld theme starts
+  crossfading when the scene opens.
+- **Going home:** the map's Back sets `SessionManager.kuiz_going_home`, which the scene clears as it reads
+  it. Kuiz starts on the path under "Home sweet home!", turns, the door opens, it waddles indoors, the
+  door shuts and the windows turn amber, then the Worlds hub opens. The home loop crossfades in.
+
+### Scene handoffs
+
+Godot draws one frame with no scene between two scenes, in the default clear colour, and holds it while the next
+scene loads: a dark flash that can last a second. A faded handoff (`splash.gd`, `loading.gd`, `world_intro.gd`,
+`region_map.gd:_leave()`) therefore calls `RenderingServer.set_default_clear_color()` with its fade's colour just
+before changing scene. A new faded handoff must do the same.
+
 ### `loading.tscn`
 
 ```text
@@ -93,7 +118,7 @@ Loading
 │   ├── BarTrack    PanelContainer, 520 px wide, centred: Deep Slate fill, Warm Off-White border, radius 28
 │   │   └── LoadBar ProgressBar, 36 px tall: Muted Teal fill, empty background, stripe shader
 │   └── TipRow      HBox: TipIcon (tip_bulb.svg), TipLabel (bold 22, Soft Sage)
-└── Fade            ColorRect, pure white: 0.4 s fade out on entry, 0.4 s fade in on exit
+└── Fade            ColorRect, pure white: 0.4 s fade out on entry, 0.9 s fade in on exit
 ```
 
 Sequence: 0 → 96 % in 5 s, 0.6 s hold, → 100 % in 2 s, fade to white, then `peek.tscn` (thread-loaded
@@ -143,11 +168,15 @@ Peek                Node3D (peek.gd)
 ├── Look              Node (kuiz_look.gd): dirt and the outfit, stickers on Kuiz's Head bone
 ├── Voice             Node (kuiz_voice.gd): Kuiz's sounds, made in code, on clip cues and moves
 ├── Top               CanvasLayer: RoomSign, the room-name pill under the HUD row
+├── BootFade          CanvasLayer 10: BootWhite, the cover Kuiz dissolves out of on the session's first opening
 └── Home              CanvasLayer (home.gd), hidden until the tutorial ends
     ├── Level         top-left pill: teal level badge, "LEVEL" and an amber XP bar
     ├── Stats         top-centre: four stat gauges (stat_gauge.gd): Hunger, Energy, Mood, Health
     ├── Crystals      top-right pill: crystal icon and the count
     ├── RoomPrev/Next outlined arrows either side of the room sign; walk to the previous / next room
+    ├── Settings      round gear under the crystal pill, in every room; opens settings.tscn
+    ├── TimerPanel    the focus timer: time, progress bar, hint, Start / Skip, Close
+    ├── RoomMenu      full-screen tap-to-close catcher over a Panel with RoomList: the sign's dropdown
     ├── Table         ui/dock_table.svg across the bottom: the dock the items stand on
     ├── Bar           the dock row over the table (no panel of its own): one action group per
     │                 room; every item is a bare icon (no circle) with an Off-White caption on the cloth
@@ -241,10 +270,13 @@ player's name.
 
 The game loop after the tutorial. A ◀ and ▶ arrow either side of the room sign at the top walk
 Kuiz to the previous or next room (Study Room → Maintenance Bay → Data Kitchen → Playroom,
-wrapping), Pou-style; `home.gd` keeps them hugging the sign, whose width follows the room name. The
-dock at the bottom is a table (`ui/dock_table.svg`: an amber wooden top on two legs, a Muted Teal
+wrapping), Pou-style; `home.gd` keeps them hugging the sign, whose width follows the room name.
+Tapping the sign opens a dropdown of all four rooms (64 px rows copied from `%BuyTemplate`, the current
+one pressed); a pick walks Kuiz straight there, and a tap anywhere else closes it. It opens under the
+same conditions as the arrows: not mid-walk, not charging, and a dozing Kuiz gets the sleeping toast.
+The dock at the bottom is a table (`ui/dock_table.svg`: an amber wooden top on two legs, a Muted Teal
 cloth with off-white stitching over its front edge). The current room's items stand on the tabletop,
-each a bare icon with its caption on the cloth (Charge, Study, Settings · Check-up, Tighten, Clean ·
+each a bare icon with its caption on the cloth (Charge, Study, Focus · Check-up, Tighten, Clean ·
 Fridge and the food picker · Closet, Ball, Games, the ball in the middle). While Kuiz walks to
 another room only the arrows lock; the room's items keep their look and ignore taps until it
 arrives:
@@ -252,8 +284,8 @@ arrives:
 | Room | Action | Kuiz |
 |---|---|---|
 | Study Room | **Charge** (`ui/icon_charge.svg`, a toggle; the bolt pulses while on) turns the lights off: the 3D lights and ambient drop to 30 %, the night art and a dark veil fade in, and the charge sounds play. Energy refills 6 / s while it is on. Arrows, Play and Settings are disabled until it is pressed again | `State_Charging` (loops; its bolt and gem glow in the dark), then `Wake_Up` when the lights come back on |
-| Study Room | **Play** (`ui/icon_upload.svg`) opens the Worlds hub, `session_list.tscn` | — |
-| Study Room | **Settings** (`ui/icon_settings.svg`) opens `settings.tscn` | — |
+| Study Room | **Play**, captioned Study (`ui/icon_book.svg`), opens the Worlds hub, `session_list.tscn` | — |
+| Study Room | **Focus** (`ui/icon_timer.svg`) opens the focus timer; its caption shows the time left while one runs ([`systems/companion-care.md`](systems/companion-care.md) §6) | — |
 | Maintenance Bay | **Check-up** (`props/tablet.svg`) opens the tablet: Battery health (`battery_health`, the battery's capacity like a phone's, not its charge; the Energy gauge shows the charge), Frame (health), Clean (100 − dirt) and Fuel (hunger) bars, off-white when fine, amber below half, coral below a quarter, and a hint naming the most urgent fix. **New battery** (30 crystals) puts battery health back to 100 % (`replace_battery()`); without enough crystals a toast says to win minigames, and at 100 % it is greyed out | `Celebrate` on a new battery |
 | Maintenance Bay | **Clean** (`props/towel.svg`): drag the towel over Kuiz and rub; every pixel scrubbed takes 0.06 dirt off, and getting Kuiz spotless in one scrub is `care("clean")` (mood +5, XP) and a "Squeaky clean!" toast | `Pet` while it is rubbed, `Celebrate` when spotless |
 | Maintenance Bay | **Tighten**: drag the **screwdriver** from the bar and hold it over Kuiz: it twists, and after 2 s the tune-up is done (`care("fix")`: health +25) and it returns to the bar | `State_Sick` (screws working loose) while it is held there, `Celebrate` when done, `Idle` if it is taken away early |
@@ -428,37 +460,40 @@ subtle), the soft-box reflections, and the page's off-white radial background.
 
 ### `session_list.tscn` — Worlds hub
 
-A world is a topic. Same look as `settings.tscn`: the Study Room art, a Deep Slate veil, themed buttons.
-Every menu screen (Worlds, World Builder, Settings) shares one look: Study Room art, Deep Slate veil, a 24 px `MarginContainer`, a Muted Amber bold 44 title and bordered cards with amber section headers.
-`Title`, `SavedPage` (`EmptyLabel`, `Scroll` → `ListBox`), `NewButton` ("+ New World"), `BackButton`, and a shared
+A world is a topic. Same look as `settings.tscn`: the Study Room art under a Muted Teal veil, themed buttons.
+Every menu screen (Worlds, World Builder, Settings) shares one look, matching the home HUD: Study Room art under a Muted Teal veil, a 24 px `MarginContainer`, a top bar with a round back button and an Off-White title, and Off-White cards with a Deep Slate border. It comes from type variations in `app_theme.tres`: `MenuCard`, `MenuPill`, `MenuPrimary` (the one main action), `MenuQuiet`, `MenuDanger`, `MenuRound`, `MenuTitle`, `MenuSection`, `CardTitle`, `CardHeader`, `CardBody`, `CardHint`, `CardCheck`, `CardSlider`, `CardOption`, `CardBar`. Set `theme_type_variation` on a node; other screens are untouched. `GameState._apply_theme_font_size()` also scales the menu buttons for Large text.
+`TopBar` (`BackButton`, `Title`, crystal pill), `SlotsLabel`, `SavedPage` (`EmptyLabel`, `Scroll` → `ListBox`, `CardTemplate`), `NewButton` ("+ New World"), `WorldMenu`, and a shared
 `ConfirmModal` (see Pop-ups below).
 
-Saved cards are built in code (`PanelContainer` → name, "N questions · X/Y trainers cleared", then two
-rows of 64 px buttons): **Play** (straight to `region_map.tscn`), **Cards** (Flashcard Sanctuary), **Edit**
-(`categorizer.tscn`), **Reset progress** and **Delete** (Soft Coral). Play and Cards are disabled for a world
-with no questions. Reset and Delete ask first; Reset keeps the questions, Delete removes the world.
+Each saved world is a copy of the hidden `%CardTemplate`: its name, one line of counts, a gyms-cleared bar,
+**Play** (`world_intro.tscn`, then `region_map.tscn`) and **Cards** (Flashcard Sanctuary); both are disabled for a
+world with no questions. The rest sits behind the card's round "more" button, in the `%WorldMenu` sheet: **Edit
+questions** (`categorizer.tscn`), **Reset progress**, **Delete world** (Soft Coral) and Close. Reset and Delete ask
+first; Reset keeps the questions, Delete removes the world. The top bar carries a crystal pill, and `%SlotsLabel`
+under it reads "N of S world slots · Study streak D".
 **+ New World** opens the World Builder directly: upload a file, paste text or add questions by hand there.
 
 ### `flashcards.tscn`
 
-`Flashcards` (`Control`) → `Background` (`rooms/study_room.svg`, covering) under a Deep Slate 60 %
-`Veil`, `Margin` → `List`: `TopBar` (a 72 px round Off-White `BackButton` with `ui/icon_back.svg`,
-then "Flashcards" bold 34 px Off-White over `ProgressLabel` "N left · M banked"), `Progress` (a
-teal bar of the cards banked out of the deck), `CardPanel` (Off-White, Deep Slate 3 px outline,
-radius 32, soft shadow) → `CardBox`: `Tags` (rounded pills copied from the hidden `TagTemplate`, each
-with its own stylebox: the mastery state in its badge colour, the type in teal, the tier green / amber /
-coral), "QUESTION", `FrontLabel` (bold
-34 px), `Back` (hidden until flipped: a soft line, "ANSWER", `AnswerLabel` bold 28 px teal,
-`SourceLabel`) and `DoneLabel` (the closing message, shown inside the card). Under the card:
-`FlipButton` ("Show answer", teal) or `RateRow` (`AgainButton` Soft Coral, `HardButton` Muted
-Amber, `EasyButton` Soft Green), all 84 px tall with bold Off-White text and a Deep Slate outline.
-Every style is a sub-resource in `flashcards.tscn` (canonical palette; each button's hover is its
-colour lightened 8 %, pressed darkened 15 %), so the screen is edited in the Godot editor.
+The menu look (teal veil, `MenuRound` back, `MenuQuiet` timer, `MenuPrimary` Show answer), with the card as a
+small deck. `Margin` → `List`: `TopBar` (`BackButton`, "Flashcards" over `ProgressLabel`, `%TimerButton`),
+`Progress`, `CardArea`, then `FlipButton` or `RateRow` (Again Soft Coral, Hard Muted Amber, Easy Soft Green).
+
+`CardArea` is a plain `Control` so its children can tilt: `UnderFar` and `UnderNear` are Soft Sage cards fanned
+behind the top one, shown while more than two and more than one cards are left. `%CardPanel` → `Scroll` →
+`%CardBox`: `Tags` (copies of `%TagTemplate`), the amber `%Gem` over `%FrontLabel` centred between two spacers, then
+`%Back`, a Soft Sage panel with "ANSWER", `%AnswerLabel` and `%SourceLabel`, and `%DoneLabel` for the end of the deck.
+A long card scrolls rather than growing.
+
+**Show answer** turns the card on its edge (`FLIP_TIME` each way), and it comes back with the answer showing, the
+gem gone and the question smaller. A rating slides the card off, right for Easy and left otherwise, and the next
+one rises off the pile. `_moving` holds the buttons during either; the rating row stays until the next card shows,
+because hiding it would resize `CardArea` mid-slide.
 
 ### `categorizer.tscn`
 
-Titled "World Builder", on the Study Room art under a Deep Slate veil (`Veil`, 0.88 alpha) so text stays readable.
-Inside `Margin` → `Content`: `Title` (Muted Amber, bold 44), a `SourceCard` panel ("1 · Your reviewer":
+Titled "World Builder", on the Study Room art under a Muted Teal veil (`Veil`, 0.9 alpha) so text stays readable.
+Inside `Margin` → `Content`: `TopBar` (`BackButton`, `Title`), a `SourceCard` panel ("1 · Your reviewer":
 `TopicName` `LineEdit`, `FileButton` which shows the picked file name, `PasteArea`, `SanityLabel`,
 `StudyButton`, `StatusLabel`, `LoadingBar`), then `QuestionsBlock` ("2 · Questions": `Scroll` → `QuestionsBox`
 with one row per question, the hidden `RowTemplate`, `AddQuestionButton`), `PlayButton` and `BackButton`. `FileDialog` is the native
@@ -549,11 +584,12 @@ the Broken Bot's sounds are synthesised in the game itself (§2 Model sounds).
 
 `MusicManager` (autoload) owns two `AudioStreamPlayer`s:
 
-- `MusicPlayer` — starts `music/home_room.wav` at `-6 dB` on `_ready()` and persists across scene
-  changes. `splash.tscn` calls `play_loading()`, which starts `music/loading.wav` at 1 s and fades
-  it in over 1 s; `loading.tscn` keeps the same track playing, and `peek.tscn` calls
+- `MusicPlayer` — silent until a scene asks for a track, and persists across scene changes. The boot
+  `splash.tscn` waits two frames, so the save's volume is applied and the first frames' hitch can't
+  skip the fade, then calls `play_loading()`, which starts `music/loading.wav` at 1 s and fades it in
+  over `LOADING_FADE` (2 s) to `-6 dB`; `loading.tscn` keeps the same track playing, and `peek.tscn` calls
   `play_main_room()` to swap back: the loading track fades out on its own player while the home
-  loop fades in, over `CROSSFADE` (2.5 s). `region_map.gd` calls `play_overworld()` on entering
+  loop fades in, over `CROSSFADE` (2.5 s). `world_intro.gd` and `region_map.gd` call `play_overworld()` on the way into
   the map, the same crossfade to `music/overworld.wav`; battles have no music, so it carries on
   through them, and `session_list.gd`, `flashcards.gd` and `peek.tscn` call `play_main_room()` to
   fade back. Each track is written as a seamless loop (its note
@@ -619,7 +655,7 @@ rasterises them sharp on high-density phones; the drawing itself is unchanged.
 | `sprites/ui/loading_spark.svg` | `loading.tscn` sparks either side of "Loading..." |
 | `sprites/ui/tip_bulb.svg` | `loading.tscn` tip icon |
 | `models/map.glb`, `models/map_0.png` | `region_map.tscn` island (the PNG is its road texture) |
-| `models/boy_explorer.glb`, `boy_explorer_basecolor_v2.jpg`, `boy_explorer_normal_v2.jpg` | `region_map.tscn` explorer, the boy (`Idle`, `Walk`, `Run`; `Celebrate` in the picker) |
+| `models/boy_explorer.glb`, `boy_explorer_basecolor_v2.jpg`, `boy_explorer_normal_v2.jpg` | `region_map.tscn` explorer, the boy (`Idle`, `Walk`, `Run`; `Celebrate` in the picker). `player.gd` turns his normal map off: it is noisy and blotched his jacket, so he shows base colour only |
 | `models/explorer_girl.glb`, `explorer_girl_basecolor.jpg`, `explorer_girl_normal.jpg` | `region_map.tscn` explorer, the girl (same clips and rig size as the boy) |
 | `models/robot_1.glb` | battle foe, the Broken Bot (`Idle`, `Attack`, `Defeat`); its sounds are made in code (`broken_bot_voice.gd`) |
 | `models/robot_2.glb` | battle foe (`Idle`, `Attack`, `Defeat`); silent |
@@ -630,11 +666,12 @@ rasterises them sharp on high-density phones; the drawing itself is unchanged.
 | `sprites/rooms/maintenance_bay.svg` | tutorial Maintenance Bay (temporary placeholder) |
 | `sprites/rooms/data_kitchen.svg` | tutorial and home Data Kitchen (temporary placeholder) |
 | `sprites/rooms/playroom.svg` | tutorial and home Playroom; no painted ball, the real one is flung (temporary placeholder) |
-| `sprites/ui/icon_charge.svg`, `icon_upload.svg`, `icon_settings.svg` | home's Charge, Play and Settings buttons (temporary placeholders, same style as the props) |
+| `sprites/ui/icon_charge.svg`, `icon_book.svg`, `icon_timer.svg`, `icon_settings.svg` | home's Charge, Play (captioned Study; an open book with an amber bookmark), Focus (a tomato clock) and Settings buttons (same style as the props) |
+| `sprites/ui/icon_more.svg`, `check_on.svg`, `check_off.svg`, `slider_grabber.svg` | the Worlds card's "more" button; the menu theme's checkbox and slider |
 | `sprites/ui/campaign.png`, `charge.png`, `settings.svg` | **unused** since home took the icons above; safe to delete |
 | `sprites/ui/arrow.svg` | home's room arrows (top) and food arrows (bar); an Off-White chevron with a Deep Slate outline, flipped for ◀ |
-| `sprites/ui/icon_back.svg` | region map's round Back button (a Deep Slate chevron) |
-| `sprites/ui/icon_trainer.svg`, `icon_badge.svg`, `icon_crown.svg`, `icon_lock.svg` | region map's quest card: Trainers, gym badges, the Champion ready / locked (temporary placeholders) |
+| `sprites/ui/icon_back.svg` | the round Back button on the region map and the menu screens (a Deep Slate chevron) |
+| `sprites/ui/icon_trainer.svg` (also the round explorer button), `icon_badge.svg`, `icon_crown.svg`, `icon_lock.svg` | region map's quest card: Trainers, gym badges, the Champion ready / locked (temporary placeholders) |
 | `sprites/ui/icon_study.svg` | region map's Study button: a stack of flashcards with an amber star (temporary placeholder) |
 | `sprites/ui/crystal.svg` | home's crystal (currency) pill: the logo's forehead gem (temporary placeholder) |
 | `sprites/ui/stat_mood.svg`, `stat_health.svg` | home's Mood and Health gauges (temporary placeholders) |
@@ -680,7 +717,7 @@ None known. `bot_lv1..5.png` was only read by the deleted `companion.gd`.
 
 ### Additions for world slots, More questions and the study timer
 
-- **Worlds list** (`session_list.tscn`): `%SlotsLabel` above New World reads "Worlds N / S slots ·
+- **Worlds list** (`session_list.tscn`): `%SlotsLabel` under the top bar reads "Worlds N / S slots ·
   C crystals · Study streak D"; New World with every slot full opens a `ConfirmModal` to buy a slot.
 - **Categorizer**: `%MoreButton` ("More questions from this reviewer") under the Study button, shown
   for a saved world that kept its reviewer text.

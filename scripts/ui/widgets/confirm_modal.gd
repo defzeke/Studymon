@@ -3,7 +3,6 @@ extends Control
 ## ConfirmModal.open(self, "Delete?", "…", "Delete", on_confirm, true); an empty cancel_text makes a notice.
 
 const CORAL := Color("C97970")
-const AMBER := Color("D6A85F")
 const SLATE := Color("29383A")
 const BOLD: Font = preload("res://assets/fonts/JosefinSans-Bold.ttf")
 const THEME: Theme = preload("res://assets/theme/app_theme.tres")
@@ -34,10 +33,11 @@ func _build(title: String, message: String, confirm_text: String, on_confirm: Ca
 	add_child(center)
 	_card = PanelContainer.new()
 	_card.custom_minimum_size = Vector2(560, 0)
+	_card.theme_type_variation = &"MenuCard"
 	center.add_child(_card)
 	var pad := MarginContainer.new()
 	for side in ["left", "top", "right", "bottom"]:
-		pad.add_theme_constant_override("margin_" + side, 28)
+		pad.add_theme_constant_override("margin_" + side, 10)
 	_card.add_child(pad)
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 16)
@@ -46,14 +46,15 @@ func _build(title: String, message: String, confirm_text: String, on_confirm: Ca
 	title_label.text = title
 	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title_label.add_theme_font_override("font", BOLD)
-	title_label.add_theme_font_size_override("font_size", 40)
-	title_label.add_theme_color_override("font_color", CORAL if danger else AMBER)
+	title_label.add_theme_font_size_override("font_size", 36)
+	title_label.add_theme_color_override("font_color", CORAL if danger else SLATE)
 	box.add_child(title_label)
 	var body := Label.new()
 	body.text = message
 	body.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	body.custom_minimum_size = Vector2(500, 0)
+	body.custom_minimum_size = Vector2(480, 0)
+	body.theme_type_variation = &"CardBody"
 	box.add_child(body)
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 12)
@@ -61,8 +62,10 @@ func _build(title: String, message: String, confirm_text: String, on_confirm: Ca
 	var cancel: Button = null
 	if cancel_text != "":
 		cancel = _button(cancel_text, row)
+		cancel.theme_type_variation = &"MenuQuiet"
 		cancel.pressed.connect(_close.bind(Callable()))
 	var confirm := _button(confirm_text, row)
+	confirm.theme_type_variation = &"MenuPrimary"
 	confirm.pressed.connect(_close.bind(on_confirm))
 	if danger:
 		tint_danger(confirm)
@@ -81,11 +84,7 @@ func _button(text: String, parent: Control) -> Button:
 
 ## Soft Coral version of the theme's button, so the dangerous choice reads as one.
 static func tint_danger(b: Button) -> void:
-	for s in ["normal", "hover", "pressed"]:
-		var sb := THEME.get_stylebox(s, "Button").duplicate() as StyleBoxFlat
-		sb.bg_color = CORAL.lightened(0.15) if s == "hover" else CORAL
-		b.add_theme_stylebox_override(s, sb)
-	b.add_theme_color_override("font_pressed_color", THEME.get_color("font_color", "Button"))
+	b.theme_type_variation = &"MenuDanger"
 
 func _pop_in() -> void:
 	_card.pivot_offset = _card.size / 2.0

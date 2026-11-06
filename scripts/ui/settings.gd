@@ -1,5 +1,5 @@
 extends Control
-## Settings, opened from the Study Room: music and sound volume, large text, and privacy & data (the
+## Settings, opened from home's gear: music and sound volume, large text, and privacy & data (the
 ## AI consent, the policy links, exporting / importing / deleting the save). Every change is saved.
 
 const ConfirmModal := preload("res://scripts/ui/widgets/confirm_modal.gd")

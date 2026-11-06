@@ -18,7 +18,6 @@ var _frame: int = 0
 var _done: bool = false
 
 func _ready() -> void:
-	MusicManager.play_loading()
 	ResourceLoader.load_threaded_request(NEXT_SCENE)
 	for i in FRAME_COUNT:
 		var frame := AtlasTexture.new()
@@ -32,6 +31,11 @@ func _ready() -> void:
 		frame.filter_clip = true
 		_frames.append(frame)
 	logo.texture = _frames[0]
+	# Two frames in: the save's volume is applied (it cancels a running fade) and the first frames'
+	# hitch can't skip the fade.
+	await get_tree().process_frame
+	await get_tree().process_frame
+	MusicManager.play_loading()
 
 func _process(delta: float) -> void:
 	if _done:
@@ -49,6 +53,8 @@ func _finish() -> void:
 	var tween := create_tween()
 	tween.tween_property(logo, "modulate:a", 0.0, FADE_TIME).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
 	await tween.finished
+	# The engine draws one empty frame between scenes, and holds it while the next one loads.
+	RenderingServer.set_default_clear_color(Color.WHITE)
 	# Holding the threaded result keeps it in the resource cache, so the change below doesn't block.
 	var _next := ResourceLoader.load_threaded_get(NEXT_SCENE)
 	get_tree().change_scene_to_file(NEXT_SCENE)

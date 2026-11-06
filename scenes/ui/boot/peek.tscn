@@ -11,9 +11,10 @@
 [ext_resource type="Script" path="res://scripts/ui/home.gd" id="10_home"]
 [ext_resource type="Texture2D" uid="uid://i7am4ybv0c52" path="res://assets/sprites/rooms/study_room_night.svg" id="11_night"]
 [ext_resource type="Texture2D" uid="uid://bp1bawpag5r4l" path="res://assets/sprites/ui/icon_charge.svg" id="12_charge"]
-[ext_resource type="Texture2D" uid="uid://bb5yi7tllfecv" path="res://assets/sprites/ui/icon_upload.svg" id="13_play"]
+[ext_resource type="Texture2D" path="res://assets/sprites/ui/icon_book.svg" id="13_play"]
 [ext_resource type="Texture2D" uid="uid://e0jsrwbta6yu" path="res://assets/sprites/ui/icon_settings.svg" id="14_settings"]
 [ext_resource type="Texture2D" uid="uid://brsehmv02c2wi" path="res://assets/sprites/ui/arrow.svg" id="15_arrow"]
+[ext_resource type="Texture2D" path="res://assets/sprites/ui/icon_timer.svg" id="40_timer"]
 [ext_resource type="Texture2D" uid="uid://dikx1hxt44uiv" path="res://assets/sprites/props/fridge.svg" id="16_fridge"]
 [ext_resource type="Texture2D" uid="uid://bioxxsfvhs5hg" path="res://assets/sprites/props/ball.svg" id="17_ball"]
 [ext_resource type="Texture2D" uid="uid://vbirq6xlxh8v" path="res://assets/sprites/props/screwdriver.svg" id="18_tool"]
@@ -46,6 +47,59 @@ ground_horizon_color = Color(0.85, 0.87, 0.86, 1)
 
 [sub_resource type="Sky" id="Sky_studio"]
 sky_material = SubResource("ProceduralSkyMaterial_studio")
+
+[sub_resource type="Shader" id="Shader_iris"]
+code = "shader_type canvas_item;
+
+// A round hole in the white, ringed in Muted Teal; radius 0 is plain white.
+uniform vec2 center = vec2(0.5);
+uniform float radius = 0.0;
+uniform float aspect = 0.5625;
+
+void fragment() {
+	float d = length((UV - center) * vec2(aspect, 1.0));
+	COLOR.rgb = mix(vec3(0.3098, 0.5608, 0.5373), COLOR.rgb, smoothstep(radius + 0.018, radius + 0.024, d));
+	COLOR.a *= smoothstep(radius - 0.004, radius, d);
+}
+"
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_iris"]
+shader = SubResource("Shader_iris")
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_gear"]
+content_margin_left = 9.0
+content_margin_top = 9.0
+content_margin_right = 9.0
+content_margin_bottom = 9.0
+bg_color = Color(0.9686, 0.9608, 0.9373, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.1608, 0.2196, 0.2275, 1)
+corner_radius_top_left = 32
+corner_radius_top_right = 32
+corner_radius_bottom_right = 32
+corner_radius_bottom_left = 32
+shadow_color = Color(0.1608, 0.2196, 0.2275, 0.25)
+shadow_size = 6
+shadow_offset = Vector2(0, 3)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_gear_down"]
+content_margin_left = 9.0
+content_margin_top = 9.0
+content_margin_right = 9.0
+content_margin_bottom = 9.0
+bg_color = Color(0.9098, 0.9412, 0.9176, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.1608, 0.2196, 0.2275, 1)
+corner_radius_top_left = 32
+corner_radius_top_right = 32
+corner_radius_bottom_right = 32
+corner_radius_bottom_left = 32
 
 [sub_resource type="Environment" id="Environment_white"]
 background_mode = 3
@@ -373,6 +427,7 @@ unique_name_in_owner = true
 layer = -1
 
 [node name="White" type="ColorRect" parent="Rooms"]
+material = SubResource("ShaderMaterial_iris")
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -528,7 +583,6 @@ anchor_left = 0.5
 anchor_right = 0.5
 offset_top = 96.0
 grow_horizontal = 2
-mouse_filter = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_sign")
 
 [node name="RoomLabel" type="Label" parent="Top/RoomSign"]
@@ -801,6 +855,26 @@ texture_normal = ExtResource("15_arrow")
 ignore_texture_size = true
 stretch_mode = 5
 
+[node name="Settings" type="Button" parent="Home"]
+unique_name_in_owner = true
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -80.0
+offset_top = 88.0
+offset_right = -16.0
+offset_bottom = 152.0
+grow_horizontal = 0
+theme_override_colors/icon_disabled_color = Color(1, 1, 1, 0.35)
+theme_override_styles/normal = SubResource("StyleBoxFlat_gear")
+theme_override_styles/hover = SubResource("StyleBoxFlat_gear")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_gear_down")
+theme_override_styles/disabled = SubResource("StyleBoxFlat_gear")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
+icon = ExtResource("14_settings")
+icon_alignment = 1
+expand_icon = true
+
 [node name="Table" type="TextureRect" parent="Home"]
 anchors_preset = 12
 anchor_top = 1.0
@@ -893,7 +967,7 @@ icon_alignment = 1
 vertical_icon_alignment = 0
 expand_icon = true
 
-[node name="Settings" type="Button" parent="Home/Bar/Row/Study"]
+[node name="Focus" type="Button" parent="Home/Bar/Row/Study"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(124, 146)
 layout_mode = 2
@@ -914,8 +988,8 @@ theme_override_styles/disabled = SubResource("StyleBoxEmpty_focus")
 theme_override_colors/icon_pressed_color = Color(0.75, 0.75, 0.75, 1)
 theme_override_colors/icon_disabled_color = Color(1, 1, 1, 0.35)
 theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
-icon = ExtResource("14_settings")
-text = "Settings"
+icon = ExtResource("40_timer")
+text = "Focus"
 icon_alignment = 1
 vertical_icon_alignment = 0
 expand_icon = true
@@ -1572,6 +1646,131 @@ theme_override_styles/hover = SubResource("StyleBoxFlat_btn")
 theme_override_styles/pressed = SubResource("StyleBoxFlat_btn_pressed")
 theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
 text = "Close"
+
+[node name="RoomMenu" type="Control" parent="Home"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Panel" type="PanelContainer" parent="Home/RoomMenu"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -210.0
+offset_top = 156.0
+offset_right = 210.0
+offset_bottom = 156.0
+grow_horizontal = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_box")
+
+[node name="RoomList" type="VBoxContainer" parent="Home/RoomMenu/Panel"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="TimerPanel" type="PanelContainer" parent="Home"]
+unique_name_in_owner = true
+visible = false
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -280.0
+offset_top = -250.0
+offset_right = 280.0
+offset_bottom = 180.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_box")
+
+[node name="Body" type="VBoxContainer" parent="Home/TimerPanel"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="TimerTitle" type="Label" parent="Home/TimerPanel/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.1608, 0.2196, 0.2275, 1)
+theme_override_fonts/font = ExtResource("9_bold")
+theme_override_font_sizes/font_size = 34
+text = "Focus timer"
+horizontal_alignment = 1
+
+[node name="TimerTime" type="Label" parent="Home/TimerPanel/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.3098, 0.5608, 0.5373, 1)
+theme_override_fonts/font = ExtResource("9_bold")
+theme_override_font_sizes/font_size = 96
+text = "25:00"
+horizontal_alignment = 1
+
+[node name="TimerBar" type="ProgressBar" parent="Home/TimerPanel/Body"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 14)
+layout_mode = 2
+theme_type_variation = &"CardBar"
+max_value = 1.0
+show_percentage = false
+
+[node name="TimerHint" type="Label" parent="Home/TimerPanel/Body"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(480, 0)
+layout_mode = 2
+theme_type_variation = &"CardHint"
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="TimerAction" type="Button" parent="Home/TimerPanel/Body"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 64)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_colors/font_hover_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_colors/font_pressed_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_fonts/font = ExtResource("9_bold")
+theme_override_font_sizes/font_size = 28
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn")
+theme_override_styles/hover = SubResource("StyleBoxFlat_btn")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_btn_pressed")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
+text = "Start focus"
+
+[node name="TimerClose" type="Button" parent="Home/TimerPanel/Body"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 64)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_colors/font_hover_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_colors/font_pressed_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_fonts/font = ExtResource("9_bold")
+theme_override_font_sizes/font_size = 28
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn")
+theme_override_styles/hover = SubResource("StyleBoxFlat_btn")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_btn_pressed")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
+text = "Close"
+
+[node name="BootFade" type="CanvasLayer" parent="."]
+layer = 10
+
+[node name="BootWhite" type="ColorRect" parent="BootFade"]
+unique_name_in_owner = true
+visible = false
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(1, 1, 1, 1)
 
 [node name="Soccer" type="CanvasLayer" parent="."]
 visible = false

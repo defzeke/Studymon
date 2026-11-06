@@ -724,6 +724,8 @@ func _questions_for(topic_id: String) -> Array:
 
 ## Where the sanctuary's Back button returns to; its callers set it.
 var flashcards_return: String = "res://scenes/ui/session_list.tscn"
+## Set by the map's Back: world_intro.tscn plays Kuiz going indoors instead of coming out.
+var kuiz_going_home := false
 
 ## Card order for a review: Remaster, then New, Learning, Mastered; ties in question order.
 func flashcard_deck(topic_id: String) -> Array:

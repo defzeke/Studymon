@@ -154,8 +154,11 @@ new battery. Details in
 
 ## 6. Pomodoro (Phase 4)
 
-Logic lives in `CompanionState`. The Study screen's **Focus 25:00** button (`flashcards.gd`, `%TimerButton`)
-starts it and shows the time left; it keeps running on other screens. A finished focus session adds
+Logic lives in `CompanionState`. Two places start it and show the time left: **Focus** on the Study Room's
+table (`home.gd`, `%TimerPanel`, which can also skip a phase) and the Study screen's **Focus 25:00** button
+(`flashcards.gd`, `%TimerButton`). It keeps running on other screens, and each tick counts from the wall
+clock, because a locked phone stops the `Timer`; time away only counts toward the current phase, so the
+next phase starts on the player's return. Home toasts the end of each phase. A finished focus session adds
 `POMODORO_FOCUS_BONUS` (25) **focus**, the stat that forgives a run's first miss, and focus also shows
 as a row on home's check-up tablet. One timer drives both phases.
 

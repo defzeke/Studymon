@@ -10,6 +10,13 @@ const GREEN := Color("78A982")
 const AMBER := Color("D6A85F")
 const CORAL := Color("C97970")
 const AGAIN_GAP := 3
+const QUESTION_FONT := 38
+# Once the answer shows, the question steps back to make room.
+const QUESTION_FONT_ANSWERED := 26
+const FLIP_TIME := 0.14
+const DEAL_TIME := 0.22
+const DEAL_OFF := 800.0
+const DEAL_TILT := 0.2
 
 const TIER_COLORS := {"easy": GREEN, "medium": AMBER, "hard": CORAL}
 
@@ -20,7 +27,9 @@ const TIER_COLORS := {"easy": GREEN, "medium": AMBER, "hard": CORAL}
 @onready var tags: HBoxContainer = %Tags
 @onready var tag_template: Label = %TagTemplate
 @onready var front_label: Label = %FrontLabel
-@onready var back_box: VBoxContainer = %Back
+@onready var back_box: Control = %Back
+@onready var under_near: Control = %UnderNear
+@onready var under_far: Control = %UnderFar
 @onready var answer_label: Label = %AnswerLabel
 @onready var source_label: Label = %SourceLabel
 @onready var flip_btn: Button = %FlipButton
@@ -38,6 +47,8 @@ var _banked: int = 0
 var _deck_size: int = 0
 # Set once this deck meets the daily study goal, for the progress line.
 var _goal_note := ""
+# A flip or deal is running; the card's buttons wait for it.
+var _moving := false
 
 func _ready() -> void:
 	# Review is calm: the home loop, crossfading from the route theme when opened from the map.
@@ -57,6 +68,12 @@ func _ready() -> void:
 	# running on other screens. Contract: docs/systems/companion-care.md §6.
 	timer_btn.pressed.connect(CompanionState.start_pomodoro)
 	_show_card()
+	%CardArea.resized.connect(_center_pivots)
+	_center_pivots.call_deferred()
+
+func _center_pivots() -> void:
+	for c: Control in [card_panel, under_near, under_far]:
+		c.pivot_offset = c.size / 2.0
 
 func _process(_delta: float) -> void:
 	var p := CompanionState.get_pomodoro_state()
@@ -79,6 +96,8 @@ func _tag(text: String, color: Color) -> Label:
 func _show_card() -> void:
 	progress_label.text = "%d left · %d banked · Kuiz focus %d%s" % [_queue.size(), _banked, roundi(CompanionState.focus), _goal_note]
 	progress_bar.value = float(_banked) / maxf(1.0, _deck_size)
+	under_near.visible = _queue.size() > 1
+	under_far.visible = _queue.size() > 2
 	if _queue.is_empty():
 		_finish()
 		return
@@ -97,6 +116,8 @@ func _show_card() -> void:
 	var source := str(q.get("source", ""))
 	source_label.text = source if source != answer_label.text else ""
 	back_box.visible = false
+	%Gem.visible = true
+	front_label.add_theme_font_size_override("font_size", QUESTION_FONT)
 	flip_btn.visible = true
 	rate_row.visible = false
 
@@ -116,14 +137,26 @@ func _answer_text(q: Dictionary) -> String:
 		parts.append(why)
 	return "\n".join(parts) if not parts.is_empty() else "(No answer written for this card.)"
 
+# The card turns on its edge; the answer is on it when it comes back round.
 func _on_flip() -> void:
-	back_box.visible = true
-	source_label.visible = source_label.text != ""
-	flip_btn.visible = false
-	rate_row.visible = true
+	if _moving:
+		return
+	_moving = true
+	var t := create_tween().set_trans(Tween.TRANS_SINE)
+	t.tween_property(card_panel, "scale:x", 0.0, FLIP_TIME).set_ease(Tween.EASE_IN)
+	t.tween_callback(func() -> void:
+		back_box.visible = true
+		%Gem.visible = false
+		source_label.visible = source_label.text != ""
+		front_label.add_theme_font_size_override("font_size", QUESTION_FONT_ANSWERED)
+		flip_btn.visible = false
+		rate_row.visible = true)
+	t.tween_property(card_panel, "scale:x", 1.0, FLIP_TIME).set_ease(Tween.EASE_OUT)
+	await t.finished
+	_moving = false
 
 func _rate(rating: String) -> void:
-	if _queue.is_empty():
+	if _queue.is_empty() or _moving:
 		return
 	var qi: int = _queue.pop_front()
 	if GameState.note_study(1, 0) > 0:
@@ -137,11 +170,31 @@ func _rate(rating: String) -> void:
 			_banked += 1
 			if SessionManager.promote_from_review(_topic_id, qi):
 				CompanionState.reward_card_banked()
+	await _deal(1.0 if rating == "easy" else -1.0)
+
+# The rated card slides off (`dir` 1 is right), and the next rises off the pile.
+func _deal(dir: float) -> void:
+	_moving = true
+	# The rating row stays until the next card shows: hiding it now would resize the card area.
+	var rest := card_panel.position
+	var out := create_tween().set_parallel().set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
+	out.tween_property(card_panel, "position:x", rest.x + DEAL_OFF * dir, DEAL_TIME)
+	out.tween_property(card_panel, "rotation", DEAL_TILT * dir, DEAL_TIME)
+	await out.finished
+	card_panel.position = rest
+	card_panel.rotation = 0.0
+	card_panel.scale = Vector2.ONE * 0.94
+	card_panel.modulate.a = 0.0
 	_show_card()
+	var up := create_tween().set_parallel().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	up.tween_property(card_panel, "scale", Vector2.ONE, DEAL_TIME)
+	up.tween_property(card_panel, "modulate:a", 1.0, DEAL_TIME * 0.7)
+	await up.finished
+	_moving = false
 
 # The card stays, holding the closing message.
 func _finish() -> void:
-	for c in card_panel.get_child(0).get_children():
+	for c in %CardBox.get_children():
 		(c as Control).visible = c == done_label
 	flip_btn.visible = false
 	rate_row.visible = false
