@@ -6,20 +6,21 @@ Where the work stands. Short on purpose — this is a **register**, not a backlo
 > doc that owns it, and **those docs win** if the two disagree. See [`rules.md`](rules.md) §2. Do not
 > let a second status list grow here.
 
-Last updated: 2026-11-01.
+Last updated: 2026-11-08.
 
 ## In flight
 
-Uncommitted, for the maintainer to commit: a full Kuiz refuses food, the explorer picker opens first after the
-world intro, the map HUD restyled, the minimap opens large, and the settable focus timer with Kuiz reviewing,
-lullabies and refused navigation, the map HUD as one top band, a "Go home?" confirmation, the restyled battle and encounter panel, the explorer throwing Kuiz in, a simpler encounter pop-up, softer entrance sounds, battle music, and a mute for the map and battles. Checked windowed on Windows with a scratch harness; not yet played on a phone.
+Nothing intended is uncommitted. The working tree holds an accidental Godot 4.6 editor downgrade
+(`project.godot` `config/features` back to `"4.6"`, three keys dropped from `explorer_girl.glb.import`
+and `map.glb.import`); discard it and open the project only in 4.7.2.
 
-Everything below **Done** is on `world-assets`, pushed but not yet merged to `main` (last merged in
-PR #8).
+Everything below **Done** is on `world-assets` and `origin/dev` (PR #9 merged into `dev` on
+2026-11-02); the two 2026-11-06 commits are not yet on `origin/world-assets`, and nothing has been
+merged to `main`.
 
-Still unverified across the committed work: none of the 2026-10-26 → 10-29 batches has been opened in
-the editor GUI or played on a phone; checks were headless (79 Godot checks, 15 `backend/tests`) and
-the scene gates. The houses have no door-swing animation (the glb merges all doors; needs a Blender
+Still unverified across the committed work: none of the 2026-10-26 → 11-06 batches has been opened in
+the editor GUI or played on a phone; checks were headless (79 Godot checks, 15 `backend/tests`), the
+scene gates, and a windowed scratch harness on Windows for the 11-06 batches. The houses have no door-swing animation (the glb merges all doors; needs a Blender
 split).
 
 ## Next: before the store release
@@ -58,6 +59,18 @@ Hygiene, after the slice plays:
 
 ## Done
 
+- **2026-11-06** — map, focus timer and battle polish (`19e5531`): a full Kuiz refuses food, the
+  explorer picker opens first after the world intro, the map HUD as one top band, the minimap opens
+  large, the settable focus timer with Kuiz reviewing, lullabies and refused navigation, a "Go home?"
+  confirmation, the restyled battle and encounter panel, the explorer throwing Kuiz in, a simpler
+  encounter pop-up, softer entrance sounds, battle music, and a mute for the map and battles
+  (`adventure_music`).
+- **2026-11-06** — transitions and restyles (`25f45d8`): boot music fades in, the Kuiz reveal after
+  loading, the room sign's dropdown of the four rooms, the world intro (Kuiz leaves its house on Play,
+  goes back in on the map's Back), Kuiz waddles on the island, the boy shows base colour only, the new
+  Study icon, the restyled Worlds, Settings, World Builder and Flashcards, the slower white handoff
+  after loading, the gear on the HUD, the focus timer on the table, a fix for the dark flash between
+  scenes, and changing explorer from the map.
 - **2026-10-29** — play-test fixes (`4dde4f1`): the intro asks only for the name; fridge food is
   priced (4–13 crystals); every closet costume is bought (40–250); each world keeps the explorer it
   picks; battles show only right or wrong during a run, with **Review answers** at the end; finishing
