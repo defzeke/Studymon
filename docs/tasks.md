@@ -10,16 +10,19 @@ Last updated: 2026-11-09.
 
 ## In flight
 
-Uncommitted, for the maintainer to commit: both workflows move off the actions that GitHub warns still
-target Node 20.
-- `checks.yml`: `setup-python@v7`, `cache@v6`.
-- `pages.yml`: `configure-pages@v6`, `upload-pages-artifact@v5`, `deploy-pages@v5`.
+Uncommitted, for the maintainer to commit: **C4**, the bigger eval set in `backend/evals/`
+([`api-backend.md`](api-backend.md) §4).
+- Five new reviewers: long, tables, Filipino, math, very short. That makes nine.
+- Eight new graded answers: Filipino essays and Identification answers, an abbreviation, and two
+  injection cases. That makes fifteen.
+- New checks for coverage and for questions written in Filipino.
 
-C3's CI is committed (`67c5b08`). Its first run on GitHub passed all three jobs: the 7 Linux gates,
-the backend tests and the links.
+Checked with the model stubbed. Not yet run against Gemma (E1).
 
-The C2 pages are committed (`1166a6c`). Their first deploy failed only because Pages is not turned on
-yet (D5). Re-run it after D5 from Actions → Pages → Run workflow.
+**Phase C is done.** What is left needs the maintainer's accounts first (D1–D5). Then come E, F and G.
+- C3's CI passes on GitHub (`67c5b08`). The Node 24 action bump (`39aaa11`) passed too.
+- The C2 pages (`1166a6c`) still fail to deploy, only because Pages is not turned on yet (D5). After
+  D5, re-run them from Actions → Pages → Run workflow.
 
 Phases A and B of the 2026-11-08 plan are committed, but neither has met the real world yet:
 - **A, cloud saves** (`6415399`): not tried on a phone. It needs the Play Console Game ID and an Android
@@ -48,7 +51,7 @@ maintainer's commit. The researched background is in [`launch-plan.md`](launch-p
 | C1 | ~~Record this plan; debounce saves (#14)~~ (`fa01fdd`) |
 | C2 | ~~Privacy, terms and support pages in `site/` on GitHub Pages; [`store-listing.md`](store-listing.md)~~ (`1166a6c`). URLs once live: `https://defzeke.github.io/Studymon/privacy.html`, `…/terms.html`, `…/support.html` |
 | C3 | ~~GitHub Actions: the headless gates, `backend/tests` and the docs' links on every push (#20)~~ (`67c5b08`, first run green). The splash, loading and Worlds screens stay out until #22 is fixed |
-| C4 | A bigger eval set in `backend/evals/` (8–10 reviewers): table-heavy, long, Filipino, math, very short. Plus more grading cases: partial, off-topic, injection |
+| C4 | ~~A bigger eval set in `backend/evals/`: nine reviewers (adds long, tables, Filipino, math, very short) and fifteen graded answers, with coverage and Filipino-language checks~~ (uncommitted, above) |
 
 **D — Accounts (the maintainer; start now, alongside C):**
 
@@ -93,6 +96,8 @@ Hygiene: #22, find why the headless boot chain fails its threaded loads.
    terms rules out a 13+ app before launch ([`launch-plan.md`](launch-plan.md) §1).
 
 ## Done
+
+- **2026-11-09** — CI on the Node 24 action majors (`39aaa11`).
 
 - **2026-11-09** — C3 (`67c5b08`): GitHub Actions runs `tests/gates.sh` (the headless gates on
   Linux), `pytest backend/tests` and `tests/links.sh` on every push (#20). The first run passed.

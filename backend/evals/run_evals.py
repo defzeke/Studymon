@@ -1,12 +1,14 @@
 """Quality check for question generation and grading against the golden set. It calls the real model
 (set AI_BASE_URL and AI_API_KEY, see docs/api-backend.md §4). On Cloudflare's free allowance it costs
-nothing, but one run spends roughly 3,000 of the day's 10,000 neurons, so run it by hand, with --yes.
+nothing, but one run (11 extractions, 15 grades) is estimated at about 5,000 of the day's 10,000
+neurons, so run it by hand, with --yes, at most once a day. The run prints what it really spent.
 
     uv run --no-project --with-requirements requirements.txt python evals/run_evals.py --yes
 """
 import io
 import json
 import pathlib
+import re
 import sys
 import textwrap
 from collections import Counter
@@ -19,13 +21,23 @@ HERE = pathlib.Path(__file__).resolve().parent
 ESSAY_PASS = 0.65
 
 
-def _score(name: str, raw: list, kept: list) -> bool:
+# Common Filipino function words: a question written in Filipino almost always has one.
+FILIPINO = re.compile(r"\b(ang|ng|mga|sa|ay|na)\b", re.IGNORECASE)
+
+
+def _score(name: str, raw: list, kept: list, text: str) -> bool:
     types = Counter(q["type"] for q in kept)
     tiers = Counter(q["difficulty"] for q in kept)
     kept_rate = len(kept) / max(1, len(raw))
-    good = kept_rate >= 0.8 and all(types[t] >= 3 for t in ("identification", "essay", "multiple_choice"))
-    print("%-22s %s kept %d/%d (%.0f%%)  types %s  tiers %s" % (
-        name, "PASS" if good else "FAIL", len(kept), len(raw), kept_rate * 100, dict(types), dict(tiers)))
+    # The prompt asks for about one question per 100 words, 9 to MAX_QUESTIONS; accept 60 % of that.
+    wanted = min(ai.MAX_QUESTIONS, max(9, len(text.split()) // 100))
+    good = kept_rate >= 0.8 and len(kept) >= 0.6 * wanted \
+        and all(types[t] >= 3 for t in ("identification", "essay", "multiple_choice"))
+    # A reviewer in Filipino (file name ending in _fil) must get its questions in Filipino too.
+    if name.split(".")[0].endswith("_fil"):
+        good &= sum(bool(FILIPINO.search(q["text"])) for q in kept) >= 0.8 * max(1, len(kept))
+    print("%-30s %s kept %d/%d (%.0f%%, wanted ~%d)  types %s  tiers %s" % (
+        name, "PASS" if good else "FAIL", len(kept), len(raw), kept_rate * 100, wanted, dict(types), dict(tiers)))
     return good
 
 
@@ -57,14 +69,14 @@ def extraction() -> bool:
     for path in sorted((HERE / "reviewers").glob("*.txt")):
         text = path.read_text(encoding="utf-8")
         raw = ai.generate_questions(text).get("questions", [])
-        ok &= _score(path.stem, raw, ai.check_questions(raw, text))
+        ok &= _score(path.stem, raw, ai.check_questions(raw, text), text)
     # The other upload paths, built from one reviewer: a Word file (read as text) and a photo.
     text = (HERE / "reviewers" / "biology_cells.txt").read_text(encoding="utf-8")
     docx_text = ai.office_text(_as_docx(text), "docx")
     raw = ai.generate_questions(docx_text).get("questions", [])
-    ok &= _score("biology_cells.docx", raw, ai.check_questions(raw, docx_text))
+    ok &= _score("biology_cells.docx", raw, ai.check_questions(raw, docx_text), docx_text)
     raw = ai.generate_questions("", [(_as_photo(text), "image/png")]).get("questions", [])
-    ok &= _score("biology_cells.png", raw, ai.check_questions(raw, ""))
+    ok &= _score("biology_cells.png", raw, ai.check_questions(raw, ""), text)
     return ok
 
 
@@ -81,7 +93,7 @@ def grading() -> bool:
         s = r["score"]
         good = {"pass": s >= ESSAY_PASS, "fail": s < 0.34, "partial": 0.2 <= s < ESSAY_PASS}[c["expect"]]
         ok &= good
-        print("%-18s %s score %.2f (expect %s)  %s" % (c["name"], "PASS" if good else "FAIL", s, c["expect"], r["feedback"]))
+        print("%-24s %s score %.2f (expect %s)  %s" % (c["name"], "PASS" if good else "FAIL", s, c["expect"], r["feedback"]))
     return ok
 
 

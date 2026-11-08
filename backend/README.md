@@ -33,7 +33,7 @@ Every response is the job envelope `{job_id, status: "completed" | "failed", pro
 ## Test
 ```
 uv run --no-project --with-requirements requirements.txt --with pytest --with httpx python -m pytest tests
-uv run --env-file .env --no-project --with-requirements requirements.txt python evals/run_evals.py --yes   # real model: free, uses ~3,000 of the day's neurons
+uv run --env-file .env --no-project --with-requirements requirements.txt python evals/run_evals.py --yes   # real model: free, an estimated ~5,000 of the day's 10,000 neurons
 ```
 
 ## Deploy (free)

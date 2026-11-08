@@ -195,7 +195,7 @@ copy .env.example .env      # set AI_BASE_URL (your Cloudflare account id) and A
 uv run --no-project --with-requirements requirements.txt uvicorn main:app --port 8000 --env-file .env
 # tests (no model calls)
 uv run --no-project --with-requirements requirements.txt --with pytest --with httpx python -m pytest tests
-# quality evals (real model: free, but uses ~3,000 of the day's neurons)
+# quality evals (real model: free, but an estimated ~5,000 of the day's 10,000 neurons)
 uv run --env-file .env --no-project --with-requirements requirements.txt python evals/run_evals.py --yes
 ```
 
@@ -210,13 +210,32 @@ after 15 idle minutes and takes about a minute to wake: `Api.wake_server()` and 
 the player's address (§6); if Render puts its own proxy last, take the entry before it.
 
 **Evals** (`backend/evals/`):
-- **Reviewers:** four (biology, Philippine history, economics, programming), plus the biology one
-  again as a Word file and as a photo-like PNG (built at run time).
-- **Graded answers:** seven (essay perfect, partial, off-topic, filler, injection; Identification
-  synonym, broader term).
-- **Pass rules:** a reviewer passes when ≥ 80 % of its generated questions survive the checks and
-  every type has ≥ 3. An answer passes when its score lands in its expected band.
-- **When to run:** on every prompt or model change. It prints the neurons it spent.
+- **Reviewers:** nine, in `evals/reviewers/`. The biology one is also sent again as a Word file and as
+  a photo-like PNG (built at run time).
+
+  | Reviewer | Tests |
+  |---|---|
+  | biology, Philippine history, economics, programming | the plain case: about 170–200 words of English prose |
+  | `earth_science_long` | a long reviewer (1,821 words): coverage across the whole text |
+  | `chemistry_tables` | Markdown tables: sources quoted from table rows |
+  | `bahagi_ng_pananalita_fil` | Filipino: every question in the reviewer's language |
+  | `algebra_geometry_math` | formulas with Unicode symbols (², √, ±, π, −) |
+  | `short_simple_machines` | a very short reviewer (102 words): the minimum of 3 per type |
+
+- **Graded answers:** fifteen in `evals/grading_cases.json`:
+  - essays: perfect, partial, off-topic, filler, an injected instruction, and an instruction hidden
+    in a partial answer (which must stay partial);
+  - essays in Filipino: full, partial, off-topic;
+  - Identification: a synonym, an abbreviation and a reordered Filipino term (all pass); a broader
+    term, the wrong Filipino term and an injected instruction (all fail).
+- **Pass rules:**
+  - A reviewer passes when ≥ 80 % of its generated questions survive the checks, every type has ≥ 3,
+    and it got at least 60 % of the questions the prompt asks for (one per 100 words, 9 to 30).
+  - A reviewer whose file name ends in `_fil` also needs ≥ 80 % of its questions to read as Filipino
+    (common function words such as *ang*, *ng*, *mga*).
+  - An answer passes when its score lands in its expected band.
+- **When to run:** on every prompt or model change, at most once a day. One run is estimated at about
+  5,000 of the day's 10,000 neurons, the same allowance the game uses. It prints what it spent.
 - **Status: not yet run against Gemma.**
 
 ---

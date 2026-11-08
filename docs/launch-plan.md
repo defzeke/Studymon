@@ -113,7 +113,9 @@ Each is shippable and verified on its own.
 **Evals (the quality gate for 5.3).** A golden set of 8–10 reviewers (different subjects, text and PDF,
 short and long, table-heavy) with checks for grounding, tier spread and distractor quality, and a
 grading set of perfect, partial, off-topic and injection answers with expected score bands. Run it on
-every prompt or model change in CI.
+every prompt or model change. *Built:* nine reviewers and fifteen graded answers
+([`api-backend.md`](api-backend.md) §4). It runs by hand, not in CI, because it calls the real model
+and spends the day's free allowance. It has not been run against Gemma yet (E1).
 
 **Models and cost:** Gemma 4 26B on Cloudflare Workers AI, $0 within the free 10,000 neurons a day
 (about 20 reviewers and 200 graded answers across all players; [`api-backend.md`](api-backend.md) §3).
