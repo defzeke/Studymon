@@ -10,24 +10,18 @@ Last updated: 2026-11-09.
 
 ## In flight
 
-Uncommitted, for the maintainer to commit: **the backend hand-over.**
-- [`backend-next-steps.md`](backend-next-steps.md) is a step-by-step runbook for whoever picks up the
-  backend (D3, D4, E1–E3).
-- `.github/workflows/pages.yml` is removed. GitHub Pages needs the repo admin, so the policy pages go
-  to Cloudflare Pages by Direct Upload instead.
-- `run_evals.py` now prints the neurons per model call.
-- The docs list `world_intro.tscn` among the headless-only #22 failures.
+Uncommitted: **the hand-over for the coworker** who takes over the backend, the AI and the release.
+- [`next-steps.md`](next-steps.md) replaces `backend-next-steps.md`. It covers three phases in order:
+  integrate the AI, add required Google sign-in through Play Games, and deploy the game.
+- `.github/workflows/pages.yml` is back, since the coworker can turn GitHub Pages on.
+- `rules.md` (Auth) and `launch-plan.md` §1 (Login) record the 2026-11-09 decision on sign-in.
 
 **Game check on 2026-11-09.** No errors were found.
-- Headless: all 7 gates, plus every other scene (sub-scenes, weather, pop-ups, `CloudSave`).
-- Windowed, on Windows: the boot chain reaches home in about 12 s; loading, Worlds, and the world
-  intro to the map in about 6 s.
+- Headless: all 7 gates, plus every other scene.
+- Windowed: the boot chain reaches home in about 12 s, and the world intro reaches the map in about
+  6 s.
 - The only failures are the known headless #22 cases.
 - Not covered: tapping through the game by hand, and phones.
-
-**Phase C is done** (C4: `997104d`). CI passes on GitHub. **Next is the backend**: anyone with a free
-Cloudflare and Render account can do it by following [`backend-next-steps.md`](backend-next-steps.md).
-The Play Console steps (D1, D2) and phases F and G come after.
 
 Phases A and B of the 2026-11-08 plan are committed, but neither has met the real world yet:
 - **A, cloud saves** (`6415399`): not tried on a phone. It needs the Play Console Game ID and an Android
@@ -44,50 +38,44 @@ Still unverified across the committed work:
 - The houses have no door-swing animation. The glb merges all the doors, so it needs a split in
   Blender.
 
-## Next: the plan to the store release
+## Next: AI → Google sign-in → deploy
 
-Each step ends with the gates, the docs, a hand-off with a proposed commit, and a pause for the
-maintainer's commit. The researched background is in [`launch-plan.md`](launch-plan.md).
+Owner: the coworker, who has the backend, the AI integration and the release. The step-by-step guide
+is [`next-steps.md`](next-steps.md); the researched background is [`launch-plan.md`](launch-plan.md).
+Tick each step here when it is done.
 
-**C — In the repo, no accounts needed (the agent):**
-
-| Step | Item |
-|---|---|
-| C1 | ~~Record this plan; debounce saves (#14)~~ (`fa01fdd`) |
-| C2 | ~~Privacy, terms and support pages in `site/`; [`store-listing.md`](store-listing.md)~~ (`1166a6c`). Hosting moved to Cloudflare Pages Direct Upload (E3), because GitHub Pages needs the repo admin |
-| C3 | ~~GitHub Actions: the headless gates, `backend/tests` and the docs' links on every push (#20)~~ (`67c5b08`, first run green). The splash, loading and Worlds screens stay out until #22 is fixed |
-| C4 | ~~A bigger eval set in `backend/evals/`: nine reviewers (adds long, tables, Filipino, math, very short) and fifteen graded answers, with coverage and Filipino-language checks~~ (`997104d`) |
-
-**D — Accounts (none needs GitHub admin access):**
+**Phase 1 — Integrate the AI into the game:**
 
 | Step | Item |
 |---|---|
-| D1 | Play Console ($25 once): create the app as a **Game**, turn on Play Games Services with **Saved Games**, copy the Game ID, add an Android OAuth client per signing key ([`skills.md`](skills.md) §*Export for Android with Play Games*) |
-| D2 | Recruit **15–20 closed testers** now: Google's 14-day test is the longest wait |
-| D3 | Cloudflare: a free account, its Account ID and a Workers AI token. Read its terms for the 13+ question (decision 2 below). [`backend-next-steps.md`](backend-next-steps.md) step 1 |
-| D4 | A free Render account. It deploys the public repo by URL, so no GitHub connection is needed |
+| 1.1 | A Cloudflare account, Account ID and Workers AI token; read Cloudflare's terms for a 13+ app (decision 2 below) |
+| 1.2 | Run the server locally against Gemma 4 |
+| 1.3 | Run `backend/evals/`, tune the prompts, and record the measured neurons in [`api-backend.md`](api-backend.md) §3 and in `LIKELY_NEURONS` |
+| 1.4 | Play the integration in the editor (`DEV_USES_SERVER`): consent, every upload type, More questions, grading, Report, the offline fallbacks |
+| 1.5 | Deploy `backend/` on Render (Blueprint from `render.yaml`) and pass the `X-Forwarded-For` limit test |
+| 1.6 | Set `Api.RELEASE_URL` |
+| 1.7 | Turn GitHub Pages on, publish `site/`, and set the three policy URLs in `settings.gd` |
 
-**E — The backend, with the accounts. Anyone can do it by following [`backend-next-steps.md`](backend-next-steps.md):**
-
-| Step | Item |
-|---|---|
-| E1 | Run the server locally against Gemma 4, then run `backend/evals/` and tune the prompts. Record the measured neurons per call in [`api-backend.md`](api-backend.md) §3 and in `LIKELY_NEURONS` (steps 2–3) |
-| E2 | Deploy `backend/` on Render. Check `/health`, and check that a faked `X-Forwarded-For` cannot get past the per-player limit. Set `Api.RELEASE_URL` (steps 4–5) |
-| E3 | Upload `site/` to Cloudflare Pages, then set `PRIVACY_URL`, `TERMS_URL` and `SUPPORT_URL` in `scripts/ui/settings.gd` (step 6) |
-
-**F — Android build and phones:**
+**Phase 2 — Google sign-in, required (through Google Play Games):**
 
 | Step | Item |
 |---|---|
-| F1 | In the editor: install the Android build template, add the Android export (Gradle, `.aab`, the Game ID, **user-data backup on**, a release keystore kept out of git). The agent checks `export_presets.cfg` for secrets before it is committed |
-| F2 | A real app icon and the adaptive icon (Godot's default `icon.svg` today; needs art) |
-| F3 | Internal testing on a phone: the cloud-save checklist in [`skills.md`](skills.md), the file picker with a PDF, a photo and a .docx plus Export / Import (#23), the whole loop against Render, and the offline fallbacks when the AI budget runs out. Fix what breaks |
-| F4 | The closed test: 12 or more testers opted in for 14 days |
+| 2.1 | Play Console ($25 once): app type Game, Play Games Services with Saved Games, the Android OAuth clients, and a **Game server** credential (a Web OAuth client) |
+| 2.2 | The server: `POST /v1/session` redeems the Play Games server auth code, then the AI routes require `Authorization: Bearer`, with limits per player and tests |
+| 2.3 | The game: request the server code after sign-in, keep the session in memory, send the header, and add the sign-in gate before the first-run intro (Android only) |
+| 2.4 | Update the docs, the privacy page, the consent text and the Data safety answers (User IDs) |
 
-**G — Release:** fill in Data safety, the content rating (13+), the listing and the screenshots from
-`docs/store-listing.md`, then roll out to production in stages.
+**Phase 3 — Deploy the game (Android):**
 
-**Later (not blocking):** iOS (macOS CI, $99 a year), study reminders (a local-notifications plugin),
+| Step | Item |
+|---|---|
+| 3.1 | The Android export: Gradle, `.aab`, the Game ID, user-data backup on, the keystore kept out of git |
+| 3.2 | A real app icon and the adaptive icon (needs art) |
+| 3.3 | Internal testing on a phone: cloud saves, the sign-in gate, the file picker (#23), the AI loop against Render, the offline fallbacks |
+| 3.4 | The closed test: 12 or more testers for 14 days. **Recruit them during Phase 1** |
+| 3.5 | The store listing from [`store-listing.md`](store-listing.md), then production with a staged rollout |
+
+**Later (not blocking):** iOS (macOS, $99 a year), study reminders (a local-notifications plugin),
 Play Integrity, Sentry, purchases.
 
 Hygiene: #22, find why the headless boot chain fails its threaded loads.
@@ -97,9 +85,15 @@ Hygiene: #22, find why the headless boot chain fails its threaded loads.
 1. ~~**Save cadence** (#14)~~. Settled: one write every 5 s, at once on pause or close. The cloud copy
    uploads at most once a minute.
 2. **Cloudflare terms:** confirm nothing in Cloudflare's Self-Serve Subscription Agreement or Workers AI
-   terms rules out a 13+ app before launch ([`launch-plan.md`](launch-plan.md) §1).
+   terms rules out a 13+ app before launch ([`launch-plan.md`](launch-plan.md) §1). This is step 1.1.
+3. **Offline returning players** (Phase 2): when a player who already finished the intro can't sign
+   in because they are offline, the recommended default is to let them play their local save, with AI
+   calls waiting for a session. Confirm it while building 2.3.
 
 ## Done
+
+- **2026-11-09** — Backend hand-over runbook, and the eval prints neurons per call (`ed9ac8a`).
+  Superseded by [`next-steps.md`](next-steps.md).
 
 - **2026-11-09** — C4 (`997104d`): nine eval reviewers and fifteen graded answers, with coverage and
   Filipino-language checks.

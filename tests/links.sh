@@ -3,6 +3,8 @@
 # Run from the project root: tests/links.sh. Prints each broken link; exits 1 if there is one.
 missing=0
 while IFS= read -r f; do
+  # Deleted but not yet committed: git still lists it.
+  [ -f "$f" ] || continue
   dir=$(dirname "$f")
   while IFS= read -r link; do
     target=${link%%#*}

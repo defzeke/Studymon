@@ -151,7 +151,11 @@ These are unresolved and belong to the docs that own them:
 
 1. ~~**Backend contract.**~~ Settled: `/v1/extract` and `/v1/grade` with the job envelope on both
    sides ([`api-backend.md`](api-backend.md) §2; issue #7 fixed).
-2. ~~**Auth.**~~ Settled: no accounts, ever; saves stay on the device and the header was removed
-   (issue #2).
+2. **Auth.** Changing (decided 2026-11-09):
+   - Google Play Games sign-in becomes required, and the study server identifies players by a
+     session token (an `Authorization: Bearer` header).
+   - Still no accounts or passwords of our own.
+   - Not built yet: today saves sync through Play Games, and requests carry no header (issue #2).
+     The design is in [`next-steps.md`](next-steps.md) Phase 2.
 3. ~~**Codex.**~~ Settled: removed (save v16). The curriculum lines, the `codex` save field and its
    signals are gone; nothing showed them.
