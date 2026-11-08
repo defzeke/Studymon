@@ -116,9 +116,10 @@ leave untracked art that a scene references.
 
 ## 6. Verify before handing off
 
-A change is not done until the gates pass. This repo has no test framework; the gates are headless
-Godot runs. `$GODOT` is the 4.7.2 **console** binary — its path on the current machine is in
-[`skills.md`](skills.md) §*Verify a change*.
+A change is not done until the gates pass. This repo has no unit-test framework; the gates are headless
+Godot runs, scripted in `tests/gates.sh`, and CI runs them on every push. Run them before handing off
+anyway. CI only sees what is pushed, and the maintainer pushes. `$GODOT` is the 4.7.2 **console**
+binary — its path on the current machine is in [`skills.md`](skills.md) §*Verify a change*.
 
 ```powershell
 # whole-project import / parse check

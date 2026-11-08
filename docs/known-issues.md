@@ -20,7 +20,7 @@ Severity: **P0** blocks the core loop · **P1** blocks a feature or silently cor
 | 13 | ~~`stats_changed` fires every frame~~ — fixed | — |
 | 14 | ~~Full save write on every care action~~ — fixed (debounced) | — |
 | 19 | ~~Fake "Biology 101" topic seeded on every boot~~ — fixed | — |
-| 20 | Stale docs, no tests/CI | **P3** |
+| 20 | ~~Stale docs, no tests/CI~~ — fixed (GitHub Actions) | — |
 | 21 | ~~Theme and scene colours predate the canonical palette~~ — migrated | — |
 | 22 | Headless boot chain fails its threaded loads | **P3** |
 | 23 | Native file picker paths unverified on Android / iOS | **P1** |
@@ -117,17 +117,21 @@ once a minute (§8).
 
 ---
 
-## 20. Stale docs, no tests/CI (P3)
+## 20. Stale docs, no tests/CI — fixed
 
-- Root `README.md` describes folders that do not exist (`resources/`, `tests/`, `assets/themes/`)
-  and singletons that were never written (`GameManager`, `AIService`, `SoundManager`).
-- `quizmon-build-plan.md` says "Godot 4.6, avoid 4.7"; the project is 4.7.2.
-- No automated tests for the Godot client and no CI workflow. The backend has `backend/tests/` (pytest,
-  no model calls) and `backend/evals/` (the real model, free but run by hand).
+The root `README.md` described folders and singletons that never existed, and nothing ran the gates
+automatically.
 
-**Fix:** the root README is corrected in this docs pass; consider a `tests/` folder with a headless
-GUT suite and a GitHub Action that runs `godot --headless --import` (which is how issues #1/#12 were
-caught).
+**Fixed:**
+- The root README was corrected in an earlier docs pass.
+- `quizmon-build-plan.md` keeps its old "Godot 4.6" note as history, flagged in
+  [`README.md`](README.md).
+- **2026-11-09:** `.github/workflows/checks.yml` runs `tests/gates.sh` (the headless Godot gates),
+  `pytest backend/tests` and `tests/links.sh` on every push and pull request
+  ([`skills.md`](skills.md#verify-a-change)).
+
+Still by hand: `backend/evals/` (the real model) and the boot chain, which runs windowed only (#22).
+There is no GDScript unit-test suite.
 
 ---
 

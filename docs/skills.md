@@ -5,7 +5,22 @@ behind it.
 
 ## Verify a change
 
-This repo has no test framework and no CI. Verification is a headless Godot run.
+There is no unit-test framework. Verification is a headless Godot run, plus `backend/tests` for the
+server. **CI runs the same checks** on every push and pull request
+(`.github/workflows/checks.yml`):
+- `tests/gates.sh`: the import, then peek, battle, region map, World Builder, flashcards and Settings,
+  on Linux. A fresh clone gets two warm-up imports first.
+- `pytest backend/tests` on Python 3.12.
+- `tests/links.sh`.
+
+Read a failure with `gh run view --log-failed`. Run the same gates locally from Git Bash:
+
+```bash
+GODOT="/c/Users/Mary/Tools/Godot_4.7.2/Godot_v4.7.2-stable_win64_console.exe" bash tests/gates.sh
+```
+
+The script prints `ok` or `FAIL` per run and filters the expected noise below. The steps below are
+the same checks by hand, for a scene CI does not cover.
 
 **Prerequisite.** Godot **4.7.2** console build. It is not on `PATH` on the current machine:
 
@@ -35,25 +50,14 @@ $GODOT = "C:\Users\Mary\Tools\Godot_4.7.2\Godot_v4.7.2-stable_win64_console.exe"
 3. Read the output, not the exit code. Godot exits `0` after a parse error in a scene. A touched
    scene must load with no new `ERROR:` lines.
 
-4. Check links you added or moved:
+4. Check links, from Git Bash at the project root:
 
-   ```powershell
-   Get-ChildItem -Recurse -Filter *.md |
-     Where-Object { $_.FullName -notmatch '\\\.godot\\' } |
-     ForEach-Object {
-       $file = $_
-       [regex]::Matches((Get-Content $file.FullName -Raw), '\]\(([^)]+)\)') | ForEach-Object {
-         $link = $_.Groups[1].Value.Split('#')[0]
-         if ($link -and $link -notmatch '^(https?:|mailto:)') {
-           if (-not (Test-Path (Join-Path $file.DirectoryName $link))) {
-             "{0}: missing {1}" -f $file.FullName, $link
-           }
-         }
-       }
-     }
+   ```bash
+   bash tests/links.sh
    ```
 
-   No output means every relative link resolves.
+   No output means every relative link in the tracked `.md` files resolves. Newly added files must be
+   tracked first: it reads `git ls-files`.
 
 **Expected noise** (not new failures): `ObjectDB instances leaked at exit`, `1 resources still in
 use at exit` when `--quit-after` ends a scene mid-tween, and the rig warnings listed as issues #3 and

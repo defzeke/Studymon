@@ -48,7 +48,7 @@ Where the two disagree, the docs say so explicitly.
 | Autoloads | 8 (6 game autoloads, the Play Games plugin's, and `CloudSave`) |
 | Backend | FastAPI gateway to Gemma 4 on Cloudflare Workers AI: `/v1/extract`, `/v1/grade` (`backend/`, free on Render). The editor runs on mocks; release builds use the server |
 | Persistence | Single JSON file `user://studymon_save.json`, schema `"v": 17`, copied to the player's Google Play Games Saved Games on Android |
-| Tests / CI | None |
+| Tests / CI | GitHub Actions (`.github/workflows/checks.yml`): the headless gates (`tests/gates.sh`), `backend/tests` and the docs' links (`tests/links.sh`) |
 
 ---
 

@@ -10,14 +10,17 @@ Last updated: 2026-11-09.
 
 ## In flight
 
-Uncommitted, for the maintainer to commit: **C2**.
-- The privacy policy, terms and support pages are in `site/`. `.github/workflows/pages.yml` publishes
-  them to GitHub Pages.
-- `docs/store-listing.md` has the Data safety answers, the content rating, the listing text, the review
-  notes and the graphics list.
-- The AI consent text now also names Identification near-misses, which the server grades.
+Uncommitted, for the maintainer to commit: **C3**. `.github/workflows/checks.yml` runs three checks
+on every push and pull request (#20):
+- `tests/gates.sh`: the headless Godot gates on Linux;
+- `pytest backend/tests`;
+- `tests/links.sh`.
 
-The pages go live after D5. Their URLs then go into `settings.gd` (E3).
+Checked locally on a fresh `git archive` copy, where all 7 gates pass and a planted parse error fails
+the run. The first run on GitHub is still to watch.
+
+The C2 pages are committed (`1166a6c`). Their first deploy failed only because Pages is not turned on
+yet (D5). Re-run it after D5 from Actions → Pages → Run workflow.
 
 Phases A and B of the 2026-11-08 plan are committed, but neither has met the real world yet:
 - **A, cloud saves** (`6415399`): not tried on a phone. It needs the Play Console Game ID and an Android
@@ -44,8 +47,8 @@ maintainer's commit. The researched background is in [`launch-plan.md`](launch-p
 | Step | Item |
 |---|---|
 | C1 | ~~Record this plan; debounce saves (#14)~~ (`fa01fdd`) |
-| C2 | ~~Privacy, terms and support pages in `site/` on GitHub Pages; [`store-listing.md`](store-listing.md)~~ (uncommitted, above). URLs once live: `https://defzeke.github.io/Studymon/privacy.html`, `…/terms.html`, `…/support.html` |
-| C3 | GitHub Actions: `pytest backend/tests` and the headless Godot gates on every push (#20). `splash.tscn` stays out until #22 is fixed |
+| C2 | ~~Privacy, terms and support pages in `site/` on GitHub Pages; [`store-listing.md`](store-listing.md)~~ (`1166a6c`). URLs once live: `https://defzeke.github.io/Studymon/privacy.html`, `…/terms.html`, `…/support.html` |
+| C3 | ~~GitHub Actions: the headless gates, `backend/tests` and the docs' links on every push (#20)~~ (uncommitted, above). The splash, loading and Worlds screens stay out until #22 is fixed |
 | C4 | A bigger eval set in `backend/evals/` (8–10 reviewers): table-heavy, long, Filipino, math, very short. Plus more grading cases: partial, off-topic, injection |
 
 **D — Accounts (the maintainer; start now, alongside C):**
@@ -91,6 +94,10 @@ Hygiene: #22, find why the headless boot chain fails its threaded loads.
    terms rules out a 13+ app before launch ([`launch-plan.md`](launch-plan.md) §1).
 
 ## Done
+
+- **2026-11-09** — C2 (`1166a6c`): the privacy, terms and support pages in `site/` with a Pages
+  workflow, [`store-listing.md`](store-listing.md), and the consent text naming Identification
+  near-misses.
 
 - **2026-11-09** — C1 (`fa01fdd`): gameplay saves are debounced to one write every 5 s (#14), and this
   register lists the plan to release.
