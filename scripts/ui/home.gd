@@ -28,7 +28,6 @@ const REVIEW_LINES: Array[String] = ["We're reviewing, focus up!", "No wandering
 const FULL_LINES: Array[String] = ["I'm full!", "No more, I'm stuffed!", "Not another byte!", "My data banks are full!"]
 const SCREWDRIVER: Texture2D = preload("res://assets/sprites/props/screwdriver.svg")
 const TOWEL: Texture2D = preload("res://assets/sprites/props/towel.svg")
-const BOLD: Font = preload("res://assets/fonts/JosefinSans-Bold.ttf")
 const CHARGE_SFX: AudioStream = preload("res://assets/audio/sfx/sfx_charge.wav")
 const CHARGED_SFX: AudioStream = preload("res://assets/audio/sfx/sfx_charged.wav")
 const SETTINGS_SCENE := "res://scenes/ui/settings.tscn"
@@ -77,9 +76,10 @@ const PET_GAP := 3.0
 const FLING_GAP := 3.0
 # The towel takes this much dirt off per pixel scrubbed over Kuiz.
 const SCRUB_PER_PX := 0.06
-# The check-up's rows: [label, stat, inverted (dirt reads as cleanliness)]. The battery row is its
-# health (capacity), not its charge; the Energy gauge shows the charge.
-const CHECKS := [["Battery health", "battery_health", false], ["Frame", "health", false], ["Clean", "dirt", true], ["Fuel", "hunger", false], ["Focus", "focus", false]]
+# The check-up's rows are placed in %CheckRows, each named after the CompanionState stat it shows
+# (its label is set in the scene). Dirt reads inverted, as cleanliness. The battery row is its health
+# (capacity), not its charge; the Energy gauge shows the charge.
+const INVERTED_CHECKS: Array[String] = ["dirt"]
 const CHECK_HINTS := {
 	"battery_health": "Battery worn out: it drains fast. Fit a new one below.",
 	"health": "Screws loose: tighten them with the screwdriver.",
@@ -134,6 +134,8 @@ const CHECK_HINTS := {
 @onready var shop_list: VBoxContainer = %ShopList
 @onready var shop_close_btn: BaseButton = %Close
 @onready var buy_template: Button = %BuyTemplate
+@onready var shop_row_template: HBoxContainer = %ShopRowTemplate
+@onready var costume_template: Button = %CostumeTemplate
 @onready var ball: TextureRect = %Ball
 @onready var ball_slot: TextureRect = %BallSlot
 @onready var held: TextureRect = %Held
@@ -185,10 +187,16 @@ func _ready() -> void:
 	room_menu.gui_input.connect(func(event: InputEvent) -> void:
 		if _tapped(event):
 			room_menu.hide())
+	# The dropdown's buttons are placed in %RoomList, each named after its Rooms/<Name> node.
 	for i in ROOMS.size():
-		var entry := _closet_button(peek.ROOM_NAMES[ROOMS[i]])
-		entry.pressed.connect(_pick_room.bind(i))
-		room_list.add_child(entry)
+		(room_list.get_node(ROOMS[i]) as BaseButton).pressed.connect(_pick_room.bind(i))
+	# The closet's tabs are placed in %WardrobeTabs, each named after its slot (head, face, body).
+	for tab: Button in wardrobe_tabs.get_children():
+		tab.pressed.connect(_show_closet_slot.bind(String(tab.name)))
+	# Each check-up row gets its own fill, so tinting one row does not tint the others.
+	for row: Node in check_rows.get_children():
+		var meter := row.get_node("Meter") as ProgressBar
+		meter.add_theme_stylebox_override("fill", meter.get_theme_stylebox("fill").duplicate())
 	charge_btn.toggled.connect(_on_charge)
 	play_btn.pressed.connect(_on_play)
 	settings_btn.pressed.connect(func() -> void:
@@ -290,7 +298,7 @@ func _walk_to(room_i: int, dir: int) -> void:
 func _on_sign_input(event: InputEvent) -> void:
 	if _tapped(event) and visible and _can_walk():
 		for i in ROOMS.size():
-			_press_look(room_list.get_child(i), i == _room_i)
+			_press_look(room_list.get_node(ROOMS[i]), i == _room_i)
 		room_menu.show()
 
 func _pick_room(room_i: int) -> void:
@@ -576,60 +584,27 @@ func _scrub(px: float) -> void:
 		_toast("Squeaky clean!")
 
 func _open_checkup() -> void:
-	if check_rows.get_child_count() == 0:
-		for spec: Array in CHECKS:
-			check_rows.add_child(_check_row(spec[0]))
 	_refresh_checkup()
 	check_panel.show()
-
-func _check_row(title: String) -> HBoxContainer:
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 12)
-	var name_label := Label.new()
-	name_label.text = title
-	name_label.custom_minimum_size = Vector2(186, 0)
-	var meter := ProgressBar.new()
-	meter.custom_minimum_size = Vector2(0, 26)
-	meter.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	meter.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	meter.show_percentage = false
-	meter.max_value = 100.0
-	var back := StyleBoxFlat.new()
-	back.bg_color = Color(Palette.SLATE, 0.35)
-	back.set_corner_radius_all(13)
-	meter.add_theme_stylebox_override("background", back)
-	meter.add_theme_stylebox_override("fill", back.duplicate())
-	var pct := Label.new()
-	pct.custom_minimum_size = Vector2(70, 0)
-	pct.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	for l: Label in [name_label, pct]:
-		l.add_theme_color_override("font_color", Palette.OFF_WHITE)
-		l.add_theme_font_override("font", BOLD)
-		l.add_theme_font_size_override("font_size", 22)
-	row.add_child(name_label)
-	row.add_child(meter)
-	row.add_child(pct)
-	return row
 
 # Each row shows its stat (dirt as cleanliness): off-white when fine, amber below half, coral when
 # low; the hint names the most urgent fix.
 func _refresh_checkup() -> void:
 	var worst := ""
 	var worst_value := 101.0
-	for i in CHECKS.size():
-		var spec: Array = CHECKS[i]
-		var value: float = CompanionState.get(spec[1])
-		if spec[2]:
+	for row: Node in check_rows.get_children():
+		var stat := String(row.name)
+		var value: float = CompanionState.get(stat)
+		if stat in INVERTED_CHECKS:
 			value = CompanionState.STAT_MAX - value
-		var row := check_rows.get_child(i)
-		var meter := row.get_child(1) as ProgressBar
+		var meter := row.get_node("Meter") as ProgressBar
 		meter.value = value
 		var fill := meter.get_theme_stylebox("fill") as StyleBoxFlat
 		fill.bg_color = Palette.CORAL if value < 25.0 else (Palette.AMBER if value < 50.0 else Palette.OFF_WHITE)
-		(row.get_child(2) as Label).text = "%d%%" % roundi(value)
+		(row.get_node("Pct") as Label).text = "%d%%" % roundi(value)
 		if value < worst_value:
 			worst_value = value
-			worst = spec[1]
+			worst = stat
 	check_hint.text = CHECK_HINTS[worst] if worst_value < 50.0 else "All systems good!"
 	new_battery_btn.disabled = CompanionState.battery_health >= CompanionState.STAT_MAX - 0.5
 
@@ -677,24 +652,14 @@ func _refresh_food() -> void:
 	food_label.text = "%s ×%d" % [food["name"], _stock(_food_i)]
 
 func _build_shop() -> void:
+	# One copy of the hidden %ShopRowTemplate (Icon, Label, Buy) per food.
 	for food in FOODS:
-		var row := HBoxContainer.new()
-		row.add_theme_constant_override("separation", 14)
-		var icon := TextureRect.new()
-		icon.texture = food["icon"]
-		icon.custom_minimum_size = Vector2(72, 72)
-		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		var label := Label.new()
-		label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		label.add_theme_color_override("font_color", Palette.SLATE)
-		var buy: Button = buy_template.duplicate()
-		buy.show()
+		var row := shop_row_template.duplicate() as HBoxContainer
+		row.show()
+		(row.get_node("Icon") as TextureRect).texture = food["icon"]
+		var buy := row.get_node("Buy") as Button
 		buy.text = "Buy · %d" % food["price"]
 		buy.pressed.connect(_buy_food.bind(food))
-		row.add_child(icon)
-		row.add_child(label)
-		row.add_child(buy)
 		row.set_meta("food", food)
 		shop_list.add_child(row)
 
@@ -705,8 +670,8 @@ func _open_shop() -> void:
 func _refresh_shop() -> void:
 	for row in shop_list.get_children():
 		var food: Dictionary = row.get_meta("food")
-		(row.get_child(1) as Label).text = "%s  +%d hunger%s\nYou have %d" % [food["name"], food["hunger"], _food_extra(food), GameState.food_stock[food["id"]]]
-		(row.get_child(2) as Button).disabled = GameState.crystals < int(food["price"])
+		(row.get_node("Label") as Label).text = "%s  +%d hunger%s\nYou have %d" % [food["name"], food["hunger"], _food_extra(food), GameState.food_stock[food["id"]]]
+		(row.get_node("Buy") as Button).disabled = GameState.crystals < int(food["price"])
 
 func _food_extra(food: Dictionary) -> String:
 	if food.has("focus"):
@@ -871,14 +836,6 @@ func _play_game(game: CanvasLayer) -> void:
 # The closet: a tab per slot (Head, Face, Body), and a grid of that slot's costumes plus "None".
 # A tap wears it at once (one costume per slot) and saves.
 func _open_wardrobe() -> void:
-	if wardrobe_tabs.get_child_count() == 0:
-		for slot: Array in look.SLOTS:
-			var tab := _closet_button(slot[1])
-			tab.custom_minimum_size = Vector2(0, 64)
-			tab.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-			tab.set_meta("slot", slot[0])
-			tab.pressed.connect(_show_closet_slot.bind(slot[0]))
-			wardrobe_tabs.add_child(tab)
 	_show_closet_slot(_closet_slot)
 	wardrobe.show()
 
@@ -894,20 +851,12 @@ func _show_closet_slot(slot: String) -> void:
 			wardrobe_grid.add_child(_costume_button(id, c[0], c[1]))
 	_refresh_wardrobe()
 
-func _closet_button(title: String) -> Button:
-	var b: Button = buy_template.duplicate()
+# A copy of the hidden %CostumeTemplate (its size, font and icon layout are set in the scene).
+func _costume_button(id: String, title: String, icon: Texture2D) -> Button:
+	var b := costume_template.duplicate() as Button
 	b.show()
 	b.text = title
-	b.add_theme_font_size_override("font_size", 22)
-	return b
-
-func _costume_button(id: String, title: String, icon: Texture2D) -> Button:
-	var b := _closet_button(title)
 	b.icon = icon
-	b.expand_icon = true
-	b.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	b.vertical_icon_alignment = VERTICAL_ALIGNMENT_TOP
-	b.custom_minimum_size = Vector2(170, 170)
 	b.set_meta("costume", id)
 	var unlock: Array = look.COSTUME_UNLOCKS.get(id, [])
 	if not unlock.is_empty() and not GameState.owned_costumes.has(id):
@@ -946,7 +895,7 @@ func _buy_costume(id: String, price: int) -> void:
 func _refresh_wardrobe() -> void:
 	var worn: String = GameState.outfit.get(_closet_slot, "")
 	for b: Button in wardrobe_tabs.get_children():
-		_press_look(b, b.get_meta("slot") == _closet_slot)
+		_press_look(b, String(b.name) == _closet_slot)
 	for b: Button in wardrobe_grid.get_children():
 		_press_look(b, b.get_meta("costume") == worn)
 

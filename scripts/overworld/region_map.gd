@@ -22,8 +22,9 @@ extends Node3D
 @export var house_margin := 0.6
 ## A house's label shows only while the explorer is this close, so 15 labels do not crowd the screen.
 @export var house_label_near := 4.0
-## The icon that bobs over each house roof, tinted with the house's type colour.
-@export var house_icon: Texture2D
+## A Challenge House trigger: encounter_trigger.tscn plus the Icon that bobs over its roof and the
+## dark Doorway that unfolds over its door (house_trigger.tscn).
+@export var house_scene: PackedScene
 
 @export_group("HUD")
 ## The Champion chip's icon once the Champion is open or beaten, and while it is still locked.
@@ -33,8 +34,6 @@ extends Node3D
 const ExplorerPicker := preload("res://scenes/overworld/explorer_picker.tscn")
 ## Each question type's colour: the icon over its houses.
 const TYPE_COLORS := {"identification": Palette.TEAL, "essay": Palette.LILAC, "multiple_choice": Palette.AMBER}
-## An open doorway: the dark inside of a house, shown when the explorer walks up to it.
-const DOORWAY := Color("1E2829")
 ## A house label floats this high so it clears the roof; the map's houses stand about 2 units tall.
 const HOUSE_LABEL_HEIGHT := 2.6
 ## Entering a house or gym fades the screen to %Fade's colour over FADE_SEC; coming back fades it in.
@@ -209,7 +208,7 @@ func _add_house_node(house: Dictionary) -> void:
 	var cleared := SessionManager.is_house_cleared(_topic_id, t, id)
 	var state := "%d/3 stars" % SessionManager.best_stars("house", _topic_id, "%s#%s" % [t, id]) if cleared else "Easy"
 	var box: AABB = house["box"]
-	var area := trigger_scene.instantiate() as EncounterTrigger
+	var area := house_scene.instantiate() as EncounterTrigger
 	area.position = Vector3(box.get_center().x, 0.0, box.get_center().z)
 	area.box = Vector3(box.size.x + house_margin * 2.0, box.size.y, box.size.z + house_margin * 2.0)
 	area.text = "%s\n%s" % [_type_name(t), state]
@@ -226,22 +225,17 @@ func _add_house_node(house: Dictionary) -> void:
 	if cleared:
 		area.dim()
 
-# The inside of the door: a dark panel just in front of it, folded shut (zero width) until opened.
+# The inside of the door (house_trigger.tscn's Doorway): a dark panel just in front of it, sized to
+# this house's door and folded shut (zero width) until opened.
 func _add_doorway(area: Node3D, house: Dictionary) -> MeshInstance3D:
-	var quad := QuadMesh.new()
+	var doorway := area.get_node("Doorway") as MeshInstance3D
+	var quad := doorway.mesh.duplicate() as QuadMesh
 	quad.size = house["door_size"]
-	var mat := StandardMaterial3D.new()
-	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	mat.albedo_color = DOORWAY
-	quad.material = mat
-	var doorway := MeshInstance3D.new()
 	doorway.mesh = quad
 	var facing: Vector3 = house["facing"]
 	doorway.position = (house["door"] as Vector3) - area.position + facing * 0.02
 	doorway.basis = Basis.looking_at(-facing)
 	doorway.scale = Vector3(0.01, 1, 1)
-	doorway.visible = false
-	area.add_child(doorway)
 	return doorway
 
 func _open_doorway(doorway: MeshInstance3D, open: bool) -> void:
@@ -251,16 +245,12 @@ func _open_doorway(doorway: MeshInstance3D, open: bool) -> void:
 	if not open:
 		t.tween_callback(doorway.hide)
 
-# A bobbing icon over the roof in the house's type colour, faint once the house is cleared.
+# The icon over the roof (house_trigger.tscn's Icon) in the house's type colour, faint once the house
+# is cleared, bobbing.
 func _add_house_icon(area: EncounterTrigger, color: Color, cleared: bool) -> void:
-	var icon := Sprite3D.new()
-	icon.texture = house_icon
-	icon.pixel_size = 0.003
-	icon.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	icon.no_depth_test = true
+	var icon := area.get_node("Icon") as Sprite3D
 	icon.modulate = Color(color, 0.4 if cleared else 1.0)
 	icon.position = Vector3(0, HOUSE_LABEL_HEIGHT - 0.3, 0)
-	area.add_child(icon)
 	var t := icon.create_tween().set_loops()
 	t.tween_property(icon, "position:y", HOUSE_LABEL_HEIGHT - 0.15, 0.7).set_trans(Tween.TRANS_SINE)
 	t.tween_property(icon, "position:y", HOUSE_LABEL_HEIGHT - 0.3, 0.7).set_trans(Tween.TRANS_SINE)
@@ -344,7 +334,7 @@ func _door_animates(area: Area3D, slot: GymSlot) -> void:
 
 # A trigger the explorer walks into, from encounter_trigger.tscn; the caller adds it to the tree.
 func _trigger(pos: Vector3, radius: float, text: String) -> EncounterTrigger:
-	var area := trigger_scene.instantiate() as EncounterTrigger
+	var area := house_scene.instantiate() as EncounterTrigger
 	area.position = pos
 	area.radius = radius
 	area.text = text

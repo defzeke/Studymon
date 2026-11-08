@@ -78,9 +78,11 @@ res://
 │       └── widgets/      confirm_modal.gd (ConfirmModal), stat_gauge.gd, music_toggle.gd
 ├── scenes/
 │   ├── battle/           battle
-│   ├── overworld/        world_intro, region_map, encounter_trigger, gym_burst, explorer_picker
+│   ├── kuiz/             kuiz_head (dirt decals and outfit stickers on Kuiz's Head bone)
+│   ├── overworld/        world_intro, region_map, encounter_trigger, house_trigger, gym_burst,
+│   │                     explorer_picker; weather/ rain, leaves, snow
 │   ├── review_session/   categorizer, flashcards
-│   └── ui/               session_list, settings; boot/ splash, loading, peek
+│   └── ui/               session_list, settings; boot/ splash, loading, peek; widgets/ confirm_modal
 ├── backend/              the study server: main.py (FastAPI), ai.py, tests/, evals/ (api-backend.md)
 ├── docs/                 ← this folder (includes quizmon-build-plan.md)
 └── README.md

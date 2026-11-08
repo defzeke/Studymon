@@ -1,0 +1,45 @@
+[gd_scene format=3]
+
+[ext_resource type="Texture2D" path="res://assets/sprites/effects/leaf.svg" id="1_leaf"]
+
+[sub_resource type="Gradient" id="Gradient_leaves"]
+interpolation_mode = 1
+offsets = PackedFloat32Array(0, 0.5)
+colors = PackedColorArray(0.8392157, 0.65882355, 0.37254903, 1, 0.7882353, 0.4745098, 0.4392157, 1)
+
+[sub_resource type="GradientTexture1D" id="GradientTexture1D_leaves"]
+gradient = SubResource("Gradient_leaves")
+
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_leaves"]
+emission_shape = 3
+emission_box_extents = Vector3(7, 2, 7)
+angle_min = -180.0
+angle_max = 180.0
+direction = Vector3(0, -1, 0)
+spread = 30.0
+initial_velocity_min = 0.4
+initial_velocity_max = 0.9
+angular_velocity_min = -90.0
+angular_velocity_max = 90.0
+gravity = Vector3(0.3, -0.5, 0)
+color_initial_ramp = SubResource("GradientTexture1D_leaves")
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_leaves"]
+transparency = 1
+shading_mode = 0
+vertex_color_use_as_albedo = true
+vertex_color_is_srgb = true
+billboard_mode = 3
+albedo_texture = ExtResource("1_leaf")
+
+[sub_resource type="QuadMesh" id="QuadMesh_leaves"]
+material = SubResource("StandardMaterial3D_leaves")
+size = Vector2(0.3, 0.3)
+
+[node name="Leaves" type="GPUParticles3D"]
+amount = 90
+lifetime = 5.0
+preprocess = 5.0
+visibility_aabb = AABB(-8, -4, -8, 16, 7, 16)
+process_material = SubResource("ParticleProcessMaterial_leaves")
+draw_pass_1 = SubResource("QuadMesh_leaves")

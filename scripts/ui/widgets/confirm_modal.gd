@@ -2,84 +2,39 @@ class_name ConfirmModal
 extends Control
 ## Animated confirm / notice pop-up: the screen dims, the card pops in, a button or Esc closes it.
 ## ConfirmModal.open(self, "Delete?", "…", "Delete", on_confirm, true); an empty cancel_text makes a notice.
+## Its look is confirm_modal.tscn; this fills the text. Contract: docs/ui-and-assets.md §2 Pop-ups.
 
-const BOLD: Font = preload("res://assets/fonts/JosefinSans-Bold.ttf")
-const THEME: Theme = preload("res://assets/theme/app_theme.tres")
+const SCENE := "res://scenes/ui/widgets/confirm_modal.tscn"
 
-var _dim: ColorRect
-var _card: PanelContainer
+@onready var _dim: ColorRect = %Dim
+@onready var _card: PanelContainer = %Card
 var _closing := false
 
 ## Shows the modal over `host`; `on_confirm` runs after the card has closed.
 static func open(host: Node, title: String, message: String, confirm_text := "OK",
 		on_confirm := Callable(), danger := false, cancel_text := "Cancel") -> Control:
-	var m := new()
+	var m: ConfirmModal = (load(SCENE) as PackedScene).instantiate()
 	host.add_child(m)
-	m._build(title, message, confirm_text, on_confirm, danger, cancel_text)
+	m._fill(title, message, confirm_text, on_confirm, danger, cancel_text)
 	return m
 
-func _build(title: String, message: String, confirm_text: String, on_confirm: Callable,
+func _fill(title: String, message: String, confirm_text: String, on_confirm: Callable,
 		danger: bool, cancel_text: String) -> void:
-	theme = THEME
-	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	mouse_filter = Control.MOUSE_FILTER_STOP
-	_dim = ColorRect.new()
-	_dim.color = Color(Palette.SLATE, 0.0)
-	_dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	add_child(_dim)
-	var center := CenterContainer.new()
-	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	add_child(center)
-	_card = PanelContainer.new()
-	_card.custom_minimum_size = Vector2(560, 0)
-	_card.theme_type_variation = &"MenuCard"
-	center.add_child(_card)
-	var pad := MarginContainer.new()
-	for side in ["left", "top", "right", "bottom"]:
-		pad.add_theme_constant_override("margin_" + side, 10)
-	_card.add_child(pad)
-	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 16)
-	pad.add_child(box)
-	var title_label := Label.new()
-	title_label.text = title
-	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title_label.add_theme_font_override("font", BOLD)
-	title_label.add_theme_font_size_override("font_size", 36)
-	title_label.add_theme_color_override("font_color", Palette.CORAL if danger else Palette.SLATE)
-	box.add_child(title_label)
-	var body := Label.new()
-	body.text = message
-	body.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	body.custom_minimum_size = Vector2(480, 0)
-	body.theme_type_variation = &"CardBody"
-	box.add_child(body)
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 12)
-	box.add_child(row)
-	var cancel: Button = null
-	if cancel_text != "":
-		cancel = _button(cancel_text, row)
-		cancel.theme_type_variation = &"MenuQuiet"
-		cancel.pressed.connect(_close.bind(Callable()))
-	var confirm := _button(confirm_text, row)
-	confirm.theme_type_variation = &"MenuPrimary"
-	confirm.pressed.connect(_close.bind(on_confirm))
+	%Title.text = title
 	if danger:
-		tint_danger(confirm)
-	(cancel if cancel != null else confirm).grab_focus()
+		%Title.add_theme_color_override("font_color", Palette.CORAL)
+		tint_danger(%Confirm)
+	%Body.text = message
+	var cancel: Button = %Cancel
+	cancel.visible = cancel_text != ""
+	cancel.text = cancel_text
+	cancel.pressed.connect(_close.bind(Callable()))
+	%Confirm.text = confirm_text
+	%Confirm.pressed.connect(_close.bind(on_confirm))
+	(cancel if cancel.visible else %Confirm as Button).grab_focus()
 	_card.modulate.a = 0.0
 	_card.scale = Vector2(0.85, 0.85)
 	_pop_in.call_deferred()
-
-func _button(text: String, parent: Control) -> Button:
-	var b := Button.new()
-	b.text = text
-	b.custom_minimum_size = Vector2(0, 64)
-	b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	parent.add_child(b)
-	return b
 
 ## Soft Coral version of the theme's button, so the dangerous choice reads as one.
 static func tint_danger(b: Button) -> void:

@@ -1,0 +1,30 @@
+[gd_scene format=3]
+
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_rain"]
+emission_shape = 3
+emission_box_extents = Vector3(7, 2, 7)
+direction = Vector3(0, -1, 0)
+spread = 4.0
+initial_velocity_min = 11.0
+initial_velocity_max = 13.0
+gravity = Vector3(0, 0, 0)
+color = Color(0.85, 0.92, 1, 0.55)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_rain"]
+transparency = 1
+shading_mode = 0
+vertex_color_use_as_albedo = true
+vertex_color_is_srgb = true
+billboard_mode = 2
+
+[sub_resource type="QuadMesh" id="QuadMesh_rain"]
+material = SubResource("StandardMaterial3D_rain")
+size = Vector2(0.025, 0.4)
+
+[node name="Rain" type="GPUParticles3D"]
+amount = 400
+lifetime = 0.45
+preprocess = 0.45
+visibility_aabb = AABB(-8, -4, -8, 16, 7, 16)
+process_material = SubResource("ParticleProcessMaterial_rain")
+draw_pass_1 = SubResource("QuadMesh_rain")

@@ -43,7 +43,7 @@ Where the two disagree, the docs say so explicitly.
 | Viewport | 720 × 1280, stretch `canvas_items`, aspect `expand` |
 | Renderer | `mobile`, D3D12 on Windows |
 | Language | GDScript only (41 files) |
-| Scenes | 13 (`.tscn`) |
+| Scenes | 19 (`.tscn`) |
 | Autoloads | 7 |
 | Backend | FastAPI gateway to Claude: `/v1/extract`, `/v1/grade` (`backend/`). The editor runs on mocks; release builds use the server |
 | Persistence | Single JSON file `user://studymon_save.json`, schema `"v": 16` |

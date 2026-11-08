@@ -30,21 +30,11 @@ const COSTUMES := {
 	"scarf": ["Scarf", preload("res://assets/sprites/props/costume_scarf.svg"), Vector3(0.05, -0.92, 0.9), 2.2, 0.0, "body"],
 	"medal": ["Medal", preload("res://assets/sprites/props/costume_medal.svg"), Vector3(0.0, -1.0, 0.9), 0.56, 0.0, "body"],
 }
-## Dirt is projected onto the shell (Decal), so it hugs the curve instead of floating in front:
-## [texture, surface point, its outward normal, width, tilt (radians), dirt at which it starts to
-## show]. Points and normals are vertices of Head_Shell / EarMesh_R in rest pose.
-const DIRT := [
-	[preload("res://assets/sprites/props/dirt_spot_1.svg"), Vector3(-0.555, 0.807, 0.526), Vector3(-0.369, 0.747, 0.553), 0.48, 0.0, 12.0],
-	[preload("res://assets/sprites/props/scratch_1.svg"), Vector3(0.553, 0.787, 0.553), Vector3(0.361, 0.722, 0.590), 0.68, -0.2, 28.0],
-	[preload("res://assets/sprites/props/dirt_spot_2.svg"), Vector3(-1.002, 0.149, 0.579), Vector3(-0.814, 0.181, 0.552), 0.42, 0.0, 42.0],
-	[preload("res://assets/sprites/props/dirt_spot_3.svg"), Vector3(0.841, 1.146, -0.247), Vector3(0.476, 0.127, 0.870), 0.42, 0.4, 56.0],
-	[preload("res://assets/sprites/props/scratch_2.svg"), Vector3(1.006, -0.349, 0.616), Vector3(0.801, -0.056, 0.597), 0.54, 1.2, 70.0],
-	[preload("res://assets/sprites/props/dirt_spot_1.svg"), Vector3(-0.808, -0.705, 0.620), Vector3(-0.464, -0.735, 0.495), 0.4, -0.5, 84.0],
-]
+## The dirt decals and the outfit stickers live in kuiz_head.tscn, on Kuiz's Head bone: each Dirt/Mark*
+## decal projects onto the shell and starts to show at its `shows_from` dirt (metadata).
+const HEAD_SCENE: PackedScene = preload("res://scenes/kuiz/kuiz_head.tscn")
 ## Dirt above a decal's threshold fades it in over this many points.
 const FADE := 10.0
-## How deep each decal's box reaches, centred on the surface point (model units).
-const DIRT_DEPTH := 0.5
 
 var _head: BoneAttachment3D
 var _dirt: Array[Decal] = []
@@ -54,22 +44,21 @@ var _worn := {}
 ## `kuiz` is the instanced glb (peek.gd hands it over).
 func attach(kuiz: Node3D) -> void:
 	var skeleton: Skeleton3D = kuiz.find_child("Skeleton3D", true, false)
-	_head = BoneAttachment3D.new()
-	_head.bone_name = "Head"
+	_head = HEAD_SCENE.instantiate()
 	skeleton.add_child(_head)
-	for d: Array in DIRT:
-		_dirt.append(_decal(d[0], d[1], d[2], d[3], d[4]))
+	for d: Decal in _head.get_node("Dirt").get_children():
+		_dirt.append(d)
 	for slot: Array in SLOTS:
-		_worn[slot[0]] = [_sticker(null, Vector3.ZERO, 1.0, 0.0), "-"]
+		_worn[slot[0]] = [_head.get_node("Stickers/" + str(slot[0])), "-"]
 
 func _process(_delta: float) -> void:
 	if _head == null:
 		return
 	var dirt := CompanionState.dirt
-	for i in _dirt.size():
-		var a := clampf((dirt - DIRT[i][5]) / FADE, 0.0, 1.0)
-		_dirt[i].modulate.a = a
-		_dirt[i].visible = a > 0.0
+	for d in _dirt:
+		var a := clampf((dirt - float(d.get_meta("shows_from"))) / FADE, 0.0, 1.0)
+		d.modulate.a = a
+		d.visible = a > 0.0
 	for slot: String in _worn:
 		var id: String = GameState.outfit.get(slot, "")
 		var worn: Array = _worn[slot]
@@ -81,33 +70,6 @@ func _process(_delta: float) -> void:
 		if s.visible:
 			var c: Array = COSTUMES[id]
 			_place(s, c[1], c[2], c[3], c[4])
-
-# A decal projects along its -Y, with the texture across X (right) and Z (down): Y is the surface
-# normal, Z points down the surface (upright art from the front), then the whole turns by `tilt`.
-func _decal(tex: Texture2D, at: Vector3, normal: Vector3, width: float, tilt: float) -> Decal:
-	var d := Decal.new()
-	d.texture_albedo = tex
-	d.size = Vector3(width, DIRT_DEPTH, width * tex.get_height() / tex.get_width())
-	d.normal_fade = 0.4
-	var y := normal.normalized()
-	var z := (Vector3.DOWN - y * Vector3.DOWN.dot(y)).normalized()
-	d.basis = Basis(y.cross(z), y, z).rotated(y, tilt)
-	d.position = at
-	d.modulate.a = 0.0
-	d.visible = false
-	_head.add_child(d)
-	return d
-
-func _sticker(tex: Texture2D, at: Vector3, width: float, tilt: float) -> Sprite3D:
-	var s := Sprite3D.new()
-	s.shaded = false
-	s.double_sided = false
-	s.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR
-	s.render_priority = 1
-	_head.add_child(s)
-	if tex != null:
-		_place(s, tex, at, width, tilt)
-	return s
 
 func _place(s: Sprite3D, tex: Texture2D, at: Vector3, width: float, tilt: float) -> void:
 	s.texture = tex

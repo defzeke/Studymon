@@ -1,0 +1,24 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/overworld/encounter_trigger.tscn" id="1_trigger"]
+[ext_resource type="Texture2D" path="res://assets/sprites/ui/icon_trainer.svg" id="2_icon"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_doorway"]
+shading_mode = 0
+albedo_color = Color(0.11764706, 0.15686275, 0.16078432, 1)
+
+[sub_resource type="QuadMesh" id="QuadMesh_doorway"]
+material = SubResource("StandardMaterial3D_doorway")
+
+[node name="HouseTrigger" instance=ExtResource("1_trigger")]
+
+[node name="Icon" type="Sprite3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.3, 0)
+billboard = 1
+no_depth_test = true
+pixel_size = 0.003
+texture = ExtResource("2_icon")
+
+[node name="Doorway" type="MeshInstance3D" parent="."]
+visible = false
+mesh = SubResource("QuadMesh_doorway")

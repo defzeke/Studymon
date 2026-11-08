@@ -12,12 +12,12 @@ const TRAMPOLINE: Texture2D = preload("res://assets/sprites/props/trampoline.svg
 const ROCKET: Texture2D = preload("res://assets/sprites/props/rocket.svg")
 const METEOR: Texture2D = preload("res://assets/sprites/props/meteor.svg")
 const STARS: Texture2D = preload("res://assets/sprites/props/stars.svg")
-## The zones, by the height (m) they start at. Sky's backdrop is the scene's own Sky node.
+## The zones, by the height (m) they start at. Each zone after Sky fades in its %ZoneBackdrops child.
 const ZONES := [
-	{"from": 0, "name": "Sky", "platform": preload("res://assets/sprites/props/platform.svg"), "backdrop": null},
-	{"from": 300, "name": "Space!", "platform": preload("res://assets/sprites/props/platform_space.svg"), "backdrop": preload("res://assets/sprites/rooms/sky_space.svg")},
-	{"from": 900, "name": "Galaxy!", "platform": preload("res://assets/sprites/props/platform_galaxy.svg"), "backdrop": preload("res://assets/sprites/rooms/sky_galaxy.svg")},
-	{"from": 1800, "name": "Deep Space!", "platform": preload("res://assets/sprites/props/platform_deep.svg"), "backdrop": preload("res://assets/sprites/rooms/sky_deep.svg")},
+	{"from": 0, "name": "Sky", "platform": preload("res://assets/sprites/props/platform.svg")},
+	{"from": 300, "name": "Space!", "platform": preload("res://assets/sprites/props/platform_space.svg")},
+	{"from": 900, "name": "Galaxy!", "platform": preload("res://assets/sprites/props/platform_galaxy.svg")},
+	{"from": 1800, "name": "Deep Space!", "platform": preload("res://assets/sprites/props/platform_deep.svg")},
 ]
 const ZONE_FADE := 1.2
 const BANNER_TIME := 1.4
@@ -80,6 +80,13 @@ const STUN_TIME := 0.8
 @onready var ground: TextureRect = %Ground
 @onready var label: Label = %JumpLabel
 @onready var quit_btn: BaseButton = %JumpQuit
+## The rocket's flame, over the platforms (z_index 1; still behind the 3D Kuiz, like the whole world).
+@onready var _flame: TextureRect = %RocketFlame
+## One backdrop per zone after Sky, in zone order, between Sky and the world in peek.tscn; a later
+## zone draws over an earlier one, so each fades in on top.
+@onready var _backdrops: Array = %ZoneBackdrops.get_children()
+## Two copies of the star tile, stacked, that wrap as the world climbs.
+@onready var _stars: Array[TextureRect] = [%Stars1, %Stars2]
 
 var _pos := Vector2.ZERO
 var _vel := Vector2.ZERO
@@ -97,10 +104,7 @@ var _height := 0
 var _best := 0
 var _finger := -1.0
 var _rocket_left := 0.0
-var _flame: TextureRect
 var _zone := 0
-var _backdrops: Array[TextureRect] = []
-var _stars: Array[TextureRect] = []
 var _banner := ""
 var _banner_left := 0.0
 var _meteor_wait := 0.0
@@ -109,38 +113,6 @@ var _stun_left := 0.0
 func _ready() -> void:
 	super._ready()
 	quit_btn.pressed.connect(quit)
-	_flame = TextureRect.new()
-	_flame.texture = ROCKET
-	_flame.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	_flame.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_flame.size = ROCKET_SIZE * 1.4
-	_flame.visible = false
-	# Over the platforms (still behind the 3D Kuiz, since the whole world is behind it).
-	_flame.z_index = 1
-	world.add_child(_flame)
-	# The zone backdrops and the star layer sit in the SkyJump backdrop between Sky and the world;
-	# a later zone draws over an earlier one, so each fades in on top.
-	var backdrop := world.get_parent()
-	for zone: Dictionary in ZONES.slice(1):
-		var b := TextureRect.new()
-		b.texture = zone["backdrop"]
-		b.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		b.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-		b.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		b.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-		b.modulate.a = 0.0
-		backdrop.add_child(b)
-		backdrop.move_child(b, world.get_index())
-		_backdrops.append(b)
-	for i in 2:
-		var s := TextureRect.new()
-		s.texture = STARS
-		s.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		s.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		s.modulate.a = 0.0
-		backdrop.add_child(s)
-		backdrop.move_child(s, world.get_index())
-		_stars.append(s)
 
 func _begin() -> void:
 	for p in _platforms + _rockets + _meteors:

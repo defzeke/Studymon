@@ -66,6 +66,10 @@ text** checkbox in `settings.tscn` calls `set_large_text()` and saves.
 | `scenes/overworld/region_map.tscn` | `Node3D` | `scripts/overworld/region_map.gd` (+ `player.gd`, `joystick.gd`) | 3D island: explorer, Challenge Houses, gyms, champion |
 | `scenes/overworld/world_intro.tscn` | `Node3D` | `scripts/overworld/world_intro.gd` | Between home and the island: Kuiz leaves its house on Play, and goes back in on the map's Back |
 | `scenes/overworld/explorer_picker.tscn` | `CanvasLayer` | `scripts/overworld/explorer_picker.gd` | "Choose your explorer" card, instanced over the region map |
+| `scenes/overworld/house_trigger.tscn` | `Area3D` (inherits `encounter_trigger.tscn`) | `scripts/overworld/encounter_trigger.gd` | a Challenge House trigger: the label, plus the `Icon` (Sprite3D, `icon_trainer.svg`) over the roof and the dark `Doorway` quad; one per house |
+| `scenes/overworld/weather/rain.tscn`, `leaves.tscn`, `snow.tscn` | `GPUParticles3D` | — | the season's weather around the explorer (`season.gd` exports `rain` / `leaves` / `snow`) |
+| `scenes/kuiz/kuiz_head.tscn` | `BoneAttachment3D` | — | Kuiz's dirt decals and outfit stickers, put on its Head bone by `kuiz_look.gd` |
+| `scenes/ui/widgets/confirm_modal.tscn` | `Control` | `scripts/ui/widgets/confirm_modal.gd` | the one pop-up (see Pop-ups below) |
 | `scenes/battle/battle.tscn` | `Control` | `scripts/battle/battle.gd`, `scripts/battle/arena_stage.gd` | 3D arena behind the battle HUD: intro, strikes, ten SFX cues |
 | `scenes/review_session/flashcards.tscn` | `Control` | `scripts/review_session/flashcards.gd` | Flashcard Sanctuary: untimed card review |
 | `scenes/ui/settings.tscn` | `Control` | `scripts/ui/settings.gd` | two cards: "Sound & display" (music, sounds, large text) and "Privacy & data" (`ConsentCheck` with the consent text in `ConsentNote`; `PrivacyButton`, `TermsButton`, `SupportButton` opening `PRIVACY_URL` / `TERMS_URL` / `SUPPORT_URL`, disabled while empty; `ExportButton` / `ImportButton` with the native `ExportDialog` / `ImportDialog` (`.json`) for `SaveManager.export_to()` / `import_from()`; and `DeleteDataButton`, coral, confirms then `SaveManager.delete_all()` and restarts at the tutorial); Back returns home |
@@ -161,8 +165,8 @@ Peek                Node3D (peek.gd)
 ├── Rooms             CanvasLayer −1, drawn behind the 3D: White (#FFFFFF), StudyRoom
 │                     (rooms/study_room.svg, with Night art and a Deep Slate Veil faded in when the
 │                     lights are off), MaintenanceBay, DataKitchen, Playroom, each covering;
-│                     the minigame backdrops SoccerField and SkyJump (Sky + JumpWorld: Ground and
-│                     the platforms, which scroll)
+│                     the minigame backdrops SoccerField and SkyJump (Sky, ZoneBackdrops, Stars1/2 +
+│                     JumpWorld: Ground, RocketFlame and the platforms, which scroll)
 ├── Tutorial          CanvasLayer (tutorial.gd)
 │   └── Speech        bottom: "Kuiz" name tag over the Dialogue box (Text, Continue, NameRow with
 │                     NameInput + NameOk, and a bobbing ▼ Hint)
@@ -183,14 +187,17 @@ Peek                Node3D (peek.gd)
     ├── Bar           the dock row over the table (no panel of its own): one action group per
     │                 room; every item is a bare icon (no circle) with an Off-White caption on the cloth
     ├── Ball          props/ball.svg, Playroom only
-    ├── Shop          the fridge: one row per food with a Buy button, and Close
+    ├── Shop          the fridge: ShopList (one copy of the hidden ShopRowTemplate — Icon, Label, Buy — per
+    │                 food), Close
     ├── Picker        the Games card: Kuiz Keeper, Sky Jump, Close
-    ├── CheckPanel    the tablet's check-up: a Deep Slate bezel around a teal screen (rows built in
-    │                 code), New battery, Close
-    ├── Wardrobe      the closet: Head / Face / Body tabs and a grid of costumes (both built in code), Close
+    ├── CheckPanel    the tablet's check-up: a Deep Slate bezel around a teal screen; CheckRows holds one row
+    │                 per stat (Name, Meter, Pct), each named after its CompanionState stat,
+    │                 New battery, Close
+    ├── Wardrobe      the closet: WardrobeTabs (head, face, body buttons), WardrobeGrid (copies of the
+    │                 hidden CostumeTemplate), Close
     ├── Toast         a pill above the dock for short hints ("Kuiz is sleeping…")
     └── Held          the food or screwdriver being dragged
-├── Soccer            CanvasLayer (minigames/soccer.gd): score pill, back arrow, SoccerBall
+├── Soccer            CanvasLayer (minigames/soccer.gd): score pill, back arrow, BallShadow, SoccerBall
 └── SkyJumpHud        CanvasLayer (minigames/sky_jump.gd): height pill, back arrow
 ```
 
@@ -273,7 +280,7 @@ player's name.
 The game loop after the tutorial. A ◀ and ▶ arrow either side of the room sign at the top walk
 Kuiz to the previous or next room (Study Room → Maintenance Bay → Data Kitchen → Playroom,
 wrapping), Pou-style; `home.gd` keeps them hugging the sign, whose width follows the room name.
-Tapping the sign opens a dropdown of all four rooms (64 px rows copied from `%BuyTemplate`, the current
+Tapping the sign opens a dropdown of all four rooms (64 px buttons placed in `%RoomList`, each named after its room, the current
 one pressed); a pick walks Kuiz straight there, and a tap anywhere else closes it. It opens under the
 same conditions as the arrows: not mid-walk, not charging, and a dozing Kuiz gets the sleeping toast.
 The dock at the bottom is a table (`ui/dock_table.svg`: an amber wooden top on two legs, a Muted Teal
@@ -354,8 +361,9 @@ soft drop shadow, like the props.
 
 ### Kuiz's look (`kuiz_look.gd`)
 
-Everything hangs off a `BoneAttachment3D` on Kuiz's `Head` bone, so it follows every clip and
-turn. Positions are in Head-bone space: the white shell's forehead band is y 0.62–1.05,
+Everything hangs off `scenes/kuiz/kuiz_head.tscn`, a `BoneAttachment3D` that `attach()` puts on
+Kuiz's `Head` bone, so it follows every clip and turn: its `Dirt/Mark1..6` decals and its
+`Stickers/head`, `face`, `body` sprites are edited there. Positions are in Head-bone space: the white shell's forehead band is y 0.62–1.05,
 the dark screen covers the face below it, the ears rise to y 1.45 behind z 0.26, and the shell's
 bottom edge is at y −0.9 (Kuiz is all head; body items hang from that edge).
 
@@ -364,7 +372,7 @@ bottom edge is at y −0.9 (Kuiz is all head; body items hang from that edge).
   scratches, one more spot) project onto the shell itself, so they hug its curve from every angle:
   each sits on a rest-pose vertex of `Head_Shell` (or `EarMesh_R`) with its box (0.5 deep) along
   that vertex's normal. They sit on the forehead, the sides, the lower edge and the right ear; each fades in over
-  10 points once dirt passes its threshold (12, 28, 42, 56, 70, 84), so Kuiz gets grubbier
+  10 points once dirt passes its threshold (the decal's `shows_from` metadata: 12, 28, 42, 56, 70, 84), so Kuiz gets grubbier
   gradually. The towel scrubs them off; the tablet's Clean bar shows it.
 - **Outfit** (`GameState.outfit`, saved): one costume per closet slot (`SLOTS`: head, face, body),
   each its own sticker (`Sprite3D`, unshaded). `COSTUMES` holds each one's name, art, centre, width, tilt and slot; hats
@@ -422,8 +430,9 @@ as play care (`care("play")`: mood +8, energy −2, XP). Best scores last for th
   moving platforms become more common and faster, timed platforms drop sooner (0.9 → 0.5 s), and
   rockets get a little more common. From Space up, **meteors** cross the screen diagonally (one
   every 3.2 s, down to 1.5 s); a hit knocks Kuiz down (`Surprised`) instead of ending the run, and
-  a rocket smashes them. The zone backdrops and star layers are built in code inside
-  `Rooms/SkyJump`.
+  a rocket smashes them. The zone backdrops (`%ZoneBackdrops`: Space, Galaxy, DeepSpace, in zone order), the two
+  star tiles (`%Stars1`, `%Stars2`) and the rocket flame (`%RocketFlame`, in `JumpWorld`) are placed in
+  `Rooms/SkyJump`; only the platforms, rockets and meteors are spawned in code.
 - Art (temporary placeholders): `rooms/soccer_field.svg`, `rooms/sky_jump.svg`,
   `props/soccer_ball.svg`, `props/platform.svg`, `props/platform_timed.svg`,
   `props/trampoline.svg`, `props/rocket.svg`, `props/ground.svg`, `ui/game_soccer.svg`,
@@ -558,7 +567,7 @@ Bot foe makes its own sounds on its clips (§2 Model sounds). For a Multiple Cho
 
 ### Pop-ups
 
-`scripts/ui/widgets/confirm_modal.gd` (`ConfirmModal.open(host, title, message, confirm_text, on_confirm, danger, cancel_text)`) is the one pop-up: a dimmed screen, a card that scales in (0.85 → 1, back-ease, 0.28 s) and out (0.14 s), a bold title (coral when `danger`), centred wrapped text and full-width buttons. An empty `cancel_text` makes it a notice. Esc cancels. Tweens ignore `Engine.time_scale`, so battle hit-stop does not freeze it. The script is `class_name ConfirmModal`, so callers use it directly. Used by home (costumes), the Worlds hub (reset, delete, slots), the World Builder, Settings, the map's "Go home?" and the minigames' end screen.
+`scenes/ui/widgets/confirm_modal.tscn` with `confirm_modal.gd` (`ConfirmModal.open(host, title, message, confirm_text, on_confirm, danger, cancel_text)`) is the one pop-up; its `Dim`, `Card`, `Title`, `Body`, `Cancel` and `Confirm` are laid out in the scene and the script fills the text: a dimmed screen, a card that scales in (0.85 → 1, back-ease, 0.28 s) and out (0.14 s), a bold title (coral when `danger`), centred wrapped text and full-width buttons. An empty `cancel_text` makes it a notice. Esc cancels. Tweens ignore `Engine.time_scale`, so battle hit-stop does not freeze it. The script is `class_name ConfirmModal`, so callers use it directly. Used by home (costumes), the Worlds hub (reset, delete, slots), the World Builder, Settings, the map's "Go home?" and the minigames' end screen.
 
 ## 3. Interaction conventions
 
