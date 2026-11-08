@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="FoodItem" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/sprites/props/cache_cookie.svg" id="1_52btu"]
+[ext_resource type="Script" path="res://scripts/data/food_item.gd" id="2_ywhnk"]
+
+[resource]
+script = ExtResource("2_ywhnk")
+id = "cache_cookie"
+display_name = "Cache Cookie"
+icon = ExtResource("1_52btu")
+start_stock = 2
+price = 6
+hunger = 15.0

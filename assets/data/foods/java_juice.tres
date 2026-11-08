@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="FoodItem" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/sprites/props/java_juice.svg" id="1_a3w4m"]
+[ext_resource type="Script" path="res://scripts/data/food_item.gd" id="2_t7m8b"]
+
+[resource]
+script = ExtResource("2_t7m8b")
+id = "java_juice"
+display_name = "Java Juice"
+icon = ExtResource("1_a3w4m")
+start_stock = 2
+price = 8
+hunger = 8.0
+focus = 10.0

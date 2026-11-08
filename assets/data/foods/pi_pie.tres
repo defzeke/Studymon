@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="FoodItem" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/sprites/props/pi_pie.svg" id="1_k4f7h"]
+[ext_resource type="Script" path="res://scripts/data/food_item.gd" id="2_5dnbe"]
+
+[resource]
+script = ExtResource("2_5dnbe")
+id = "pi_pie"
+display_name = "Pi Pie"
+icon = ExtResource("1_k4f7h")
+start_stock = 1
+price = 9
+hunger = 25.0

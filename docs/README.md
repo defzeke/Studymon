@@ -42,7 +42,7 @@ Where the two disagree, the docs say so explicitly.
 | Main scene | `res://scenes/ui/boot/splash.tscn` |
 | Viewport | 720 × 1280, stretch `canvas_items`, aspect `expand` |
 | Renderer | `mobile`, D3D12 on Windows |
-| Language | GDScript only (41 files) |
+| Language | GDScript only (45 files) |
 | Scenes | 19 (`.tscn`) |
 | Autoloads | 7 |
 | Backend | FastAPI gateway to Claude: `/v1/extract`, `/v1/grade` (`backend/`). The editor runs on mocks; release builds use the server |

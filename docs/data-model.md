@@ -44,7 +44,7 @@ That is fine for the current scope but means there is **no type safety and no au
   "study_streak": 4, "study_goal_day": "2026-10-29",       // the daily study goal (monetization.md)
   "study_cards_day": "2026-10-29", "study_cards": 6,
   "owned_costumes": ["bow"],                               // closet costumes bought; a worn one counts as owned
-  "outfit": { "head": "crown", "body": "scarf" }, // v10: closet slot -> kuiz_look.gd COSTUMES id; a missing slot is bare
+  "outfit": { "head": "crown", "body": "scarf" }, // v10: closet slot -> a Costume id (assets/data/costumes/); a missing slot is bare
 
   // CompanionState: focus timer lengths in minutes; missing keys use these defaults, bad ones are clamped
   "focus_minutes": 25,

@@ -27,7 +27,7 @@ var world_slots := FREE_WORLD_SLOTS
 const MINIGAME_DAILY_CRYSTALS := 60
 var minigame_day := ""
 var minigame_crystals := 0
-## What Kuiz wears: closet slot ("head", "face", "body") -> an id from kuiz_look.gd's COSTUMES; a
+## What Kuiz wears: closet slot ("head", "face", "body") -> a Costume id (assets/data/costumes/); a
 ## missing slot is bare.
 var outfit: Dictionary = {}
 
@@ -99,7 +99,7 @@ func current_streak() -> int:
 func _yesterday(day: String) -> String:
 	return Time.get_date_string_from_unix_time(Time.get_unix_time_from_datetime_string(day) - 86400)
 
-## Closet costumes bought with crystals (kuiz_look.gd COSTUME_UNLOCKS); free ones are always owned. Saved.
+## Closet costumes bought with crystals (Costume ids, assets/data/costumes/). Saved.
 var owned_costumes: Array[String] = []
 
 ## Buys a costume for `price` crystals; false (nothing spent) without enough.

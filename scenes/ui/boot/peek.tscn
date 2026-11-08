@@ -43,6 +43,30 @@
 [ext_resource type="Texture2D" path="res://assets/sprites/rooms/sky_deep.svg" id="92_sky_deep"]
 [ext_resource type="Texture2D" path="res://assets/sprites/props/stars.svg" id="93_stars"]
 [ext_resource type="Texture2D" path="res://assets/sprites/props/rocket.svg" id="94_rocket"]
+[ext_resource type="Script" path="res://scripts/data/food_item.gd" id="100_food_item"]
+[ext_resource type="Script" path="res://scripts/data/costume.gd" id="101_costume"]
+[ext_resource type="Script" path="res://scripts/data/sky_zone.gd" id="102_sky_zone"]
+[ext_resource type="Resource" path="res://assets/data/foods/data_chips.tres" id="food_data_chips"]
+[ext_resource type="Resource" path="res://assets/data/foods/spicy_chips.tres" id="food_spicy_chips"]
+[ext_resource type="Resource" path="res://assets/data/foods/cache_cookie.tres" id="food_cache_cookie"]
+[ext_resource type="Resource" path="res://assets/data/foods/pi_pie.tres" id="food_pi_pie"]
+[ext_resource type="Resource" path="res://assets/data/foods/byte_burger.tres" id="food_byte_burger"]
+[ext_resource type="Resource" path="res://assets/data/foods/java_juice.tres" id="food_java_juice"]
+[ext_resource type="Resource" path="res://assets/data/costumes/party_hat.tres" id="costume_party_hat"]
+[ext_resource type="Resource" path="res://assets/data/costumes/crown.tres" id="costume_crown"]
+[ext_resource type="Resource" path="res://assets/data/costumes/beanie.tres" id="costume_beanie"]
+[ext_resource type="Resource" path="res://assets/data/costumes/bow.tres" id="costume_bow"]
+[ext_resource type="Resource" path="res://assets/data/costumes/flower.tres" id="costume_flower"]
+[ext_resource type="Resource" path="res://assets/data/costumes/glasses.tres" id="costume_glasses"]
+[ext_resource type="Resource" path="res://assets/data/costumes/shades.tres" id="costume_shades"]
+[ext_resource type="Resource" path="res://assets/data/costumes/hero_mask.tres" id="costume_hero_mask"]
+[ext_resource type="Resource" path="res://assets/data/costumes/bow_tie.tres" id="costume_bow_tie"]
+[ext_resource type="Resource" path="res://assets/data/costumes/scarf.tres" id="costume_scarf"]
+[ext_resource type="Resource" path="res://assets/data/costumes/medal.tres" id="costume_medal"]
+[ext_resource type="Resource" path="res://assets/data/sky_zones/sky.tres" id="zone_sky"]
+[ext_resource type="Resource" path="res://assets/data/sky_zones/space.tres" id="zone_space"]
+[ext_resource type="Resource" path="res://assets/data/sky_zones/galaxy.tres" id="zone_galaxy"]
+[ext_resource type="Resource" path="res://assets/data/sky_zones/deep_space.tres" id="zone_deep_space"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_studio"]
 sky_top_color = Color(0.99, 1, 0.995, 1)
@@ -443,6 +467,7 @@ unique_name_in_owner = true
 [node name="Look" type="Node" parent="."]
 unique_name_in_owner = true
 script = ExtResource("35_look")
+costumes = Array[ExtResource("101_costume")]([ExtResource("costume_party_hat"), ExtResource("costume_crown"), ExtResource("costume_beanie"), ExtResource("costume_bow"), ExtResource("costume_flower"), ExtResource("costume_glasses"), ExtResource("costume_shades"), ExtResource("costume_hero_mask"), ExtResource("costume_bow_tie"), ExtResource("costume_scarf"), ExtResource("costume_medal")])
 
 [node name="Voice" type="Node" parent="."]
 unique_name_in_owner = true
@@ -807,6 +832,7 @@ polygon = PackedVector2Array(0, 0, 24, 0, 12, 16)
 [node name="Home" type="CanvasLayer" parent="."]
 visible = false
 script = ExtResource("10_home")
+foods = Array[ExtResource("100_food_item")]([ExtResource("food_data_chips"), ExtResource("food_spicy_chips"), ExtResource("food_cache_cookie"), ExtResource("food_pi_pie"), ExtResource("food_byte_burger"), ExtResource("food_java_juice")])
 
 [node name="Level" type="PanelContainer" parent="Home"]
 unique_name_in_owner = true
@@ -2352,6 +2378,7 @@ stretch_mode = 5
 [node name="SkyJumpHud" type="CanvasLayer" parent="."]
 visible = false
 script = ExtResource("33_sky_jump")
+zones = Array[ExtResource("102_sky_zone")]([ExtResource("zone_sky"), ExtResource("zone_space"), ExtResource("zone_galaxy"), ExtResource("zone_deep_space")])
 
 [node name="JumpScore" type="PanelContainer" parent="SkyJumpHud"]
 anchors_preset = 5

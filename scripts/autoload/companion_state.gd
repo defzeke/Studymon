@@ -135,9 +135,9 @@ static func xp_to_reach(lv: int) -> int:
 	var n := lv - 1
 	return FIRST_LEVEL_XP * n + LEVEL_XP_STEP * n * (n - 1) / 2
 
-## A care action raises its stat and pays XP. `food` (feed only) is the meal's {hunger, mood,
-## focus} from home.gd FOODS.
-func care(action: String, food := {}) -> void:
+## A care action raises its stat and pays XP. `food` (feed only) is the meal eaten; without one a
+## meal fills FEED_HUNGER.
+func care(action: String, food: FoodItem = null) -> void:
 	var gained := 1
 	# Past DAILY_CAP_BASE_XP taps of one action this hour it pays 30 % XP.
 	var count: int = _action_tap_counts.get(action, 0)
@@ -145,9 +145,10 @@ func care(action: String, food := {}) -> void:
 	var xp_mult := 0.3 if count >= DAILY_CAP_BASE_XP else 1.0
 	match action:
 		"feed":
-			hunger = minf(STAT_MAX, hunger + float(food.get("hunger", FEED_HUNGER)))
-			mood = minf(STAT_MAX, mood + float(food.get("mood", 0.0)))
-			focus = minf(STAT_MAX, focus + float(food.get("focus", 0.0)))
+			hunger = minf(STAT_MAX, hunger + (food.hunger if food else FEED_HUNGER))
+			if food:
+				mood = minf(STAT_MAX, mood + food.mood)
+				focus = minf(STAT_MAX, focus + food.focus)
 			gained = maxi(1, roundi(2 * xp_mult))
 		"pet":
 			mood = minf(STAT_MAX, mood + 8.0)

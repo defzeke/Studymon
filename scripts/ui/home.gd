@@ -9,18 +9,10 @@ extends CanvasLayer
 ## mood. Contract: docs/ui-and-assets.md §2 Home.
 
 const ROOMS: Array[String] = ["StudyRoom", "MaintenanceBay", "DataKitchen", "Playroom"]
-# The fridge: what each meal restores and costs, priced at about 0.4 crystals per hunger point (bigger
-# meals a little cheaper, a second effect a little dearer). `start` is the new player's welcome stock.
+# The fridge's foods, in shelf order (assets/data/foods/*.tres): what each restores and costs, priced at
+# about 0.4 crystals per hunger point (bigger meals a little cheaper, a second effect a little dearer).
 # Contract: docs/systems/monetization.md.
-const FOODS: Array[Dictionary] = [
-	{"id": "data_chips", "name": "Data Chips", "icon": preload("res://assets/sprites/props/data_chips.svg"), "start": 3, "hunger": 10.0, "price": 4},
-	{"id": "spicy_chips", "name": "Spicy Memory Chips", "icon": preload("res://assets/sprites/props/spicy_chips.svg"), "start": 1, "hunger": 12.0, "mood": 8.0, "price": 7},
-	{"id": "cache_cookie", "name": "Cache Cookie", "icon": preload("res://assets/sprites/props/cache_cookie.svg"), "start": 2, "hunger": 15.0, "price": 6},
-	{"id": "pi_pie", "name": "Pi Pie", "icon": preload("res://assets/sprites/props/pi_pie.svg"), "start": 1, "hunger": 25.0, "price": 9},
-	{"id": "byte_burger", "name": "Byte Burger", "icon": preload("res://assets/sprites/props/byte_burger.svg"), "start": 1, "hunger": 40.0, "price": 13},
-	{"id": "java_juice", "name": "Java Juice", "icon": preload("res://assets/sprites/props/java_juice.svg"), "start": 2, "hunger": 8.0, "focus": 10.0, "price": 8},
-]
-const FAVORITE_FOOD := "spicy_chips"
+@export var foods: Array[FoodItem] = []
 # At this share of hunger Kuiz is full: it gets cross and the food stays in stock.
 const FULL_STAT := 0.95
 # Trying to leave while reviewing gets one of these from a cross Kuiz.
@@ -179,8 +171,8 @@ var _skipping := false
 
 func _ready() -> void:
 	visible = false
-	for food in FOODS:
-		GameState.food_stock.get_or_add(food["id"], food["start"])
+	for food in foods:
+		GameState.food_stock.get_or_add(food.id, food.start_stock)
 	prev_btn.pressed.connect(_go.bind(-1))
 	next_btn.pressed.connect(_go.bind(1))
 	room_sign.gui_input.connect(_on_sign_input)
@@ -626,19 +618,19 @@ func _pick_food(step: int) -> void:
 	var from := maxi(_food_i, 0)
 	var dir := step if step != 0 else 1
 	_food_i = -1
-	for k in range(0 if step == 0 else 1, FOODS.size() + 1):
-		var i := wrapi(from + dir * k, 0, FOODS.size())
+	for k in range(0 if step == 0 else 1, foods.size() + 1):
+		var i := wrapi(from + dir * k, 0, foods.size())
 		if _stock(i) > 0:
 			_food_i = i
 			break
 	_refresh_food()
 
 func _stock(i: int) -> int:
-	return GameState.food_stock[FOODS[i]["id"]]
+	return GameState.food_stock[foods[i].id]
 
 func _refresh_food() -> void:
 	var stocked := 0
-	for i in FOODS.size():
+	for i in foods.size():
 		stocked += 1 if _stock(i) > 0 else 0
 	for b: CanvasItem in [food_prev_btn, food_next_btn]:
 		b.modulate.a = 1.0 if stocked > 1 else 0.35
@@ -646,19 +638,19 @@ func _refresh_food() -> void:
 		food_icon.texture = null
 		food_label.text = "Empty! Check the fridge"
 		return
-	var food: Dictionary = FOODS[_food_i]
-	food_icon.texture = food["icon"]
+	var food: FoodItem = foods[_food_i]
+	food_icon.texture = food.icon
 	food_icon.modulate.a = 1.0
-	food_label.text = "%s ×%d" % [food["name"], _stock(_food_i)]
+	food_label.text = "%s ×%d" % [food.display_name, _stock(_food_i)]
 
 func _build_shop() -> void:
 	# One copy of the hidden %ShopRowTemplate (Icon, Label, Buy) per food.
-	for food in FOODS:
+	for food in foods:
 		var row := shop_row_template.duplicate() as HBoxContainer
 		row.show()
-		(row.get_node("Icon") as TextureRect).texture = food["icon"]
+		(row.get_node("Icon") as TextureRect).texture = food.icon
 		var buy := row.get_node("Buy") as Button
-		buy.text = "Buy · %d" % food["price"]
+		buy.text = "Buy · %d" % food.price
 		buy.pressed.connect(_buy_food.bind(food))
 		row.set_meta("food", food)
 		shop_list.add_child(row)
@@ -669,24 +661,24 @@ func _open_shop() -> void:
 
 func _refresh_shop() -> void:
 	for row in shop_list.get_children():
-		var food: Dictionary = row.get_meta("food")
-		(row.get_node("Label") as Label).text = "%s  +%d hunger%s\nYou have %d" % [food["name"], food["hunger"], _food_extra(food), GameState.food_stock[food["id"]]]
-		(row.get_node("Buy") as Button).disabled = GameState.crystals < int(food["price"])
+		var food: FoodItem = row.get_meta("food")
+		(row.get_node("Label") as Label).text = "%s  +%d hunger%s\nYou have %d" % [food.display_name, food.hunger, _food_extra(food), GameState.food_stock[food.id]]
+		(row.get_node("Buy") as Button).disabled = GameState.crystals < food.price
 
-func _food_extra(food: Dictionary) -> String:
-	if food.has("focus"):
-		return ", +%d focus" % food["focus"]
-	if food.has("mood"):
-		return ", +%d mood" % food["mood"]
+func _food_extra(food: FoodItem) -> String:
+	if food.focus > 0.0:
+		return ", +%d focus" % food.focus
+	if food.mood > 0.0:
+		return ", +%d mood" % food.mood
 	return ""
 
 # One more of a food from the fridge, for its price in crystals.
-func _buy_food(food: Dictionary) -> void:
-	if GameState.crystals < int(food["price"]):
+func _buy_food(food: FoodItem) -> void:
+	if GameState.crystals < food.price:
 		_toast("Not enough crystals. Clear houses and gyms to earn them.")
 		return
-	GameState.add_crystals(-int(food["price"]))
-	GameState.food_stock[food["id"]] += 1
+	GameState.add_crystals(-food.price)
+	GameState.food_stock[food.id] += 1
 	SaveManager.save_progress()
 	_refresh_shop()
 	_pick_food(0)
@@ -694,8 +686,8 @@ func _buy_food(food: Dictionary) -> void:
 func _is_full() -> bool:
 	return CompanionState.hunger >= CompanionState.STAT_MAX * FULL_STAT
 
-func _eat(food: Dictionary) -> void:
-	GameState.food_stock[food["id"]] -= 1
+func _eat(food: FoodItem) -> void:
+	GameState.food_stock[food.id] -= 1
 	SaveManager.save_progress()
 	_refresh_food()
 	var t := create_tween().set_parallel().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
@@ -707,7 +699,7 @@ func _eat(food: Dictionary) -> void:
 	CompanionState.care("feed", food)
 	SaveManager.save_progress()
 	CompanionState.soil()
-	peek.act("Pet" if food["id"] == FAVORITE_FOOD else "Happy")
+	peek.act("Pet" if food.favorite else "Happy")
 
 func _on_slot_input(event: InputEvent, kind: String) -> void:
 	if not (event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT):
@@ -718,7 +710,7 @@ func _on_slot_input(event: InputEvent, kind: String) -> void:
 		return
 	_held_kind = kind
 	_over_kuiz = false
-	held.texture = {"tool": SCREWDRIVER, "towel": TOWEL}.get(kind, FOODS[maxi(_food_i, 0)]["icon"])
+	held.texture = {"tool": SCREWDRIVER, "towel": TOWEL}.get(kind, foods[maxi(_food_i, 0)].icon)
 	_held_last = event.global_position
 	_was_dirty = CompanionState.dirt > 1.0
 	held.size = HELD_SIZE
@@ -767,7 +759,7 @@ func _release_held(pos: Vector2) -> void:
 		peek.act("Angry")
 		_toast(FULL_LINES.pick_random())
 	elif kind == "food" and peek.hits(pos):
-		await _eat(FOODS[_food_i])
+		await _eat(foods[_food_i])
 		# The last one eaten: move on to the next food in stock.
 		_pick_food(0)
 		return
@@ -844,30 +836,28 @@ func _show_closet_slot(slot: String) -> void:
 	for b in wardrobe_grid.get_children():
 		b.queue_free()
 		wardrobe_grid.remove_child(b)
-	wardrobe_grid.add_child(_costume_button("", "None", null))
-	for id: String in look.COSTUMES:
-		var c: Array = look.COSTUMES[id]
-		if c[5] == slot:
-			wardrobe_grid.add_child(_costume_button(id, c[0], c[1]))
+	wardrobe_grid.add_child(_costume_button(null))
+	for c: Costume in look.costumes:
+		if c.slot == slot:
+			wardrobe_grid.add_child(_costume_button(c))
 	_refresh_wardrobe()
 
-# A copy of the hidden %CostumeTemplate (its size, font and icon layout are set in the scene).
-func _costume_button(id: String, title: String, icon: Texture2D) -> Button:
+# A copy of the hidden %CostumeTemplate (its size, font and icon layout are set in the scene); null is
+# "None", which takes the slot's costume off.
+func _costume_button(c: Costume) -> Button:
 	var b := costume_template.duplicate() as Button
 	b.show()
-	b.text = title
-	b.icon = icon
-	b.set_meta("costume", id)
-	var unlock: Array = look.COSTUME_UNLOCKS.get(id, [])
-	if not unlock.is_empty() and not GameState.owned_costumes.has(id):
-		if CompanionState.level < int(unlock[0]):
-			b.text = "%s\nLevel %d" % [title, unlock[0]]
-			b.disabled = true
-		else:
-			b.text = "%s\n%d crystals" % [title, unlock[1]]
-		b.pressed.connect(_offer_costume.bind(id, title, int(unlock[1])))
-		return b
-	b.pressed.connect(_wear.bind(id))
+	b.text = c.display_name if c else "None"
+	b.icon = c.texture if c else null
+	b.set_meta("costume", c.id if c else "")
+	if c == null or GameState.owned_costumes.has(c.id):
+		b.pressed.connect(_wear.bind(c.id if c else ""))
+	elif CompanionState.level < c.level_needed:
+		b.text = "%s\nLevel %d" % [c.display_name, c.level_needed]
+		b.disabled = true
+	else:
+		b.text = "%s\n%d crystals" % [c.display_name, c.price]
+		b.pressed.connect(_offer_costume.bind(c.id, c.display_name, c.price))
 	return b
 
 func _wear(id: String) -> void:

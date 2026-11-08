@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="FoodItem" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/sprites/props/spicy_chips.svg" id="1_dldgo"]
+[ext_resource type="Script" path="res://scripts/data/food_item.gd" id="2_oplmd"]
+
+[resource]
+script = ExtResource("2_oplmd")
+id = "spicy_chips"
+display_name = "Spicy Memory Chips"
+icon = ExtResource("1_dldgo")
+start_stock = 1
+price = 7
+hunger = 12.0
+mood = 8.0
+favorite = true

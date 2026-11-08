@@ -54,6 +54,8 @@ res://
 ├── project.godot
 ├── icon.svg
 ├── assets/               every file is listed in ui-and-assets.md §5
+│   ├── data/             the tuning tables as Resources, edited in the Inspector: foods/ (FoodItem),
+│   │                     costumes/ (Costume), sky_zones/ (SkyZone), seasons/ (SeasonLook)
 │   ├── audio/            music/ (home_room, loading, overworld, battle, four focus_* lullabies),
 │   │                     sfx/ (battle cues, sfx_charge, sfx_charged); all our own, synthesised offline
 │   ├── fonts/            JosefinSans-Regular.ttf, JosefinSans-Bold.ttf
@@ -67,6 +69,7 @@ res://
 │   │                     companion_state.gd, session_manager.gd, music_manager.gd
 │   ├── audio/            synth.gd, clip_voice.gd (model sounds made in code)
 │   ├── battle/           battle.gd, arena_stage.gd, broken_bot_voice.gd
+│   ├── data/             food_item.gd, costume.gd, sky_zone.gd, season_look.gd (the Resource classes)
 │   ├── kuiz/             kuiz_look.gd (dirt and outfit), kuiz_voice.gd: Kuiz in any scene
 │   ├── overworld/        region_map.gd, world_intro.gd, player.gd, joystick.gd, season.gd,
 │   │                     encounter_trigger.gd, gym_slot.gd, map_collision.gd, map_houses.gd,

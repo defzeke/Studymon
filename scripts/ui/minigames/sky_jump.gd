@@ -12,13 +12,9 @@ const TRAMPOLINE: Texture2D = preload("res://assets/sprites/props/trampoline.svg
 const ROCKET: Texture2D = preload("res://assets/sprites/props/rocket.svg")
 const METEOR: Texture2D = preload("res://assets/sprites/props/meteor.svg")
 const STARS: Texture2D = preload("res://assets/sprites/props/stars.svg")
-## The zones, by the height (m) they start at. Each zone after Sky fades in its %ZoneBackdrops child.
-const ZONES := [
-	{"from": 0, "name": "Sky", "platform": preload("res://assets/sprites/props/platform.svg")},
-	{"from": 300, "name": "Space!", "platform": preload("res://assets/sprites/props/platform_space.svg")},
-	{"from": 900, "name": "Galaxy!", "platform": preload("res://assets/sprites/props/platform_galaxy.svg")},
-	{"from": 1800, "name": "Deep Space!", "platform": preload("res://assets/sprites/props/platform_deep.svg")},
-]
+## The zones, in climb order (assets/data/sky_zones/*.tres): the height each starts at, its banner and
+## its platforms. Each zone after Sky fades in its %ZoneBackdrops child.
+@export var zones: Array[SkyZone] = []
 const ZONE_FADE := 1.2
 const BANNER_TIME := 1.4
 ## The star layer scrolls at this share of the world's speed, so it reads as far away.
@@ -172,8 +168,8 @@ func _hard(m: float) -> float:
 
 func _zone_at(m: int) -> int:
 	var z := 0
-	for i in ZONES.size():
-		if m >= ZONES[i]["from"]:
+	for i in zones.size():
+		if m >= zones[i].from_m:
 			z = i
 	return z
 
@@ -193,7 +189,7 @@ func _spawn() -> void:
 	var w := lerpf(WIDTH.x, WIDTH.y, hard)
 	var size := Vector2(w, w * PLATFORM_ART.y / PLATFORM_ART.x)
 	var top := size.y * (TIMED_TOP_SHARE if kind == "timed" else TOP_SHARE)
-	var p := _sprite(PLATFORM_TIMED if kind == "timed" else ZONES[_zone_at(m)]["platform"], size)
+	var p := _sprite(PLATFORM_TIMED if kind == "timed" else zones[_zone_at(m)].platform, size)
 	p.position = Vector2(randf_range(12.0, view.x - size.x - 12.0), _top_y - top)
 	p.pivot_offset = size / 2.0
 	p.set_meta("kind", kind)
@@ -293,7 +289,7 @@ func _update_zone() -> void:
 	t.tween_property(_backdrops[z - 1], "modulate:a", 1.0, ZONE_FADE)
 	for s in _stars:
 		t.tween_property(s, "modulate:a", 1.0, ZONE_FADE)
-	_banner = ZONES[z]["name"]
+	_banner = zones[z].banner
 	_banner_left = BANNER_TIME
 	peek.voice.play("shimmer")
 

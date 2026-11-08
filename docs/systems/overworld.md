@@ -212,13 +212,16 @@ same date always gives the same one:
 | Snowy | cool sun 0.9, pale sky, fog 0.015 | canopies 55 % and grass 85 % toward snow white | 300 snowflakes, slow |
 
 The weather is one `GPUParticles3D` in world space, from `scenes/overworld/weather/` (`rain.tscn`,
-`leaves.tscn`, `snow.tscn`, set on `Season`'s Weather exports; edit amounts, speeds and colours there),
+`leaves.tscn`, `snow.tscn`, each set as its season's `SeasonLook.weather`; edit amounts, speeds and colours there),
 prewarmed so it is already falling on the first frame. It is emitted through the whole volume the camera sees around the explorer (0.5–4.5 units
 up, 14 wide, from 10 behind to 4 in front) rather than from above: at the camera's 54° pitch,
 anything spawned higher only crosses the view right at the lens. Particle colours are sRGB
 (`vertex_color_is_srgb`). Foliage is tinted on duplicated materials, because the imported ones are shared
 with every later load. The `Environment` resource is also shared, so every field is set every time.
-To drop a season, remove it from `Season` and `LOOKS`.
+Each season's light, sky, fog, foliage and weather is a `SeasonLook` (`assets/data/seasons/sunny.tres`,
+`rainy.tres`, `autumn.tres`, `snowy.tres`), set on the `Season` node's `sunny` / `rainy` / `autumn` /
+`snowy`; tune a season by editing its `.tres` in the Inspector. To drop a season, remove it from the
+`Season` enum and its export.
 
 **Portrait.** The map is portrait like every other screen (720×1280; the camera keeps the width,
 `keep_aspect` = width, fov 40). The landscape mode, its rotate-your-phone cards

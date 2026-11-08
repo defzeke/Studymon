@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="Costume" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/costume.gd" id="1_2a5bk"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/costume_flower.svg" id="2_x0qqu"]
+
+[resource]
+script = ExtResource("1_2a5bk")
+id = "flower"
+display_name = "Flower"
+texture = ExtResource("2_x0qqu")
+level_needed = 4
+price = 100
+position = Vector3(-0.78, 1.08, 0.42)
+width = 0.46
+tilt = 0.3

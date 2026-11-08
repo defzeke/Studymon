@@ -23,9 +23,10 @@
 [ext_resource type="Texture2D" path="res://assets/sprites/ui/icon_crown.svg" id="19_crown"]
 [ext_resource type="Texture2D" path="res://assets/sprites/ui/icon_lock.svg" id="20_lock"]
 [ext_resource type="PackedScene" path="res://scenes/overworld/house_trigger.tscn" id="40_house"]
-[ext_resource type="PackedScene" path="res://scenes/overworld/weather/rain.tscn" id="41_rain"]
-[ext_resource type="PackedScene" path="res://scenes/overworld/weather/leaves.tscn" id="42_leaves"]
-[ext_resource type="PackedScene" path="res://scenes/overworld/weather/snow.tscn" id="43_snow"]
+[ext_resource type="Resource" path="res://assets/data/seasons/sunny.tres" id="41_sunny"]
+[ext_resource type="Resource" path="res://assets/data/seasons/rainy.tres" id="44_rainy"]
+[ext_resource type="Resource" path="res://assets/data/seasons/autumn.tres" id="42_autumn"]
+[ext_resource type="Resource" path="res://assets/data/seasons/snowy.tres" id="43_snowy"]
 
 [sub_resource type="Environment" id="Environment_island"]
 background_mode = 1
@@ -218,9 +219,10 @@ sun = NodePath("../Sun")
 world = NodePath("../WorldEnvironment")
 map = NodePath("../Map")
 follow = NodePath("../Player")
-rain = ExtResource("41_rain")
-leaves = ExtResource("42_leaves")
-snow = ExtResource("43_snow")
+sunny = ExtResource("41_sunny")
+rainy = ExtResource("44_rainy")
+autumn = ExtResource("42_autumn")
+snowy = ExtResource("43_snowy")
 
 [node name="MapCollision" type="Node" parent="." node_paths=PackedStringArray("map")]
 script = ExtResource("8_collision")

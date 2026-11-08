@@ -7,29 +7,10 @@ extends Node
 ## to y 1.45 behind z 0.26, and the shell's bottom edge is at y -0.9).
 ## Contract: docs/ui-and-assets.md §2 Kuiz's look.
 
-## The closet's tabs: [slot id, tab name]. Kuiz wears one costume per slot.
-const SLOTS := [["head", "Head"], ["face", "Face"], ["body", "Body"]]
-## Every costume is bought with crystals: id -> [level needed, crystals]. Only "None" is free.
-## Contract: docs/systems/monetization.md.
-const COSTUME_UNLOCKS := {
-	"party_hat": [1, 40], "beanie": [2, 60], "bow": [3, 80], "flower": [4, 100], "crown": [8, 200],
-	"glasses": [1, 40], "shades": [3, 80], "hero_mask": [6, 150],
-	"bow_tie": [1, 40], "scarf": [2, 60], "medal": [10, 250],
-}
-## id -> [name, texture, centre, width (model units), tilt (radians), slot]
-const COSTUMES := {
-	"party_hat": ["Party hat", preload("res://assets/sprites/props/costume_party_hat.svg"), Vector3(0.0, 1.4, 0.36), 0.8, 0.0, "head"],
-	"crown": ["Crown", preload("res://assets/sprites/props/costume_crown.svg"), Vector3(0.0, 1.18, 0.42), 0.86, 0.0, "head"],
-	"beanie": ["Beanie", preload("res://assets/sprites/props/costume_beanie.svg"), Vector3(0.0, 1.08, 0.5), 1.7, 0.0, "head"],
-	"bow": ["Bow", preload("res://assets/sprites/props/costume_bow.svg"), Vector3(0.78, 1.12, 0.4), 0.62, -0.35, "head"],
-	"flower": ["Flower", preload("res://assets/sprites/props/costume_flower.svg"), Vector3(-0.78, 1.08, 0.42), 0.46, 0.3, "head"],
-	"glasses": ["Glasses", preload("res://assets/sprites/props/costume_glasses.svg"), Vector3(0.0, -0.17, 1.1), 1.75, 0.0, "face"],
-	"shades": ["Shades", preload("res://assets/sprites/props/costume_shades.svg"), Vector3(0.0, -0.17, 1.1), 1.8, 0.0, "face"],
-	"hero_mask": ["Hero mask", preload("res://assets/sprites/props/costume_hero_mask.svg"), Vector3(0.0, -0.14, 1.1), 2.0, 0.0, "face"],
-	"bow_tie": ["Bow tie", preload("res://assets/sprites/props/costume_bow_tie.svg"), Vector3(0.0, -0.9, 0.92), 0.74, 0.0, "body"],
-	"scarf": ["Scarf", preload("res://assets/sprites/props/costume_scarf.svg"), Vector3(0.05, -0.92, 0.9), 2.2, 0.0, "body"],
-	"medal": ["Medal", preload("res://assets/sprites/props/costume_medal.svg"), Vector3(0.0, -1.0, 0.9), 0.56, 0.0, "body"],
-}
+## The closet's costumes, in closet order (assets/data/costumes/*.tres): each one's name, art, slot,
+## level and price, and where its sticker sits. Contract: docs/systems/monetization.md.
+@export var costumes: Array[Costume] = []
+
 ## The dirt decals and the outfit stickers live in kuiz_head.tscn, on Kuiz's Head bone: each Dirt/Mark*
 ## decal projects onto the shell and starts to show at its `shows_from` dirt (metadata).
 const HEAD_SCENE: PackedScene = preload("res://scenes/kuiz/kuiz_head.tscn")
@@ -48,8 +29,9 @@ func attach(kuiz: Node3D) -> void:
 	skeleton.add_child(_head)
 	for d: Decal in _head.get_node("Dirt").get_children():
 		_dirt.append(d)
-	for slot: Array in SLOTS:
-		_worn[slot[0]] = [_head.get_node("Stickers/" + str(slot[0])), "-"]
+	# One sticker per closet slot (head, face, body), named after it: Kuiz wears one costume per slot.
+	for s: Sprite3D in _head.get_node("Stickers").get_children():
+		_worn[String(s.name)] = [s, "-"]
 
 func _process(_delta: float) -> void:
 	if _head == null:
@@ -66,13 +48,20 @@ func _process(_delta: float) -> void:
 			continue
 		worn[1] = id
 		var s: Sprite3D = worn[0]
-		s.visible = COSTUMES.has(id)
-		if s.visible:
-			var c: Array = COSTUMES[id]
-			_place(s, c[1], c[2], c[3], c[4])
+		var c := costume(id)
+		s.visible = c != null
+		if c:
+			_place(s, c.texture, c.position, c.width, c.tilt)
 
 func _place(s: Sprite3D, tex: Texture2D, at: Vector3, width: float, tilt: float) -> void:
 	s.texture = tex
 	s.pixel_size = width / tex.get_width()
 	s.position = at
 	s.rotation = Vector3(0.0, 0.0, tilt)
+
+## The costume with `id`, or null ("" is no costume).
+func costume(id: String) -> Costume:
+	for c in costumes:
+		if c.id == id:
+			return c
+	return null

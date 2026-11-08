@@ -10,13 +10,12 @@ Last updated: 2026-11-08.
 
 ## In flight
 
-Uncommitted, for the maintainer to commit: cleanup batch 2 of 3 (no behaviour change). Objects that
-were built in code are now scene nodes to edit in the editor: `confirm_modal.tscn`; home's check-up rows,
-room dropdown, closet tabs and the `ShopRowTemplate` / `CostumeTemplate`; Sky Jump's zone backdrops,
-stars and rocket flame; the soccer ball's shadow; `house_trigger.tscn` (icon and doorway); the
-`weather/` particle scenes; `kuiz_head.tscn` (dirt decals and stickers). Next: batch 3 (tuning tables
-into `.tres` resources). Checked headless (gates match the baseline), by a harness that opens every
-converted panel (27 checks) and by pixel-diffed screenshots against the batch 1 build.
+Uncommitted, for the maintainer to commit: cleanup batch 3 of 3 (no behaviour change). The tuning
+tables are now `.tres` resources edited in the Inspector (`assets/data/`, classes in `scripts/data/`):
+the six foods (`FoodItem`), eleven costumes (`Costume`), four Sky Jump zones (`SkyZone`) and four
+season looks (`SeasonLook`, each with its weather). Ids are unchanged, so saves still match. Checked
+headless (gates match), by a harness (43 checks, every value against the old tables) and by
+pixel-diffed screenshots against the batch 2 build.
 
 Everything below **Done** is on `world-assets` and `origin/dev` (PR #9 merged into `dev` on
 2026-11-02); the two 2026-11-06 commits are not yet on `origin/world-assets`, and nothing has been

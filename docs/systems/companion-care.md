@@ -17,7 +17,7 @@ care stats into battle (see [`battle.md`](battle.md) §3).
 
 | Stat | Start | Range | Decay | Grown by |
 |---|---|---|---|---|
-| `hunger` | 80.0 | 0–100 | **0.105 / s** (0.7×) | `feed` +8 – 40 by food (`home.gd` `FOODS`) |
+| `hunger` | 80.0 | 0–100 | **0.105 / s** (0.7×) | `feed` +8 – 40 by food (`FoodItem.hunger`, `assets/data/foods/`) |
 | `energy` | 80.0 | 0–100 | **0.15 / s** × battery wear (`battery_drain()`: 1 + (100 − battery health) / 50, so ×2 at 50 %) | charging +6 / s (`recharge()`), rest complete +6, `play` −2, skip focus −3, missed rest −5 |
 | `mood` | 75.0 | 0–100 | **0.09 / s** (0.6×) | `pet` +8, `play` +8, rest complete +6, skip focus −2, missed rest −3 |
 | `health` | 100.0 | 0–100 | **0.03 / s** (0.2×) | `fix` +25 |
@@ -95,7 +95,7 @@ Levels 1–5 match the old capped table (Lv5 at 110 XP), so older saves keep the
 XP past the next threshold (from the capped days) levels Kuiz up silently.
 
 Pacing: at 1–2 XP per tap with cycling actions, ~65 taps to Level 5, a few minutes. XP always
-counts, battle rewards included. Levels gate closet costumes (`kuiz_look.gd` `COSTUME_UNLOCKS`), not
+counts, battle rewards included. Levels gate closet costumes (`Costume.level_needed`, `assets/data/costumes/`), not
 Play: the `campaign_ready` flag, `CAMPAIGN_LEVEL`, the `campaign_gate_ready` signal and
 `GameState.campaign_unlocked_flag` were removed because nothing read them (saves before v15 still hold
 the keys; they are ignored).

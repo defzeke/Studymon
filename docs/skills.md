@@ -185,6 +185,22 @@ Kuiz is `assets/models/kuiz.glb`; the arena foes are the scenes in `ArenaStage.f
    clip names must still match `idle_clip`, `attack_clip`, `defeat_clip` and the `pet_*_clip` exports.
 3. Add the file to the asset inventory in [`ui-and-assets.md`](ui-and-assets.md).
 
+## Add or tune a food, costume, Sky Jump zone or season
+
+The tuning tables are `.tres` resources in `assets/data/` (classes in `scripts/data/`), edited in the
+Inspector; no code changes.
+
+1. **Tune:** open the `.tres` (for example `assets/data/foods/pi_pie.tres`) and change its fields.
+2. **Add:** in the FileSystem dock, duplicate a sibling `.tres` (or New Resource → `FoodItem`,
+   `Costume`, `SkyZone`, `SeasonLook`), fill it in, then add it to its list: the Home node's `foods`
+   or the Look node's `costumes` (both in `peek.tscn`, list order is shelf / closet order), or
+   SkyJumpHud's `zones` (climb order; a new zone also needs its backdrop as the next child of
+   `%ZoneBackdrops`). Seasons are the region map Season node's four exports.
+3. **Never change an `id`** of a food or costume players may own: `food_stock`, `outfit` and
+   `owned_costumes` in the save key on it. Give a new item a new id.
+4. Add new art to the inventory in [`ui-and-assets.md`](ui-and-assets.md), and new prices to
+   [`systems/monetization.md`](systems/monetization.md).
+
 ## Use the real study server
 
 The editor, the headless gates and debug exports run on the mock (`Api.MOCK` is

@@ -21,7 +21,7 @@ controlled on the server instead: per-IP daily limits and the Anthropic workspac
 |---|---|---|
 | **World slot** | `GameState.WORLD_SLOT_PRICE` (300) | the worlds list's New World, when every slot is full |
 | Food | 4 – 13 (table below) | the Data Kitchen fridge |
-| Closet costume | 40 – 250, each unlocked at a level (`kuiz_look.gd` `COSTUME_UNLOCKS`); every costume is bought, only "None" is free | the Playroom closet |
+| Closet costume | 40 – 250, each unlocked at a level (`Costume.price` / `level_needed`, `assets/data/costumes/`); every costume is bought, only "None" is free | the Playroom closet |
 | New battery | 30 | the check-up tablet |
 
 Studying is meant to be the main income: a world's campaign (houses, three gyms, the Champion) pays
@@ -31,7 +31,7 @@ clock, which a player can change; that is accepted for an offline game.
 
 ## Food prices
 
-Each food restores its own hunger (`home.gd` `FOODS`), priced from how fast hunger drains (0.105 / s,
+Each food restores its own hunger (`FoodItem`, `assets/data/foods/`), priced from how fast hunger drains (0.105 / s,
 ≈ 6.3 a minute on every screen except battles, and 0.4 per battle item). A typical 20-minute session
 uses about 62 hunger and earns about 135 crystals; at **about 0.4 crystals per hunger point**, eating
 costs 15–20 % of income. Bigger meals are a little cheaper per point, and a second effect costs a

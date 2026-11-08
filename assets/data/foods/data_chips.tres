@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="FoodItem" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/sprites/props/data_chips.svg" id="1_oowfa"]
+[ext_resource type="Script" path="res://scripts/data/food_item.gd" id="2_hxy20"]
+
+[resource]
+script = ExtResource("2_hxy20")
+id = "data_chips"
+display_name = "Data Chips"
+icon = ExtResource("1_oowfa")
+start_stock = 3
+price = 4
+hunger = 10.0

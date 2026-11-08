@@ -67,7 +67,7 @@ text** checkbox in `settings.tscn` calls `set_large_text()` and saves.
 | `scenes/overworld/world_intro.tscn` | `Node3D` | `scripts/overworld/world_intro.gd` | Between home and the island: Kuiz leaves its house on Play, and goes back in on the map's Back |
 | `scenes/overworld/explorer_picker.tscn` | `CanvasLayer` | `scripts/overworld/explorer_picker.gd` | "Choose your explorer" card, instanced over the region map |
 | `scenes/overworld/house_trigger.tscn` | `Area3D` (inherits `encounter_trigger.tscn`) | `scripts/overworld/encounter_trigger.gd` | a Challenge House trigger: the label, plus the `Icon` (Sprite3D, `icon_trainer.svg`) over the roof and the dark `Doorway` quad; one per house |
-| `scenes/overworld/weather/rain.tscn`, `leaves.tscn`, `snow.tscn` | `GPUParticles3D` | — | the season's weather around the explorer (`season.gd` exports `rain` / `leaves` / `snow`) |
+| `scenes/overworld/weather/rain.tscn`, `leaves.tscn`, `snow.tscn` | `GPUParticles3D` | — | the season's weather around the explorer (each one is its `SeasonLook.weather`) |
 | `scenes/kuiz/kuiz_head.tscn` | `BoneAttachment3D` | — | Kuiz's dirt decals and outfit stickers, put on its Head bone by `kuiz_look.gd` |
 | `scenes/ui/widgets/confirm_modal.tscn` | `Control` | `scripts/ui/widgets/confirm_modal.gd` | the one pop-up (see Pop-ups below) |
 | `scenes/battle/battle.tscn` | `Control` | `scripts/battle/battle.gd`, `scripts/battle/arena_stage.gd` | 3D arena behind the battle HUD: intro, strikes, ten SFX cues |
@@ -374,8 +374,8 @@ bottom edge is at y −0.9 (Kuiz is all head; body items hang from that edge).
   that vertex's normal. They sit on the forehead, the sides, the lower edge and the right ear; each fades in over
   10 points once dirt passes its threshold (the decal's `shows_from` metadata: 12, 28, 42, 56, 70, 84), so Kuiz gets grubbier
   gradually. The towel scrubs them off; the tablet's Clean bar shows it.
-- **Outfit** (`GameState.outfit`, saved): one costume per closet slot (`SLOTS`: head, face, body),
-  each its own sticker (`Sprite3D`, unshaded). `COSTUMES` holds each one's name, art, centre, width, tilt and slot; hats
+- **Outfit** (`GameState.outfit`, saved): one costume per closet slot (head, face, body: the `Stickers` in kuiz_head.tscn),
+  each its own sticker (`Sprite3D`, unshaded). Each costume is a `Costume` resource (`assets/data/costumes/*.tres`, listed in closet order on the `Look` node's `costumes`): name, art, slot, level, price, and the sticker's centre, width and tilt; hats
   sit between the ears, the bow and flower beside an ear, the face items over the eyes, and the bow
   tie, scarf and medal along the bottom edge.
 
@@ -423,7 +423,7 @@ as play care (`care("play")`: mood +8, energy −2, XP). Best scores last for th
   which shake for 0.9 s once Kuiz lands on them, then drop; **moving platforms** (from 30 m), which
   slide between the edges; and **rockets** (from 40 m), floating pickups that carry Kuiz straight
   up for 1.7 s (`powerup`, `Celebrate`). The climb passes through zones: Sky, then **Space** at
-  300 m, **Galaxy** at 900 m and **Deep Space** at 1800 m. Each new zone's backdrop fades in, its
+  300 m, **Galaxy** at 900 m and **Deep Space** at 1800 m (each a `SkyZone`, `assets/data/sky_zones/*.tres`, on SkyJumpHud's `zones`: its height, banner and platform art). Each new zone's backdrop fades in, its
   name flashes on the height pill, and new platforms take its look (metal, crystal, asteroid); from
   Space up a star layer scrolls slower than the world. It gets harder over the first 2000 m:
   platforms narrow from 180 to 120 px, gaps widen toward the 330 px cap (always within a jump),
@@ -648,6 +648,7 @@ rasterises them sharp on high-density phones; the drawing itself is unchanged.
 | `audio/sfx/sfx_*.wav` (ten battle cues: click, whoosh, land, vs, correct, wrong, hit, hurt, win, lose; our own) | `battle.gd` exports, assigned in `battle.tscn`; played through `MusicManager.play_sfx_layered()` |
 | `sprites/battle/battle_backdrop.svg` | `battle.tscn` arena backdrop |
 | `materials/ink_outline.tres` | the ink outline (inverted hull, Deep Slate): `peek.gd`, `kuiz_follower.gd` and `arena_stage.gd` duplicate it per mesh at its width |
+| `data/foods/*.tres` (6), `data/costumes/*.tres` (11), `data/sky_zones/*.tres` (4), `data/seasons/*.tres` (4) | the data resources (`FoodItem`, `Costume`, `SkyZone`, `SeasonLook`): `home.gd` `foods`, `kuiz_look.gd` `costumes`, `sky_jump.gd` `zones`, `season.gd` looks |
 | `audio/music/home_room.wav` | `MusicManager`: home loop (our own; 34 s, upbeat C major, seamless) |
 | `audio/music/focus_twinkle.wav`, `focus_london_bridge.wav`, `focus_mary_lamb.wav`, `focus_frere_jacques.wav` | `MusicManager.play_focus()`: the reviewing shuffle. Traditional public-domain tunes, our own arrangement (music box, felt chords, bass, brushed beat, 72–78 bpm, 22 kHz mono), played once each, no loop |
 | `audio/music/battle.wav` | `MusicManager.play_battle()`: our own driving A-minor loop (132 bpm, 29 s, marimba, bass, soft lead, drums; 32 kHz mono, seamless) |
