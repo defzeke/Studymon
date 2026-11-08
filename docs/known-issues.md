@@ -18,7 +18,7 @@ Severity: **P0** blocks the core loop · **P1** blocks a feature or silently cor
 | 9 | ~~Real grade/extract responses are silently dropped~~ — fixed | — |
 | 11 | ~~Large-text accessibility toggle is unreachable~~ — fixed | — |
 | 13 | ~~`stats_changed` fires every frame~~ — fixed | — |
-| 14 | Full save write on every care action | **P2** |
+| 14 | ~~Full save write on every care action~~ — fixed (debounced) | — |
 | 19 | ~~Fake "Biology 101" topic seeded on every boot~~ — fixed | — |
 | 20 | Stale docs, no tests/CI | **P3** |
 | 21 | ~~Theme and scene colours predate the canonical palette~~ — migrated | — |
@@ -100,15 +100,14 @@ and battle items still emit at once.
 
 ---
 
-## 14. Full save write on every care tap (P2)
+## 14. Full save write on every care tap — fixed
 
-Home saves after each care action (food, tune-up, ball throw); the save JSON includes every
-question in every topic, so it grows with the content the player uploads. On mobile this is a
-synchronous `FileAccess` write per tap.
+Home saved after each care action (food, tune-up, ball throw), a synchronous write of a JSON file that
+holds every question in every world.
 
-**Fix:** debounce (e.g. save at most once every 5 s, plus on `NOTIFICATION_WM_CLOSE_REQUEST` /
-`NOTIFICATION_APPLICATION_PAUSED`). The cloud copy is already limited that way (`CloudSave`: at most one
-upload a minute, and at once on pause or close); the local write still happens per tap.
+**Fixed 2026-11-09:** `SaveManager.save_progress()` is debounced. It writes at most once every 5 s, and
+at once on app pause or close ([`data-model.md`](data-model.md) §7). The cloud copy uploads at most
+once a minute (§8).
 
 ---
 

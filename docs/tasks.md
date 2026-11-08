@@ -6,62 +6,95 @@ Where the work stands. Short on purpose — this is a **register**, not a backlo
 > doc that owns it, and **those docs win** if the two disagree. See [`rules.md`](rules.md) §2. Do not
 > let a second status list grow here.
 
-Last updated: 2026-11-08.
+Last updated: 2026-11-09.
 
 ## In flight
 
-Uncommitted, for the maintainer to commit: **Phase A** of the 2026-11-08 plan. The Google Play Games plugin (`addons/GodotPlayGameServices/`, v3.4.0, MIT), the `CloudSave` autoload (an Android-only copy of the save in the player's Play Games Saved Games; save v17 adds `saved_at`), Settings' cloud row, and cloud delete. Checked by the Godot gates and an 11-check merge harness; **not yet tested on a phone** (it needs the Play Console Game ID and an Android export preset, [`skills.md`](skills.md) §*Export for Android with Play Games*).
+Uncommitted, for the maintainer to commit: **C1**. Gameplay saves are debounced to one write every 5 s,
+and written at once on pause or close (issue #14, [`data-model.md`](data-model.md) §7). This register
+now lists the plan through to release.
 
-Committed earlier: **Phase B** of the 2026-11-08 plan. The study server's AI
-moves from Claude to **Gemma 4 on Cloudflare Workers AI** (free 10,000 neurons a day) behind any
-OpenAI-compatible endpoint, with a daily neuron budget, scanned PDFs as page images, and `offline`
-fallbacks (questions written on the device, essays graded offline); `render.yaml` deploys it free on
-Render. Checked by 23 backend tests (stubbed model), the Godot gates and an offline-path harness; **not
-yet run against the real Gemma** (needs the Cloudflare account). Next: Phase A, Google Play Games
-cloud saves (needs the Play Console set up first).
+Phases A and B of the 2026-11-08 plan are committed, but neither has met the real world yet:
+- **A, cloud saves** (`6415399`): not tried on a phone. It needs the Play Console Game ID and an Android
+  export ([`skills.md`](skills.md) §*Export for Android with Play Games*).
+- **B, Gemma 4 on Cloudflare** (`d869b04`): not run against the real model. It needs the Cloudflare
+  token.
 
-Everything below **Done** is on `world-assets` and `origin/dev` (PR #9 merged into `dev` on
-2026-11-02); the two 2026-11-06 commits are not yet on `origin/world-assets`, and nothing has been
-merged to `main`.
+Branches: the batches through 2026-11-02 are also on `origin/dev` (PR #9). Nothing is on `main`.
 
-Still unverified across the committed work: none of the 2026-10-26 → 11-06 batches has been opened in
-the editor GUI or played on a phone; checks were headless (79 Godot checks, 15 `backend/tests`), the
-scene gates, and a windowed scratch harness on Windows for the 11-06 batches. The houses have no door-swing animation (the glb merges all doors; needs a Blender
-split).
+Still unverified across the committed work:
+- None of the 2026-10-26 → 11-08 batches has been opened in the editor GUI or played on a phone. The
+  checks were headless: Godot checks, `backend/tests` and the scene gates, plus a windowed scratch
+  harness on Windows for the 11-06 batches.
+- The houses have no door-swing animation. The glb merges all the doors, so it needs a split in
+  Blender.
 
-## Next: before the store release
+## Next: the plan to the store release
 
-| Order | Item | Needs |
-|---|---|---|
-| 1 | Run `backend/evals/` against Gemma 4 on Cloudflare, tune prompts, record neurons per call in [`api-backend.md`](api-backend.md) §3 | a free Cloudflare account and Workers AI token |
-| 2 | Deploy `backend/` on Render's free web service (`render.yaml`), check `X-Forwarded-For` there; set `Api.RELEASE_URL` | a free Render account |
-| 3 | Host the privacy policy, terms and support pages; set the three URLs in `settings.gd` | free static hosting (GitHub Pages or Cloudflare Pages) |
-| 4 | `export_presets.cfg` for Android (`.aab`, keystore out of git, **user-data backup on**, gradle build for the Play Games plugin); **start Google's 14-day closed test**. iOS later | the Google Play Console ($25 once) |
-| 5 | On real phones: pick a PDF, photo and .docx (issue #23), Export / Import a save, the whole loop | an Android phone and an iPhone |
-| 6 | A real app icon (still Godot's default `icon.svg`), adaptive icon, iOS icon set | art |
-| 7 | Privacy labels / Data safety, age rating 13+, screenshots, review notes with a sample reviewer | store consoles |
-| later | Study reminders (needs a local-notifications plugin); App Attest / Play Integrity; Sentry; debounce saves (#14) | — |
+Each step ends with the gates, the docs, a hand-off with a proposed commit, and a pause for the
+maintainer's commit. The researched background is in [`launch-plan.md`](launch-plan.md).
 
-**Phase 5**, the real backend and the App Store / Google Play launch, is partly built: the AI server
-exists but has not met the real model or a host. The researched plan, store requirements and
-mock-first prep are in [`launch-plan.md`](launch-plan.md); items 1–7 above are part of it.
+**C — In the repo, no accounts needed (the agent):**
 
-Hygiene, after the slice plays:
-
-| Item | What |
+| Step | Item |
 |---|---|
-| #14 | Debounce the save instead of one full write per tap |
-| #20 | Add a headless smoke-test script / CI |
-| #22 | Find why the headless boot chain fails its threaded loads |
+| C1 | ~~Record this plan; debounce saves (#14)~~ (uncommitted, above) |
+| C2 | Privacy, terms and support pages in `site/`, deployed by a GitHub Pages workflow (the repo is public, so it is free). Plus `docs/store-listing.md`: the Data safety answers, the content rating, the store text, the review notes and a sample reviewer, the screenshot list. Expected URLs: `https://defzeke.github.io/Studymon/privacy.html`, `…/terms.html`, `…/support.html` |
+| C3 | GitHub Actions: `pytest backend/tests` and the headless Godot gates on every push (#20). `splash.tscn` stays out until #22 is fixed |
+| C4 | A bigger eval set in `backend/evals/` (8–10 reviewers): table-heavy, long, Filipino, math, very short. Plus more grading cases: partial, off-topic, injection |
+
+**D — Accounts (the maintainer; start now, alongside C):**
+
+| Step | Item |
+|---|---|
+| D1 | Play Console ($25 once): create the app as a **Game**, turn on Play Games Services with **Saved Games**, copy the Game ID, add an Android OAuth client per signing key ([`skills.md`](skills.md) §*Export for Android with Play Games*) |
+| D2 | Recruit **15–20 closed testers** now: Google's 14-day test is the longest wait |
+| D3 | Cloudflare: a free account, its Account ID and a Workers AI token. Read its terms for the 13+ question (decision 2 below) |
+| D4 | A free Render account, connected to the GitHub repo |
+| D5 | GitHub → Settings → Pages → Source: **GitHub Actions** (for C2) |
+
+**E — With the accounts (together):**
+
+| Step | Item |
+|---|---|
+| E1 | Run `backend/evals/` against Gemma 4, tune the prompts, confirm `MAX_QUESTIONS = 30`, record neurons per call in [`api-backend.md`](api-backend.md) §3 |
+| E2 | Deploy `backend/` on Render (`render.yaml`). Check `/health`, the cold-start wake and that `X-Forwarded-For` reaches the per-IP limit. `curl` a PDF, a scan, a .docx and a photo. Set `Api.RELEASE_URL` |
+| E3 | Set `PRIVACY_URL`, `TERMS_URL` and `SUPPORT_URL` in `scripts/ui/settings.gd` once the pages are live |
+
+**F — Android build and phones:**
+
+| Step | Item |
+|---|---|
+| F1 | In the editor: install the Android build template, add the Android export (Gradle, `.aab`, the Game ID, **user-data backup on**, a release keystore kept out of git). The agent checks `export_presets.cfg` for secrets before it is committed |
+| F2 | A real app icon and the adaptive icon (Godot's default `icon.svg` today; needs art) |
+| F3 | Internal testing on a phone: the cloud-save checklist in [`skills.md`](skills.md), the file picker with a PDF, a photo and a .docx plus Export / Import (#23), the whole loop against Render, and the offline fallbacks when the AI budget runs out. Fix what breaks |
+| F4 | The closed test: 12 or more testers opted in for 14 days |
+
+**G — Release:** fill in Data safety, the content rating (13+), the listing and the screenshots from
+`docs/store-listing.md`, then roll out to production in stages.
+
+**Later (not blocking):** iOS (macOS CI, $99 a year), study reminders (a local-notifications plugin),
+Play Integrity, Sentry, purchases.
+
+Hygiene: #22, find why the headless boot chain fails its threaded loads.
 
 ## Needs a decision
 
-1. **Save cadence** (#14): the 2026-11-08 plan settles it in Phase A (upload on app pause and after
-   big events, at most once a minute).
+1. ~~**Save cadence** (#14)~~. Settled: one write every 5 s, at once on pause or close. The cloud copy
+   uploads at most once a minute.
 2. **Cloudflare terms:** confirm nothing in Cloudflare's Self-Serve Subscription Agreement or Workers AI
    terms rules out a 13+ app before launch ([`launch-plan.md`](launch-plan.md) §1).
 
 ## Done
+
+- **2026-11-08** — Phase A, cloud saves (`6415399`): the Google Play Games plugin
+  (`addons/GodotPlayGameServices/`, v3.4.0, MIT) and the `CloudSave` autoload, an Android-only copy of
+  the save in the player's Saved Games. Save v17 adds `saved_at`. Settings shows the account, and
+  "Delete my data" deletes the cloud copy too. Contract: [`data-model.md`](data-model.md) §8.
+- **2026-11-08** — Phase B, Gemma 4 on Cloudflare Workers AI (`d869b04`): the study server calls any
+  OpenAI-compatible endpoint (free 10,000 neurons a day). It has a daily neuron budget, sends scanned
+  PDFs as page images, and has `offline` fallbacks: questions written on the device and essays graded
+  offline. `render.yaml` deploys it free. Contract: [`api-backend.md`](api-backend.md).
 
 - **2026-11-06** — map, focus timer and battle polish (`19e5531`): a full Kuiz refuses food, the
   explorer picker opens first after the world intro, the map HUD as one top band, the minimap opens

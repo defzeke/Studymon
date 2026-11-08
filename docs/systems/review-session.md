@@ -189,7 +189,7 @@ list is re-rendered** after every delete. Note that mastery keys also use indice
 
 1. `add_topic_to_history(editing_topic_id, name, pending_questions)` — overwrites an entry with the
    same id, else appends a `{id, name, question_count, questions}` record.
-2. `SaveManager.save_progress()` — the new topic is saved at once (a no-op until a save has been loaded).
+2. `SaveManager.save_progress()` — the new topic is saved within 5 s (debounced, [`data-model.md`](../data-model.md) §7; a no-op until a save has been loaded).
 3. `_enter_overworld()` → `build_map_data()` → `region_generated`.
 
 `build_map_data()` (`session_manager.gd:178-187`) produces:

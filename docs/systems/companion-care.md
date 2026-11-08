@@ -48,8 +48,9 @@ so stats bottom out cleanly at zero.
 | `"fix"` | `health += 25` | 2 | home: a finished screwdriver tune-up |
 | `"clean"` | `mood += 5` | 2 | home: the towel got Kuiz spotless (the scrubbing itself lowers `dirt`) |
 
-Energy has no tap: `recharge(delta)` adds 6 / s while home's Charge toggle is on. Home saves after
-each care action (`SaveManager.save_progress()`).
+Energy has no tap: `recharge(delta)` adds 6 / s while home's Charge toggle is on. Home asks for a save after
+each care action (`SaveManager.save_progress()`, debounced to at most one write every 5 s,
+[`data-model.md`](../data-model.md) §7).
 
 ### Diminishing returns
 

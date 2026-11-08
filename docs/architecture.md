@@ -260,7 +260,9 @@ operation must pick a unique `job_id` or it will be consumed by the wrong listen
    the top and the dock rises from the bottom.
 
 **The save is read at boot**, by a deferred `SaveManager.load_once()` from its `_ready()`. A first-time companion starts from
-`CompanionState`'s own defaults (level 1, energy 80, focus 70, mood 75).
+`CompanionState`'s own defaults (level 1, energy 80, focus 70, mood 75). Gameplay saves are
+debounced to one write every 5 s and written at once on pause or close
+([`data-model.md`](data-model.md) §7).
 
 **On Android, `CloudSave` signs in to Google Play Games at boot** (silently, when the player already
 uses it) and loads the cloud copy:

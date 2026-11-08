@@ -210,16 +210,20 @@ Behaviour worth knowing:
 
 ## 7. Save cadence
 
-`SaveManager.save_game()` is called from:
+| Call | Used by | When the file is written |
+|---|---|---|
+| `SaveManager.save_progress()` | gameplay: care actions, food, closet, the focus timer, battle results and fleeing, confirmed or deleted worlds, flashcards, AI consent, the tutorial, world slots, explorer picks | **debounced**: on the next frame if nothing was written in the last `SAVE_GAP` (5 s), else when those 5 s are up. A burst of care taps is one write |
+| `SaveManager.save_game()` | Settings (volumes, large text, music toggle, after Import), Export | at once |
+| app pause (`NOTIFICATION_APPLICATION_PAUSED`) or close (`WM_CLOSE_REQUEST`) | — | at once, if a `save_progress()` is still waiting |
 
-| Site | Frequency |
-|---|---|
-| `SaveManager.save_progress()` after a battle win or loss (`battle.gd`), and after a topic is confirmed (`confirm_topic`) | once per event |
-
-`save_progress()` writes only when a save has already been loaded this session (`load_game()` /
+`save_progress()` does nothing until a save has been loaded this session (`load_game()` /
 `load_once()` set the flag), so a scene run on its own can never overwrite the real save with
-defaults. Mastery, cleared gyms and trainers, Champion wins, XP and new topics now persist at the
-moment they change. Mastery changed outside a battle (none today) would still wait for the next save.
+defaults. Erasing or replacing the save (Delete my data, Import, a cloud restore) drops a write that
+is still waiting, so it cannot bring the old game back. The game state lives in the autoloads, so a
+scene change in those 5 s loses nothing. Only a crash or a forced kill without a pause can lose the
+last ≤ 5 s.
+
+Every write marks a cloud upload as due (§8).
 
 ---
 

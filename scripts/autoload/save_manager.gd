@@ -8,8 +8,12 @@ const SAVE_PATH := "user://studymon_save.json"
 const SAVE_VERSION := 17
 # An exported save is a few KB; anything far bigger is not one.
 const MAX_IMPORT_BYTES := 5 * 1024 * 1024
+## save_progress() writes at most this often (seconds); app pause and close write at once.
+const SAVE_GAP := 5.0
 
 var _loaded := false
+var _dirty := false
+var _last_write := -SAVE_GAP
 ## When the save was last written (unix seconds; 0 for a fresh game). CloudSave keeps the newer copy.
 var saved_at := 0
 
@@ -54,8 +58,22 @@ func save_game() -> bool:
 		return false
 	f.store_string(JSON.stringify(data))
 	f.close()
+	_dirty = false
+	_last_write = _now()
 	CloudSave.note_saved()
 	return true
+
+func _process(_delta: float) -> void:
+	if _dirty and _now() - _last_write >= SAVE_GAP:
+		save_game()
+
+# Before CloudSave's own handler (it comes later in the autoload order), so the upload sends this write.
+func _notification(what: int) -> void:
+	if _dirty and (what == NOTIFICATION_APPLICATION_PAUSED or what == NOTIFICATION_WM_CLOSE_REQUEST):
+		save_game()
+
+func _now() -> float:
+	return Time.get_ticks_msec() / 1000.0
 
 ## Settings' "Delete my data": removes the save file and puts every saved value back to a fresh game.
 func delete_all() -> void:
@@ -85,6 +103,8 @@ func _reset() -> void:
 	GameState.study_cards = 0
 	GameState.owned_costumes.clear()
 	saved_at = 0
+	# A write still pending would bring the erased or replaced game back.
+	_dirty = false
 
 ## Settings' Export: the current save, written to `path` (a file the player picked), a copy the player
 ## keeps wherever they like. False when it cannot be written.
@@ -140,10 +160,12 @@ func replace_with(text: String) -> String:
 	load_game()
 	return ""
 
-## Progress saves never run before a load, so a scene run on its own cannot overwrite the real save.
+## Asks for a save: written within SAVE_GAP seconds (the first one in a while on the next frame), so a
+## burst of care taps is one write. Never before a load, so a scene run on its own cannot overwrite
+## the real save. Contract: docs/data-model.md §7.
 func save_progress() -> void:
 	if _loaded:
-		save_game()
+		_dirty = true
 
 func load_game() -> bool:
 	_loaded = true
