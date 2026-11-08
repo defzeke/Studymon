@@ -152,5 +152,5 @@ These are unresolved and belong to the docs that own them:
    sides ([`api-backend.md`](api-backend.md) §2; issue #7 fixed).
 2. ~~**Auth.**~~ Settled: no accounts, ever; saves stay on the device and the header was removed
    (issue #2).
-3. **Codex.** The remote branch `feat/remove-codex` suggests it is being cut. Keep the button out of
-   the UI until that lands.
+3. ~~**Codex.**~~ Settled: removed (save v16). The curriculum lines, the `codex` save field and its
+   signals are gone; nothing showed them.

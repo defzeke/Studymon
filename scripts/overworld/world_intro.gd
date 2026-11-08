@@ -24,7 +24,7 @@ const LEAVE_HOPS := 4
 const LEAVE_FADE_TIME := 1.1
 const HOLD_TIME := 1.2
 const WINDOW_DAY := Color(0.749, 0.851, 0.902)
-const WINDOW_LIT := Color("D6A85F")
+const WINDOW_LIT := Palette.AMBER
 
 @onready var spot: Node3D = %KuizSpot
 @onready var door: Node3D = %DoorHinge

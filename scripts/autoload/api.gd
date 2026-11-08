@@ -1,5 +1,5 @@
 extends Node
-## Api — HTTP wrapper for backend calls (canonical registered version).
+## The study server client (HTTP), and its offline stand-in when MOCK is on.
 ## MOCK mode returns canned data so client dev is never blocked; exported release builds use the server.
 ## Godot only ever talks to OUR api, never api.anthropic.com directly.
 ## Contract: docs/api-backend.md. Do not name a helper plain `_get`: it would override Object._get().
@@ -112,7 +112,7 @@ func report_content(job_id: String, kind: String, text: String) -> void:
 		return
 	_request(job_id, HTTPClient.METHOD_POST, "/v1/reports", {"job_id": job_id, "kind": kind, "text": text.left(4000)}, GRADE_TIMEOUT)
 
-# --- Answer checking on the device (contract: docs/systems/battle.md §2) ---
+# Answer checking on the device. Contract: docs/systems/battle.md §2.
 
 ## Lowercase, punctuation stripped, spaces collapsed, a leading article dropped.
 func normalize_answer(s: String) -> String:
@@ -206,7 +206,7 @@ func essay_offline(q: Dictionary, answer: String) -> Dictionary:
 ## MOCKS — the offline stand-ins for the study server (Api.MOCK)
 
 func _execute_mock_upload(job_id: String, topic_name: String, source_text: String) -> void:
-	# Simulate short processing beat like GDD §5.2 "AI is studying..."
+	# A short "AI is studying..." beat before the result.
 	call_deferred("_mock_upload_done", {"job_id": job_id, "status": "processing"})
 	# Complete after ~0.8s via timer if tree is ready, else immediate.
 	# Questions are parsed from the USER's reviewer text; canned placeholders

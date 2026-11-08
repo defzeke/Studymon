@@ -4,7 +4,7 @@ extends Node
 
 const SAVE_PATH := "user://studymon_save.json"
 ## The schema written by save_game(); history in docs/data-model.md.
-const SAVE_VERSION := 15
+const SAVE_VERSION := 16
 # An exported save is a few KB; anything far bigger is not one.
 const MAX_IMPORT_BYTES := 5 * 1024 * 1024
 
@@ -24,7 +24,6 @@ func load_once() -> void:
 func save_game() -> bool:
 	var data := CompanionState.to_dict()
 	data["v"] = SAVE_VERSION
-	data["active_region_id"] = GameState.active_region_id
 	data["large_text_enabled"] = GameState.large_text_enabled
 	data["player_name"] = GameState.player_name
 	data["tutorial_done"] = GameState.tutorial_done
@@ -70,7 +69,6 @@ func _reset() -> void:
 	GameState.ai_consent = false
 	GameState.food_stock = {}
 	GameState.outfit = {}
-	GameState.active_region_id = ""
 	GameState.add_crystals(-GameState.crystals)
 	GameState.world_slots = GameState.FREE_WORLD_SLOTS
 	GameState.minigame_day = ""
@@ -135,9 +133,8 @@ func load_game() -> bool:
 	if typeof(parsed) != TYPE_DICTIONARY:
 		return false
 	CompanionState.from_dict(parsed)
-	# Saves before v15 also hold "campaign_ready" / "campaign_unlocked_flag" (the removed Level 5
-	# gate); they are ignored.
-	GameState.active_region_id = str(parsed.get("active_region_id", ""))
+	# Older saves may also hold keys no longer read, all ignored: "campaign_ready" /
+	# "campaign_unlocked_flag" (before v15), "codex", "bond" and "active_region_id" (before v16).
 	GameState.player_name = str(parsed.get("player_name", ""))
 	# Saves from before v15 lack the flag; a saved name means the tutorial was already played.
 	GameState.tutorial_done = bool(parsed.get("tutorial_done", GameState.player_name != ""))

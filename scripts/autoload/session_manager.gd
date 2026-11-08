@@ -1,13 +1,13 @@
 extends Node
-## SessionManager — Review Session flow (Phase 5) + Overworld progress (Phase 6)
-## Client-side: topics → upload → extraction → edit → confirm → region → gyms
+## The worlds (topics) and their questions, the reviewer upload, house / gym / Champion progress, runs
+## and the battle handoff, per-question mastery and the flashcard deck. Contract:
+## docs/systems/review-session.md, docs/systems/gameplay-structure.md.
 
 signal topics_listed(topics: Array[Dictionary])
 signal extraction_started(job_id: String)
 signal extraction_progress(job_id: String, progress: float)
 signal extraction_completed(topic_id: String, questions: Array[Dictionary])
 signal extraction_failed(job_id: String, error: String)
-signal topic_saved(topic_id: String)
 signal region_generated(topic_id: String, map_data: Dictionary)
 signal overworld_progress_changed
 
@@ -43,22 +43,20 @@ const DEFEAT_RATE := 0.5
 var current_topic_id: String = ""
 var pending_questions: Array[Dictionary] = []
 var editing_topic_id: String = ""
-## Phase 5: raw reviewer text from the last upload (paste or decoded file bytes).
-## Stored so the mock extractor can parse USER material instead of canned defaults.
+## The raw reviewer text from the last upload (paste or decoded file bytes), which the mock extractor
+## reads instead of canned questions.
 var last_source_text: String = ""
 ## True while "More questions" runs: the result is added to the world being edited, not a new one.
 var _adding := false
 var _topics: Array[Dictionary] = []
 var _active_job_id: String = ""
-# Phase 6: per-region clear state (mock-persisted in memory)
+# Progress per world; saved by to_dict().
 var _cleared_houses: Dictionary = {}  # "topic_id:gym_type#house_id" -> true
 var _cleared_gyms: Dictionary = {}  # "topic_id:gym_type" -> true
 var _best_stars: Dictionary = {}  # "kind:topic_id:run_key" -> 0..3 (run_key: type, or type#house_id)
 
 func _ready() -> void:
 	Api.job_status.connect(_on_job_status)
-
-# --- Topics history (mock-persisted in memory until SaveManager handles it) ---
 
 ## Fills defaults and repairs rows a battle could not play: an unknown tier becomes medium, and a
 ## Multiple Choice row without a correct answer and a wrong option becomes Identification. The answer
@@ -135,7 +133,6 @@ func start_more_questions(topic_name: String) -> bool:
 	Api.upload_reviewer(_active_job_id, topic_name, last_source_text, PackedByteArray(), "pdf", existing)
 	return true
 
-
 ## A saved world, as opposed to one being built for the first time.
 func is_saved_world(topic_id: String) -> bool:
 	return _topics.any(func(t: Dictionary) -> bool: return str(t.get("id", "")) == topic_id)
@@ -172,7 +169,6 @@ func reset_topic_progress(topic_id: String) -> void:
 		_erase_prefixed(_best_stars, kind + ":" + prefix)
 	_champion_defeated.erase(topic_id)
 	overworld_progress_changed.emit()
-	mastery_changed.emit()
 	SaveManager.save_progress()
 
 func delete_topic(topic_id: String) -> void:
@@ -185,12 +181,8 @@ func delete_topic(topic_id: String) -> void:
 		pending_questions = []
 	if current_topic_id == topic_id:
 		current_topic_id = ""
-	if GameState.active_region_id == topic_id:
-		GameState.set_active_region("")
 	topics_listed.emit(_topics.duplicate(true))
 	SaveManager.save_progress()
-
-# --- Upload & extraction ---
 
 func validate_source_text(text: String) -> Dictionary:
 	var word_count := text.split(" ", false).size()
@@ -311,7 +303,6 @@ func confirm_topic(topic_name: String = "") -> void:
 	var topic_label := topic_name if topic_name != "" else editing_topic_id
 	add_topic_to_history(editing_topic_id, topic_label, pending_questions)
 	SaveManager.save_progress()
-	topic_saved.emit(editing_topic_id)
 	_enter_overworld(editing_topic_id)
 
 func _enter_overworld(topic_id: String) -> void:
@@ -330,8 +321,6 @@ func build_map_data(topic_id: String, questions: Array[Dictionary]) -> Dictionar
 
 func get_pending_questions() -> Array[Dictionary]:
 	return pending_questions.duplicate(true)
-
-# --- Phase 6: houses, gyms and runs (contract: docs/systems/gameplay-structure.md) ---
 
 ## One entry per question type, in GymSlot order; empty until the topic has a question.
 func get_gym_structure() -> Array[Dictionary]:
@@ -373,7 +362,6 @@ func run_items(kind: String, gym_type: String) -> int:
 func best_stars(kind: String, topic_id: String, run_key: String) -> int:
 	return int(_best_stars.get("%s:%s:%s" % [kind, topic_id, run_key], 0))
 
-# --- Phase 7: runs ---
 # A battle is a run: a fixed list of items fought against one foe. Contract: docs/systems/battle.md.
 
 var battle_topic_id: String = ""
@@ -552,21 +540,15 @@ func _mark_run_cleared(stars: int) -> void:
 			_cleared_gyms[k] = true
 		"champion":
 			_champion_defeated[battle_topic_id] = true
-			champion_defeated.emit(battle_topic_id)
 	var sk := "%s:%s:%s" % [battle_kind, battle_topic_id, _run_key()]
 	_best_stars[sk] = maxi(int(_best_stars.get(sk, 0)), stars)
 	overworld_progress_changed.emit()
 
-# --- Phase 8: mastery states ---
-# Per-question mastery: New -> Learning -> Remaster -> Mastered.
-# Updated after EVERY battle result; Mastered decays to Remaster after
-# MASTERY_DECAY_DAYS without a correct re-encounter (spaced repetition).
+# Per-question mastery, New -> Learning -> Remaster -> Mastered, moved by every answered battle item;
+# Mastered decays to Remaster after MASTERY_DECAY_DAYS without a correct answer (spaced repetition).
 
 enum Mastery { NEW, LEARNING, REMASTER, MASTERED }
 const MASTERY_DECAY_DAYS := 7
-
-signal mastery_changed
-signal champion_defeated(topic_id: String)
 
 var _mastery: Dictionary = {}
 var _champion_defeated: Dictionary = {}
@@ -589,7 +571,6 @@ func get_mastery_state(topic_id: String, q_idx: int) -> int:
 			st = Mastery.REMASTER
 			rec["state"] = st
 			_mastery[k] = rec
-			mastery_changed.emit()
 	return st
 
 func mastery_badge(state: int) -> Dictionary:
@@ -605,91 +586,10 @@ func mastery_badge(state: int) -> Dictionary:
 			return {"emoji": "🔵", "color": Color(0.2, 0.65, 1.0), "name": "Mastered"}
 	return {"emoji": "⚪", "color": Color(0.75, 0.75, 0.8), "name": "New"}
 
-# --- Phase 9: Data-Driven AI Insights ---
-# Rule-based trigger system: condition -> line pool mappings.
-# Conditions reference mastery data without LLM calls.
-# Editable via the INSIGHT_TRIGGERS dict below; no code changes needed to add new triggers.
-
-# Writers edit the dict below (states + thresholds -> line pool) without touching code.
-# states uses Mastery enum ints: 0=NEW, 1=LEARNING, 2=REMASTER, 3=MASTERED.
-const INSIGHT_TRIGGERS: Dictionary = {
-	# Subject failure: NEW/LEARNING question with >= 3 attempts and no mastery yet.
-	"topic_failed_repeatedly": {
-		"states": [0, 1],
-		"min_attempts": 3,
-		"needs_just_mastered": false,
-		"lines": [
-			"Keep trying! You're close to mastering this.",
-			"Don't give up on this subject yet.",
-			"Every expert was once a beginner."
-		],
-	},
-	# Mastery milestone: question just reached MASTERED.
-	"question_mastered": {
-		"states": [3],
-		"min_attempts": 0,
-		"needs_just_mastered": true,
-		"lines": [
-			"Nice work! You've mastered this topic.",
-			"Great job retaining what you studied.",
-			"This one's locked in your memory."
-		],
-	},
-	# Long-term retention risk: decayed back to REMASTER.
-	"retention_risk": {
-		"states": [2],
-		"min_attempts": 0,
-		"needs_just_mastered": false,
-		"lines": [
-			"Remember, you can bring this back with practice.",
-			"Spaced repetition helps retention — try again soon.",
-			"This topic needs a quick review."
-		],
-	},
-}
-
-signal insight_triggered(topic_id: String, q_idx: int, text: String)
-var last_insight: String = ""
-
-func _check_insight_triggers(topic_id: String, q_idx: int, won: bool, prev_state: int = -1) -> String:
-	# No LLM calls — pure rule check off _mastery state. prev_state lets
-	# the 'question_mastered' trigger fire only on the transition into MASTERED,
-	# not on every subsequent win while already mastered.
-	var mastery_state: int = get_mastery_state(topic_id, q_idx)
-	var k := _mastery_key(topic_id, q_idx)
-	var rec: Dictionary = _mastery.get(k, {"state": mastery_state, "attempts": 0, "correct": 0, "last_correct": 0})
-	var attempts: int = int(rec.get("attempts", 0))
-	# Priority order: mastered milestone first, then retention, then struggle
-	var priority: Array[String] = ["question_mastered", "retention_risk", "topic_failed_repeatedly"]
-	for trigger_name in priority:
-		if not INSIGHT_TRIGGERS.has(trigger_name):
-			continue
-		var trigger_data: Dictionary = INSIGHT_TRIGGERS[trigger_name]
-		var allowed: Array = trigger_data.get("states", [])
-		if mastery_state not in allowed:
-			continue
-		var min_attempts: int = int(trigger_data.get("min_attempts", 0))
-		if attempts < min_attempts:
-			continue
-		var needs_just: bool = bool(trigger_data.get("needs_just_mastered", false))
-		if needs_just:
-			if not won or mastery_state != Mastery.MASTERED:
-				continue
-			if prev_state != -1 and prev_state == Mastery.MASTERED:
-				continue
-		if trigger_name == "topic_failed_repeatedly" and won:
-			continue
-		var lines: Array = trigger_data.get("lines", [])
-		if lines.is_empty():
-			continue
-		return str(lines[randi() % lines.size()])
-	return ""
-
 func record_battle_outcome(topic_id: String, q_idx: int, won: bool) -> void:
 	var k := _mastery_key(topic_id, q_idx)
 	var rec: Dictionary = _mastery.get(k, {"state": Mastery.NEW, "attempts": 0, "correct": 0, "last_correct": 0})
-	var prev_st: int = int(rec.get("state", Mastery.NEW))
-	var st: int = prev_st
+	var st: int = int(rec.get("state", Mastery.NEW))
 	rec["attempts"] = int(rec.get("attempts", 0)) + 1
 	if won:
 		rec["correct"] = int(rec.get("correct", 0)) + 1
@@ -707,12 +607,6 @@ func record_battle_outcome(topic_id: String, q_idx: int, won: bool) -> void:
 				st = Mastery.LEARNING
 	rec["state"] = st
 	_mastery[k] = rec
-	mastery_changed.emit()
-	# Phase 9: rule-based companion insight after every battle (mock and real)
-	var insight := _check_insight_triggers(topic_id, q_idx, won, prev_st)
-	if insight != "":
-		last_insight = insight
-		insight_triggered.emit(topic_id, q_idx, insight)
 
 func _questions_for(topic_id: String) -> Array:
 	if topic_id == editing_topic_id or topic_id == current_topic_id:
@@ -722,7 +616,7 @@ func _questions_for(topic_id: String) -> Array:
 			return t.get("questions", [])
 	return []
 
-# --- Phase 4: Flashcard Sanctuary (contract: docs/systems/gameplay-structure.md §3.4) ---
+# The Flashcard Sanctuary. Contract: docs/systems/gameplay-structure.md §3.4.
 
 ## Where the sanctuary's Back button returns to; its callers set it.
 var flashcards_return: String = "res://scenes/ui/session_list.tscn"
@@ -753,10 +647,7 @@ func promote_from_review(topic_id: String, q_idx: int) -> bool:
 	var rec: Dictionary = _mastery.get(k, {"state": Mastery.NEW, "attempts": 0, "correct": 0, "last_correct": 0})
 	rec["state"] = Mastery.LEARNING
 	_mastery[k] = rec
-	mastery_changed.emit()
 	return true
-
-# --- Phase 8: Champion ---
 
 ## The Champion opens once every gym is cleared.
 func is_champion_available(topic_id: String) -> bool:
@@ -815,4 +706,3 @@ func from_dict(data: Dictionary) -> void:
 				_mastery[moved] = _mastery[k]
 				_mastery.erase(k)
 	overworld_progress_changed.emit()
-	mastery_changed.emit()

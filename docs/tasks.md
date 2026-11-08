@@ -10,9 +10,12 @@ Last updated: 2026-11-08.
 
 ## In flight
 
-Nothing intended is uncommitted. The working tree holds an accidental Godot 4.6 editor downgrade
-(`project.godot` `config/features` back to `"4.6"`, three keys dropped from `explorer_girl.glb.import`
-and `map.glb.import`); discard it and open the project only in 4.7.2.
+Uncommitted, for the maintainer to commit: cleanup batch 1 of 3 (no behaviour change). Removed the
+never-shown Codex, `bond`, `active_region_id` and AI insights (save v16; older saves load, extra keys
+ignored), the signals nothing listened to and the uncalled helpers; the `Palette` colour constants,
+`class_name ConfirmModal`, one shared `ink_outline.tres`; `kuiz_look.gd` / `kuiz_voice.gd` moved to
+`scripts/kuiz/`. Next: batch 2 (code-built nodes into scenes), then batch 3 (tuning tables into
+`.tres` resources). Checked headless (gates match the baseline) and by a save round-trip.
 
 Everything below **Done** is on `world-assets` and `origin/dev` (PR #9 merged into `dev` on
 2026-11-02); the two 2026-11-06 commits are not yet on `origin/world-assets`, and nothing has been
@@ -50,11 +53,8 @@ Hygiene, after the slice plays:
 
 ## Needs a decision
 
-1. **Codex.** The remote branch `feat/remove-codex` suggests it is being cut. `CompanionState` still
-   keeps `codex` / `codex_entry_added` and saves them, with no screen. Remove the data and the save
-   field, or build the screen?
-2. **Save cadence.** Event-driven saves, a dirty flag with a timer, or save on app pause only (#14)?
-3. **Hosting.** Recommended: the stateless FastAPI gateway on Cloud Run or Fly.io. See
+1. **Save cadence.** Event-driven saves, a dirty flag with a timer, or save on app pause only (#14)?
+2. **Hosting.** Recommended: the stateless FastAPI gateway on Cloud Run or Fly.io. See
    [`launch-plan.md`](launch-plan.md) §1.
 
 ## Done

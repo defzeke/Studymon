@@ -1,16 +1,14 @@
 extends Node
-## CompanionState — persistent companion data (Phase 2+)
+## Kuiz's care stats, XP and level, and the focus timer. Contract: docs/systems/companion-care.md.
 
 signal stats_changed
 signal xp_changed(current_xp: int, level: int)
-signal leveled_up(new_level: int)
-signal codex_entry_added(text: String)
 signal pomodoro_phase_changed(mode: String)
 
 # Levels never cap. See xp_to_reach().
 # Each level costs 5 XP more than the one before: Lv1->2=20, 2->3=25, 3->4=30, 4->5=35, 5->6=40...
 # At 1-2 XP per tap (feed 2, pet 1, play 2; avg ~1.66 cycling), ~65 taps to Lv5, a few minutes;
-# meets GDD "minutes, not hours" for Levels 1-5.
+# Levels 1-5 take minutes, not hours.
 const FIRST_LEVEL_XP := 20
 const LEVEL_XP_STEP := 5
 # Reaching a level pays this many crystals (flat, so care alone cannot outpace studying).
@@ -48,8 +46,7 @@ const PLAY_MOOD_WRONG := 0.3
 const HURT_HEALTH := 0.3
 const HURT_FLOOR := 10.0
 
-# Pomodoro (Phase 4)
-# The player's choice of lengths (minutes): the defaults, and what the timer panel allows.
+# The focus timer. The player's choice of lengths (minutes): the defaults, and what the timer panel allows.
 const POMODORO_FOCUS_MIN := 25
 const POMODORO_REST_MIN := 5
 const POMODORO_FOCUS_RANGE := Vector3i(5, 60, 5)
@@ -72,17 +69,14 @@ var health: float = 100.0
 var dirt: float = 0.0
 ## The battery's capacity left, 100 = new; lower drains energy faster.
 var battery_health: float = 100.0
-var bond: int = 0
 ## True while a battle run is on; the clock decay is paused.
 var in_run := false
 var _decay_emit_wait := 0.0
-var codex: Array[String] = []
 
-# XP diminishing returns tracking
+# Taps of each care action this hour, for the XP caps.
 var _action_tap_counts: Dictionary = {"feed": 0, "pet": 0, "play": 0, "fix": 0, "clean": 0}
 var _last_hour_reset: int = 0
 
-# Pomodoro state (Phase 4)
 var _pomodoro_mode: String = ""  # "focus", "rest", ""
 var _pomodoro_remaining: int = 0
 var _pomodoro_timer: Timer
@@ -90,20 +84,9 @@ var _pomodoro_last_tick := 0
 ## Saved: the length the next focus and break run for, in minutes.
 var focus_minutes := POMODORO_FOCUS_MIN
 var rest_minutes := POMODORO_REST_MIN
-var _rest_missed: bool = false
-
-# GDD §4.3.1 curriculum
-const CURRICULUM := {
-	1: "I start out knowing NOTHING — like a baby! I need training to learn. (AI starts blank)",
-	2: "Feed me examples! That's called TRAINING DATA — I learn from examples, not instinct.",
-	3: "When you Pet me for a good answer, that's FEEDBACK — I repeat what gets rewarded.",
-	4: "Playing is PRACTICE — I get smarter by trying, failing, and trying again! I can use it on new stuff soon...",
-	5: "I can GENERALIZE now! Show me your PDF reviewer and I'll turn it into gym battles!",
-}
 
 func _ready() -> void:
 	_last_hour_reset = int(Time.get_unix_time_from_system())
-	_unlock_tidbit(1)
 
 func _process(delta: float) -> void:
 	if in_run:
@@ -146,69 +129,45 @@ func _check_level_up() -> void:
 	while xp >= xp_to_reach(level + 1):
 		level += 1
 		GameState.add_crystals(LEVEL_CRYSTALS)
-		_unlock_tidbit(level)
-		leveled_up.emit(level)
 
 ## Cumulative XP at which `lv` is reached (Lv1 = 0, Lv2 = 20, Lv5 = 110, Lv6 = 150...).
 static func xp_to_reach(lv: int) -> int:
 	var n := lv - 1
 	return FIRST_LEVEL_XP * n + LEVEL_XP_STEP * n * (n - 1) / 2
 
-func _unlock_tidbit(lv: int) -> void:
-	if CURRICULUM.has(lv):
-		var text = CURRICULUM[lv]
-		if not codex.has(text):
-			codex.append(text)
-			codex_entry_added.emit(text)
-
-## A care action. `food` (feed only) is the meal's {hunger, mood, focus} from home.gd FOODS.
-func care(action: String, food := {}) -> Dictionary:
+## A care action raises its stat and pays XP. `food` (feed only) is the meal's {hunger, mood,
+## focus} from home.gd FOODS.
+func care(action: String, food := {}) -> void:
 	var gained := 1
-	var deltas := {}
-	
-	# Diminishing returns after DAILY_CAP_BASE_XP taps of same action this hour
-	var count = _action_tap_counts.get(action, 0)
+	# Past DAILY_CAP_BASE_XP taps of one action this hour it pays 30 % XP.
+	var count: int = _action_tap_counts.get(action, 0)
 	_action_tap_counts[action] = count + 1
-	
-	var xp_mult = 1.0
-	if count >= DAILY_CAP_BASE_XP:
-		xp_mult = 0.3  # 30% XP after cap
-
+	var xp_mult := 0.3 if count >= DAILY_CAP_BASE_XP else 1.0
 	match action:
 		"feed":
-			var fill := float(food.get("hunger", FEED_HUNGER))
-			hunger = minf(STAT_MAX, hunger + fill)
+			hunger = minf(STAT_MAX, hunger + float(food.get("hunger", FEED_HUNGER)))
 			mood = minf(STAT_MAX, mood + float(food.get("mood", 0.0)))
 			focus = minf(STAT_MAX, focus + float(food.get("focus", 0.0)))
-			deltas = {"hunger": fill}
 			gained = maxi(1, roundi(2 * xp_mult))
 		"pet":
 			mood = minf(STAT_MAX, mood + 8.0)
-			deltas = {"mood": 8.0}
 			gained = maxi(1, roundi(1 * xp_mult))
 		"play":
 			mood = minf(STAT_MAX, mood + PLAY_MOOD)
 			energy = maxf(0.0, energy - 2.0)
-			deltas = {"mood": PLAY_MOOD, "energy": -2.0}
 			gained = maxi(1, roundi(2 * xp_mult))
 		"fix":
 			health = minf(STAT_MAX, health + FIX_HEALTH)
-			deltas = {"health": FIX_HEALTH}
 			gained = maxi(1, roundi(2 * xp_mult))
 		"clean":
 			# A finished scrub (the towel already took the dirt off): a happy, fresh Kuiz.
 			mood = minf(STAT_MAX, mood + CLEAN_MOOD)
-			deltas = {"mood": CLEAN_MOOD}
 			gained = maxi(1, roundi(2 * xp_mult))
-
 	if count >= HOURLY_HARD_CAP:
 		gained = 0
 	add_xp(gained)
 	stats_changed.emit()
-	bond += 1
-	return {"xp": gained, "deltas": deltas, "action": action, "tap_count": count + 1}
 
-## Home's Charge toggle: energy refills while Kuiz sleeps on the charger.
 ## The towel: scrubbing takes dirt off a little at a time.
 func scrub(amount: float) -> void:
 	dirt = maxf(0.0, dirt - amount)
@@ -217,6 +176,7 @@ func scrub(amount: float) -> void:
 func soil(amount := MESS) -> void:
 	dirt = minf(STAT_MAX, dirt + amount)
 
+## Home's Charge toggle: energy refills while Kuiz sleeps on the charger, wearing the battery.
 func recharge(delta: float) -> void:
 	var gained := minf(STAT_MAX - energy, CHARGE_PER_SEC * delta)
 	energy += gained
@@ -272,9 +232,6 @@ func replace_battery() -> bool:
 	stats_changed.emit()
 	return true
 
-func xp_for_next_level() -> int:
-	return xp_to_reach(level + 1) - xp
-
 func to_dict() -> Dictionary:
 	return {
 		"level": level,
@@ -286,8 +243,6 @@ func to_dict() -> Dictionary:
 		"health": health,
 		"dirt": dirt,
 		"battery_health": battery_health,
-		"bond": bond,
-		"codex": codex,
 		"focus_minutes": focus_minutes,
 		"rest_minutes": rest_minutes,
 	}
@@ -302,22 +257,14 @@ func from_dict(data: Dictionary) -> void:
 	health = float(data.get("health", 100.0))
 	dirt = float(data.get("dirt", 0.0))
 	battery_health = float(data.get("battery_health", 100.0))
-	bond = int(data.get("bond", 0))
 	focus_minutes = _stepped(int(data.get("focus_minutes", POMODORO_FOCUS_MIN)), POMODORO_FOCUS_RANGE)
 	rest_minutes = _stepped(int(data.get("rest_minutes", POMODORO_REST_MIN)), POMODORO_REST_RANGE)
-	codex.clear()
-	for e in data.get("codex", []):
-		codex.append(str(e))
-	# Backfill: fresh games and older saves may miss early tidbits.
-	for lv in range(1, level + 1):
-		_unlock_tidbit(lv)
 	# Saves from the capped curve (Lv5 max) may hold XP past Lv5: catch the levels up silently.
 	while xp >= xp_to_reach(level + 1):
 		level += 1
 	stats_changed.emit()
 	xp_changed.emit(xp, level)
 
-# --- Pomodoro (Phase 4) ---
 ## Moves the next focus or break length by `steps`, staying on the panel's range (x min, y max, z step).
 func step_focus_minutes(steps: int) -> void:
 	focus_minutes = _stepped(focus_minutes + steps * POMODORO_FOCUS_RANGE.z, POMODORO_FOCUS_RANGE)
@@ -341,7 +288,6 @@ func start_pomodoro() -> void:
 	_pomodoro_timer.timeout.connect(_on_pomodoro_tick)
 	add_child(_pomodoro_timer)
 	_pomodoro_timer.start()
-	_rest_missed = false
 	stats_changed.emit()
 	pomodoro_phase_changed.emit("focus")
 
@@ -358,7 +304,6 @@ func _on_pomodoro_tick() -> void:
 			focus = minf(STAT_MAX, focus + POMODORO_FOCUS_BONUS * focus_minutes / POMODORO_FOCUS_MIN)
 			_pomodoro_mode = "rest"
 			_pomodoro_remaining = rest_minutes * 60
-			_rest_missed = false
 			stats_changed.emit()
 			pomodoro_phase_changed.emit("rest")
 		else:
@@ -376,7 +321,6 @@ func _stop_pomodoro() -> void:
 		_pomodoro_timer.queue_free()
 	_pomodoro_mode = ""
 	_pomodoro_remaining = 0
-	_rest_missed = false
 	stats_changed.emit()
 
 func skip_pomodoro() -> void:
@@ -397,7 +341,6 @@ func skip_pomodoro() -> void:
 func _apply_missed_rest_penalty() -> void:
 	energy = maxf(0.0, energy - MISSED_REST_ENERGY_PENALTY)
 	mood = maxf(0.0, mood - MISSED_REST_MOOD_PENALTY)
-	_rest_missed = true
 
 func get_pomodoro_state() -> Dictionary:
 	return {
@@ -406,6 +349,3 @@ func get_pomodoro_state() -> Dictionary:
 		"focus_total": focus_minutes * 60,
 		"rest_total": rest_minutes * 60,
 	}
-
-func is_in_rest() -> bool:
-	return _pomodoro_mode == "rest"

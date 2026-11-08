@@ -31,7 +31,6 @@ const TOWEL: Texture2D = preload("res://assets/sprites/props/towel.svg")
 const BOLD: Font = preload("res://assets/fonts/JosefinSans-Bold.ttf")
 const CHARGE_SFX: AudioStream = preload("res://assets/audio/sfx/sfx_charge.wav")
 const CHARGED_SFX: AudioStream = preload("res://assets/audio/sfx/sfx_charged.wav")
-const ConfirmModal := preload("res://scripts/ui/widgets/confirm_modal.gd")
 const SETTINGS_SCENE := "res://scenes/ui/settings.tscn"
 const WORLDS_SCENE := "res://scenes/ui/session_list.tscn"
 const FADE_TIME := 0.35
@@ -457,8 +456,6 @@ func _set_arrows_enabled(on: bool) -> void:
 	for b: BaseButton in [prev_btn, next_btn]:
 		b.disabled = not on
 
-# --- Study Room ---
-
 func _on_charge(charging: bool) -> void:
 	if charging and _reviewing():
 		charge_btn.set_pressed_no_signal(false)
@@ -567,8 +564,6 @@ func _scold() -> void:
 	peek.act("Angry")
 	_toast(REVIEW_LINES.pick_random())
 
-# --- Maintenance Bay ---
-
 # Scrubbing takes dirt off; getting Kuiz spotless in one scrub counts as clean care.
 func _scrub(px: float) -> void:
 	if CompanionState.dirt <= 0.0:
@@ -600,7 +595,7 @@ func _check_row(title: String) -> HBoxContainer:
 	meter.show_percentage = false
 	meter.max_value = 100.0
 	var back := StyleBoxFlat.new()
-	back.bg_color = Color("29383A", 0.35)
+	back.bg_color = Color(Palette.SLATE, 0.35)
 	back.set_corner_radius_all(13)
 	meter.add_theme_stylebox_override("background", back)
 	meter.add_theme_stylebox_override("fill", back.duplicate())
@@ -608,7 +603,7 @@ func _check_row(title: String) -> HBoxContainer:
 	pct.custom_minimum_size = Vector2(70, 0)
 	pct.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	for l: Label in [name_label, pct]:
-		l.add_theme_color_override("font_color", Color("F7F5EF"))
+		l.add_theme_color_override("font_color", Palette.OFF_WHITE)
 		l.add_theme_font_override("font", BOLD)
 		l.add_theme_font_size_override("font_size", 22)
 	row.add_child(name_label)
@@ -630,7 +625,7 @@ func _refresh_checkup() -> void:
 		var meter := row.get_child(1) as ProgressBar
 		meter.value = value
 		var fill := meter.get_theme_stylebox("fill") as StyleBoxFlat
-		fill.bg_color = Color("C97970") if value < 25.0 else (Color("D6A85F") if value < 50.0 else Color("F7F5EF"))
+		fill.bg_color = Palette.CORAL if value < 25.0 else (Palette.AMBER if value < 50.0 else Palette.OFF_WHITE)
 		(row.get_child(2) as Label).text = "%d%%" % roundi(value)
 		if value < worst_value:
 			worst_value = value
@@ -646,8 +641,6 @@ func _buy_battery() -> void:
 	SaveManager.save_progress()
 	peek.act("Celebrate")
 	_toast("New battery fitted: 100% health!")
-
-# --- Data Kitchen ---
 
 # The arrows only step through foods in stock (-1 when none are); the fridge lists all of them.
 # step 0 keeps the current food if it is still in stock, else finds the next one.
@@ -694,7 +687,7 @@ func _build_shop() -> void:
 		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		var label := Label.new()
 		label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		label.add_theme_color_override("font_color", Color("29383A"))
+		label.add_theme_color_override("font_color", Palette.SLATE)
 		var buy: Button = buy_template.duplicate()
 		buy.show()
 		buy.text = "Buy · %d" % food["price"]
@@ -750,8 +743,6 @@ func _eat(food: Dictionary) -> void:
 	SaveManager.save_progress()
 	CompanionState.soil()
 	peek.act("Pet" if food["id"] == FAVORITE_FOOD else "Happy")
-
-# --- Dragging food and the screwdriver ---
 
 func _on_slot_input(event: InputEvent, kind: String) -> void:
 	if not (event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT):
@@ -859,8 +850,6 @@ func _process(delta: float) -> void:
 			peek.act("Celebrate")
 	if ball.visible and not _ball_grabbed and not _ball_resting:
 		_step_ball(delta)
-
-# --- Playroom ---
 
 ## A minigame takes the whole screen: home and the room sign hide until the player leaves it.
 func _play_game(game: CanvasLayer) -> void:

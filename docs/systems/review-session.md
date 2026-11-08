@@ -29,7 +29,6 @@ categorizer.tscn  ◄───────────────────�
    ▼
 SessionManager.confirm_topic(name)
    ├─ add_topic_to_history()   → topics cache
-   ├─ topic_saved signal
    └─ build_map_data() → region_generated → region_map.tscn
 ```
 
@@ -186,7 +185,7 @@ list is re-rendered** after every delete. Note that mastery keys also use indice
 1. `add_topic_to_history(editing_topic_id, name, pending_questions)` — overwrites an entry with the
    same id, else appends a `{id, name, question_count, questions}` record.
 2. `SaveManager.save_progress()` — the new topic is saved at once (a no-op until a save has been loaded).
-3. Emits `topic_saved`, then `_enter_overworld()` → `build_map_data()` → `region_generated`.
+3. `_enter_overworld()` → `build_map_data()` → `region_generated`.
 
 `build_map_data()` (`session_manager.gd:178-187`) produces:
 
@@ -201,8 +200,8 @@ list is re-rendered** after every delete. Note that mastery keys also use indice
 }
 ```
 
-`categorizer.gd:311-317` then waits 0.6 s, sets `GameState.active_region_id`, and changes scene to
-`region_map.tscn`. The overworld **recomputes** gym structure from `pending_questions` instead of
+`categorizer.gd:_on_region_generated` then waits 0.6 s and changes scene to `world_intro.tscn`, which
+opens `region_map.tscn`. The overworld **recomputes** gym structure from `pending_questions` instead of
 reading the map data.
 
 ---

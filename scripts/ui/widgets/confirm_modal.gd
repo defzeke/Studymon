@@ -1,9 +1,8 @@
+class_name ConfirmModal
 extends Control
 ## Animated confirm / notice pop-up: the screen dims, the card pops in, a button or Esc closes it.
 ## ConfirmModal.open(self, "Delete?", "…", "Delete", on_confirm, true); an empty cancel_text makes a notice.
 
-const CORAL := Color("C97970")
-const SLATE := Color("29383A")
 const BOLD: Font = preload("res://assets/fonts/JosefinSans-Bold.ttf")
 const THEME: Theme = preload("res://assets/theme/app_theme.tres")
 
@@ -25,7 +24,7 @@ func _build(title: String, message: String, confirm_text: String, on_confirm: Ca
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	_dim = ColorRect.new()
-	_dim.color = Color(SLATE, 0.0)
+	_dim.color = Color(Palette.SLATE, 0.0)
 	_dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(_dim)
 	var center := CenterContainer.new()
@@ -47,7 +46,7 @@ func _build(title: String, message: String, confirm_text: String, on_confirm: Ca
 	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title_label.add_theme_font_override("font", BOLD)
 	title_label.add_theme_font_size_override("font_size", 36)
-	title_label.add_theme_color_override("font_color", CORAL if danger else SLATE)
+	title_label.add_theme_color_override("font_color", Palette.CORAL if danger else Palette.SLATE)
 	box.add_child(title_label)
 	var body := Label.new()
 	body.text = message

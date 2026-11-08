@@ -26,7 +26,7 @@ extends SubViewportContainer
 @export var pet_win_clip: StringName = &"Celebrate"
 
 @export_group("Look")
-@export var ink_color := Color("29383A")
+@export var ink_color := Palette.SLATE
 ## Outline width for models that carry no outline hint of their own (the robots); 0 turns it off.
 @export var foe_outline := 0.012
 @export var flat_self_lit := 0.85
@@ -64,6 +64,7 @@ extends SubViewportContainer
 
 ## Foes with sounds, by the name of the glb's root node: the voice fires them on its clips.
 const FOE_VOICES := {"BrokenBot": preload("res://scripts/battle/broken_bot_voice.gd")}
+const INK_OUTLINE: StandardMaterial3D = preload("res://assets/materials/ink_outline.tres")
 const Player := preload("res://scripts/overworld/player.gd")
 
 ## The foe has touched down: time for a flash, a shake, a dust burst.
@@ -238,11 +239,9 @@ func _strike(attacker: Node3D, target: Node3D, anim: AnimationPlayer, clip: Stri
 		wob.tween_property(target, "rotation:z", 0.0, 0.1)
 	await get_tree().create_timer(strike_recover_time).timeout
 	strike_finished.emit()
+
 func enemy_defeat() -> void:
 	_play(_foe, defeat_clip, false)
-
-func pet_hurt() -> void:
-	_play(_pet, pet_hurt_clip, true)
 
 ## Kuiz has run out of HP: it plays its hurt clip once, then topples over and stays down.
 func pet_defeat() -> void:
@@ -256,9 +255,6 @@ func pet_stand() -> void:
 	if _pet_model != null:
 		create_tween().tween_property(_pet_model, "rotation:z", 0.0, 0.3)
 	_play(_pet, idle_clip, false)
-
-func pet_hit() -> void:
-	_play(_pet, pet_hit_clip, true)
 
 func pet_win() -> void:
 	_play(_pet, pet_win_clip, true)
@@ -303,12 +299,9 @@ func _dress(model: Node3D, default_outline: float) -> void:
 			if str(m_extras.get("blend", "")) == "additive":
 				mat.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
 
-# Inverted hull: the mesh grown along its normals with front faces culled, so only the rim shows.
+# The ink outline (assets/materials/ink_outline.tres, an inverted hull) at `width`, in `ink_color`.
 func _ink(width: float) -> StandardMaterial3D:
-	var mat := StandardMaterial3D.new()
-	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	mat.cull_mode = BaseMaterial3D.CULL_FRONT
-	mat.grow = true
+	var mat := INK_OUTLINE.duplicate() as StandardMaterial3D
 	mat.grow_amount = width
 	mat.albedo_color = ink_color
 	return mat

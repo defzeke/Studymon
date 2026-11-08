@@ -17,16 +17,16 @@ fixed-length runs: a Challenge House and a Gym per question type, then the Champ
 
 | Phase | Plan scope | Status | Where |
 |---|---|---|---|
-| **0** | Project skeleton, folder structure, autoloads, theme, backend health | **Implemented** (layout differs) | `project.godot`, 7 autoloads, `assets/theme/app_theme.tres`, `backend/main.py` |
+| **0** | Project skeleton, folder structure, autoloads, theme, backend health | **Implemented** (layout differs) | `project.godot`, 6 autoloads, `assets/theme/app_theme.tres`, `backend/main.py` |
 | **1** | Accounts, first login, meet-your-companion cutscene | **Implemented** (no accounts, by design) — 3D peek + a name-only tutorial, run once | `scenes/ui/boot/peek.tscn`, `tutorial.gd`; `player_name` and `tutorial_done` saved |
 | **2** | Pet-care loop: Pet/Feed/Play, stats, XP, decay, level gate, HUD strip | **Implemented** (Level 5 gate removed by design) — petting, food, tune-up, ball and charging call `care()`; the top HUD shows level, XP, hunger/energy/mood/health and crystals | `companion_state.gd`, `home.gd` |
-| **3** | AI Codex + optional pop-quiz reuse | **Partial** — data only | `CURRICULUM` + `codex` array; no screen, bubble deleted with the care room |
+| **3** | AI Codex + optional pop-quiz reuse | **Removed** (save v16) — it never had a screen | — |
 | **4** | Scheduler / Pomodoro with missed-rest penalty, HUD badge | **Implemented** — the Study screen's focus timer; focus shows on the check-up tablet | `companion_state.gd` `start_pomodoro()`, `flashcards.gd:58` |
 | **5** | Upload PDF → extraction → editable list → region | **Implemented (mock; Claude server built, untested live)** | `categorizer.gd`, `session_manager.gd`, `api.gd`, `backend/` |
 | **6** | Overworld + gym structure + trainer encounters | **Implemented (mock)** | 3D island `region_map.tscn`, `player.gd`, `joystick.gd`; three gyms (one at a marker, no building) |
 | **7** | Battle per question type, one judging pipeline | **Implemented (mock)** | `battle.gd`: Identification, Essay and Multiple Choice, per-tier HP/counter/thresholds |
 | **8** | Mastery states + 7-day decay + Champion recap | **Implemented** | `session_manager.gd`; Champion falls back to every question |
-| **9** | Polish: insights, juice, accessibility, pacing | **Partial** | particles/shake/hit-stop/colourblind badges and the large-text toggle done; no visible insight text (the bubble went with the care room) |
+| **9** | Polish: insights, juice, accessibility, pacing | **Partial** | particles/shake/hit-stop/colourblind badges and the large-text toggle done; the never-shown insight lines were removed (save v16) |
 | **10** | Monetization quota + stretch | **Partial (mock)** | the client-side quota was removed; free launch; crystals buy world slots, food and costumes; no real-money shop; no deck sharing |
 
 ---
@@ -66,16 +66,11 @@ Done: stats with clamped ranges and per-second decay, care actions with distinct
 reach zero (#5), level-up signals, endless levels that unlock closet costumes, the home HUD, save/load.
 The Level 5 campaign gate was removed: Play is open from the start.
 
-Gap: `bond` is tracked but unused.
 
-### Phase 3 — AI Codex ⚠️
+### Phase 3 — AI Codex (removed)
 
-Done: `CURRICULUM` lines per level, `codex: Array[String]`, `codex_entry_added`, backfill for old
-saves.
-
-Missing: a Codex screen (the plan's Phase 3), the post-Level-5 pop-quiz reuse, and any visible UI —
-entries only ever targeted the hidden bubble. `origin/feat/remove-codex` suggests the feature was
-deliberately dropped; if so, remove the vestigial data too.
+The curriculum lines, the `codex` list and `codex_entry_added` never had a screen; they were removed in
+save v16 (an older save's `codex` key is ignored).
 
 ### Phase 4 — Pomodoro ✅
 
@@ -131,11 +126,11 @@ Mastery is keyed by question id since save v15, so editing or deleting other que
 
 ### Phase 9 — Polish ⚠️
 
-Done: rule-based insights (`INSIGHT_TRIGGERS`, three triggers, priority ordered), level-up and
+Done: level-up and
 gym-clear `CPUParticles2D`, screen shake + hit-stop on strong hits, colourblind-safe mastery colours,
 XP curve explicitly tuned and documented, hover/press juice helper.
 
-Missing: visible insight/dialogue text (the bubble went with the care room), SFX for level-ups and
+Missing: SFX for level-ups and
 gym clears (battle has its own cues),
 onboarding pacing verification on device, and any accessibility options beyond the colour choices.
 
@@ -157,7 +152,7 @@ Missing: a real store/IAP, server-side entitlement, and async topic-deck sharing
 | Recommendation | Status |
 |---|---|
 | One judging pipeline, branch by `type` | **Implemented** — single `grade_battle_question()` + mock rubric that switches on type |
-| Data-driven companion insights, not scripted lines | **Implemented** — `INSIGHT_TRIGGERS` dict with condition → line pool |
+| Data-driven companion insights, not scripted lines | **Removed** — the `INSIGHT_TRIGGERS` lines were never shown, so they went in save v16 |
 | Log extractions/gradings + thumbs feedback | **Missing** — no telemetry, no feedback UI |
 | Hallway-vs-boss retry as a difficulty toggle | **Missing** — retry always re-runs the same battle in place |
 
@@ -171,7 +166,7 @@ Done: the battle scene loads, progress saves after battles and topic confirmatio
 fallback, tier-ordered trainers and boss lock are in.
 
 1. ~~Care input that earns XP and the Level 5 gate~~: care earns XP, and the Level 5 gate was removed (the campaign is open from the start).
-2. ~~Un-hide `TidbitBubble`~~: gone with the care room; insights have no visible text yet.
+2. ~~Un-hide `TidbitBubble`~~: gone with the care room; the tidbits and insights it showed were removed.
 3. ~~Fix the `Authorization` scheme~~: removed with accounts (#2).
 
 The loop upload → edit → overworld → battle → mastery → Champion is playable end to end on mocks.
@@ -183,7 +178,7 @@ The loop upload → edit → overworld → battle → mastery → Champion is pl
 | Plan says | Reality | Note |
 |---|---|---|
 | Godot 4.6.x, "avoid 4.7" | 4.7.2 stable | 4.7 is the shipping line now; keep it |
-| `Resource`-based saves | JSON file, `"v": 15` | simpler diffs, no type safety |
+| `Resource`-based saves | JSON file, `"v": 16` | simpler diffs, no type safety |
 | FastAPI **or** Node backend with Claude + Supabase | FastAPI gateway with Claude (`/v1/extract`, `/v1/grade`) | stateless: no Supabase, no DB, no accounts |
 | Supabase Auth / DB / Storage | none | no accounts, ever (decided 2026-10-29) |
 | Job polling for long tasks | `job_status` signal; synchronous requests with a per-call `HTTPRequest` and timeout | no polling loop |

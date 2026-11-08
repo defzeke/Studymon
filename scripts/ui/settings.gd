@@ -2,7 +2,6 @@ extends Control
 ## Settings, opened from home's gear: music and sound volume, large text, and privacy & data (the
 ## AI consent, the policy links, exporting / importing / deleting the save). Every change is saved.
 
-const ConfirmModal := preload("res://scripts/ui/widgets/confirm_modal.gd")
 ## The hosted policy pages; both stores need them reachable in the app. Set before exporting.
 const PRIVACY_URL := ""
 const TERMS_URL := ""

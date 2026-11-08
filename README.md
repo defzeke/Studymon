@@ -58,8 +58,8 @@ res://
 1. **Care Loop:** Meet your baby AI companion, perform Pou-style care taps (*Feed*, *Pet*, *Play*) that teach beginner AI concepts, and earn XP; levels unlock closet costumes.
 2. **Campaign Loop (open from the start):** Upload study materials → AI extracts concepts → navigate the 3D island overworld → clear Identification and Essay encounters → face the regional Champion!
 
-Supporting systems: an hourly-capped XP curve, stat decay and a Pomodoro focus/rest cycle, a
-five-step AI-literacy codex, colourblind-safe per-question mastery that decays after 7 days, and a
+Supporting systems: an hourly-capped XP curve, stat decay and a Pomodoro focus/rest cycle,
+colourblind-safe per-question mastery that decays after 7 days, and a
 free-tier quota gate on AI usage.
 
 ---

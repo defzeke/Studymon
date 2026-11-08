@@ -5,8 +5,6 @@ extends Node3D
 
 enum Season { SUNNY, RAINY, AUTUMN, SNOWY }
 
-const AMBER := Color("D6A85F")
-const CORAL := Color("C97970")
 const SNOW := Color(0.93, 0.96, 0.98)
 const LEAF: Texture2D = preload("res://assets/sprites/effects/leaf.svg")
 # Per season: sun colour/energy, sky, ambient colour/energy, fog density (0 = off), and how far the
@@ -20,7 +18,7 @@ const LOOKS := {
 		"canopies": [Color(0.18, 0.32, 0.24)], "canopy_mix": 0.3, "grass": Color(0.3, 0.5, 0.3), "grass_mix": 0.3},
 	Season.AUTUMN: {"sun": Color(1.0, 0.84, 0.66), "sun_energy": 1.0, "sky": Color(0.85, 0.8, 0.7),
 		"ambient": Color(0.9, 0.8, 0.7), "ambient_energy": 0.7, "fog": 0.0,
-		"canopies": [AMBER, CORAL, Color(0.81, 0.57, 0.41), Color(0.72, 0.42, 0.25)], "canopy_mix": 0.75,
+		"canopies": [Palette.AMBER, Palette.CORAL, Color(0.81, 0.57, 0.41), Color(0.72, 0.42, 0.25)], "canopy_mix": 0.75,
 		"grass": Color(0.78, 0.72, 0.4), "grass_mix": 0.45},
 	Season.SNOWY: {"sun": Color(0.9, 0.95, 1.0), "sun_energy": 0.9, "sky": Color(0.82, 0.87, 0.92),
 		"ambient": Color(0.85, 0.9, 0.97), "ambient_energy": 0.9, "fog": 0.015,
@@ -147,7 +145,7 @@ func _make_weather() -> GPUParticles3D:
 			var colors := Gradient.new()
 			colors.interpolation_mode = Gradient.GRADIENT_INTERPOLATE_CONSTANT
 			colors.offsets = PackedFloat32Array([0.0, 0.5])
-			colors.colors = PackedColorArray([AMBER, CORAL])
+			colors.colors = PackedColorArray([Palette.AMBER, Palette.CORAL])
 			var ramp := GradientTexture1D.new()
 			ramp.gradient = colors
 			sim.color_initial_ramp = ramp

@@ -117,7 +117,7 @@ while a run is on (`CompanionState.in_run`), and instead:
 and 16 hunger. Being hit hurts the health stat itself, which sets the next run's battle HP, so a hurt Kuiz
 needs the screwdriver at home. Kuiz's card in the battle shows the four stats live.
 `readiness()` (the four home stats averaged) is shown on a house / gym panel with a warning under 25 %.
-`bond` and `dirt` have no battle effect.
+`dirt` has no battle effect.
 
 ## 4. Rewards
 

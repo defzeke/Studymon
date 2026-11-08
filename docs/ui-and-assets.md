@@ -315,7 +315,7 @@ there are no sound files for them:
   Kuiz's 40) and shared by every instance; one needed before the worker reaches it is built on the
   spot. Eight players round-robin, each at its cue volume × the Sounds slider. The owner hands it
   the model's AnimationPlayer (it lives inside the glb).
-- **Kuiz** (`ui/boot/kuiz_voice.gd`, from the "KUIZMON Pet Bot 3D – Rigged" artifact): its 40
+- **Kuiz** (`kuiz/kuiz_voice.gd`, from the "KUIZMON Pet Bot 3D – Rigged" artifact): its 40
   sounds and `CUES` table, ×2 gain baked in (the artifact leaned on a compressor and had no music
   under it). Each tutorial line's clip carries its sounds: the peek's eep, ding and hello,
   `Greetings`' jump and twinkles, `Charging`'s power-up, `State_Charging`'s hum, `Celebrate`'s
@@ -558,7 +558,7 @@ Bot foe makes its own sounds on its clips (§2 Model sounds). For a Multiple Cho
 
 ### Pop-ups
 
-`scripts/ui/widgets/confirm_modal.gd` (`ConfirmModal.open(host, title, message, confirm_text, on_confirm, danger, cancel_text)`) is the one pop-up: a dimmed screen, a card that scales in (0.85 → 1, back-ease, 0.28 s) and out (0.14 s), a bold title (coral when `danger`), centred wrapped text and full-width buttons. An empty `cancel_text` makes it a notice. Esc cancels. Tweens ignore `Engine.time_scale`, so battle hit-stop does not freeze it. Callers `preload` the script instead of relying on a `class_name`. Used by the Worlds hub (reset, delete), the World Builder and the minigames' end screen.
+`scripts/ui/widgets/confirm_modal.gd` (`ConfirmModal.open(host, title, message, confirm_text, on_confirm, danger, cancel_text)`) is the one pop-up: a dimmed screen, a card that scales in (0.85 → 1, back-ease, 0.28 s) and out (0.14 s), a bold title (coral when `danger`), centred wrapped text and full-width buttons. An empty `cancel_text` makes it a notice. Esc cancels. Tweens ignore `Engine.time_scale`, so battle hit-stop does not freeze it. The script is `class_name ConfirmModal`, so callers use it directly. Used by home (costumes), the Worlds hub (reset, delete, slots), the World Builder, Settings, the map's "Go home?" and the minigames' end screen.
 
 ## 3. Interaction conventions
 
@@ -638,6 +638,7 @@ rasterises them sharp on high-density phones; the drawing itself is unchanged.
 |---|---|
 | `audio/sfx/sfx_*.wav` (ten battle cues: click, whoosh, land, vs, correct, wrong, hit, hurt, win, lose; our own) | `battle.gd` exports, assigned in `battle.tscn`; played through `MusicManager.play_sfx_layered()` |
 | `sprites/battle/battle_backdrop.svg` | `battle.tscn` arena backdrop |
+| `materials/ink_outline.tres` | the ink outline (inverted hull, Deep Slate): `peek.gd`, `kuiz_follower.gd` and `arena_stage.gd` duplicate it per mesh at its width |
 | `audio/music/home_room.wav` | `MusicManager`: home loop (our own; 34 s, upbeat C major, seamless) |
 | `audio/music/focus_twinkle.wav`, `focus_london_bridge.wav`, `focus_mary_lamb.wav`, `focus_frere_jacques.wav` | `MusicManager.play_focus()`: the reviewing shuffle. Traditional public-domain tunes, our own arrangement (music box, felt chords, bass, brushed beat, 72–78 bpm, 22 kHz mono), played once each, no loop |
 | `audio/music/battle.wav` | `MusicManager.play_battle()`: our own driving A-minor loop (132 bpm, 29 s, marimba, bass, soft lead, drums; 32 kHz mono, seamless) |

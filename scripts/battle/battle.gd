@@ -485,7 +485,7 @@ func _land_hit(on_pet: bool, amount: int) -> void:
 	var power := 1.0 if on_pet else 1.0 + 0.6 * _hit_tier
 	_screen_shake(hit_shake * power, 0.22 + (0.0 if on_pet else 0.06 * _hit_tier))
 	var label := "-%d" % amount if on_pet else HIT_NAMES[_hit_tier]
-	_pop_damage(label, stage.impact_point(on_pet), Color("C97970") if on_pet else Color("D6A85F"))
+	_pop_damage(label, stage.impact_point(on_pet), Palette.CORAL if on_pet else Palette.AMBER)
 
 # The answer field, Fight button and choice buttons give way to the result panel, so it fits the smaller box.
 func _show_answer_controls(on: bool) -> void:
@@ -531,7 +531,7 @@ func _end_sequence(win: bool, banner: String) -> void:
 		_sfx(sfx_lose)
 		_flash_screen(lose_flash_color, 0.35)
 	end_banner.text = banner
-	end_banner.add_theme_color_override("font_color", Color("D6A85F") if win else Color("C97970"))
+	end_banner.add_theme_color_override("font_color", Palette.AMBER if win else Palette.CORAL)
 	end_banner.pivot_offset = end_banner.size / 2.0
 	end_banner.scale = Vector2.ONE * 3.0
 	end_banner.modulate.a = 0.0

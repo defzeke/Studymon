@@ -7,21 +7,17 @@ Terms used throughout this repo, in the sense this repo means them.
 | Term | Meaning |
 |---|---|
 | **Studymon** | The project: a study-review game where a companion is raised, then used to fight through a campaign built from reviewer material. |
-| **Companion** | Kuiz, the AI creature in the home rooms. Its state is `CompanionState` (level, XP, hunger, energy, mood, health, focus, bond, codex). |
+| **Companion** | Kuiz, the AI creature in the home rooms. Its state is `CompanionState` (level, XP, hunger, energy, mood, health, focus, dirt, battery health). |
 | **Dirt** | `CompanionState.dirt`, 0 (clean) to 100: builds up over time and with meals and play, shows as spots and scratches on Kuiz, scrubbed off with the towel. |
 | **Outfit** | What Kuiz wears from the Playroom closet, `GameState.outfit`: one costume per slot (head, face, body), each a sticker on its head. |
 | **Battery health** | `CompanionState.battery_health`: the battery's capacity, like a phone's. Charging wears it, a worn battery drains energy faster, and a new one (30 crystals, the check-up tablet) restores 100 %. |
 | **Crystals** | Home's currency, `GameState.crystals`, shown top right with the logo's forehead gem. Saved; battles, the study goal, level-ups and minigames earn it; food, costumes, world slots and a new battery spends it. It cannot be bought (free launch). |
-| **Care tap** | One press of Feed, Pet or Play. Grants XP, nudges one stat, increments bond, and is subject to hourly diminishing returns. |
+| **Care tap** | One care action (feed, pet, play, fix, clean). Grants XP, nudges one stat, and is subject to hourly diminishing returns. |
 | **Hunger / Energy / Mood / Health** | The four 0–100 stats on home's HUD gauges. Energy drains fastest; Hunger, Mood and Health drain at 0.7×, 0.6× and 0.2× of `STAT_DECAY_PER_SEC`. Focus (0.8×) is also 0–100 but only flashcards use it. |
-| **Bond** | A monotonic tap counter. It is saved, but nothing gates on it yet. |
 | **XP curve** | `CompanionState.xp_to_reach(lv)`: 20 XP for Level 2, then 5 more per level (Level 5 at 110, Level 6 at 150); no cap. |
-| **Curriculum** | The five AI-literacy lines in `CompanionState.CURRICULUM`, one unlocked per level. |
-| **Tidbit** | A curriculum line or other short prompt shown in the speech bubble. The bubble is currently always hidden (issue #4). |
-| **Codex** | The accumulated list of unlocked tidbits. A five-step AI-literacy track; its UI is reachable from the care room, and a remote branch proposes cutting it. |
-| **Insight** | A retention message produced by `SessionManager.last_insight` (missed question, mastery milestone), shown in the bubble. |
 | **Pomodoro** | The 25-minute focus / 5-minute rest timer. Missing the rest costs energy and mood; finishing it grants a small bonus. |
 | **Decay** | The per-second stat drain in `CompanionState._process`. It runs on every screen because the autoload is always alive. |
+| **Palette** | `scripts/ui/palette.gd` (`class_name Palette`): the canonical colours as constants (`Palette.TEAL`, `Palette.SLATE` …). Code that needs a palette colour uses it instead of a hex literal. |
 
 ## Review material and questions
 
@@ -85,7 +81,7 @@ Terms used throughout this repo, in the sense this repo means them.
 | **Sanctuary** | The Flashcard Sanctuary (`flashcards.tscn`): untimed card review of a topic. Again / Hard / Easy; Easy lifts a New or Remaster card to Learning, never to Mastered. |
 | **Home** | `home.gd` in `peek.tscn`: the game loop after the tutorial. A bottom bar walks Kuiz between the four rooms, each with its own action (charge, play, settings; screwdriver; food and fridge; ball). |
 | **Tutorial** | `tutorial.gd` in `peek.tscn`: Kuiz's first-run lines, the profile and name prompts, and the tour of the Study Room, Maintenance Bay, Data Kitchen and Playroom. The last three rooms are temporary art. |
-| **Ink outline** | The dark silhouette around Kuiz: an inverted hull (the mesh grown along its normals, front faces culled) in Deep Slate, sized by each node's `extras.outline`. |
+| **Ink outline** | The dark silhouette around Kuiz: an inverted hull (the mesh grown along its normals, front faces culled) in Deep Slate, sized by each node's `extras.outline`; one material, `assets/materials/ink_outline.tres`, duplicated per mesh at its width. |
 | **`.tscn` / `.tres`** | Godot scene and resource text files. Both are source here, not build output. |
 | **`ext_resource`** | A `.tscn` reference to an external file. If the target is missing, the scene fails to **parse** — no runtime fallback (issue #1). |
 | **`.import` / `.uid`** | Generated metadata for assets. Never hand-edit; let the editor regenerate them. |

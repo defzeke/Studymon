@@ -1,7 +1,7 @@
 [gd_scene format=3]
 
 [ext_resource type="Script" path="res://scripts/overworld/world_intro.gd" id="1_intro"]
-[ext_resource type="Script" path="res://scripts/ui/boot/kuiz_voice.gd" id="2_voice"]
+[ext_resource type="Script" path="res://scripts/kuiz/kuiz_voice.gd" id="2_voice"]
 [ext_resource type="FontFile" path="res://assets/fonts/JosefinSans-Bold.ttf" id="3_bold"]
 
 [sub_resource type="Environment" id="Environment_intro"]

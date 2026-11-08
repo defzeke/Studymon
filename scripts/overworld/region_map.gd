@@ -1,5 +1,5 @@
 extends Node3D
-## 3D Overworld (GDD §6.1). Contract: docs/systems/overworld.md.
+## The 3D overworld. Contract: docs/systems/overworld.md.
 ## The island in assets/models/map.glb, seen from an angled top-down camera that follows the
 ## explorer. One gym per question type at the GymSlots placed in region_map.tscn; every house on the
 ## island is a Challenge House (MapHouses finds them), entered by walking into the house itself. The
@@ -31,12 +31,8 @@ extends Node3D
 @export var icon_lock: Texture2D
 
 const ExplorerPicker := preload("res://scenes/overworld/explorer_picker.tscn")
-const ConfirmModal := preload("res://scripts/ui/widgets/confirm_modal.gd")
-const TEAL := Color("4F8F89")
-const AMBER := Color("D6A85F")
-const LILAC := Color("8D82A8")
 ## Each question type's colour: the icon over its houses.
-const TYPE_COLORS := {"identification": TEAL, "essay": LILAC, "multiple_choice": AMBER}
+const TYPE_COLORS := {"identification": Palette.TEAL, "essay": Palette.LILAC, "multiple_choice": Palette.AMBER}
 ## An open doorway: the dark inside of a house, shown when the explorer walks up to it.
 const DOORWAY := Color("1E2829")
 ## A house label floats this high so it clears the roof; the map's houses stand about 2 units tall.
@@ -104,7 +100,6 @@ func _ready() -> void:
 			{"id": "q1", "text": "Preview: what is training data?", "type": "identification", "answer": "Examples", "confidence": 0.9},
 			{"id": "q2", "text": "Preview: explain feedback in your own words.", "type": "essay", "answer": "", "confidence": 0.6},
 		]
-	GameState.set_active_region(_topic_id)
 	if map_anim == null:
 		map_anim = map.find_child("AnimationPlayer", true, false) as AnimationPlayer
 	back_btn.pressed.connect(_on_back)
@@ -227,7 +222,7 @@ func _add_house_node(house: Dictionary) -> void:
 		_open_doorway(doorway, false)
 		if _dismissed_house == id:
 			_dismissed_house = "")
-	_add_house_icon(area, TYPE_COLORS.get(t, TEAL), cleared)
+	_add_house_icon(area, TYPE_COLORS.get(t, Palette.TEAL), cleared)
 	if cleared:
 		area.dim()
 
@@ -355,7 +350,7 @@ func _trigger(pos: Vector3, radius: float, text: String) -> EncounterTrigger:
 	area.text = text
 	return area
 
-# --- Phase 9: gym-clear burst (one-shot, auto-freed) ---
+# A one-shot burst where a gym was just cleared; it frees itself.
 func _spawn_gym_burst(pos: Vector3) -> void:
 	if burst_scene == null:
 		return

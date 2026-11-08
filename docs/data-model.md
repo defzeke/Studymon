@@ -4,9 +4,9 @@ Everything persistent lives in one JSON file. There is no database, no `Resource
 no cloud sync.
 
 - **Path:** `user://studymon_save.json`
-- **Written by:** `SaveManager.save_game()` — `scripts/autoload/save_manager.gd:6`
-- **Read by:** `SaveManager.load_game()` — `scripts/autoload/save_manager.gd:24`
-- **Schema tag:** `"v": 15` (v15 keys `session.mastery` by question id (`"topic_id:question_id"`; v14 index keys `"topic_id:<index>"` are rekeyed on load) and adds `tutorial_done` (a save with a `player_name` but no flag loads as done) and `ai_consent`, and stops writing `campaign_ready` / `campaign_unlocked_flag` (the removed Level 5 gate) and the global `explorer` (now per world, `topics[].explorer`), all ignored on load; v14 keys `cleared_houses` per house, `"topic_id:gym_type#house_id"`, and `best_stars` house runs `"house:topic_id:gym_type#house_id"`; a v13 house key without an id still counts toward its type; v13 replaced `session.cleared_trainers` with `cleared_houses` and added `best_stars`; a gym cleared before counts as its house cleared; v12 dropped the `monetization` block with the weekly AI limit; an older save's block is ignored; v11 added `explorer`; v10 added `battery_health` and replaced `costume` with `outfit`; a v9 `costume` loads into its slot; v9 added `dirt` and `costume`; v8 added `hunger`, `health` and `crystals`; v7 added `player_name` and `food_stock`; older saves load with defaults)
+- **Written by:** `SaveManager.save_game()` — `scripts/autoload/save_manager.gd`
+- **Read by:** `SaveManager.load_game()` — `scripts/autoload/save_manager.gd`
+- **Schema tag:** `"v": 16` (v16 stops writing `codex`, `bond` and `active_region_id`, which nothing read; an older save's keys are ignored on load; v15 keys `session.mastery` by question id (`"topic_id:question_id"`; v14 index keys `"topic_id:<index>"` are rekeyed on load) and adds `tutorial_done` (a save with a `player_name` but no flag loads as done) and `ai_consent`, and stops writing `campaign_ready` / `campaign_unlocked_flag` (the removed Level 5 gate) and the global `explorer` (now per world, `topics[].explorer`), all ignored on load; v14 keys `cleared_houses` per house, `"topic_id:gym_type#house_id"`, and `best_stars` house runs `"house:topic_id:gym_type#house_id"`; a v13 house key without an id still counts toward its type; v13 replaced `session.cleared_trainers` with `cleared_houses` and added `best_stars`; a gym cleared before counts as its house cleared; v12 dropped the `monetization` block with the weekly AI limit; an older save's block is ignored; v11 added `explorer`; v10 added `battery_health` and replaced `costume` with `outfit`; a v9 `costume` loads into its slot; v9 added `dirt` and `costume`; v8 added `hunger`, `health` and `crystals`; v7 added `player_name` and `food_stock`; older saves load with defaults)
 - **Loaded:** once at boot, deferred from `SaveManager._ready`
 - **Format:** `JSON.stringify` of a single `Dictionary`, pretty-print off
 
@@ -19,7 +19,7 @@ That is fine for the current scope but means there is **no type safety and no au
 
 ```jsonc
 {
-  "v": 15,
+  "v": 16,
 
   // CompanionState.to_dict()
   "level": 1,
@@ -31,11 +31,8 @@ That is fine for the current scope but means there is **no type safety and no au
   "health": 100.0,  // v8; missing loads as 100
   "dirt": 0.0,      // v9; missing loads as 0 (clean)
   "battery_health": 100.0, // v10; missing loads as 100 (new)
-  "bond": 0,
-  "codex": ["I start out knowing NOTHING — like a baby! ..."],
 
   // GameState
-  "active_region_id": "",
   "large_text_enabled": false,
   "player_name": "",
   "tutorial_done": true,
@@ -82,13 +79,10 @@ Field-by-field:
 
 | Field | Type | Written from | Notes |
 |---|---|---|---|
-| `v` | int | `SaveManager.SAVE_VERSION` (15) | Not compared on load; Import refuses a newer one — see §6 |
+| `v` | int | `SaveManager.SAVE_VERSION` (16) | Not compared on load; Import refuses a newer one — see §6 |
 | `level` | int | `CompanionState.level` | 1 and up, no cap |
 | `xp` | int | `CompanionState.xp` | Lifetime XP, not per-level |
 | `energy` / `focus` / `mood` | float | `CompanionState` | 0–100, clamped on mutation |
-| `bond` | int | `CompanionState.bond` | Increments per care tap, **never read anywhere** |
-| `codex` | string[] | `CompanionState.codex` | Curriculum lines, backfilled on load |
-| `active_region_id` | string | `GameState` | `topic_id` of the region being played |
 | `large_text_enabled` | bool | `GameState` | Applied to the Theme on load |
 | `session.mastery` | dict | `SessionManager._mastery` | Keyed `"<topic_id>:<question id>"` (v15), so editing or deleting other questions keeps it |
 | `session.cleared_houses` | string[] | keys of `_cleared_houses` | `"topic_id:gym_type#house_id"`; house ids `h1`..`h15` come from `MapHouses.find()` |
@@ -157,14 +151,14 @@ saved-topic lookup is a linear scan by id, so a collision overwrites the older t
 }
 ```
 
-- Enum: `SessionManager.Mastery` (`session_manager.gd:301`).
+- Enum: `SessionManager.Mastery`.
 - Names array for API payloads: `["new", "learning", "remaster", "mastered"]`.
 - Decay is **computed lazily** in `get_mastery_state()`: if `state == MASTERED` and
   `now - last_correct > 7 * 86400`, the record is rewritten to `REMASTER` on read. Nothing runs on a
   timer, so a save can sit with stale `MASTERED` values forever and only correct itself when the
   question is queried.
-- Keys use the question's **array index** in the active topic, not its `id`. Reordering or deleting
-  a question therefore re-points every mastery record after it.
+- Keys use the question's `id` (`"topic_id:question_id"`, v15), so reordering or deleting a question
+  keeps every other record; a question with no id falls back to `"topic_id:#<index>"`.
 
 ---
 
@@ -177,7 +171,7 @@ These live only in memory and are lost on quit or scene change:
 | `pending_questions`, `editing_topic_id` | `SessionManager` | Reopening a topic reloads from `session.topics`; unsaved edits are lost on app exit |
 | `current_topic_id` | `SessionManager` | After a restart, the overworld falls back to its preview questions unless a topic is re-opened |
 | `last_source_text` | `SessionManager` | Kept with the world it builds as `topics[].source_text` (for "More questions"); a photo reviewer has none |
-| Battle handoff (`battle_topic_id`, `battle_q_index`, `battle_is_boss`, `battle_is_champion`) | `SessionManager` | Correct by design — a battle doesn't survive a restart |
+| Battle handoff (`battle_topic_id`, `battle_kind`, `battle_type`, `battle_house`, `battle_variant`, `battle_run`, `battle_explorer`) | `SessionManager` | Correct by design — a battle doesn't survive a restart |
 | Pomodoro (`_pomodoro_mode`, `_pomodoro_remaining`) | `CompanionState` | A running focus timer (started on the Study screen) is lost on quit |
 | Tap-cap counters (`_action_tap_counts`, `_last_hour_reset`) | `CompanionState` | Relaunching clears the hourly diminishing-returns counter — an easy exploit |
 | `GameState.player_name` | `GameState` | Set by the tutorial; saved as `player_name` (v7) |
@@ -196,7 +190,6 @@ mastery rekey (`session_manager.gd:801`):
 file missing            → return false (nothing happens)
 not valid JSON          → return false
 CompanionState.from_dict(parsed)      # defaults for every missing key
-GameState.active_region_id  = parsed.get("active_region_id", "")
 if has large_text_enabled:  set it + reapply theme
 SessionManager.from_dict(parsed.get("session", {}))
 → return true
@@ -207,8 +200,6 @@ Behaviour worth knowing:
 - **`"v"` is read only by Import**, which refuses a save newer than `SAVE_VERSION`. `load_game()`
   has no branch on version; compatibility is achieved by `.get(key, default)`. Bump `v` when you change a field's meaning, and add a real
   migration for anything that is not purely additive.
-- `CompanionState.from_dict()` backfills curriculum entries for every level up to the saved level
-  (`companion_state.gd:160`), so old saves regain missing codex lines.
 - `GameState.large_text_enabled` is applied by calling `_apply_theme_font_size()` directly on load,
   bypassing `set_large_text()` (so no signal is emitted and no scene re-layouts).
 
