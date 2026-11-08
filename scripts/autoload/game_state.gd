@@ -12,7 +12,7 @@ var tutorial_done: bool = false
 ## upload, withdrawn in Settings). Without it nothing is sent and essays are graded on the device.
 var ai_consent := false
 ## What the consent pop-up and Settings say is sent (Apple 5.1.2(i)); keep it true to the backend.
-const AI_CONSENT_TEXT := "To turn your reviewer into questions, Studymon sends the text or PDF you upload, and the essay answers you type in battles, to its study server, which passes them to Claude, an AI by Anthropic. They are used only to make and grade your questions, and Studymon does not keep them. Your worlds and progress stay on this device."
+const AI_CONSENT_TEXT := "To turn your reviewer into questions, Studymon sends the text, file or photo you upload, and the essay answers you type in battles, to its study server, which passes them to Gemma, an open AI model by Google, running on Cloudflare Workers AI. They are used only to make and grade your questions, and Studymon does not keep them. Your worlds and progress stay on this device."
 ## Saved: food id -> count in stock.
 var food_stock: Dictionary = {}
 # Home's currency (top-right pill): battles, level-ups and minigames earn it; world slots and a new

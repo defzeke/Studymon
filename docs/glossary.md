@@ -24,11 +24,11 @@ Terms used throughout this repo, in the sense this repo means them.
 
 | Term | Meaning |
 |---|---|
-| **Reviewer** | The study material the player uploads or pastes (PDF or text). With the study server on, Claude reads it; in mock mode pasted text is parsed and a PDF is refused. |
+| **Reviewer** | The study material the player uploads or pastes (PDF or text). With the study server on, the AI (Gemma 4 on Cloudflare) reads it; in mock mode, or when the AI's free allowance is spent, pasted text is turned into questions on the device. |
 | **World** | The player-facing name for a topic: the Worlds hub lists saved worlds, and a new one is built from a reviewer. |
 | **Topic** | One reviewer's worth of content, identified by a slug (`topic_<name>`, or `topic_001`). Has a name, a question list, mastery records and gym progress. |
-| **Extraction** | Turning a reviewer into questions and their answer keys: `Api.upload_reviewer()`, which calls `POST /v1/extract` (Claude) or, on mocks, the sentence-splitting mock extractor. |
-| **Study server** | `backend/`: the stateless gateway between the game and Claude. It holds the API key and stores nothing. |
+| **Extraction** | Turning a reviewer into questions and their answer keys: `Api.upload_reviewer()`, which calls `POST /v1/extract` (Gemma 4 on Cloudflare) or, on mocks and when the server answers `offline`, the device's sentence-splitting `Api.offline_questions()`. |
+| **Study server** | `backend/`: the stateless gateway between the game and the AI model (Gemma 4 on Cloudflare Workers AI). It holds the API key, meters the free daily allowance (the **neuron budget**) and stores nothing. |
 | **Answer key** | What a question is checked against, written with the question and saved on the device: `answer`, `accepted`, `distractors`, `rubric`. See [`data-model.md`](data-model.md) §2. |
 | **Accepted answers** | `accepted`: other answers an Identification counts as exact (synonyms, abbreviations, spellings). Editable as "Also accept" in the categorizer. |
 | **Rubric** | An essay's marking guide: 3–5 `{point, keywords, weight}`. The server's score is the weight of the points the answer covers, with quoted evidence. |

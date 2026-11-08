@@ -50,6 +50,7 @@ func _ready() -> void:
 	SessionManager.extraction_completed.connect(_on_extraction_completed)
 	SessionManager.extraction_failed.connect(_on_extraction_failed)
 	SessionManager.region_generated.connect(_on_region_generated)
+	Api.wake_server()
 	loading_bar.visible = false
 	_update_sanity()
 	# If we arrived with pending questions (resume or after extraction), render them
@@ -188,6 +189,8 @@ func _on_extraction_completed(_topic_id: String, questions: Array[Dictionary]) -
 	if _count_before >= 0:
 		status_label.text = "Added %d new question(s). Review them, then Play!" % (questions.size() - _count_before)
 		_count_before = -1
+	if SessionManager.offline_note != "":
+		status_label.text = "%s Kuiz wrote %d simpler question(s) on this phone instead: check them, then Play!" % [SessionManager.offline_note, questions.size()]
 	_refresh_more()
 	_render_questions()
 	_update_play_enabled()

@@ -123,7 +123,7 @@ synchronous `FileAccess` write per tap.
   and singletons that were never written (`GameManager`, `AIService`, `SoundManager`).
 - `quizmon-build-plan.md` says "Godot 4.6, avoid 4.7"; the project is 4.7.2.
 - No automated tests for the Godot client and no CI workflow. The backend has `backend/tests/` (pytest,
-  no Claude calls) and `backend/evals/` (paid, run by hand).
+  no model calls) and `backend/evals/` (the real model, free but run by hand).
 
 **Fix:** the root README is corrected in this docs pass; consider a `tests/` folder with a headless
 GUT suite and a GitHub Action that runs `godot --headless --import` (which is how issues #1/#12 were

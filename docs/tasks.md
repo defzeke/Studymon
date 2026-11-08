@@ -10,12 +10,13 @@ Last updated: 2026-11-08.
 
 ## In flight
 
-Uncommitted, for the maintainer to commit: cleanup batch 3 of 3 (no behaviour change). The tuning
-tables are now `.tres` resources edited in the Inspector (`assets/data/`, classes in `scripts/data/`):
-the six foods (`FoodItem`), eleven costumes (`Costume`), four Sky Jump zones (`SkyZone`) and four
-season looks (`SeasonLook`, each with its weather). Ids are unchanged, so saves still match. Checked
-headless (gates match), by a harness (43 checks, every value against the old tables) and by
-pixel-diffed screenshots against the batch 2 build.
+Uncommitted, for the maintainer to commit: **Phase B** of the 2026-11-08 plan. The study server's AI
+moves from Claude to **Gemma 4 on Cloudflare Workers AI** (free 10,000 neurons a day) behind any
+OpenAI-compatible endpoint, with a daily neuron budget, scanned PDFs as page images, and `offline`
+fallbacks (questions written on the device, essays graded offline); `render.yaml` deploys it free on
+Render. Checked by 23 backend tests (stubbed model), the Godot gates and an offline-path harness; **not
+yet run against the real Gemma** (needs the Cloudflare account). Next: Phase A, Google Play Games
+cloud saves (needs the Play Console set up first).
 
 Everything below **Done** is on `world-assets` and `origin/dev` (PR #9 merged into `dev` on
 2026-11-02); the two 2026-11-06 commits are not yet on `origin/world-assets`, and nothing has been
@@ -30,10 +31,10 @@ split).
 
 | Order | Item | Needs |
 |---|---|---|
-| 1 | Run `backend/evals/` with a real key (now also a Word and a photo reviewer), tune prompts, record cost in [`api-backend.md`](api-backend.md) §3; pick the model per route | an Anthropic key (about $2–3 a run) |
-| 2 | Deploy the backend over HTTPS with rate limiting; set the workspace **monthly spend limit**; set `Api.RELEASE_URL` | a host (Cloud Run / Fly.io) |
-| 3 | Host the privacy policy, terms and support pages; set the three URLs in `settings.gd` | a domain or static host |
-| 4 | `export_presets.cfg` for Android (`.aab`, keystore out of git, **user-data backup on**) and iOS; **start Google's 14-day closed test** | developer accounts, a Mac or macOS CI for iOS |
+| 1 | Run `backend/evals/` against Gemma 4 on Cloudflare, tune prompts, record neurons per call in [`api-backend.md`](api-backend.md) §3 | a free Cloudflare account and Workers AI token |
+| 2 | Deploy `backend/` on Render's free web service (`render.yaml`), check `X-Forwarded-For` there; set `Api.RELEASE_URL` | a free Render account |
+| 3 | Host the privacy policy, terms and support pages; set the three URLs in `settings.gd` | free static hosting (GitHub Pages or Cloudflare Pages) |
+| 4 | `export_presets.cfg` for Android (`.aab`, keystore out of git, **user-data backup on**, gradle build for the Play Games plugin); **start Google's 14-day closed test**. iOS later | the Google Play Console ($25 once) |
 | 5 | On real phones: pick a PDF, photo and .docx (issue #23), Export / Import a save, the whole loop | an Android phone and an iPhone |
 | 6 | A real app icon (still Godot's default `icon.svg`), adaptive icon, iOS icon set | art |
 | 7 | Privacy labels / Data safety, age rating 13+, screenshots, review notes with a sample reviewer | store consoles |
@@ -53,9 +54,10 @@ Hygiene, after the slice plays:
 
 ## Needs a decision
 
-1. **Save cadence.** Event-driven saves, a dirty flag with a timer, or save on app pause only (#14)?
-2. **Hosting.** Recommended: the stateless FastAPI gateway on Cloud Run or Fly.io. See
-   [`launch-plan.md`](launch-plan.md) §1.
+1. **Save cadence** (#14): the 2026-11-08 plan settles it in Phase A (upload on app pause and after
+   big events, at most once a minute).
+2. **Cloudflare terms:** confirm nothing in Cloudflare's Self-Serve Subscription Agreement or Workers AI
+   terms rules out a 13+ app before launch ([`launch-plan.md`](launch-plan.md) §1).
 
 ## Done
 

@@ -5,7 +5,7 @@ was removed because unfinished purchase UI is a common App Review rejection. Cry
 spent only in the game.
 
 **The weekly AI limit was removed** (save v12): it only blocked players. AI cost and abuse are
-controlled on the server instead: per-IP daily limits and the Anthropic workspace spend limit
+controlled on the server instead: per-IP daily limits and the daily neuron budget of the free AI allowance
 ([`../api-backend.md`](../api-backend.md) §6).
 
 ## Crystals (`GameState.crystals`, saved)

@@ -144,7 +144,7 @@ study goal ([`monetization.md`](monetization.md)); the result panel says so when
 ## 5. Grading
 
 Every question carries an **answer key**, written when the reviewer was turned into questions (by
-Claude on the study server, or by the mock extractor). It is saved on the device with the world
+the AI on the study server, or by the device's offline builder). It is saved on the device with the world
 ([`../data-model.md`](../data-model.md) §2), so Multiple Choice and Identification are checked on the
 phone, offline. Only an Essay and an Identification near-miss go to the server. Code:
 `Api.check_identification()`, `Api.essay_offline()`, `Api.rubric_for()`, `Api.grade_battle_question()`;
@@ -170,7 +170,7 @@ collapsed, a leading "a / an / the" dropped. The keys are `answer` plus `accepte
 | anything else | wrong, with "the key says …" |
 
 A substring no longer counts, so typing one letter of the answer fails. A near-miss is sent to
-`POST /v1/grade` (`mode: "identification"`), where Claude decides whether it names the same thing as
+`POST /v1/grade` (`mode: "identification"`), where the AI decides whether it names the same thing as
 the key, judged by the source (a broader or vaguer word is wrong). The grade is correct at score ≥ 0.5.
 Offline, on an error, or on mocks, a near-miss counts as a miss.
 
@@ -179,7 +179,7 @@ Offline, on an error, or on mocks, a near-miss counts as a miss.
 The marking guide is the question's `rubric`: 3–5 `{point, keywords, weight}`. Without one,
 `Api.rubric_for()` makes one point per key idea (or one from the answer).
 
-- **Server** (`mode: "essay"`): Claude marks each point covered or not. It must quote the player's
+- **Server** (`mode: "essay"`): the AI marks each point covered or not. It must quote the player's
   own words as evidence, and **the server computes the score**: the sum of the weights of covered
   points whose evidence really is in the answer. The model never sets the number itself, so an answer
   asking for full marks gets nothing. Reply: `{score, covered[], feedback}`.
@@ -209,7 +209,7 @@ with its id.
 | Rewritten items | An Identification rewritten as Essay is graded by key ideas taken from its answer, which is coarse |
 | Foe look | Houses, Gyms and the Champion share `robot_1.glb` / `robot_2.glb`; only size and counters differ |
 | House doors | The map's houses have no door animation (one merged `Door` mesh); a dark doorway panel stands in for it |
-| Server grading untested live | `/v1/grade` was checked against a stubbed server only; no real Claude grade has been run yet (`backend/evals/`) |
+| Server grading untested live | `/v1/grade` was checked against a stubbed model only; no real Gemma grade has been run yet (`backend/evals/`). When the free allowance is spent, grading is offline |
 
 ## Entrance
 

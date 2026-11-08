@@ -139,6 +139,8 @@ var _shake_tween: Tween
 
 func _ready() -> void:
 	MusicManager.play_battle()
+	# Essays and near-miss answers may need the study server: wake it before the first one.
+	Api.wake_server()
 	_run = SessionManager.battle_run
 	_standalone = _run.is_empty()
 	if _standalone:

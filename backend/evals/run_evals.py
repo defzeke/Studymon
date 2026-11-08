@@ -1,5 +1,6 @@
-"""Quality check for question generation and grading against the golden set. Calls Claude, so it
-costs money (roughly $2-3 a run on the default models): run it by hand, with --yes.
+"""Quality check for question generation and grading against the golden set. It calls the real model
+(set AI_BASE_URL and AI_API_KEY, see docs/api-backend.md §4). On Cloudflare's free allowance it costs
+nothing, but one run spends roughly 3,000 of the day's 10,000 neurons, so run it by hand, with --yes.
 
     uv run --no-project --with-requirements requirements.txt python evals/run_evals.py --yes
 """
@@ -55,14 +56,14 @@ def extraction() -> bool:
     ok = True
     for path in sorted((HERE / "reviewers").glob("*.txt")):
         text = path.read_text(encoding="utf-8")
-        raw = json.loads(ai.generate_questions(text))["questions"]
+        raw = ai.generate_questions(text).get("questions", [])
         ok &= _score(path.stem, raw, ai.check_questions(raw, text))
     # The other upload paths, built from one reviewer: a Word file (read as text) and a photo.
     text = (HERE / "reviewers" / "biology_cells.txt").read_text(encoding="utf-8")
     docx_text = ai.office_text(_as_docx(text), "docx")
-    raw = json.loads(ai.generate_questions(docx_text))["questions"]
+    raw = ai.generate_questions(docx_text).get("questions", [])
     ok &= _score("biology_cells.docx", raw, ai.check_questions(raw, docx_text))
-    raw = json.loads(ai.generate_questions("", _as_photo(text), "image/png"))["questions"]
+    raw = ai.generate_questions("", [(_as_photo(text), "image/png")]).get("questions", [])
     ok &= _score("biology_cells.png", raw, ai.check_questions(raw, ""))
     return ok
 
@@ -84,8 +85,16 @@ def grading() -> bool:
     return ok
 
 
+def neurons_report() -> None:
+    print("neurons spent this run: %.0f" % sum(_spent))
+
+
+_spent: list = []
+ai.spend = _spent.append
+
 if __name__ == "__main__":
     if "--yes" not in sys.argv:
-        sys.exit("This calls Claude and costs money. Re-run with --yes.")
+        sys.exit("This calls the real model and spends part of the day's free allowance. Re-run with --yes.")
     results = [extraction(), grading()]
+    neurons_report()
     sys.exit(0 if all(results) else 1)

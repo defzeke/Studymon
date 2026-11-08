@@ -45,7 +45,7 @@ Where the two disagree, the docs say so explicitly.
 | Language | GDScript only (45 files) |
 | Scenes | 19 (`.tscn`) |
 | Autoloads | 7 |
-| Backend | FastAPI gateway to Claude: `/v1/extract`, `/v1/grade` (`backend/`). The editor runs on mocks; release builds use the server |
+| Backend | FastAPI gateway to Gemma 4 on Cloudflare Workers AI: `/v1/extract`, `/v1/grade` (`backend/`, free on Render). The editor runs on mocks; release builds use the server |
 | Persistence | Single JSON file `user://studymon_save.json`, schema `"v": 16` |
 | Tests / CI | None |
 

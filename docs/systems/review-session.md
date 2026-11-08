@@ -4,13 +4,13 @@ Turns reviewer material into an editable question bank, then into the region dat
 consumes.
 
 - **State / pipeline:** `scripts/autoload/session_manager.gd` (autoload `SessionManager`)
-- **Extraction:** `scripts/autoload/api.gd` — `upload_reviewer()`; mock: `_build_questions_from_text()`;
+- **Extraction:** `scripts/autoload/api.gd` — `upload_reviewer()`; mock and offline: `offline_questions()`;
   real: `POST /v1/extract` on the study server ([`../api-backend.md`](../api-backend.md) §2)
 - **Worlds hub (topic list):** `scripts/ui/session_list.gd` → `scenes/ui/session_list.tscn`
 - **Upload / edit screen:** `scripts/review_session/categorizer.gd` → `scenes/review_session/categorizer.tscn`
 
 Status: **Implemented.** The editor runs on the mock extractor (`Api.MOCK`); with the server on (release builds),
-Claude writes the questions and their answer keys, and PDFs are accepted.
+Gemma 4 on Cloudflare writes the questions and their answer keys, and PDFs, photos and Word / PowerPoint files are accepted. When the AI's free daily allowance is spent, the server returns the reviewer's text and the device writes simpler questions (`Api.offline_questions()`), and the World Builder says so.
 
 ---
 
@@ -87,7 +87,12 @@ Identification and Multiple Choice blank their answer term out of the quoted exc
 - Breaks each line on `.` `!` `?`, discarding fragments under 20 chars.
 - Keeps trailing text without punctuation if ≥ 20 chars.
 
-### Question builder — `_build_questions_from_text()` (`api.gd:138`)
+### Offline question builder — `offline_questions()` (`api.gd`)
+
+Used by the mock, and by a real upload when the server answers `offline` (the AI's free allowance is
+spent, or the call failed): `SessionManager` builds the questions from the returned `reviewer_text` and
+sets `offline_note`, which the World Builder shows. It returns `[]` when no sentence qualifies; the mock
+then uses five canned questions, and a real upload fails with the server's reason.
 
 - Keeps sentences with **≥ 6 words and ≥ 40 chars**, up to **12** sentences.
 - **Tier** (`difficulty`): by sentence length, the shortest third `easy`, the middle `medium`, the
@@ -221,7 +226,7 @@ world's mastery, cleared trainers/gyms and Champion (keys starting `<topic_id>:`
 | Gap | Detail |
 |---|---|
 | Mock cannot read PDFs | On mocks a PDF is refused; it needs the server |
-| Real extraction unproven | `/v1/extract` has been checked against a stubbed Claude only; run `backend/evals/` |
+| Real extraction unproven | `/v1/extract` has been checked against a stubbed model only; run `backend/evals/` against Gemma |
 | Photo reviewers keep no text | "More questions" needs the reviewer's text, which a photo does not have |
 | Topic id collisions | `topic_<unix%100000>` repeats every ~27.8 hours |
 

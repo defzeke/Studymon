@@ -206,12 +206,19 @@ Inspector; no code changes.
 The editor, the headless gates and debug exports run on the mock (`Api.MOCK` is
 `OS.is_debug_build() and not DEV_USES_SERVER`); an exported **release** build always uses the server.
 
-1. **Locally:** start the backend ([`api-backend.md`](api-backend.md) §4), set
+1. **Credentials (free):** a Cloudflare account; copy its Account ID into `AI_BASE_URL` and create
+   an API token with the *Workers AI* permission for `AI_API_KEY`, in `backend/.env` (copied from
+   `.env.example`; it is gitignored).
+2. **Locally:** start the backend ([`api-backend.md`](api-backend.md) §4), set
    `const DEV_USES_SERVER := true` in `scripts/autoload/api.gd`, and run the game. It talks to
    `DEV_URL` (`http://127.0.0.1:8000`). Set it back to `false` before handing off.
-2. **For a release:** deploy the backend over HTTPS and set `const RELEASE_URL` to its address before
-   exporting. A release build with a non-HTTPS URL logs an error at boot, and every AI request fails.
-3. Keep the mock branch working and the response shapes in [`api-backend.md`](api-backend.md) truthful
+3. **For a release:** create a Render Blueprint from `render.yaml`, add `AI_BASE_URL` and
+   `AI_API_KEY` as secret environment variables, and set `const RELEASE_URL` to the service's
+   `https://…onrender.com` address before exporting. A release build with a non-HTTPS URL logs an
+   error at boot, and every AI request fails.
+4. **To test the free-allowance fallback,** start the server with `DAILY_NEURONS=0`: extraction comes
+   back `offline` (questions written on the device) and grading falls back to the offline mark.
+5. Keep the mock branch working and the response shapes in [`api-backend.md`](api-backend.md) truthful
    (rules §5).
 
 ## Reset a save / debug progression

@@ -22,7 +22,7 @@ fixed-length runs: a Challenge House and a Gym per question type, then the Champ
 | **2** | Pet-care loop: Pet/Feed/Play, stats, XP, decay, level gate, HUD strip | **Implemented** (Level 5 gate removed by design) — petting, food, tune-up, ball and charging call `care()`; the top HUD shows level, XP, hunger/energy/mood/health and crystals | `companion_state.gd`, `home.gd` |
 | **3** | AI Codex + optional pop-quiz reuse | **Removed** (save v16) — it never had a screen | — |
 | **4** | Scheduler / Pomodoro with missed-rest penalty, HUD badge | **Implemented** — the Study screen's focus timer; focus shows on the check-up tablet | `companion_state.gd` `start_pomodoro()`, `flashcards.gd:58` |
-| **5** | Upload PDF → extraction → editable list → region | **Implemented (mock; Claude server built, untested live)** | `categorizer.gd`, `session_manager.gd`, `api.gd`, `backend/` |
+| **5** | Upload PDF → extraction → editable list → region | **Implemented (mock; Gemma server built, untested live)** | `categorizer.gd`, `session_manager.gd`, `api.gd`, `backend/` |
 | **6** | Overworld + gym structure + trainer encounters | **Implemented (mock)** | 3D island `region_map.tscn`, `player.gd`, `joystick.gd`; three gyms (one at a marker, no building) |
 | **7** | Battle per question type, one judging pipeline | **Implemented (mock)** | `battle.gd`: Identification, Essay and Multiple Choice, per-tier HP/counter/thresholds |
 | **8** | Mastery states + 7-day decay + Champion recap | **Implemented** | `session_manager.gd`; Champion falls back to every question |
@@ -86,7 +86,7 @@ Done: paste-or-file input, word/char sanity gate, "AI is studying…" beat, dete
 extractor that turns real reviewer prose into Identification / Essay / Multiple Choice questions tagged Easy, Medium or Hard, editable
 list with confidence indicators, topic history, region data generation.
 
-Built, not yet run against the real model: `POST /v1/extract` (Claude writes the questions and their
+Built, not yet run against the real model: `POST /v1/extract` (Gemma 4 on Cloudflare writes the questions and their
 answer keys from pasted text or a PDF; the server checks grounding and drops bad items), used when
 the server is on (release builds). On mocks a PDF is refused (`review-session.md` §2). Raw-vs-edited extraction storage
 was not built: the server is stateless and stores nothing.
@@ -110,7 +110,7 @@ from the question's difficulty tier.
 Gaps: no enemy or player art (the missing `bot_lv*.png` references were removed). Multiple Choice and
 Identification are checked on the device against the answer key; essays and Identification near-misses
 go to `POST /v1/grade` with an offline mark as fallback (`battle.md` §5). The server path has been
-checked against a stubbed Claude only.
+checked against a stubbed model only.
 
 ### Phase 8 — Mastery & Champion ✅
 
@@ -179,7 +179,7 @@ The loop upload → edit → overworld → battle → mastery → Champion is pl
 |---|---|---|
 | Godot 4.6.x, "avoid 4.7" | 4.7.2 stable | 4.7 is the shipping line now; keep it |
 | `Resource`-based saves | JSON file, `"v": 16` | simpler diffs, no type safety |
-| FastAPI **or** Node backend with Claude + Supabase | FastAPI gateway with Claude (`/v1/extract`, `/v1/grade`) | stateless: no Supabase, no DB, no accounts |
+| FastAPI **or** Node backend with Claude + Supabase | FastAPI gateway with Gemma 4 on Cloudflare Workers AI (`/v1/extract`, `/v1/grade`), hosted free on Render | stateless: no Supabase, no DB, no accounts of our own; free tools only |
 | Supabase Auth / DB / Storage | none | no accounts, ever (decided 2026-10-29) |
 | Job polling for long tasks | `job_status` signal; synchronous requests with a per-call `HTTPRequest` and timeout | no polling loop |
 | Android + iOS export templates from day one | not configured | no `export_presets.cfg` in the repo |

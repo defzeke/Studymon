@@ -1,8 +1,8 @@
 # Launch plan: the real backend and the App Store / Google Play release
 
-Status: **Future; 5.3 partly built.** The AI gateway's two routes exist (`/v1/extract`, `/v1/grade`,
-see [`api-backend.md`](api-backend.md)) as a stateless server with no accounts, quotas, consent screen
-or reports; release builds call it once `Api.RELEASE_URL` is set. This page is the researched plan for **Phase 5** of
+Status: **Future; 5.3 partly built.** The AI gateway's routes exist (`/v1/extract`, `/v1/grade`,
+`/v1/reports`, see [`api-backend.md`](api-backend.md)) as a stateless server with per-IP limits, a daily
+neuron budget and offline fallbacks, on Gemma 4 via Cloudflare; release builds call it once `Api.RELEASE_URL` is set. This page is the researched plan for **Phase 5** of
 [`systems/gameplay-structure.md`](systems/gameplay-structure.md), written down so it is not lost.
 Where it disagrees with the code, the code describes today; this page describes the target.
 
@@ -19,15 +19,34 @@ Made by the maintainer:
 | Decision | Choice |
 |---|---|
 | Audience | **13+** (students, teens, adults). Children under 13 would add COPPA, Apple Kids Category and Google Families work and roughly double the compliance scope |
-| Login | **No accounts, ever** (decided 2026-10-29): saves stay on the device only, so Sign in with Apple, in-app account deletion and Supabase are not needed. Settings offers Export / Import save and "Delete my data" instead |
+| Platforms | **Android first** (decided 2026-11-08); iOS later |
+| Every tool free | (decided 2026-11-08) The one accepted cost is the Google Play registration ($25 once) |
+| Login | **No accounts of our own.** Saves sync to the player's **Google Play Games Saved Games** (their Google Drive app folder). Decided 2026-11-08, replacing "device only" from 2026-10-29. *Planned, not built yet:* the 2026-11-08 plan, Phase A. Settings keeps Export / Import save and "Delete my data" |
 | Purchases | **v1: free launch** (decided 2026-10-29): the placeholder Crystal Shop was removed; in-app purchases come in a later update |
-| Backend | **None yet; mock first.** This whole page is future work |
+| AI model | **Gemma 4 26B on Cloudflare Workers AI** (decided 2026-11-08), free up to 10,000 neurons a day, for questions and grading; offline fallbacks when it is spent ([`api-backend.md`](api-backend.md) §3) |
+| Hosting | **Render's free web service** (decided 2026-11-08, `render.yaml`): no card, sleeps after 15 idle minutes |
 
-Open until Phase 5 starts (recommendations recorded, not decided):
+Why not Gemma on Google's own Gemini API, which is also free:
+- Its terms say API clients must not be "directed towards or likely to be accessed by individuals
+  under the age of 18", which rules out a 13+ study app.
+- Unpaid-tier inputs may be read by human reviewers and used for training, and Google asks that no
+  personal information be sent to them.
+- Gemma has no paid tier there, so it has no upgrade path.
 
-| Decision | Recommendation | Alternatives |
-|---|---|---|
-| Hosting | The stateless FastAPI gateway on Google Cloud Run or Fly.io; no database or storage (nothing is kept) | Vercel (fine for the policy web pages, poor for big PDF jobs) |
+The same open model (Apache 2.0) on Cloudflare avoids all three.
+
+**Still to check before launch:** Cloudflare's privacy policy says its services are "not intended for
+… individuals under the age of eighteen", wording aimed at Cloudflare's own customers. Read the
+Self-Serve Subscription Agreement and the Workers AI terms. If they forbid a teen app, the fallbacks
+are on-device Gemma 4 E2B (LiteRT-LM: about a 2.6 GB download, a custom Android plugin, slower) or a
+paid provider that allows teen apps with safeguards.
+
+Sources (2026-11-08): [Gemini API terms](https://aistudio.google.com/docs/terms),
+[Gemini API pricing](https://aistudio.google.com/docs/pricing),
+[Workers AI pricing](https://developers.cloudflare.com/workers-ai/platform/pricing/),
+[Gemma 4 on Workers AI](https://developers.cloudflare.com/ai/models/@cf/google/gemma-4-26b-a4b-it/),
+[Render free tier](https://render.com/docs/free),
+[Play Games saved games](https://developer.android.com/games/pgs/android/saved-games).
 
 ## 2. What is most useful
 
@@ -67,10 +86,12 @@ Sources (checked while planning; re-check the exact wording when the work starts
 ## 4. Target architecture
 
 ```text
-Godot app ──HTTPS──► FastAPI gateway (stateless: daily limits, logs reports) ──► Claude API
+Godot app ──HTTPS──► FastAPI gateway on Render (stateless: daily limits, neuron budget, logs reports)
+   │                        └──► Cloudflare Workers AI: Gemma 4 26B (free 10,000 neurons a day)
    │
    └─ user://studymon_save.json: worlds, answer keys, progress (Export / Import in Settings;
-      the OS backs it up when the Android export's user-data backup is on, and on iOS by default)
+      the OS backs it up when the Android export's user-data backup is on), synced to the player's
+      Google Play Games Saved Games (planned)
 ```
 
 The client never calls an LLM provider ([`api-backend.md`](api-backend.md)); secrets live only on
@@ -82,9 +103,9 @@ Each is shippable and verified on its own.
 
 | Step | Scope | Main files |
 |---|---|---|
-| **5.0 Accounts and decisions** | Apple Developer ($99/yr), Google Play Console ($25), an Anthropic workspace with a **monthly spend limit**, a domain for the policy pages; settle the open decisions in §1 | none |
+| **5.0 Accounts and decisions** | Google Play Console ($25 once; App type Game, Play Games Services with Saved Games on, an Android OAuth client per signing key), a free Cloudflare account and Workers AI token, a free Render account, free static hosting for the policy pages (GitHub Pages or Cloudflare Pages). Apple Developer ($99/yr) only when iOS comes | none |
 | **5.1 Network layer and CI** | Replace the single shared `HTTPRequest` with a request queue; timeouts, retry with backoff for 408/429/5xx, non-2xx reported through a signal (#9), `Authorization: Bearer` (#2), unique `job_id`s, a job-polling helper; `MOCK` becomes a flag so dev builds stay on mocks; `BASE_URL` per environment through export feature tags; backend skeleton with `/health` and `/v1/config` (minimum client version, feature flags, quota limits); GitHub Actions running the `docs/rules.md` §6 gates, a committed `tests/` folder and backend tests; export presets without secrets. A minimal Android build goes to **Play closed testing** here to start the 14-day clock | `scripts/autoload/api.gd`, `project.godot`, `export_presets.cfg`, `backend/`, `.github/workflows/`, `tests/` |
-| **5.2 Accounts and profile sync** | **Dropped**: there will be no login. Saves stay on the device; Settings has Export / Import save and Delete my data; turn on the Android export's user-data backup so the OS backs the save up (iOS backs up app data by default) | `export_presets.cfg` |
+| **5.2 Cloud saves** | No login of our own: the save syncs to **Google Play Games Saved Games** through the `godot-play-game-services` plugin (MIT), with the local file kept as the source of truth and the newer `saved_at` winning a conflict; turn on the Android export's user-data backup too. Settings keeps Export / Import and Delete my data (which also deletes the cloud copy) | `addons/GodotPlayGameServices/`, `export_presets.cfg`, a `CloudSave` autoload, `settings.gd` |
 | **5.3 AI gateway** (partly done: `/v1/extract` with structured outputs, grounding checks and the refusal fallback; `/v1/grade` for essays and Identification near-misses, server-scored; synchronous, so there is no `GET /v1/jobs/{id}`; delimited data against injection) | `POST /v1/extract` (PDF or pasted text → job), `GET /v1/jobs/{id}`, `POST /v1/grade` (essays). Keep the job envelope and the question schema in [`systems/gameplay-structure.md`](systems/gameplay-structure.md) §3.1 so `SessionManager._on_job_status` and `normalize_question()` need no change. **Structured outputs** (`output_config.format` with the question JSON schema); forced `tool_choice` is rejected on the current models. Check `stop_reason == "refusal"` and enable the documented server-side fallback for Sonnet 5.5; Haiku has none, so the app shows "couldn't grade this, try again". **Grounding checks** after the model answers (every `source` must appear in the reviewer text, Multiple Choice needs four distinct options, tiers must be spread; the server computes `confidence`). **Prompt-injection safety**: reviewer text and answers go in as delimited data; graders return only `{score, feedback, covered_concepts}`. **Server-side quota ledger** (weekly PDF and essay counters; the client has no limit since the old client-only `MonetizationState` was removed, so add a display cache of `/me` if limits come back), per-user and per-IP rate limits, a global daily spend cap; App Attest (iOS) and Play Integrity (Android) checks as hardening before public launch. **Consent screen** and **`POST /v1/reports`**. **Privacy**: PDFs deleted after extraction, logs hold metadata and token counts, not content | `backend/`, `api.gd`, `session_manager.gd`, `categorizer.gd`, `battle.gd` |
 | **5.4 Store readiness** | Privacy policy, terms, support and deletion pages; Apple privacy labels and Google Data safety answers matching what the backend collects; age ratings; icon, screenshots and store text; a demo account and review notes for App Review; Sentry (Godot SDK and backend) for crashes | web pages, store consoles |
 | **5.5 Release pipeline** | An Android job building a signed `.aab` from secrets; an iOS job on a macOS runner that exports the Xcode project, signs and uploads to **TestFlight** (fastlane or Codemagic); versions from CI. Release path: TestFlight internal → external beta; Play internal → closed → production with a **staged rollout**. The `/v1/config` minimum-version flag is the emergency lever | `.github/workflows/`, `export_presets.cfg` |
@@ -94,10 +115,9 @@ short and long, table-heavy) with checks for grounding, tier spread and distract
 grading set of perfect, partial, off-topic and injection answers with expected score bands. Run it on
 every prompt or model change in CI.
 
-**Models and cost** (verify against the live pricing page when the work starts): extraction on
-`claude-sonnet-5-5` ($2 / $10 per million tokens), grading on `claude-haiku-5-5` ($0.10 / $0.50). PDFs
-go in as `document` blocks (API limit 32 MB and 600 pages on 1M-context models); the app caps uploads
-lower (suggest 20 MB and 100 pages) so one bad file cannot burn the budget.
+**Models and cost:** Gemma 4 26B on Cloudflare Workers AI, $0 within the free 10,000 neurons a day
+(about 20 reviewers and 200 graded answers across all players; [`api-backend.md`](api-backend.md) §3).
+PDFs become text, or page images for a scan, on the server; uploads are capped at 20 MB and 100 pages.
 
 ## 6. Mock-first prep that needs no server
 

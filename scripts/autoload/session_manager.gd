@@ -48,6 +48,9 @@ var editing_topic_id: String = ""
 var last_source_text: String = ""
 ## True while "More questions" runs: the result is added to the world being edited, not a new one.
 var _adding := false
+## Why the last extraction's questions were written on the device instead of by the AI ("" when the
+## AI wrote them). The World Builder shows it.
+var offline_note := ""
 var _topics: Array[Dictionary] = []
 var _active_job_id: String = ""
 # Progress per world; saved by to_dict().
@@ -247,8 +250,18 @@ func _on_job_status(job_id: String, status: String, progress: float, result: Var
 		"completed":
 			if typeof(result) == TYPE_DICTIONARY and result.has("questions"):
 				var topic_id := str(result["topic_id"])
+				var made: Array = result["questions"]
+				# The AI's free allowance is spent (or it failed): the server sent the reviewer's text,
+				# and the questions are written here instead.
+				offline_note = str(result.get("note", "")) if result.get("offline", false) else ""
+				if offline_note != "":
+					made = Api.offline_questions(str(result.get("reviewer_text", "")))
+					if made.is_empty():
+						_adding = false
+						extraction_failed.emit(job_id, offline_note)
+						return
 				var questions: Array[Dictionary] = []
-				for q in result["questions"]:
+				for q in made:
 					if q is Dictionary:
 						var d := normalize_question(q)
 						if not d.has("confidence"):

@@ -96,7 +96,7 @@ Field-by-field:
 ## 2. Question dict
 
 Produced by the study server (`POST /v1/extract`, [`api-backend.md`](api-backend.md) §5), the mock
-extractor (`Api._build_questions_from_text`) or user edits in the categorizer, and stored verbatim
+offline builder (`Api.offline_questions`, on mocks and when the server answers `offline`) or user edits in the categorizer, and stored verbatim
 inside `session.topics[].questions`. Together `answer`, `accepted`, `distractors` and `rubric` are the
 question's **answer key**: battles check answers against it on the device.
 

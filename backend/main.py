@@ -1,4 +1,5 @@
-"""Studymon API: a thin, stateless gateway between the game and Claude. Contract: docs/api-backend.md.
+"""Studymon API: a thin, stateless gateway between the game and the AI model (Gemma 4 on Cloudflare
+Workers AI by default; see ai.py). Contract: docs/api-backend.md.
 
 Every response is the job envelope the client's Api.job_status bus expects:
 {"job_id", "status": "completed" | "failed", "progress", "result"}.
@@ -6,9 +7,10 @@ Every response is the job envelope the client's Api.job_status bus expects:
 import base64
 import binascii
 import datetime
-import json
 import logging
+import os
 import re
+import threading
 from collections import Counter
 from typing import Literal
 
@@ -23,19 +25,46 @@ MAX_CHARS = 200_000
 MAX_PDF_BYTES = 20 * 1024 * 1024
 MAX_PDF_PAGES = 100
 MAX_IMAGE_BYTES = 5 * 1024 * 1024
-# A reviewer file's type -> its MIME type when it goes to Claude as is; Word and PowerPoint are turned
-# into text here first.
-FILE_TYPES = {"pdf": "application/pdf", "png": "image/png", "jpeg": "image/jpeg", "webp": "image/webp",
-              "docx": "", "pptx": ""}
+# A photo's type -> the MIME type it goes to the model with. PDF, Word and PowerPoint become text here;
+# a scanned PDF becomes page images.
+IMAGE_TYPES = {"png": "image/png", "jpeg": "image/jpeg", "webp": "image/webp"}
 MAX_ANSWER_CHARS = 4000
-# Calls per client IP per UTC day, and for everyone together. No accounts, so this and the Anthropic
-# workspace spend limit are what stop someone else spending the key. Contract: docs/api-backend.md §6.
+# Calls per client IP per UTC day, and for everyone together. No accounts, so these and the neuron
+# budget below are what stop one player spending everyone's free allowance. Contract: docs/api-backend.md §6.
 DAILY_LIMITS = {"extract": 5, "grade": 300, "report": 20}
 DAILY_TOTAL = 20_000
+# Cloudflare Workers AI is free up to 10,000 neurons a day (UTC) for the whole account. The server
+# stops calling the model a little before that and answers offline instead. A route only starts a call
+# when what it is likely to cost still fits. The count lives in memory, so a restart clears it; the
+# Workers Free plan itself cannot bill past its allowance either way.
+DAILY_NEURONS = float(os.environ.get("DAILY_NEURONS", "9000"))
+LIKELY_NEURONS = {"extract": 400.0, "grade": 30.0}
 
 app = FastAPI(title="Studymon API")
 log = logging.getLogger("studymon")
 _used: Counter = Counter()
+_spent: dict[str, float] = {}
+_spent_lock = threading.Lock()
+
+
+def _today() -> str:
+    return datetime.datetime.now(datetime.timezone.utc).date().isoformat()
+
+
+def spend(neurons: float) -> None:
+    with _spent_lock:
+        day = _today()
+        for k in [k for k in _spent if k != day]:
+            del _spent[k]
+        _spent[day] = _spent.get(day, 0.0) + neurons
+
+
+def budget_fits(route: str) -> bool:
+    with _spent_lock:
+        return _spent.get(_today(), 0.0) + LIKELY_NEURONS[route] <= DAILY_NEURONS
+
+
+ai.spend = spend
 
 
 class ExtractRequest(BaseModel):
@@ -108,11 +137,21 @@ def health() -> dict:
     return {"ok": True}
 
 
+def _offline(job_id: str, name: str, reviewer_text: str, why: str):
+    """No AI questions this time (the free allowance is spent, or the call failed): the reviewer's text
+    goes back with no questions and `offline`, and the game writes simpler questions from it on the
+    device. A photo or scan has no text to do that with, so it fails with the reason."""
+    if len(reviewer_text.strip()) < MIN_CHARS:
+        return _failed(job_id, why)
+    return _done(job_id, {"topic_id": topic_id(name), "questions": [], "offline": True, "note": why,
+                          "reviewer_text": reviewer_text[:MAX_CHARS]})
+
+
 @app.post("/v1/extract")
 def extract(req: ExtractRequest, request: Request):
     if limited := over_limit(request, "extract", req.job_id):
         return limited
-    file, text, reviewer_text = None, req.text, req.text
+    text, images = req.text, []
     if req.file_base64:
         try:
             data = base64.b64decode(req.file_base64, validate=True)
@@ -127,35 +166,46 @@ def extract(req: ExtractRequest, request: Request):
                 return _failed(req.job_id, "That file is not a readable PDF.")
             if pages > MAX_PDF_PAGES:
                 return _failed(req.job_id, "That PDF has %d pages; the limit is %d." % (pages, MAX_PDF_PAGES))
-            file, reviewer_text = data, ai.pdf_text(data)
-        elif kind in ("png", "jpeg", "webp"):
+            text = ai.pdf_text(data)
+            # No text layer: a scan, which the model reads as page images.
+            if len(text.strip()) < MIN_CHARS:
+                text, images = "", [(png, "image/png") for png in ai.pdf_images(data)]
+                if not images:
+                    return _failed(req.job_id, "That PDF has no readable pages.")
+        elif kind in IMAGE_TYPES:
             if len(data) > MAX_IMAGE_BYTES:
                 return _failed(req.job_id, "That photo is over 5 MB. Take it at a lower size.")
-            file, reviewer_text = data, ""
+            text, images = "", [(data, IMAGE_TYPES[kind])]
         elif kind in ("docx", "pptx"):
-            text = reviewer_text = ai.office_text(data, kind)
+            text = ai.office_text(data, kind)
             if len(text.strip()) < MIN_CHARS:
                 return _failed(req.job_id, "That file has too little text to study from.")
         else:
             return _failed(req.job_id, "That file type is not supported.")
     elif len(req.text.strip()) < MIN_CHARS:
         return _failed(req.job_id, "Too short: add more material.")
+    if not budget_fits("extract"):
+        return _offline(req.job_id, req.topic_name, text, "The AI has used today's free allowance. Try again tomorrow.")
     try:
-        raw = json.loads(ai.generate_questions(text, file, FILE_TYPES.get(req.file_type, ""), req.existing))["questions"]
+        raw = ai.generate_questions(text, images, req.existing).get("questions", [])
     except ai.AIError as e:
-        return _failed(req.job_id, str(e))
-    questions = ai.check_questions(raw, reviewer_text, req.existing)
+        return _offline(req.job_id, req.topic_name, text, str(e))
+    # `text` "" (a photo or scan) skips the check that each answer is in the reviewer.
+    questions = ai.check_questions(raw if isinstance(raw, list) else [], text, req.existing)
     if not questions:
-        return _failed(req.job_id, "No usable questions came out of this reviewer. Try adding more detail.")
+        return _offline(req.job_id, req.topic_name, text, "No usable questions came out of this reviewer. Try adding more detail.")
     # The reviewer's text goes back so the device can keep it for "More questions" (none for a photo).
     return _done(req.job_id, {"topic_id": topic_id(req.topic_name), "questions": questions,
-                              "reviewer_text": reviewer_text[:MAX_CHARS]})
+                              "reviewer_text": text[:MAX_CHARS]})
 
 
 @app.post("/v1/grade")
 def grade(req: GradeRequest, request: Request):
     if limited := over_limit(request, "grade", req.job_id):
         return limited
+    # The free allowance is spent: the game grades this answer offline instead.
+    if not budget_fits("grade"):
+        return JSONResponse(_failed(req.job_id, "AI grading is resting until tomorrow."), status_code=429)
     q = req.model_dump()
     try:
         if req.mode == "identification":
