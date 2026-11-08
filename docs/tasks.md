@@ -10,19 +10,24 @@ Last updated: 2026-11-09.
 
 ## In flight
 
-Uncommitted, for the maintainer to commit: **C4**, the bigger eval set in `backend/evals/`
-([`api-backend.md`](api-backend.md) §4).
-- Five new reviewers: long, tables, Filipino, math, very short. That makes nine.
-- Eight new graded answers: Filipino essays and Identification answers, an abbreviation, and two
-  injection cases. That makes fifteen.
-- New checks for coverage and for questions written in Filipino.
+Uncommitted, for the maintainer to commit: **the backend hand-over.**
+- [`backend-next-steps.md`](backend-next-steps.md) is a step-by-step runbook for whoever picks up the
+  backend (D3, D4, E1–E3).
+- `.github/workflows/pages.yml` is removed. GitHub Pages needs the repo admin, so the policy pages go
+  to Cloudflare Pages by Direct Upload instead.
+- `run_evals.py` now prints the neurons per model call.
+- The docs list `world_intro.tscn` among the headless-only #22 failures.
 
-Checked with the model stubbed. Not yet run against Gemma (E1).
+**Game check on 2026-11-09.** No errors were found.
+- Headless: all 7 gates, plus every other scene (sub-scenes, weather, pop-ups, `CloudSave`).
+- Windowed, on Windows: the boot chain reaches home in about 12 s; loading, Worlds, and the world
+  intro to the map in about 6 s.
+- The only failures are the known headless #22 cases.
+- Not covered: tapping through the game by hand, and phones.
 
-**Phase C is done.** What is left needs the maintainer's accounts first (D1–D5). Then come E, F and G.
-- C3's CI passes on GitHub (`67c5b08`). The Node 24 action bump (`39aaa11`) passed too.
-- The C2 pages (`1166a6c`) still fail to deploy, only because Pages is not turned on yet (D5). After
-  D5, re-run them from Actions → Pages → Run workflow.
+**Phase C is done** (C4: `997104d`). CI passes on GitHub. **Next is the backend**: anyone with a free
+Cloudflare and Render account can do it by following [`backend-next-steps.md`](backend-next-steps.md).
+The Play Console steps (D1, D2) and phases F and G come after.
 
 Phases A and B of the 2026-11-08 plan are committed, but neither has met the real world yet:
 - **A, cloud saves** (`6415399`): not tried on a phone. It needs the Play Console Game ID and an Android
@@ -49,27 +54,26 @@ maintainer's commit. The researched background is in [`launch-plan.md`](launch-p
 | Step | Item |
 |---|---|
 | C1 | ~~Record this plan; debounce saves (#14)~~ (`fa01fdd`) |
-| C2 | ~~Privacy, terms and support pages in `site/` on GitHub Pages; [`store-listing.md`](store-listing.md)~~ (`1166a6c`). URLs once live: `https://defzeke.github.io/Studymon/privacy.html`, `…/terms.html`, `…/support.html` |
+| C2 | ~~Privacy, terms and support pages in `site/`; [`store-listing.md`](store-listing.md)~~ (`1166a6c`). Hosting moved to Cloudflare Pages Direct Upload (E3), because GitHub Pages needs the repo admin |
 | C3 | ~~GitHub Actions: the headless gates, `backend/tests` and the docs' links on every push (#20)~~ (`67c5b08`, first run green). The splash, loading and Worlds screens stay out until #22 is fixed |
-| C4 | ~~A bigger eval set in `backend/evals/`: nine reviewers (adds long, tables, Filipino, math, very short) and fifteen graded answers, with coverage and Filipino-language checks~~ (uncommitted, above) |
+| C4 | ~~A bigger eval set in `backend/evals/`: nine reviewers (adds long, tables, Filipino, math, very short) and fifteen graded answers, with coverage and Filipino-language checks~~ (`997104d`) |
 
-**D — Accounts (the maintainer; start now, alongside C):**
+**D — Accounts (none needs GitHub admin access):**
 
 | Step | Item |
 |---|---|
 | D1 | Play Console ($25 once): create the app as a **Game**, turn on Play Games Services with **Saved Games**, copy the Game ID, add an Android OAuth client per signing key ([`skills.md`](skills.md) §*Export for Android with Play Games*) |
 | D2 | Recruit **15–20 closed testers** now: Google's 14-day test is the longest wait |
-| D3 | Cloudflare: a free account, its Account ID and a Workers AI token. Read its terms for the 13+ question (decision 2 below) |
-| D4 | A free Render account, connected to the GitHub repo |
-| D5 | GitHub → Settings → Pages → Source: **GitHub Actions** (for C2). If the deploy from `world-assets` is refused, add that branch under Settings → Environments → `github-pages` ([`store-listing.md`](store-listing.md) §1) |
+| D3 | Cloudflare: a free account, its Account ID and a Workers AI token. Read its terms for the 13+ question (decision 2 below). [`backend-next-steps.md`](backend-next-steps.md) step 1 |
+| D4 | A free Render account. It deploys the public repo by URL, so no GitHub connection is needed |
 
-**E — With the accounts (together):**
+**E — The backend, with the accounts. Anyone can do it by following [`backend-next-steps.md`](backend-next-steps.md):**
 
 | Step | Item |
 |---|---|
-| E1 | Run `backend/evals/` against Gemma 4, tune the prompts, confirm `MAX_QUESTIONS = 30`, record neurons per call in [`api-backend.md`](api-backend.md) §3 |
-| E2 | Deploy `backend/` on Render (`render.yaml`). Check `/health`, the cold-start wake and that `X-Forwarded-For` reaches the per-IP limit. `curl` a PDF, a scan, a .docx and a photo. Set `Api.RELEASE_URL` |
-| E3 | Set `PRIVACY_URL`, `TERMS_URL` and `SUPPORT_URL` in `scripts/ui/settings.gd` once the pages are live |
+| E1 | Run the server locally against Gemma 4, then run `backend/evals/` and tune the prompts. Record the measured neurons per call in [`api-backend.md`](api-backend.md) §3 and in `LIKELY_NEURONS` (steps 2–3) |
+| E2 | Deploy `backend/` on Render. Check `/health`, and check that a faked `X-Forwarded-For` cannot get past the per-player limit. Set `Api.RELEASE_URL` (steps 4–5) |
+| E3 | Upload `site/` to Cloudflare Pages, then set `PRIVACY_URL`, `TERMS_URL` and `SUPPORT_URL` in `scripts/ui/settings.gd` (step 6) |
 
 **F — Android build and phones:**
 
@@ -96,6 +100,9 @@ Hygiene: #22, find why the headless boot chain fails its threaded loads.
    terms rules out a 13+ app before launch ([`launch-plan.md`](launch-plan.md) §1).
 
 ## Done
+
+- **2026-11-09** — C4 (`997104d`): nine eval reviewers and fifteen graded answers, with coverage and
+  Filipino-language checks.
 
 - **2026-11-09** — CI on the Node 24 action majors (`39aaa11`).
 

@@ -5,7 +5,8 @@
 set -u
 GODOT=${GODOT:?set GODOT to the Godot 4.7.2 binary}
 NOISE='ObjectDB instances leaked at exit|resources still in use at exit'
-# splash, loading and session_list are left out: headless they fail their threaded loads (issue #22).
+# splash, loading, session_list and world_intro are left out: headless they fail their threaded loads
+# (issue #22). Windowed they are clean.
 SCENES=(
   "res://scenes/ui/boot/peek.tscn 30"
   "res://scenes/battle/battle.tscn 20"

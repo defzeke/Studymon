@@ -97,8 +97,14 @@ def grading() -> bool:
     return ok
 
 
-def neurons_report() -> None:
-    print("neurons spent this run: %.0f" % sum(_spent))
+def measured(label: str, run) -> bool:
+    """Runs one half of the evals and prints its neurons per model call, the figures that
+    docs/api-backend.md §3 and main.LIKELY_NEURONS record."""
+    calls, spent = len(_spent), sum(_spent)
+    ok = run()
+    n, used = len(_spent) - calls, sum(_spent) - spent
+    print("%s: %d model calls, %.0f neurons, %.0f per call" % (label, n, used, used / max(1, n)))
+    return ok
 
 
 _spent: list = []
@@ -107,6 +113,6 @@ ai.spend = _spent.append
 if __name__ == "__main__":
     if "--yes" not in sys.argv:
         sys.exit("This calls the real model and spends part of the day's free allowance. Re-run with --yes.")
-    results = [extraction(), grading()]
-    neurons_report()
+    results = [measured("extraction", extraction), measured("grading", grading)]
+    print("neurons spent this run: %.0f" % sum(_spent))
     sys.exit(0 if all(results) else 1)

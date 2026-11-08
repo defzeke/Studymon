@@ -5,28 +5,33 @@ what it sends, keeps or shows, update this page, `site/privacy.html` and `GameSt
 in the same change ([`rules.md`](rules.md) §2). The Play Console's form wording changes, so re-read
 each question when you fill it in. Where an answer below doesn't fit the form, the code wins.
 
-Status: **drafted 2026-11-09, not yet submitted.** The pages in `site/` go live once GitHub Pages is
-turned on ([`tasks.md`](tasks.md) D5).
+Status: **drafted 2026-11-09, not yet submitted.** The pages in `site/` are not online yet. They go
+up with Cloudflare Pages *Direct Upload* ([`backend-next-steps.md`](backend-next-steps.md) step 6).
 
 ---
 
 ## 1. Public pages (`site/`)
 
-Static HTML with no scripts, fonts or trackers, deployed by `.github/workflows/pages.yml` on a push to
-`main` or `world-assets` that touches `site/`, or by hand (*Actions → Pages → Run workflow*).
+The pages are static HTML with no scripts, fonts or trackers. They are hosted on **Cloudflare Pages
+by Direct Upload**:
+- It uses the same free Cloudflare account as the AI.
+- It needs no access to the GitHub repository's settings.
+- Nothing deploys them automatically. After changing `site/`, upload the folder again.
 
-| Page | URL once live | Used by |
+| Page | URL once live (`<project>` is the Pages project's name) | Used by |
 |---|---|---|
-| `site/privacy.html` | `https://defzeke.github.io/Studymon/privacy.html` | `PRIVACY_URL` in `scripts/ui/settings.gd`, Play Console → App content → Privacy policy |
-| `site/terms.html` | `https://defzeke.github.io/Studymon/terms.html` | `TERMS_URL` |
-| `site/support.html` | `https://defzeke.github.io/Studymon/support.html` | `SUPPORT_URL`, the store listing's website |
-| `site/index.html` | `https://defzeke.github.io/Studymon/` | the store listing's website |
+| `site/privacy.html` | `https://<project>.pages.dev/privacy.html` | `PRIVACY_URL` in `scripts/ui/settings.gd`, Play Console → App content → Privacy policy |
+| `site/terms.html` | `https://<project>.pages.dev/terms.html` | `TERMS_URL` |
+| `site/support.html` | `https://<project>.pages.dev/support.html` | `SUPPORT_URL`, the store listing's website |
+| `site/index.html` | `https://<project>.pages.dev/` | the store listing's website |
 
-**One-time setup:**
-- GitHub → Settings → Pages → Source: **GitHub Actions**.
-- The `github-pages` environment only deploys from allowed branches. If the run from `world-assets`
-  is refused, go to Settings → Environments → `github-pages` and add that branch, or merge `site/`
-  to `main` first.
+**Upload:**
+1. Cloudflare dashboard → Workers & Pages → Create application → Pages → **Upload assets**.
+2. Name the project (for example `studymon`), then drop the `site/` folder in.
+3. Later updates: open the project, Create deployment, and drop the folder again.
+
+A Direct Upload project cannot be switched to Git deploys later; that would mean a new project
+([Cloudflare: Direct Upload](https://developers.cloudflare.com/pages/get-started/direct-upload/)).
 
 **Contact:** the pages send people to the developer email shown on the Play listing. Google requires
 that email anyway, so no address is written in the repo.

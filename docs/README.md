@@ -30,6 +30,7 @@ Where the two disagree, the docs say so explicitly.
 | Change a screen or add art | [`ui-and-assets.md`](ui-and-assets.md) |
 | Wire the real backend | [`api-backend.md`](api-backend.md) |
 | Fill in the Play Console, or change the privacy / terms / support pages in `site/` | [`store-listing.md`](store-listing.md) |
+| **Pick up the backend work** (Cloudflare, evals, Render, policy pages) | [`backend-next-steps.md`](backend-next-steps.md) |
 | **Fix something that is broken** | [`known-issues.md`](known-issues.md) |
 | See plan-vs-reality per phase | [`build-plan-status.md`](build-plan-status.md) |
 

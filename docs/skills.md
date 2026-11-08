@@ -61,8 +61,8 @@ $GODOT = "C:\Users\Mary\Tools\Godot_4.7.2\Godot_v4.7.2-stable_win64_console.exe"
 
 **Expected noise** (not new failures): `ObjectDB instances leaked at exit`, `1 resources still in
 use at exit` when `--quit-after` ends a scene mid-tween, and the rig warnings listed as issues #3 and
-#12 in [`known-issues.md`](known-issues.md). Headless `splash.tscn` / `loading.tscn` / `session_list.tscn` runs also fail the
-scene they load in the background (issue #22); check the boot chain and Play windowed instead. Anything else is
+#12 in [`known-issues.md`](known-issues.md). Headless `splash.tscn` / `loading.tscn` / `session_list.tscn` / `world_intro.tscn` runs also fail
+the scene they load in the background (issue #22); check the boot chain and Play windowed instead. Anything else is
 a regression.
 
 **Optional backend check** (only when working in `backend/`):

@@ -148,7 +148,9 @@ Running `splash.tscn` or `loading.tscn` **headless** fails the scene each one lo
 (`ResourceLoader.load_threaded_request`): a `preload()` in that scene's scripts reports
 `Could not preload resource file …` (a different file from run to run: `loading_screen_logo.png`,
 `kuiz_look.gd`'s costumes, `sky_jump.gd`'s backdrops), so `loading.tscn` or `peek.tscn` fails to
-parse. All those files are committed and import cleanly. The same scenes run on their own, and the
+parse. `world_intro.tscn` does the same with `region_map.tscn` (its root script fails to load on the
+loading thread). Rechecked 2026-11-09: headless still fails, while windowed the boot chain reaches
+`peek.tscn` in about 12 s and the world intro reaches the map in about 6 s, with no errors. All those files are committed and import cleanly. The same scenes run on their own, and the
 same chain run **windowed**, load without errors. Reproduced on an untouched `git archive HEAD`
 copy (2026-10-26), so it predates the editor-UI pass.
 

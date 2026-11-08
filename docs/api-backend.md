@@ -318,9 +318,12 @@ The server only logs the report (`log.warning`); read reports in the host's log 
 
 ### Still needed before release
 
-- A Cloudflare account and token, and an eval run against Gemma
-  ([`launch-plan.md`](launch-plan.md) §5).
-- Deploy on Render, then set `RELEASE_URL` and the policy URLs in `settings.gd` before exporting.
-- Read Cloudflare's Self-Serve Subscription Agreement and the Workers AI terms for anything on apps
-  used by teens ([`launch-plan.md`](launch-plan.md) §1).
-- Later: Play Integrity, so only the real app can call the server.
+Step by step in [`backend-next-steps.md`](backend-next-steps.md):
+1. A Cloudflare account and token, and a check of Cloudflare's terms for a 13+ app.
+2. A local run against the real model.
+3. The eval run, prompt tuning, and the measured neurons recorded here (§3).
+4. The Render deploy and the `X-Forwarded-For` limit test (§6).
+5. `RELEASE_URL` in `api.gd`.
+6. The policy pages on Cloudflare Pages, and their URLs in `settings.gd`.
+
+Later: Play Integrity, so only the real app can call the server.
