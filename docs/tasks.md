@@ -10,14 +10,13 @@ Last updated: 2026-11-09.
 
 ## In flight
 
-Uncommitted, for the maintainer to commit: **C3**. `.github/workflows/checks.yml` runs three checks
-on every push and pull request (#20):
-- `tests/gates.sh`: the headless Godot gates on Linux;
-- `pytest backend/tests`;
-- `tests/links.sh`.
+Uncommitted, for the maintainer to commit: both workflows move off the actions that GitHub warns still
+target Node 20.
+- `checks.yml`: `setup-python@v7`, `cache@v6`.
+- `pages.yml`: `configure-pages@v6`, `upload-pages-artifact@v5`, `deploy-pages@v5`.
 
-Checked locally on a fresh `git archive` copy, where all 7 gates pass and a planted parse error fails
-the run. The first run on GitHub is still to watch.
+C3's CI is committed (`67c5b08`). Its first run on GitHub passed all three jobs: the 7 Linux gates,
+the backend tests and the links.
 
 The C2 pages are committed (`1166a6c`). Their first deploy failed only because Pages is not turned on
 yet (D5). Re-run it after D5 from Actions → Pages → Run workflow.
@@ -48,7 +47,7 @@ maintainer's commit. The researched background is in [`launch-plan.md`](launch-p
 |---|---|
 | C1 | ~~Record this plan; debounce saves (#14)~~ (`fa01fdd`) |
 | C2 | ~~Privacy, terms and support pages in `site/` on GitHub Pages; [`store-listing.md`](store-listing.md)~~ (`1166a6c`). URLs once live: `https://defzeke.github.io/Studymon/privacy.html`, `…/terms.html`, `…/support.html` |
-| C3 | ~~GitHub Actions: the headless gates, `backend/tests` and the docs' links on every push (#20)~~ (uncommitted, above). The splash, loading and Worlds screens stay out until #22 is fixed |
+| C3 | ~~GitHub Actions: the headless gates, `backend/tests` and the docs' links on every push (#20)~~ (`67c5b08`, first run green). The splash, loading and Worlds screens stay out until #22 is fixed |
 | C4 | A bigger eval set in `backend/evals/` (8–10 reviewers): table-heavy, long, Filipino, math, very short. Plus more grading cases: partial, off-topic, injection |
 
 **D — Accounts (the maintainer; start now, alongside C):**
@@ -94,6 +93,9 @@ Hygiene: #22, find why the headless boot chain fails its threaded loads.
    terms rules out a 13+ app before launch ([`launch-plan.md`](launch-plan.md) §1).
 
 ## Done
+
+- **2026-11-09** — C3 (`67c5b08`): GitHub Actions runs `tests/gates.sh` (the headless gates on
+  Linux), `pytest backend/tests` and `tests/links.sh` on every push (#20). The first run passed.
 
 - **2026-11-09** — C2 (`1166a6c`): the privacy, terms and support pages in `site/` with a Pages
   workflow, [`store-listing.md`](store-listing.md), and the consent text naming Identification
