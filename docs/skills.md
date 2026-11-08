@@ -201,6 +201,38 @@ Inspector; no code changes.
 4. Add new art to the inventory in [`ui-and-assets.md`](ui-and-assets.md), and new prices to
    [`systems/monetization.md`](systems/monetization.md).
 
+## Export for Android with Play Games
+
+Cloud saves (`CloudSave`, [`data-model.md`](data-model.md) §8) need the Google Play Games plugin in
+`addons/GodotPlayGameServices/` (v3.4.0, MIT) and this one-time setup. Off Android nothing here
+matters: the editor and the headless gates never touch the plugin.
+
+1. **Play Console** (Google Play registration, $25 once):
+   - Create the app with **App type: Game**.
+   - Under Play Games Services, create the project and **turn on Saved Games**. Without it every
+     snapshot call fails.
+   - Copy the **Game ID**.
+2. **OAuth clients:** in the linked Google Cloud project, add an **Android OAuth client** for each
+   signing key: the debug keystore, your upload key, and the Play app-signing key (Play Console →
+   Release → Setup → App signing). Each one needs the package name and the key's SHA-1.
+3. **Testers:** if sign-in reports a consent-screen error, set the Cloud project's audience to External
+   (Testing) and add the test accounts.
+4. **Editor:**
+   - Project → Install Android Build Template.
+   - Check that Project Settings → Plugins has **GodotPlayGameServices** enabled.
+   - Project → Export → Add Android, then turn on **Use Gradle Build**.
+   - Set `godot_play_game_services/game_id` to the Game ID.
+   - Turn on **User Data Backup** (Android's own backup is a second safety net).
+   - Set the release keystore. Keep the keystore file out of git: Godot keeps its passwords in
+     `.godot/export_credentials.cfg`.
+5. **Check on a phone** (internal testing):
+   - Silent sign-in, and Settings shows "Saved to your Google account".
+   - Play, close the app, and see the save in Play Games.
+   - Uninstall and reinstall, and check it restores.
+   - On a second device, get the "Save found in your Google account" question.
+   - Play in airplane mode and check it syncs later.
+   - "Delete my data" removes the cloud copy.
+
 ## Use the real study server
 
 The editor, the headless gates and debug exports run on the mock (`Api.MOCK` is

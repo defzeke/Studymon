@@ -1,14 +1,15 @@
 # Data model
 
-Everything persistent lives in one JSON file. There is no database, no `Resource`-based save, and
-no cloud sync.
+Everything persistent lives in one JSON file. There is no database and no `Resource`-based save; on
+Android a copy of the file is kept in the player's Google Play Games Saved Games (§8).
 
 - **Path:** `user://studymon_save.json`
 - **Written by:** `SaveManager.save_game()` — `scripts/autoload/save_manager.gd`
 - **Read by:** `SaveManager.load_game()` — `scripts/autoload/save_manager.gd`
-- **Schema tag:** `"v": 16` (v16 stops writing `codex`, `bond` and `active_region_id`, which nothing read; an older save's keys are ignored on load; v15 keys `session.mastery` by question id (`"topic_id:question_id"`; v14 index keys `"topic_id:<index>"` are rekeyed on load) and adds `tutorial_done` (a save with a `player_name` but no flag loads as done) and `ai_consent`, and stops writing `campaign_ready` / `campaign_unlocked_flag` (the removed Level 5 gate) and the global `explorer` (now per world, `topics[].explorer`), all ignored on load; v14 keys `cleared_houses` per house, `"topic_id:gym_type#house_id"`, and `best_stars` house runs `"house:topic_id:gym_type#house_id"`; a v13 house key without an id still counts toward its type; v13 replaced `session.cleared_trainers` with `cleared_houses` and added `best_stars`; a gym cleared before counts as its house cleared; v12 dropped the `monetization` block with the weekly AI limit; an older save's block is ignored; v11 added `explorer`; v10 added `battery_health` and replaced `costume` with `outfit`; a v9 `costume` loads into its slot; v9 added `dirt` and `costume`; v8 added `hunger`, `health` and `crystals`; v7 added `player_name` and `food_stock`; older saves load with defaults)
+- **Schema tag:** `"v": 17` (v17 adds `saved_at`, unix seconds of the last write, which `CloudSave` compares with the cloud copy; older saves load it as 0; v16 stops writing `codex`, `bond` and `active_region_id`, which nothing read; an older save's keys are ignored on load; v15 keys `session.mastery` by question id (`"topic_id:question_id"`; v14 index keys `"topic_id:<index>"` are rekeyed on load) and adds `tutorial_done` (a save with a `player_name` but no flag loads as done) and `ai_consent`, and stops writing `campaign_ready` / `campaign_unlocked_flag` (the removed Level 5 gate) and the global `explorer` (now per world, `topics[].explorer`), all ignored on load; v14 keys `cleared_houses` per house, `"topic_id:gym_type#house_id"`, and `best_stars` house runs `"house:topic_id:gym_type#house_id"`; a v13 house key without an id still counts toward its type; v13 replaced `session.cleared_trainers` with `cleared_houses` and added `best_stars`; a gym cleared before counts as its house cleared; v12 dropped the `monetization` block with the weekly AI limit; an older save's block is ignored; v11 added `explorer`; v10 added `battery_health` and replaced `costume` with `outfit`; a v9 `costume` loads into its slot; v9 added `dirt` and `costume`; v8 added `hunger`, `health` and `crystals`; v7 added `player_name` and `food_stock`; older saves load with defaults)
 - **Loaded:** once at boot, deferred from `SaveManager._ready`
 - **Format:** `JSON.stringify` of a single `Dictionary`, pretty-print off
+- **Cloud copy:** on Android, the same JSON in the player's Google Play Games Saved Games (§8)
 
 The build plan originally proposed `Resource`-based saves; the implementation uses JSON instead.
 That is fine for the current scope but means there is **no type safety and no automatic migration**.
@@ -19,7 +20,8 @@ That is fine for the current scope but means there is **no type safety and no au
 
 ```jsonc
 {
-  "v": 16,
+  "v": 17,
+  "saved_at": 1762600000, // v17: when this save was written (unix seconds); missing loads as 0
 
   // CompanionState.to_dict()
   "level": 1,
@@ -79,7 +81,8 @@ Field-by-field:
 
 | Field | Type | Written from | Notes |
 |---|---|---|---|
-| `v` | int | `SaveManager.SAVE_VERSION` (16) | Not compared on load; Import refuses a newer one — see §6 |
+| `v` | int | `SaveManager.SAVE_VERSION` (17) | Not compared on load; Import refuses a newer one — see §6 |
+| `saved_at` | int | `SaveManager.saved_at` | Unix seconds of the write (v17). The newer of this and the cloud copy's wins (§8) |
 | `level` | int | `CompanionState.level` | 1 and up, no cap |
 | `xp` | int | `CompanionState.xp` | Lifetime XP, not per-level |
 | `energy` / `focus` / `mood` | float | `CompanionState` | 0–100, clamped on mutation |
@@ -217,3 +220,37 @@ Behaviour worth knowing:
 `load_once()` set the flag), so a scene run on its own can never overwrite the real save with
 defaults. Mastery, cleared gyms and trainers, Champion wins, XP and new topics now persist at the
 moment they change. Mastery changed outside a battle (none today) would still wait for the next save.
+
+---
+
+## 8. The cloud copy (Google Play Games Saved Games)
+
+`CloudSave` (`scripts/autoload/cloud_save.gd`, Android only) keeps a copy of the save file. It is a
+Play Games **snapshot** named `studymon` in the player's Google Drive app folder, which the player
+never sees, and the data counts against their Drive quota, not ours. The game runs no accounts and no
+server storage of its own. It uses the `godot-play-game-services` plugin (`addons/`, v3.4.0, MIT).
+
+| When | What happens |
+|---|---|
+| Boot, signed in (silently, or with Settings' **Sign in**) | `load_game("studymon")`, then compare `saved_at` |
+| No cloud copy, an unreadable one, or one not newer | keep the phone's save; upload it if the tutorial is done |
+| Cloud newer, and this phone is a **new install** (tutorial not done) | restore it silently (`SaveManager.replace_with()`, the same checks as Import) |
+| Cloud newer, and this phone has progress | home asks once: **Use it** (restore) or **Keep this phone's** (upload) |
+| The load fails (no network) | nothing is uploaded this session; it tries again when the app resumes |
+| Every `SaveManager.save_game()` | an upload is due: at most one per 60 s, and at once on app pause or close |
+| Settings' **Delete my data** | the snapshot is deleted too |
+| Settings' **Import** | the imported save is written again, so it is the newest copy and replaces the cloud one |
+
+Rules that protect progress:
+- **Nothing is uploaded until the cloud copy has been compared.** A fresh install never overwrites a
+  player's progress.
+- Each upload's Play Games *progress value* is its `saved_at`, so when two devices conflict, Play
+  Games' "highest progress" rule keeps the newest. A conflict it cannot settle itself reaches
+  `conflict_emitted`, and the copy with the newer `saved_at` wins.
+- A snapshot holds up to 3 MB. Above 2.5 MB the uploaded copy leaves out each world's `source_text`,
+  which only "More questions" uses; the phone keeps it.
+- Saves stay local first: playing offline works as before, and Play Games syncs a cached upload when
+  the phone reconnects.
+
+Setup (Play Console, OAuth clients, the export's Game ID): [`skills.md`](skills.md)
+§*Export for Android with Play Games*.

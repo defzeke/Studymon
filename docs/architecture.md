@@ -65,8 +65,9 @@ res://
 │   ├── theme/            app_theme.tres (the one shared Theme)
 │   └── sprites/          boot/, effects/, props/, rooms/, battle/, ui/
 ├── scripts/
-│   ├── autoload/         the 6 autoloads: save_manager.gd, game_state.gd, api.gd,
-│   │                     companion_state.gd, session_manager.gd, music_manager.gd
+│   ├── autoload/         our 6 script autoloads: save_manager.gd, game_state.gd, api.gd,
+│   │                     companion_state.gd, session_manager.gd, music_manager.gd; and
+│   │                     cloud_save.gd (the CloudSave autoload scene's script)
 │   ├── audio/            synth.gd, clip_voice.gd (model sounds made in code)
 │   ├── battle/           battle.gd, arena_stage.gd, broken_bot_voice.gd
 │   ├── data/             food_item.gd, costume.gd, sky_zone.gd, season_look.gd (the Resource classes)
@@ -79,7 +80,10 @@ res://
 │       ├── boot/         splash.gd, loading.gd, peek.gd, tutorial.gd
 │       ├── minigames/    minigame.gd, soccer.gd, sky_jump.gd (Playroom games)
 │       └── widgets/      confirm_modal.gd (ConfirmModal), stat_gauge.gd, music_toggle.gd
+├── addons/GodotPlayGameServices/   the Google Play Games plugin (v3.4.0, MIT; Android .aar files and its
+│                                  GDScript clients), used for cloud saves
 ├── scenes/
+│   ├── autoload/         cloud_save (the CloudSave autoload: the plugin's SignIn, Snapshots, Players nodes)
 │   ├── battle/           battle
 │   ├── kuiz/             kuiz_head (dirt decals and outfit stickers on Kuiz's Head bone)
 │   ├── overworld/        world_intro, region_map, encounter_trigger, house_trigger, gym_burst,
@@ -112,6 +116,8 @@ Declared in this order (Godot instantiates top-down, so earlier autoloads are `_
 | 4 | `CompanionState` | `scripts/autoload/companion_state.gd` | care stats, XP/level, the focus timer |
 | 5 | `SessionManager` | `scripts/autoload/session_manager.gd` | worlds, extraction, houses / gyms / Champion, runs and the battle handoff, mastery, flashcards |
 | 6 | `MusicManager` | `scripts/autoload/music_manager.gd` | every music track (boot, home, focus lullabies, map, battle), one-shot SFX |
+| 7 | `GodotPlayGameServices` | `addons/GodotPlayGameServices/scripts/autoloads/godot_play_game_services.gd` | the Play Games plugin's entry point (third-party, MIT, v3.4.0); only `CloudSave` uses it |
+| 8 | `CloudSave` | `scenes/autoload/cloud_save.tscn` (`scripts/autoload/cloud_save.gd`) | the save's copy in the player's Google Play Games Saved Games; Android only ([`data-model.md`](data-model.md) §8) |
 
 ```text
                         ┌──────────────┐
@@ -256,5 +262,13 @@ operation must pick a unique `job_id` or it will be consumed by the wrong listen
 **The save is read at boot**, by a deferred `SaveManager.load_once()` from its `_ready()`. A first-time companion starts from
 `CompanionState`'s own defaults (level 1, energy 80, focus 70, mood 75).
 
-There is no login, no token exchange, and no read of `GameState.user_id` anywhere in the codebase —
+**On Android, `CloudSave` signs in to Google Play Games at boot** (silently, when the player already
+uses it) and loads the cloud copy:
+- On a new install it restores silently.
+- When the cloud copy is newer than this phone's progress, home asks which to keep.
+- Otherwise the phone's save is uploaded.
+
+Off Android it does nothing. See [`data-model.md`](data-model.md) §8.
+
+There is no login of our own (only the player's Google Play Games profile), no token exchange, and no read of `GameState.user_id` anywhere in the codebase —
 the auth layer described in Phase 1 was deliberately skipped (`loading.gd:2`).

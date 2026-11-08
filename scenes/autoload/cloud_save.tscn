@@ -1,0 +1,18 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/autoload/cloud_save.gd" id="1_cloud"]
+[ext_resource type="Script" path="res://addons/GodotPlayGameServices/scripts/sign_in/sign_in_client.gd" id="2_sign_in"]
+[ext_resource type="Script" path="res://addons/GodotPlayGameServices/scripts/snapshots/snapshots_client.gd" id="3_snapshots"]
+[ext_resource type="Script" path="res://addons/GodotPlayGameServices/scripts/players/players_client.gd" id="4_players"]
+
+[node name="CloudSave" type="Node"]
+script = ExtResource("1_cloud")
+
+[node name="SignIn" type="Node" parent="."]
+script = ExtResource("2_sign_in")
+
+[node name="Snapshots" type="Node" parent="."]
+script = ExtResource("3_snapshots")
+
+[node name="Players" type="Node" parent="."]
+script = ExtResource("4_players")

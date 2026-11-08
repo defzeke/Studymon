@@ -23,6 +23,8 @@ Api="*res://scripts/autoload/api.gd"
 CompanionState="*res://scripts/autoload/companion_state.gd"
 SessionManager="*res://scripts/autoload/session_manager.gd"
 MusicManager="*res://scripts/autoload/music_manager.gd"
+GodotPlayGameServices="*uid://b51ln7826yf4a"
+CloudSave="*res://scenes/autoload/cloud_save.tscn"
 
 [display]
 
@@ -31,6 +33,10 @@ window/size/viewport_height=1280.0
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
 window/handheld/orientation=1
+
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/GodotPlayGameServices/plugin.cfg")
 
 [gui]
 

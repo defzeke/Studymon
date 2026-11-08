@@ -10,7 +10,9 @@ Last updated: 2026-11-08.
 
 ## In flight
 
-Uncommitted, for the maintainer to commit: **Phase B** of the 2026-11-08 plan. The study server's AI
+Uncommitted, for the maintainer to commit: **Phase A** of the 2026-11-08 plan. The Google Play Games plugin (`addons/GodotPlayGameServices/`, v3.4.0, MIT), the `CloudSave` autoload (an Android-only copy of the save in the player's Play Games Saved Games; save v17 adds `saved_at`), Settings' cloud row, and cloud delete. Checked by the Godot gates and an 11-check merge harness; **not yet tested on a phone** (it needs the Play Console Game ID and an Android export preset, [`skills.md`](skills.md) §*Export for Android with Play Games*).
+
+Committed earlier: **Phase B** of the 2026-11-08 plan. The study server's AI
 moves from Claude to **Gemma 4 on Cloudflare Workers AI** (free 10,000 neurons a day) behind any
 OpenAI-compatible endpoint, with a daily neuron budget, scanned PDFs as page images, and `offline`
 fallbacks (questions written on the device, essays graded offline); `render.yaml` deploys it free on

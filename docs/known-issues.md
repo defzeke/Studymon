@@ -107,7 +107,8 @@ question in every topic, so it grows with the content the player uploads. On mob
 synchronous `FileAccess` write per tap.
 
 **Fix:** debounce (e.g. save at most once every 5 s, plus on `NOTIFICATION_WM_CLOSE_REQUEST` /
-`NOTIFICATION_APPLICATION_PAUSED`).
+`NOTIFICATION_APPLICATION_PAUSED`). The cloud copy is already limited that way (`CloudSave`: at most one
+upload a minute, and at once on pause or close); the local write still happens per tap.
 
 ---
 

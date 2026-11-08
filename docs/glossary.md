@@ -17,6 +17,7 @@ Terms used throughout this repo, in the sense this repo means them.
 | **XP curve** | `CompanionState.xp_to_reach(lv)`: 20 XP for Level 2, then 5 more per level (Level 5 at 110, Level 6 at 150); no cap. |
 | **Pomodoro** | The 25-minute focus / 5-minute rest timer. Missing the rest costs energy and mood; finishing it grants a small bonus. |
 | **Decay** | The per-second stat drain in `CompanionState._process`. It runs on every screen because the autoload is always alive. |
+| **Cloud save** | The save's copy in the player's **Google Play Games Saved Games** (a snapshot named `studymon` in their Google Drive app folder), kept by the `CloudSave` autoload on Android. The file on the phone stays the source of truth; the newer `saved_at` wins. No accounts of our own. |
 | **Palette** | `scripts/ui/palette.gd` (`class_name Palette`): the canonical colours as constants (`Palette.TEAL`, `Palette.SLATE` …). Code that needs a palette colour uses it instead of a hex literal. |
 | **Data resources** | The tuning tables as `.tres` files in `assets/data/`, one per item, edited in the Inspector: `FoodItem` (`foods/`, on the Home node's `foods`), `Costume` (`costumes/`, on the Look node's `costumes`), `SkyZone` (`sky_zones/`, on SkyJumpHud's `zones`) and `SeasonLook` (`seasons/`, on the region map's Season node). Their classes are in `scripts/data/`. A food's or costume's `id` is saved, so it never changes. |
 

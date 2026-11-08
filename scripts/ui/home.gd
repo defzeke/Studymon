@@ -260,6 +260,14 @@ func start() -> void:
 			var away := -SLIDE_IN if rest_y < _view().y / 2.0 else SLIDE_IN
 			create_tween().tween_property(c, "position:y", rest_y, SLIDE_TIME).from(rest_y + away).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	await peek.to_room_pose()
+	# A newer save in the player's Google account: ask which one to keep, now or when it arrives.
+	CloudSave.offer_choice(self)
+	if not CloudSave.choice_ready.is_connected(_on_cloud_choice):
+		CloudSave.choice_ready.connect(_on_cloud_choice)
+
+func _on_cloud_choice() -> void:
+	if visible and _game == null:
+		CloudSave.offer_choice(self)
 
 func _go(step: int) -> void:
 	if _can_walk():

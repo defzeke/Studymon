@@ -21,7 +21,7 @@ Made by the maintainer:
 | Audience | **13+** (students, teens, adults). Children under 13 would add COPPA, Apple Kids Category and Google Families work and roughly double the compliance scope |
 | Platforms | **Android first** (decided 2026-11-08); iOS later |
 | Every tool free | (decided 2026-11-08) The one accepted cost is the Google Play registration ($25 once) |
-| Login | **No accounts of our own.** Saves sync to the player's **Google Play Games Saved Games** (their Google Drive app folder). Decided 2026-11-08, replacing "device only" from 2026-10-29. *Planned, not built yet:* the 2026-11-08 plan, Phase A. Settings keeps Export / Import save and "Delete my data" |
+| Login | **No accounts of our own.** Saves sync to the player's **Google Play Games Saved Games** (their Google Drive app folder). Decided 2026-11-08, replacing "device only" from 2026-10-29. *Built, not yet tested on a phone* (`CloudSave`, [`data-model.md`](data-model.md) §8). Settings keeps Export / Import save and "Delete my data" |
 | Purchases | **v1: free launch** (decided 2026-10-29): the placeholder Crystal Shop was removed; in-app purchases come in a later update |
 | AI model | **Gemma 4 26B on Cloudflare Workers AI** (decided 2026-11-08), free up to 10,000 neurons a day, for questions and grading; offline fallbacks when it is spent ([`api-backend.md`](api-backend.md) §3) |
 | Hosting | **Render's free web service** (decided 2026-11-08, `render.yaml`): no card, sleeps after 15 idle minutes |
