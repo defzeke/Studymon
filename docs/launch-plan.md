@@ -73,7 +73,7 @@ Ranked by leverage for a store launch:
 | Google | Generative-AI policy: an in-app way to report or flag offensive AI content without leaving the app | A Report button on generated questions and on essay feedback, sent to `POST /v1/reports` (done) |
 | Google | Data safety form; account-deletion URL plus in-app deletion | No accounts: declare that nothing is stored server-side and that "Delete my data" erases the local save |
 | Google | New personal developer accounts: a closed test with at least 12 testers opted in for 14 days before production (organisation accounts are reportedly exempt) | Put a minimal build into closed testing early; recruit 15–20 testers to absorb dropouts |
-| Both | Privacy policy, terms and a support URL; Apple privacy labels, Google Data safety answers | Static pages (Vercel static hosting is a good fit); answers must match what the backend really collects |
+| Both | Privacy policy, terms and a support URL; Apple privacy labels, Google Data safety answers | Static pages in `site/` on GitHub Pages (free; the repo is public). The answers must match what the backend really collects ([`store-listing.md`](store-listing.md)) |
 | Apple | iOS export needs macOS with Xcode (Godot docs) | A macOS CI runner (GitHub Actions or Codemagic) builds, signs and uploads to TestFlight |
 
 Sources (checked while planning; re-check the exact wording when the work starts):

@@ -29,6 +29,7 @@ Where the two disagree, the docs say so explicitly.
 | Work on crystals, purchases or usage limits | [`systems/monetization.md`](systems/monetization.md) |
 | Change a screen or add art | [`ui-and-assets.md`](ui-and-assets.md) |
 | Wire the real backend | [`api-backend.md`](api-backend.md) |
+| Fill in the Play Console, or change the privacy / terms / support pages in `site/` | [`store-listing.md`](store-listing.md) |
 | **Fix something that is broken** | [`known-issues.md`](known-issues.md) |
 | See plan-vs-reality per phase | [`build-plan-status.md`](build-plan-status.md) |
 

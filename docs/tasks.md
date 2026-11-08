@@ -10,9 +10,14 @@ Last updated: 2026-11-09.
 
 ## In flight
 
-Uncommitted, for the maintainer to commit: **C1**. Gameplay saves are debounced to one write every 5 s,
-and written at once on pause or close (issue #14, [`data-model.md`](data-model.md) §7). This register
-now lists the plan through to release.
+Uncommitted, for the maintainer to commit: **C2**.
+- The privacy policy, terms and support pages are in `site/`. `.github/workflows/pages.yml` publishes
+  them to GitHub Pages.
+- `docs/store-listing.md` has the Data safety answers, the content rating, the listing text, the review
+  notes and the graphics list.
+- The AI consent text now also names Identification near-misses, which the server grades.
+
+The pages go live after D5. Their URLs then go into `settings.gd` (E3).
 
 Phases A and B of the 2026-11-08 plan are committed, but neither has met the real world yet:
 - **A, cloud saves** (`6415399`): not tried on a phone. It needs the Play Console Game ID and an Android
@@ -38,8 +43,8 @@ maintainer's commit. The researched background is in [`launch-plan.md`](launch-p
 
 | Step | Item |
 |---|---|
-| C1 | ~~Record this plan; debounce saves (#14)~~ (uncommitted, above) |
-| C2 | Privacy, terms and support pages in `site/`, deployed by a GitHub Pages workflow (the repo is public, so it is free). Plus `docs/store-listing.md`: the Data safety answers, the content rating, the store text, the review notes and a sample reviewer, the screenshot list. Expected URLs: `https://defzeke.github.io/Studymon/privacy.html`, `…/terms.html`, `…/support.html` |
+| C1 | ~~Record this plan; debounce saves (#14)~~ (`fa01fdd`) |
+| C2 | ~~Privacy, terms and support pages in `site/` on GitHub Pages; [`store-listing.md`](store-listing.md)~~ (uncommitted, above). URLs once live: `https://defzeke.github.io/Studymon/privacy.html`, `…/terms.html`, `…/support.html` |
 | C3 | GitHub Actions: `pytest backend/tests` and the headless Godot gates on every push (#20). `splash.tscn` stays out until #22 is fixed |
 | C4 | A bigger eval set in `backend/evals/` (8–10 reviewers): table-heavy, long, Filipino, math, very short. Plus more grading cases: partial, off-topic, injection |
 
@@ -51,7 +56,7 @@ maintainer's commit. The researched background is in [`launch-plan.md`](launch-p
 | D2 | Recruit **15–20 closed testers** now: Google's 14-day test is the longest wait |
 | D3 | Cloudflare: a free account, its Account ID and a Workers AI token. Read its terms for the 13+ question (decision 2 below) |
 | D4 | A free Render account, connected to the GitHub repo |
-| D5 | GitHub → Settings → Pages → Source: **GitHub Actions** (for C2) |
+| D5 | GitHub → Settings → Pages → Source: **GitHub Actions** (for C2). If the deploy from `world-assets` is refused, add that branch under Settings → Environments → `github-pages` ([`store-listing.md`](store-listing.md) §1) |
 
 **E — With the accounts (together):**
 
@@ -86,6 +91,9 @@ Hygiene: #22, find why the headless boot chain fails its threaded loads.
    terms rules out a 13+ app before launch ([`launch-plan.md`](launch-plan.md) §1).
 
 ## Done
+
+- **2026-11-09** — C1 (`fa01fdd`): gameplay saves are debounced to one write every 5 s (#14), and this
+  register lists the plan to release.
 
 - **2026-11-08** — Phase A, cloud saves (`6415399`): the Google Play Games plugin
   (`addons/GodotPlayGameServices/`, v3.4.0, MIT) and the `CloudSave` autoload, an Android-only copy of

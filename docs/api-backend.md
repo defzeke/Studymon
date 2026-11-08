@@ -264,7 +264,9 @@ questions.
 - Settings can withdraw it (`GameState.ai_consent`, saved).
 - Without consent, `upload_reviewer()` and `grade_battle_question()` fail at once on the real path,
   so essays grade on the device.
-- The text must stay true to what the server sends.
+- The text must stay true to what the server sends: reviewer text, files and photos, and the
+  battle answers the device cannot settle (essays, and Identification near-misses). So must
+  `site/privacy.html` ([`store-listing.md`](store-listing.md) §1).
 
 **Daily neuron budget.** The free allowance is shared by every player, so `main.py` meters it:
 - Each model call reports the neurons it used (`ai.spend` → `main.spend`, from the reply's token
