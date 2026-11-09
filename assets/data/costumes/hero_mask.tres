@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="Costume" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/costume.gd" id="1_wvri4"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/costume_hero_mask.svg" id="2_kt8h8"]
+
+[resource]
+script = ExtResource("1_wvri4")
+id = "hero_mask"
+display_name = "Hero mask"
+texture = ExtResource("2_kt8h8")
+slot = "face"
+level_needed = 6
+price = 150
+position = Vector3(0, -0.14, 1.1)
+width = 2.0

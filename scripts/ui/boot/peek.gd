@@ -19,8 +19,8 @@ const READ_LOOP_FROM := 1.1
 const READ_LOOP_TO := 2.35
 const READ_SPEED := 0.6
 const BLEND_TIME := 0.18
-const INK := Color("29383A")
 const FLAT_SELF_LIT := 0.85
+const INK_OUTLINE: StandardMaterial3D = preload("res://assets/materials/ink_outline.tres")
 # 8.6 * tan(12°): visible half-height of the artifact framing the peek clip was authored for.
 const AUTHORED_HALF_HEIGHT := 1.828
 const HEAD_REST_Y := 0.9
@@ -220,7 +220,7 @@ func _reveal() -> void:
 # Home from the map: the room dissolves in from the colour the house scene faded to.
 func _dissolve_in() -> void:
 	var cover: ColorRect = %BootWhite
-	cover.color = Color("F7F5EF")
+	cover.color = Palette.OFF_WHITE
 	cover.show()
 	await get_tree().process_frame
 	await get_tree().process_frame
@@ -399,12 +399,8 @@ func _apply_extras(mat: BaseMaterial3D) -> void:
 	if extras.get("blend", "") == "additive":
 		mat.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
 
-# Inverted hull: the mesh grown along its normals, front faces culled, so only the rim shows.
+# The ink outline (assets/materials/ink_outline.tres, an inverted hull) at `width`.
 func _ink(width: float) -> StandardMaterial3D:
-	var mat := StandardMaterial3D.new()
-	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	mat.cull_mode = BaseMaterial3D.CULL_FRONT
-	mat.grow = true
+	var mat := INK_OUTLINE.duplicate() as StandardMaterial3D
 	mat.grow_amount = width
-	mat.albedo_color = INK
 	return mat

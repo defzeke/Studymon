@@ -5,7 +5,22 @@ behind it.
 
 ## Verify a change
 
-This repo has no test framework and no CI. Verification is a headless Godot run.
+There is no unit-test framework. Verification is a headless Godot run, plus `backend/tests` for the
+server. **CI runs the same checks** on every push and pull request
+(`.github/workflows/checks.yml`):
+- `tests/gates.sh`: the import, then peek, battle, region map, World Builder, flashcards and Settings,
+  on Linux. A fresh clone gets two warm-up imports first.
+- `pytest backend/tests` on Python 3.12.
+- `tests/links.sh`.
+
+Read a failure with `gh run view --log-failed`. Run the same gates locally from Git Bash:
+
+```bash
+GODOT="/c/Users/Mary/Tools/Godot_4.7.2/Godot_v4.7.2-stable_win64_console.exe" bash tests/gates.sh
+```
+
+The script prints `ok` or `FAIL` per run and filters the expected noise below. The steps below are
+the same checks by hand, for a scene CI does not cover.
 
 **Prerequisite.** Godot **4.7.2** console build. It is not on `PATH` on the current machine:
 
@@ -35,30 +50,19 @@ $GODOT = "C:\Users\Mary\Tools\Godot_4.7.2\Godot_v4.7.2-stable_win64_console.exe"
 3. Read the output, not the exit code. Godot exits `0` after a parse error in a scene. A touched
    scene must load with no new `ERROR:` lines.
 
-4. Check links you added or moved:
+4. Check links, from Git Bash at the project root:
 
-   ```powershell
-   Get-ChildItem -Recurse -Filter *.md |
-     Where-Object { $_.FullName -notmatch '\\\.godot\\' } |
-     ForEach-Object {
-       $file = $_
-       [regex]::Matches((Get-Content $file.FullName -Raw), '\]\(([^)]+)\)') | ForEach-Object {
-         $link = $_.Groups[1].Value.Split('#')[0]
-         if ($link -and $link -notmatch '^(https?:|mailto:)') {
-           if (-not (Test-Path (Join-Path $file.DirectoryName $link))) {
-             "{0}: missing {1}" -f $file.FullName, $link
-           }
-         }
-       }
-     }
+   ```bash
+   bash tests/links.sh
    ```
 
-   No output means every relative link resolves.
+   No output means every relative link in the tracked `.md` files resolves. Newly added files must be
+   tracked first: it reads `git ls-files`.
 
 **Expected noise** (not new failures): `ObjectDB instances leaked at exit`, `1 resources still in
 use at exit` when `--quit-after` ends a scene mid-tween, and the rig warnings listed as issues #3 and
-#12 in [`known-issues.md`](known-issues.md). Headless `splash.tscn` / `loading.tscn` / `session_list.tscn` runs also fail the
-scene they load in the background (issue #22); check the boot chain and Play windowed instead. Anything else is
+#12 in [`known-issues.md`](known-issues.md). Headless `splash.tscn` / `loading.tscn` / `session_list.tscn` / `world_intro.tscn` runs also fail
+the scene they load in the background (issue #22); check the boot chain and Play windowed instead. Anything else is
 a regression.
 
 **Optional backend check** (only when working in `backend/`):
@@ -185,17 +189,72 @@ Kuiz is `assets/models/kuiz.glb`; the arena foes are the scenes in `ArenaStage.f
    clip names must still match `idle_clip`, `attack_clip`, `defeat_clip` and the `pet_*_clip` exports.
 3. Add the file to the asset inventory in [`ui-and-assets.md`](ui-and-assets.md).
 
+## Add or tune a food, costume, Sky Jump zone or season
+
+The tuning tables are `.tres` resources in `assets/data/` (classes in `scripts/data/`), edited in the
+Inspector; no code changes.
+
+1. **Tune:** open the `.tres` (for example `assets/data/foods/pi_pie.tres`) and change its fields.
+2. **Add:** in the FileSystem dock, duplicate a sibling `.tres` (or New Resource → `FoodItem`,
+   `Costume`, `SkyZone`, `SeasonLook`), fill it in, then add it to its list: the Home node's `foods`
+   or the Look node's `costumes` (both in `peek.tscn`, list order is shelf / closet order), or
+   SkyJumpHud's `zones` (climb order; a new zone also needs its backdrop as the next child of
+   `%ZoneBackdrops`). Seasons are the region map Season node's four exports.
+3. **Never change an `id`** of a food or costume players may own: `food_stock`, `outfit` and
+   `owned_costumes` in the save key on it. Give a new item a new id.
+4. Add new art to the inventory in [`ui-and-assets.md`](ui-and-assets.md), and new prices to
+   [`systems/monetization.md`](systems/monetization.md).
+
+## Export for Android with Play Games
+
+Cloud saves (`CloudSave`, [`data-model.md`](data-model.md) §8) need the Google Play Games plugin in
+`addons/GodotPlayGameServices/` (v3.4.0, MIT) and this one-time setup. Off Android nothing here
+matters: the editor and the headless gates never touch the plugin.
+
+1. **Play Console** (Google Play registration, $25 once):
+   - Create the app with **App type: Game**.
+   - Under Play Games Services, create the project and **turn on Saved Games**. Without it every
+     snapshot call fails.
+   - Copy the **Game ID**.
+2. **OAuth clients:** in the linked Google Cloud project, add an **Android OAuth client** for each
+   signing key: the debug keystore, your upload key, and the Play app-signing key (Play Console →
+   Release → Setup → App signing). Each one needs the package name and the key's SHA-1.
+3. **Testers:** if sign-in reports a consent-screen error, set the Cloud project's audience to External
+   (Testing) and add the test accounts.
+4. **Editor:**
+   - Project → Install Android Build Template.
+   - Check that Project Settings → Plugins has **GodotPlayGameServices** enabled.
+   - Project → Export → Add Android, then turn on **Use Gradle Build**.
+   - Set `godot_play_game_services/game_id` to the Game ID.
+   - Turn on **User Data Backup** (Android's own backup is a second safety net).
+   - Set the release keystore. Keep the keystore file out of git: Godot keeps its passwords in
+     `.godot/export_credentials.cfg`.
+5. **Check on a phone** (internal testing):
+   - Silent sign-in, and Settings shows "Saved to your Google account".
+   - Play, close the app, and see the save in Play Games.
+   - Uninstall and reinstall, and check it restores.
+   - On a second device, get the "Save found in your Google account" question.
+   - Play in airplane mode and check it syncs later.
+   - "Delete my data" removes the cloud copy.
+
 ## Use the real study server
 
 The editor, the headless gates and debug exports run on the mock (`Api.MOCK` is
 `OS.is_debug_build() and not DEV_USES_SERVER`); an exported **release** build always uses the server.
 
-1. **Locally:** start the backend ([`api-backend.md`](api-backend.md) §4), set
+1. **Credentials (free):** a Cloudflare account; copy its Account ID into `AI_BASE_URL` and create
+   an API token with the *Workers AI* permission for `AI_API_KEY`, in `backend/.env` (copied from
+   `.env.example`; it is gitignored).
+2. **Locally:** start the backend ([`api-backend.md`](api-backend.md) §4), set
    `const DEV_USES_SERVER := true` in `scripts/autoload/api.gd`, and run the game. It talks to
    `DEV_URL` (`http://127.0.0.1:8000`). Set it back to `false` before handing off.
-2. **For a release:** deploy the backend over HTTPS and set `const RELEASE_URL` to its address before
-   exporting. A release build with a non-HTTPS URL logs an error at boot, and every AI request fails.
-3. Keep the mock branch working and the response shapes in [`api-backend.md`](api-backend.md) truthful
+3. **For a release:** create a Render Blueprint from `render.yaml`, add `AI_BASE_URL` and
+   `AI_API_KEY` as secret environment variables, and set `const RELEASE_URL` to the service's
+   `https://…onrender.com` address before exporting. A release build with a non-HTTPS URL logs an
+   error at boot, and every AI request fails.
+4. **To test the free-allowance fallback,** start the server with `DAILY_NEURONS=0`: extraction comes
+   back `offline` (questions written on the device) and grading falls back to the offline mark.
+5. Keep the mock branch working and the response shapes in [`api-backend.md`](api-backend.md) truthful
    (rules §5).
 
 ## Reset a save / debug progression

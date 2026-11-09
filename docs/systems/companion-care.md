@@ -1,8 +1,8 @@
 # Companion care (pet loop)
 
 The home loop. Care raises the companion level by level, with no cap; the review campaign is open from
-the start (the old Level 5 gate was removed). This is the loop that carries the "raise an AI" fantasy and teaches the
-curriculum through `CURRICULUM` lines.
+the start (the old Level 5 gate was removed). This is the loop that carries the "raise an AI" fantasy and feeds its
+care stats into battle (see [`battle.md`](battle.md) §3).
 
 - **State / logic:** `scripts/autoload/companion_state.gd` (autoload `CompanionState`)
 > The 3D home in `peek.tscn` (`home.gd`, see `ui-and-assets.md` §2 Home) is now where the player
@@ -17,14 +17,13 @@ curriculum through `CURRICULUM` lines.
 
 | Stat | Start | Range | Decay | Grown by |
 |---|---|---|---|---|
-| `hunger` | 80.0 | 0–100 | **0.105 / s** (0.7×) | `feed` +8 – 40 by food (`home.gd` `FOODS`) |
+| `hunger` | 80.0 | 0–100 | **0.105 / s** (0.7×) | `feed` +8 – 40 by food (`FoodItem.hunger`, `assets/data/foods/`) |
 | `energy` | 80.0 | 0–100 | **0.15 / s** × battery wear (`battery_drain()`: 1 + (100 − battery health) / 50, so ×2 at 50 %) | charging +6 / s (`recharge()`), rest complete +6, `play` −2, skip focus −3, missed rest −5 |
 | `mood` | 75.0 | 0–100 | **0.09 / s** (0.6×) | `pet` +8, `play` +8, rest complete +6, skip focus −2, missed rest −3 |
 | `health` | 100.0 | 0–100 | **0.03 / s** (0.2×) | `fix` +25 |
 | `battery_health` | 100.0 | 0–100 | **−0.02 per energy point charged** (a full 0→100 charge costs 2 %) | a new battery (`replace_battery()`, 30 crystals) back to 100 |
 | `dirt` | 0.0 | 0–100 | **builds up 0.06 / s** | meals +3, fast throws +1.5, minigame rounds +4; the towel scrubs it off (`scrub()`) |
 | `focus` | 70.0 | 0–100 | **0.12 / s** (0.8×) | flashcards +2 per card; not on the home HUD |
-| `bond` | 0 | unbounded | — | +1 per care tap; **never read** |
 | `level` | 1 | 1 and up, no cap | — | XP thresholds (§3) |
 | `xp` | 0 | unbounded | — | care taps + battle rewards |
 
@@ -39,7 +38,7 @@ so stats bottom out cleanly at zero.
 
 ## 2. Care actions
 
-`CompanionState.care(action)` (`companion_state.gd:99-129`) is the single entry point.
+`CompanionState.care(action, food)` is the single entry point; it returns nothing.
 
 | Action | Effect | Base XP | Notes |
 |---|---|---|---|
@@ -49,18 +48,9 @@ so stats bottom out cleanly at zero.
 | `"fix"` | `health += 25` | 2 | home: a finished screwdriver tune-up |
 | `"clean"` | `mood += 5` | 2 | home: the towel got Kuiz spotless (the scrubbing itself lowers `dirt`) |
 
-Energy has no tap: `recharge(delta)` adds 6 / s while home's Charge toggle is on. Home saves after
-each care action (`SaveManager.save_progress()`).
-
-Returns:
-
-```gdscript
-{ "xp": int, "deltas": {"hunger": 12.0}, "action": "feed", "tap_count": int }
-```
-
-`bond` increments inside `care()` regardless of action. The UI uses the return value only to render
-the floating `+N XP` tick and an extra `(tired)` suffix once `tap_count > DAILY_CAP_BASE_XP`
-(the removed `companion.gd`).
+Energy has no tap: `recharge(delta)` adds 6 / s while home's Charge toggle is on. Home asks for a save after
+each care action (`SaveManager.save_progress()`, debounced to at most one write every 5 s,
+[`data-model.md`](../data-model.md) §7).
 
 ### Diminishing returns
 
@@ -101,12 +91,12 @@ Levels never cap.
 | n | `xp_to_reach(n)` | 5 more each level |
 
 `_check_level_up()` loops while `xp >= xp_to_reach(level + 1)`, so a single large XP grant can
-cross several levels; each level pays `LEVEL_CRYSTALS` and unlocks its `CURRICULUM` line.
+cross several levels; each level pays `LEVEL_CRYSTALS`.
 Levels 1–5 match the old capped table (Lv5 at 110 XP), so older saves keep their level; on load any
 XP past the next threshold (from the capped days) levels Kuiz up silently.
 
 Pacing: at 1–2 XP per tap with cycling actions, ~65 taps to Level 5, a few minutes. XP always
-counts, battle rewards included. Levels gate closet costumes (`kuiz_look.gd` `COSTUME_UNLOCKS`), not
+counts, battle rewards included. Levels gate closet costumes (`Costume.level_needed`, `assets/data/costumes/`), not
 Play: the `campaign_ready` flag, `CAMPAIGN_LEVEL`, the `campaign_gate_ready` signal and
 `GameState.campaign_unlocked_flag` were removed because nothing read them (saves before v15 still hold
 the keys; they are ignored).
@@ -120,22 +110,10 @@ Battle wins add XP (`add_xp`). The Flashcard Sanctuary adds a little more
 
 ---
 
-## 4. Codex / curriculum
+## 4. Codex (removed)
 
-`CURRICULUM` (`companion_state.gd:50-56`) is a level → line map, unlocked one entry per level-up
-and backfilled on load for older saves:
-
-| Level | Line (AI-literacy concept) |
-|---|---|
-| 1 | "I start out knowing NOTHING — like a baby! … (AI starts blank)" |
-| 2 | "Feed me examples! That's called **TRAINING DATA**…" |
-| 3 | "When you Pet me for a good answer, that's **FEEDBACK**…" |
-| 4 | "Playing is **PRACTICE** — I try, fail, and try again…" |
-| 5 | "I can **GENERALIZE** now! Show me your PDF reviewer…" |
-
-There is **no Codex screen** and the `TidbitBubble` that showed entries was deleted with the care room.
-A `feat/remove-codex` branch exists on `origin`, suggesting the codex was abandoned deliberately.
-abandoned deliberately.
+The five curriculum lines, the `codex` list and its signals were removed in save v16: nothing ever
+showed them once the care room went. Older saves still hold `codex` (and `bond`); both are ignored.
 
 ---
 

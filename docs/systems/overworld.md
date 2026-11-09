@@ -126,8 +126,8 @@ nothing, since there is no contact. Closing a house's panel shuts that house (`_
 the explorer leaves its 0.6 box, so leaning on the wall does not reopen it every frame. Checked
 headless by pushing the explorer at every house from all four sides: every house opens, from at
 least three sides each (the misses are the narrow gaps between the h1/h2, h9/h10 and h11/h15 pairs,
-where the neighbour is bumped first). Each house also carries a bobbing
-`icon_trainer.svg` over its roof in its type's colour (Identification teal, Essay lilac `8D82A8`,
+where the neighbour is bumped first). Each house is a `house_trigger.tscn` (the encounter trigger plus
+an `Icon` and a `Doorway`), so its icon, a bobbing `icon_trainer.svg` over its roof, is tinted in its type's colour (Identification teal, Essay lilac `8D82A8`,
 Multiple Choice amber), faint once cleared: the icons mark the houses from afar.
 
 ### Entering a building (houses and gyms alike)
@@ -135,7 +135,7 @@ Multiple Choice amber), faint once cleared: the icons mark the houses from afar.
 The house plays the part the gyms' animated doors play:
 
 1. **Walk up.** Touching a gym trigger plays its door-open clip (and door-close on leaving). Coming near
-   a house "opens" its door: a dark doorway panel (`DOORWAY` `1E2829`, the door's own size, just in front
+   a house "opens" its door: a dark doorway panel (the house scene's `Doorway`, `1E2829`, sized to the door, just in front
    of it) unfolds from zero width over 0.25 s, and folds shut again when the explorer walks away. The
    houses have no door animation of their own because `map.glb` merges all their doors into one mesh.
 2. **The panel.** The encounter panel opens (§4) and the explorer stands still.
@@ -211,13 +211,17 @@ same date always gives the same one:
 | Autumn | amber sun 1.0, warm sky | canopies 75 % toward Muted Amber, Soft Coral and two in-between tones; grass 45 % toward straw | 90 `leaf.svg` leaves drifting and spinning |
 | Snowy | cool sun 0.9, pale sky, fog 0.015 | canopies 55 % and grass 85 % toward snow white | 300 snowflakes, slow |
 
-The weather is one `GPUParticles3D` in world space, prewarmed so it is already falling on the first
-frame. It is emitted through the whole volume the camera sees around the explorer (0.5–4.5 units
+The weather is one `GPUParticles3D` in world space, from `scenes/overworld/weather/` (`rain.tscn`,
+`leaves.tscn`, `snow.tscn`, each set as its season's `SeasonLook.weather`; edit amounts, speeds and colours there),
+prewarmed so it is already falling on the first frame. It is emitted through the whole volume the camera sees around the explorer (0.5–4.5 units
 up, 14 wide, from 10 behind to 4 in front) rather than from above: at the camera's 54° pitch,
 anything spawned higher only crosses the view right at the lens. Particle colours are sRGB
 (`vertex_color_is_srgb`). Foliage is tinted on duplicated materials, because the imported ones are shared
 with every later load. The `Environment` resource is also shared, so every field is set every time.
-To drop a season, remove it from `Season` and `LOOKS`.
+Each season's light, sky, fog, foliage and weather is a `SeasonLook` (`assets/data/seasons/sunny.tres`,
+`rainy.tres`, `autumn.tres`, `snowy.tres`), set on the `Season` node's `sunny` / `rainy` / `autumn` /
+`snowy`; tune a season by editing its `.tres` in the Inspector. To drop a season, remove it from the
+`Season` enum and its export.
 
 **Portrait.** The map is portrait like every other screen (720×1280; the camera keeps the width,
 `keep_aspect` = width, fov 40). The landscape mode, its rotate-your-phone cards

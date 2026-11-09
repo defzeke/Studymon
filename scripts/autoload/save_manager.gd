@@ -1,14 +1,21 @@
 extends Node
-## Local JSON persistence for CompanionState + GameState, on this device only (no accounts).
-## The format is versioned via "v".
+## Local JSON persistence for every saved value. The file on the device is the source of truth;
+## CloudSave copies it to the player's Google Play Games Saved Games on Android. The format is
+## versioned via "v". Contract: docs/data-model.md.
 
 const SAVE_PATH := "user://studymon_save.json"
 ## The schema written by save_game(); history in docs/data-model.md.
-const SAVE_VERSION := 15
+const SAVE_VERSION := 17
 # An exported save is a few KB; anything far bigger is not one.
 const MAX_IMPORT_BYTES := 5 * 1024 * 1024
+## save_progress() writes at most this often (seconds); app pause and close write at once.
+const SAVE_GAP := 5.0
 
 var _loaded := false
+var _dirty := false
+var _last_write := -SAVE_GAP
+## When the save was last written (unix seconds; 0 for a fresh game). CloudSave keeps the newer copy.
+var saved_at := 0
 
 # Deferred so every autoload exists first. Loading at boot means the first scene already sees the
 # saved name, tutorial flag and food, and a scene run on its own still cannot overwrite the save.
@@ -24,7 +31,8 @@ func load_once() -> void:
 func save_game() -> bool:
 	var data := CompanionState.to_dict()
 	data["v"] = SAVE_VERSION
-	data["active_region_id"] = GameState.active_region_id
+	saved_at = int(Time.get_unix_time_from_system())
+	data["saved_at"] = saved_at
 	data["large_text_enabled"] = GameState.large_text_enabled
 	data["player_name"] = GameState.player_name
 	data["tutorial_done"] = GameState.tutorial_done
@@ -50,7 +58,22 @@ func save_game() -> bool:
 		return false
 	f.store_string(JSON.stringify(data))
 	f.close()
+	_dirty = false
+	_last_write = _now()
+	CloudSave.note_saved()
 	return true
+
+func _process(_delta: float) -> void:
+	if _dirty and _now() - _last_write >= SAVE_GAP:
+		save_game()
+
+# Before CloudSave's own handler (it comes later in the autoload order), so the upload sends this write.
+func _notification(what: int) -> void:
+	if _dirty and (what == NOTIFICATION_APPLICATION_PAUSED or what == NOTIFICATION_WM_CLOSE_REQUEST):
+		save_game()
+
+func _now() -> float:
+	return Time.get_ticks_msec() / 1000.0
 
 ## Settings' "Delete my data": removes the save file and puts every saved value back to a fresh game.
 func delete_all() -> void:
@@ -70,7 +93,6 @@ func _reset() -> void:
 	GameState.ai_consent = false
 	GameState.food_stock = {}
 	GameState.outfit = {}
-	GameState.active_region_id = ""
 	GameState.add_crystals(-GameState.crystals)
 	GameState.world_slots = GameState.FREE_WORLD_SLOTS
 	GameState.minigame_day = ""
@@ -80,9 +102,12 @@ func _reset() -> void:
 	GameState.study_cards_day = ""
 	GameState.study_cards = 0
 	GameState.owned_costumes.clear()
+	saved_at = 0
+	# A write still pending would bring the erased or replaced game back.
+	_dirty = false
 
-## Settings' Export: the current save, written to `path` (a file the player picked). Saves stay on the
-## device only, so this is how a player keeps a copy. False when it cannot be written.
+## Settings' Export: the current save, written to `path` (a file the player picked), a copy the player
+## keeps wherever they like. False when it cannot be written.
 func export_to(path: String) -> bool:
 	if not save_game():
 		return false
@@ -103,11 +128,28 @@ func import_from(path: String) -> String:
 		return "That file is too big to be a Studymon save."
 	var text := f.get_as_text()
 	f.close()
-	var parsed: Variant = JSON.parse_string(text)
+	return replace_with(text)
+
+## Why `text` is not a save this version can load, or "" when it is (Import and the cloud copy).
+func check(text: String) -> String:
+	if text.length() > MAX_IMPORT_BYTES:
+		return "That file is too big to be a Studymon save."
+	var json := JSON.new()
+	if json.parse(text) != OK:
+		return "That file is not a Studymon save."
+	var parsed: Variant = json.data
 	if typeof(parsed) != TYPE_DICTIONARY or not (parsed as Dictionary).has("v") or not (parsed as Dictionary).has("level"):
 		return "That file is not a Studymon save."
 	if int(parsed["v"]) > SAVE_VERSION:
 		return "That save comes from a newer version of Studymon. Update the app first."
+	return ""
+
+## Writes the save `text` over the file and loads it (Import, and restoring the cloud copy). Returns ""
+## on success, else why it was refused; a refused save leaves the current one untouched.
+func replace_with(text: String) -> String:
+	var error := check(text)
+	if error != "":
+		return error
 	var out := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
 	if out == null:
 		return "The save could not be written."
@@ -118,10 +160,12 @@ func import_from(path: String) -> String:
 	load_game()
 	return ""
 
-## Progress saves never run before a load, so a scene run on its own cannot overwrite the real save.
+## Asks for a save: written within SAVE_GAP seconds (the first one in a while on the next frame), so a
+## burst of care taps is one write. Never before a load, so a scene run on its own cannot overwrite
+## the real save. Contract: docs/data-model.md §7.
 func save_progress() -> void:
 	if _loaded:
-		save_game()
+		_dirty = true
 
 func load_game() -> bool:
 	_loaded = true
@@ -135,9 +179,9 @@ func load_game() -> bool:
 	if typeof(parsed) != TYPE_DICTIONARY:
 		return false
 	CompanionState.from_dict(parsed)
-	# Saves before v15 also hold "campaign_ready" / "campaign_unlocked_flag" (the removed Level 5
-	# gate); they are ignored.
-	GameState.active_region_id = str(parsed.get("active_region_id", ""))
+	saved_at = int(parsed.get("saved_at", 0))
+	# Older saves may also hold keys no longer read, all ignored: "campaign_ready" /
+	# "campaign_unlocked_flag" (before v15), "codex", "bond" and "active_region_id" (before v16).
 	GameState.player_name = str(parsed.get("player_name", ""))
 	# Saves from before v15 lack the flag; a saved name means the tutorial was already played.
 	GameState.tutorial_done = bool(parsed.get("tutorial_done", GameState.player_name != ""))

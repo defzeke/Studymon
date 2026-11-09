@@ -1,0 +1,86 @@
+[gd_scene format=3]
+
+[ext_resource type="Texture2D" path="res://assets/sprites/props/dirt_spot_1.svg" id="1_tuoy0"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/scratch_1.svg" id="2_ydml3"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/dirt_spot_2.svg" id="3_2bmr6"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/dirt_spot_3.svg" id="4_2lb75"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/scratch_2.svg" id="5_p76y5"]
+
+[node name="KuizHead" type="BoneAttachment3D" unique_id=1553017698]
+bone_name = "Head"
+
+[node name="Dirt" type="Node3D" parent="." unique_id=1786525046]
+
+[node name="Mark1" type="Decal" parent="Dirt" unique_id=76342795]
+transform = Transform3D(0.83181876, -0.3690039, -0.41462466, 0, 0.74700785, -0.6648152, 0.5550473, 0.5530058, 0.62137514, -0.555, 0.807, 0.526)
+visible = false
+size = Vector3(0.48, 0.5, 0.48)
+texture_albedo = ExtResource("1_tuoy0")
+modulate = Color(1, 1, 1, 0)
+normal_fade = 0.4
+metadata/shows_from = 12.0
+
+[node name="Mark2" type="Decal" parent="Dirt" unique_id=173603345]
+transform = Transform3D(0.9108672, 0.36105326, 0.19990364, -0.13743582, 0.72210646, -0.6779922, -0.389143, 0.59008694, 0.70736474, 0.553, 0.787, 0.553)
+visible = false
+size = Vector3(0.68, 0.5, 0.34)
+texture_albedo = ExtResource("2_ydml3")
+modulate = Color(1, 1, 1, 0)
+normal_fade = 0.4
+metadata/shows_from = 28.0
+
+[node name="Mark3" type="Decal" parent="Dirt" unique_id=1075181973]
+transform = Transform3D(0.5612527, -0.8139753, -0.1497991, 7.450581e-09, 0.1809945, -0.9834841, 0.8276446, 0.5519832, 0.10158366, -1.002, 0.149, 0.579)
+visible = false
+size = Vector3(0.42, 0.5, 0.42)
+texture_albedo = ExtResource("3_2bmr6")
+modulate = Color(1, 1, 1, 0)
+normal_fade = 0.4
+metadata/shows_from = 42.0
+
+[node name="Mark4" type="Decal" parent="Dirt" unique_id=354202244]
+transform = Transform3D(0.784284, 0.47609404, 0.39778507, 0.38626382, 0.12702508, -0.9135999, -0.48548818, 0.87017184, -0.08427417, 0.841, 1.146, -0.247)
+visible = false
+size = Vector3(0.42, 0.5, 0.42)
+texture_albedo = ExtResource("4_2lb75")
+modulate = Color(1, 1, 1, 0)
+normal_fade = 0.4
+metadata/shows_from = 56.0
+
+[node name="Mark5" type="Decal" parent="Dirt" unique_id=768336600]
+transform = Transform3D(0.25836837, 0.8005413, 0.540721, 0.930578, -0.055967927, -0.36178973, -0.2593646, 0.5966581, -0.7594267, 1.006, -0.349, 0.616)
+visible = false
+size = Vector3(0.54, 0.5, 0.27)
+texture_albedo = ExtResource("5_p76y5")
+modulate = Color(1, 1, 1, 0)
+normal_fade = 0.4
+metadata/shows_from = 70.0
+
+[node name="Mark6" type="Decal" parent="Dirt" unique_id=715155554]
+transform = Transform3D(0.8811921, -0.46387333, 0.09122513, -0.32518688, -0.73479944, -0.59525067, 0.34315306, 0.49486494, -0.79834497, -0.808, -0.705, 0.62)
+visible = false
+size = Vector3(0.4, 0.5, 0.4)
+texture_albedo = ExtResource("1_tuoy0")
+modulate = Color(1, 1, 1, 0)
+normal_fade = 0.4
+metadata/shows_from = 84.0
+
+[node name="Stickers" type="Node3D" parent="." unique_id=1460920820]
+
+[node name="head" type="Sprite3D" parent="Stickers" unique_id=320317627]
+visible = false
+double_sided = false
+texture_filter = 1
+render_priority = 1
+
+[node name="face" type="Sprite3D" parent="Stickers" unique_id=1892861762]
+visible = false
+double_sided = false
+texture_filter = 1
+render_priority = 1
+
+[node name="body" type="Sprite3D" parent="Stickers" unique_id=1701686121]
+visible = false
+double_sided = false
+texture_filter = 1
+render_priority = 1

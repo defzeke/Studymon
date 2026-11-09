@@ -1,10 +1,10 @@
 extends Control
-## Phase 5: Categorizer — Upload → AI is studying... → editable question list → Confirm → Play
-## Implements build-plan P5: word-count sanity, confidence badges, CRUD list, region generation.
+## The World Builder: upload or paste a reviewer, the AI (or the mock) turns it into questions, the
+## player edits them, and Confirm & Play saves the world and opens it. Contract:
+## docs/systems/review-session.md.
 
 # Order matches %RowTemplate's TypeOption items; contract: docs/systems/gameplay-structure.md.
 const QUESTION_TYPES: Array[String] = ["essay", "identification", "multiple_choice"]
-const ConfirmModal := preload("res://scripts/ui/widgets/confirm_modal.gd")
 # Reviewer files the study server reads (extension -> its type) and its size caps (backend/main.py).
 const FILE_TYPES := {"pdf": "pdf", "png": "png", "jpg": "jpeg", "jpeg": "jpeg", "webp": "webp", "docx": "docx", "pptx": "pptx"}
 const MAX_FILE_BYTES := 20 * 1024 * 1024
@@ -50,6 +50,7 @@ func _ready() -> void:
 	SessionManager.extraction_completed.connect(_on_extraction_completed)
 	SessionManager.extraction_failed.connect(_on_extraction_failed)
 	SessionManager.region_generated.connect(_on_region_generated)
+	Api.wake_server()
 	loading_bar.visible = false
 	_update_sanity()
 	# If we arrived with pending questions (resume or after extraction), render them
@@ -110,10 +111,10 @@ func _update_sanity() -> void:
 	if v.get("ok", false):
 		var words: int = int(v.get("words", 0))
 		sanity_label.text = "✓ %d words — good to study." % words
-		sanity_label.add_theme_color_override("font_color", Color("4F8F89"))
+		sanity_label.add_theme_color_override("font_color", Palette.TEAL)
 	else:
 		sanity_label.text = str(v.get("error", "Too short"))
-		sanity_label.add_theme_color_override("font_color", Color("C97970"))
+		sanity_label.add_theme_color_override("font_color", Palette.CORAL)
 
 func _on_study() -> void:
 	if _studying:
@@ -188,6 +189,8 @@ func _on_extraction_completed(_topic_id: String, questions: Array[Dictionary]) -
 	if _count_before >= 0:
 		status_label.text = "Added %d new question(s). Review them, then Play!" % (questions.size() - _count_before)
 		_count_before = -1
+	if SessionManager.offline_note != "":
+		status_label.text = "%s Kuiz wrote %d simpler question(s) on this phone instead: check them, then Play!" % [SessionManager.offline_note, questions.size()]
 	_refresh_more()
 	_render_questions()
 	_update_play_enabled()
@@ -232,13 +235,13 @@ func _make_question_row(q: Dictionary, idx: int) -> Control:
 	var conf_label := box.get_node("Header/Confidence") as Label
 	if conf >= 0.85:
 		conf_label.text = "AI is fairly sure (%.0f%%)" % (conf * 100)
-		conf_label.add_theme_color_override("font_color", Color("4F8F89"))
+		conf_label.add_theme_color_override("font_color", Palette.TEAL)
 	elif conf >= 0.6:
 		conf_label.text = "Check this one (%.0f%%)" % (conf * 100)
-		conf_label.add_theme_color_override("font_color", Color("29383A"))
+		conf_label.add_theme_color_override("font_color", Palette.SLATE)
 	else:
 		conf_label.text = "Double-check (%.0f%%)" % (conf * 100)
-		conf_label.add_theme_color_override("font_color", Color("C97970"))
+		conf_label.add_theme_color_override("font_color", Palette.CORAL)
 
 	(box.get_node("Header/Delete") as Button).pressed.connect(_on_delete_question.bind(idx))
 	(box.get_node("Header/Report") as Button).pressed.connect(_on_report_question.bind(idx))
@@ -345,14 +348,13 @@ func _on_play() -> void:
 		status_label.text = "All %d world slots are full. Delete a world or buy a slot on the worlds list." % GameState.world_slots
 		return
 	status_label.text = "Saving world..."
-	# Confirm persists to history + emits region_generated; Phase 6 will navigate to overworld
+	# Saves the world and emits region_generated, which opens it (_on_region_generated).
 	SessionManager.confirm_topic(topic_name)
 	play_btn.disabled = true
 
-func _on_region_generated(topic_id: String, map_data: Dictionary) -> void:
+func _on_region_generated(_topic_id: String, map_data: Dictionary) -> void:
 	var gyms: Array = map_data.get("gyms", [])
 	status_label.text = "Region ready! %d gym(s): %s — entering overworld..." % [gyms.size(), ", ".join(gyms)]
-	GameState.set_active_region(topic_id)
 	await get_tree().create_timer(0.6).timeout
 	get_tree().change_scene_to_file("res://scenes/overworld/world_intro.tscn")
 

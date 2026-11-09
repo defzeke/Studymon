@@ -4,13 +4,13 @@ Turns reviewer material into an editable question bank, then into the region dat
 consumes.
 
 - **State / pipeline:** `scripts/autoload/session_manager.gd` (autoload `SessionManager`)
-- **Extraction:** `scripts/autoload/api.gd` — `upload_reviewer()`; mock: `_build_questions_from_text()`;
+- **Extraction:** `scripts/autoload/api.gd` — `upload_reviewer()`; mock and offline: `offline_questions()`;
   real: `POST /v1/extract` on the study server ([`../api-backend.md`](../api-backend.md) §2)
 - **Worlds hub (topic list):** `scripts/ui/session_list.gd` → `scenes/ui/session_list.tscn`
 - **Upload / edit screen:** `scripts/review_session/categorizer.gd` → `scenes/review_session/categorizer.tscn`
 
 Status: **Implemented.** The editor runs on the mock extractor (`Api.MOCK`); with the server on (release builds),
-Claude writes the questions and their answer keys, and PDFs are accepted.
+Gemma 4 on Cloudflare writes the questions and their answer keys, and PDFs, photos and Word / PowerPoint files are accepted. When the AI's free daily allowance is spent, the server returns the reviewer's text and the device writes simpler questions (`Api.offline_questions()`), and the World Builder says so.
 
 ---
 
@@ -29,7 +29,6 @@ categorizer.tscn  ◄───────────────────�
    ▼
 SessionManager.confirm_topic(name)
    ├─ add_topic_to_history()   → topics cache
-   ├─ topic_saved signal
    └─ build_map_data() → region_generated → region_map.tscn
 ```
 
@@ -88,7 +87,12 @@ Identification and Multiple Choice blank their answer term out of the quoted exc
 - Breaks each line on `.` `!` `?`, discarding fragments under 20 chars.
 - Keeps trailing text without punctuation if ≥ 20 chars.
 
-### Question builder — `_build_questions_from_text()` (`api.gd:138`)
+### Offline question builder — `offline_questions()` (`api.gd`)
+
+Used by the mock, and by a real upload when the server answers `offline` (the AI's free allowance is
+spent, or the call failed): `SessionManager` builds the questions from the returned `reviewer_text` and
+sets `offline_note`, which the World Builder shows. It returns `[]` when no sentence qualifies; the mock
+then uses five canned questions, and a real upload fails with the server's reason.
 
 - Keeps sentences with **≥ 6 words and ≥ 40 chars**, up to **12** sentences.
 - **Tier** (`difficulty`): by sentence length, the shortest third `easy`, the middle `medium`, the
@@ -185,8 +189,8 @@ list is re-rendered** after every delete. Note that mastery keys also use indice
 
 1. `add_topic_to_history(editing_topic_id, name, pending_questions)` — overwrites an entry with the
    same id, else appends a `{id, name, question_count, questions}` record.
-2. `SaveManager.save_progress()` — the new topic is saved at once (a no-op until a save has been loaded).
-3. Emits `topic_saved`, then `_enter_overworld()` → `build_map_data()` → `region_generated`.
+2. `SaveManager.save_progress()` — the new topic is saved within 5 s (debounced, [`data-model.md`](../data-model.md) §7; a no-op until a save has been loaded).
+3. `_enter_overworld()` → `build_map_data()` → `region_generated`.
 
 `build_map_data()` (`session_manager.gd:178-187`) produces:
 
@@ -201,8 +205,8 @@ list is re-rendered** after every delete. Note that mastery keys also use indice
 }
 ```
 
-`categorizer.gd:311-317` then waits 0.6 s, sets `GameState.active_region_id`, and changes scene to
-`region_map.tscn`. The overworld **recomputes** gym structure from `pending_questions` instead of
+`categorizer.gd:_on_region_generated` then waits 0.6 s and changes scene to `world_intro.tscn`, which
+opens `region_map.tscn`. The overworld **recomputes** gym structure from `pending_questions` instead of
 reading the map data.
 
 ---
@@ -222,7 +226,7 @@ world's mastery, cleared trainers/gyms and Champion (keys starting `<topic_id>:`
 | Gap | Detail |
 |---|---|
 | Mock cannot read PDFs | On mocks a PDF is refused; it needs the server |
-| Real extraction unproven | `/v1/extract` has been checked against a stubbed Claude only; run `backend/evals/` |
+| Real extraction unproven | `/v1/extract` has been checked against a stubbed model only; run `backend/evals/` against Gemma |
 | Photo reviewers keep no text | "More questions" needs the reviewer's text, which a photo does not have |
 | Topic id collisions | `topic_<unix%100000>` repeats every ~27.8 hours |
 

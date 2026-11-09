@@ -198,6 +198,27 @@ theme_type_variation = &"MenuQuiet"
 size_flags_horizontal = 3
 text = "Support"
 
+[node name="Cloud" type="HBoxContainer" parent="Margin/Content/DataCard/Data"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="CloudLabel" type="Label" parent="Margin/Content/DataCard/Data/Cloud"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = &"CardBody"
+text = "Cloud save: Google Play Games, on Android"
+vertical_alignment = 1
+autowrap_mode = 3
+
+[node name="CloudButton" type="Button" parent="Margin/Content/DataCard/Data/Cloud"]
+unique_name_in_owner = true
+visible = false
+custom_minimum_size = Vector2(0, 56)
+layout_mode = 2
+theme_type_variation = &"MenuQuiet"
+text = "Sign in"
+
 [node name="Backup" type="HBoxContainer" parent="Margin/Content/DataCard/Data"]
 layout_mode = 2
 theme_override_constants/separation = 12

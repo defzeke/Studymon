@@ -18,9 +18,9 @@ Severity: **P0** blocks the core loop · **P1** blocks a feature or silently cor
 | 9 | ~~Real grade/extract responses are silently dropped~~ — fixed | — |
 | 11 | ~~Large-text accessibility toggle is unreachable~~ — fixed | — |
 | 13 | ~~`stats_changed` fires every frame~~ — fixed | — |
-| 14 | Full save write on every care action | **P2** |
+| 14 | ~~Full save write on every care action~~ — fixed (debounced) | — |
 | 19 | ~~Fake "Biology 101" topic seeded on every boot~~ — fixed | — |
-| 20 | Stale docs, no tests/CI | **P3** |
+| 20 | ~~Stale docs, no tests/CI~~ — fixed (GitHub Actions) | — |
 | 21 | ~~Theme and scene colours predate the canonical palette~~ — migrated | — |
 | 22 | Headless boot chain fails its threaded loads | **P3** |
 | 23 | Native file picker paths unverified on Android / iOS | **P1** |
@@ -100,14 +100,14 @@ and battle items still emit at once.
 
 ---
 
-## 14. Full save write on every care tap (P2)
+## 14. Full save write on every care tap — fixed
 
-Home saves after each care action (food, tune-up, ball throw); the save JSON includes every
-question in every topic, so it grows with the content the player uploads. On mobile this is a
-synchronous `FileAccess` write per tap.
+Home saved after each care action (food, tune-up, ball throw), a synchronous write of a JSON file that
+holds every question in every world.
 
-**Fix:** debounce (e.g. save at most once every 5 s, plus on `NOTIFICATION_WM_CLOSE_REQUEST` /
-`NOTIFICATION_APPLICATION_PAUSED`).
+**Fixed 2026-11-09:** `SaveManager.save_progress()` is debounced. It writes at most once every 5 s, and
+at once on app pause or close ([`data-model.md`](data-model.md) §7). The cloud copy uploads at most
+once a minute (§8).
 
 ---
 
@@ -117,17 +117,21 @@ synchronous `FileAccess` write per tap.
 
 ---
 
-## 20. Stale docs, no tests/CI (P3)
+## 20. Stale docs, no tests/CI — fixed
 
-- Root `README.md` describes folders that do not exist (`resources/`, `tests/`, `assets/themes/`)
-  and singletons that were never written (`GameManager`, `AIService`, `SoundManager`).
-- `quizmon-build-plan.md` says "Godot 4.6, avoid 4.7"; the project is 4.7.2.
-- No automated tests for the Godot client and no CI workflow. The backend has `backend/tests/` (pytest,
-  no Claude calls) and `backend/evals/` (paid, run by hand).
+The root `README.md` described folders and singletons that never existed, and nothing ran the gates
+automatically.
 
-**Fix:** the root README is corrected in this docs pass; consider a `tests/` folder with a headless
-GUT suite and a GitHub Action that runs `godot --headless --import` (which is how issues #1/#12 were
-caught).
+**Fixed:**
+- The root README was corrected in an earlier docs pass.
+- `quizmon-build-plan.md` keeps its old "Godot 4.6" note as history, flagged in
+  [`README.md`](README.md).
+- **2026-11-09:** `.github/workflows/checks.yml` runs `tests/gates.sh` (the headless Godot gates),
+  `pytest backend/tests` and `tests/links.sh` on every push and pull request
+  ([`skills.md`](skills.md#verify-a-change)).
+
+Still by hand: `backend/evals/` (the real model) and the boot chain, which runs windowed only (#22).
+There is no GDScript unit-test suite.
 
 ---
 
@@ -144,7 +148,9 @@ Running `splash.tscn` or `loading.tscn` **headless** fails the scene each one lo
 (`ResourceLoader.load_threaded_request`): a `preload()` in that scene's scripts reports
 `Could not preload resource file …` (a different file from run to run: `loading_screen_logo.png`,
 `kuiz_look.gd`'s costumes, `sky_jump.gd`'s backdrops), so `loading.tscn` or `peek.tscn` fails to
-parse. All those files are committed and import cleanly. The same scenes run on their own, and the
+parse. `world_intro.tscn` does the same with `region_map.tscn` (its root script fails to load on the
+loading thread). Rechecked 2026-11-09: headless still fails, while windowed the boot chain reaches
+`peek.tscn` in about 12 s and the world intro reaches the map in about 6 s, with no errors. All those files are committed and import cleanly. The same scenes run on their own, and the
 same chain run **windowed**, load without errors. Reproduced on an untouched `git archive HEAD`
 copy (2026-10-26), so it predates the editor-UI pass.
 

@@ -9,11 +9,6 @@ extends PanelContainer
 const MINIMAP_LAYER := 1 << 10
 ## Meshes wider than this (world units) are sea, not island.
 const HORIZON := 150.0
-const OFF := Color("F7F5EF")
-const SLATE := Color("29383A")
-const TEAL := Color("4F8F89")
-const AMBER := Color("D6A85F")
-const CORAL := Color("C97970")
 ## The big view's dots are this much larger, and its opening and closing take this long.
 const BIG_DOTS := 1.7
 const OPEN_TIME := 0.28
@@ -109,16 +104,16 @@ func _process(_delta: float) -> void:
 func _draw_dots(on: Control, k: float) -> void:
 	for t in trainers.get_children():
 		var at_t := _to_dots(t.global_position, on)
-		on.draw_circle(at_t, 4.0 * k, SLATE)
-		on.draw_circle(at_t, 2.5 * k, OFF)
+		on.draw_circle(at_t, 4.0 * k, Palette.SLATE)
+		on.draw_circle(at_t, 2.5 * k, Palette.OFF_WHITE)
 	for g in gyms.get_children():
 		var champ := str(g.get("text")).begins_with("CHAMPION")
 		var at := _to_dots(g.global_position, on)
-		on.draw_circle(at, 7.0 * k, SLATE)
-		on.draw_circle(at, 5.0 * k, CORAL if champ else AMBER)
+		on.draw_circle(at, 7.0 * k, Palette.SLATE)
+		on.draw_circle(at, 5.0 * k, Palette.CORAL if champ else Palette.AMBER)
 	var me := _to_dots(player.global_position, on)
-	on.draw_circle(me, 8.0 * k, OFF)
-	on.draw_circle(me, 5.5 * k, TEAL)
+	on.draw_circle(me, 8.0 * k, Palette.OFF_WHITE)
+	on.draw_circle(me, 5.5 * k, Palette.TEAL)
 
 func _to_dots(world: Vector3, on: Control) -> Vector2:
 	return camera.unproject_position(world) * on.size / Vector2(viewport.size)

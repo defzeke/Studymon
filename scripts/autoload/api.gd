@@ -1,7 +1,7 @@
 extends Node
-## Api — HTTP wrapper for backend calls (canonical registered version).
+## The study server client (HTTP), and its offline stand-in when MOCK is on.
 ## MOCK mode returns canned data so client dev is never blocked; exported release builds use the server.
-## Godot only ever talks to OUR api, never api.anthropic.com directly.
+## Godot only ever talks to OUR server, never to the AI provider directly (its key lives on the server).
 ## Contract: docs/api-backend.md. Do not name a helper plain `_get`: it would override Object._get().
 
 signal job_status(job_id: String, status: String, progress: float, result: Variant)
@@ -15,8 +15,9 @@ const DEV_URL := "http://127.0.0.1:8000"
 var MOCK := OS.is_debug_build() and not DEV_USES_SERVER
 var BASE_URL := DEV_URL if OS.is_debug_build() else RELEASE_URL
 # Seconds before a request counts as failed: generating a whole question bank takes the longest.
-const EXTRACT_TIMEOUT := 180.0
-const GRADE_TIMEOUT := 30.0
+# The free host sleeps when idle and takes about a minute to wake (wake_server() starts that early).
+const EXTRACT_TIMEOUT := 240.0
+const GRADE_TIMEOUT := 75.0
 
 var _job_seq := 0
 
@@ -104,6 +105,19 @@ func upload_reviewer(job_id: String, topic_name: String, source_text: String, fi
 		body["file_type"] = file_type
 	_request(job_id, HTTPClient.METHOD_POST, "/v1/extract", body, EXTRACT_TIMEOUT)
 
+## Wakes the study server ahead of an AI call: the free host sleeps after 15 idle minutes and takes
+## about a minute to start. Fire-and-forget; nothing listens for the answer. Contract:
+## docs/api-backend.md §4.
+func wake_server() -> void:
+	if MOCK or not GameState.ai_consent or BASE_URL == "":
+		return
+	var http := HTTPRequest.new()
+	http.timeout = EXTRACT_TIMEOUT
+	add_child(http)
+	http.request_completed.connect(func(_r: int, _c: int, _h: PackedStringArray, _b: PackedByteArray) -> void: http.queue_free())
+	if http.request(BASE_URL + "/health") != OK:
+		http.queue_free()
+
 ## Reports a generated question or AI feedback as wrong or offensive (a store requirement). `kind` is
 ## "question" or "feedback"; the result arrives on job_status under `job_id`.
 func report_content(job_id: String, kind: String, text: String) -> void:
@@ -112,7 +126,7 @@ func report_content(job_id: String, kind: String, text: String) -> void:
 		return
 	_request(job_id, HTTPClient.METHOD_POST, "/v1/reports", {"job_id": job_id, "kind": kind, "text": text.left(4000)}, GRADE_TIMEOUT)
 
-# --- Answer checking on the device (contract: docs/systems/battle.md §2) ---
+# Answer checking on the device. Contract: docs/systems/battle.md §2.
 
 ## Lowercase, punctuation stripped, spaces collapsed, a leading article dropped.
 func normalize_answer(s: String) -> String:
@@ -206,12 +220,14 @@ func essay_offline(q: Dictionary, answer: String) -> Dictionary:
 ## MOCKS — the offline stand-ins for the study server (Api.MOCK)
 
 func _execute_mock_upload(job_id: String, topic_name: String, source_text: String) -> void:
-	# Simulate short processing beat like GDD §5.2 "AI is studying..."
+	# A short "AI is studying..." beat before the result.
 	call_deferred("_mock_upload_done", {"job_id": job_id, "status": "processing"})
 	# Complete after ~0.8s via timer if tree is ready, else immediate.
 	# Questions are parsed from the USER's reviewer text; canned placeholders
 	# only apply when no usable text survived (e.g. binary PDF bytes).
-	var questions := _build_questions_from_text(topic_name, source_text)
+	var questions := offline_questions(source_text)
+	if questions.is_empty():
+		questions = _fallback_questions()
 	var topic_id := _slug_topic_id(topic_name)
 	var payload := {
 		"job_id": job_id,
@@ -232,11 +248,11 @@ func _execute_mock_upload(job_id: String, topic_name: String, source_text: Strin
 	else:
 		call_deferred("_mock_poll_done", payload)
 
-## Deterministic mock extractor: parses reviewer sentences into battle-ready questions, rotating
-## Identification / Essay / Multiple Choice and tagging a tier by sentence length, so battles use
-## real material. Stand-in for the Claude document-extraction endpoint; contract:
-## docs/systems/gameplay-structure.md.
-func _build_questions_from_text(_topic_name: String, source_text: String) -> Array:
+## The offline question builder: turns reviewer sentences into battle-ready questions, rotating
+## Identification / Essay / Multiple Choice and tagging a tier by sentence length. The mock uses it, and
+## so does a real upload when the server answers `offline` (the AI's free allowance is spent).
+## [] when the text has no usable sentences. Contract: docs/systems/review-session.md.
+func offline_questions(source_text: String) -> Array:
 	var sentences := _split_sentences(source_text)
 	# Keep content-bearing sentences only.
 	var usable: Array = []
@@ -248,7 +264,7 @@ func _build_questions_from_text(_topic_name: String, source_text: String) -> Arr
 		if usable.size() >= 12:
 			break
 	if usable.is_empty():
-		return _fallback_questions()
+		return []
 	var terms_by: Array = []
 	for s in usable:
 		terms_by.append(_extract_terms(str(s)))
@@ -299,7 +315,7 @@ func _build_questions_from_text(_topic_name: String, source_text: String) -> Arr
 			})
 		idx += 1
 	if questions.is_empty():
-		return _fallback_questions()
+		return []
 	return questions
 
 ## `excerpt` with the answer term blanked out, so the question does not hand over its own answer.

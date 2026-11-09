@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="Costume" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/costume.gd" id="1_7fcrj"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/costume_crown.svg" id="2_5krq8"]
+
+[resource]
+script = ExtResource("1_7fcrj")
+id = "crown"
+display_name = "Crown"
+texture = ExtResource("2_5krq8")
+level_needed = 8
+price = 200
+position = Vector3(0, 1.18, 0.42)
+width = 0.86

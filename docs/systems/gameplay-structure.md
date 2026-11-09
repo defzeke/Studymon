@@ -81,7 +81,7 @@ Generation rules for the extractor and the AI:
 - MC: one correct option and three plausible distractors from other concepts in the same reviewer, each under about 40 characters.
 - Identification: the question must not contain its answer; `accepted` lists genuine equivalents only.
 - Essay: a 3–5 point `rubric` (point, 2–4 keywords, weight) and a `model_answer`; its points are the `key_concepts`.
-- Count: about one question per 80 words, at least 3 per type, at most 45.
+- Count: about one question per 100 words, at least 3 per type, at most 30 (fewer output tokens keep more of the free AI allowance).
 
 These rules are the server's system prompt (`backend/ai.py` `EXTRACT_SYSTEM`); the server also checks
 the output and drops what breaks them ([`../api-backend.md`](../api-backend.md) §2).
@@ -158,7 +158,7 @@ Each phase ships on its own and ends with the gates in [`../rules.md`](../rules.
 | 2 Battle by type and difficulty — **done** | MC panel; per-tier constants and thresholds; essay-only quota (since removed); the third gym spot and `Trainers3` road so MC is reachable | `battle.gd`, `api.gd`, `region_map.gd`, `region_map.tscn` |
 | 3 Overworld tiers — **superseded** | Replaced by the run structure in §3.2: a Challenge House and a Gym per type, the Champion as one 40-item run, `build_run()`, rewards and the stat effects (save v13) | `region_map.gd`, `battle.gd`, `session_manager.gd`, `companion_state.gd` |
 | 4 Flashcard Sanctuary — **done** | New scene and script; entry from the map HUD and the session list; a mastery write that only allows NEW/REMASTER → LEARNING; small once-per-card rewards | `scenes/review_session/flashcards.tscn`, `flashcards.gd`, `session_manager.gd`, `companion_state.gd` |
-| 5 Real AI backend and store launch — **Partly built (AI gateway); the game stays on mocks**, plan in [`../launch-plan.md`](../launch-plan.md) | Done: the contract (#7), PDF and text extraction with Claude using §3.1 and its answer keys, essay and near-miss grading, failure reporting (#9), `Api.MOCK` still working. Open: `Bearer` header (#2), accounts, quotas, consent, reports, deployment | `backend/main.py`, `api.gd` |
+| 5 Real AI backend and store launch — **Partly built (AI gateway); the game stays on mocks**, plan in [`../launch-plan.md`](../launch-plan.md) | Done: the contract (#7), PDF and text extraction with Gemma 4 on Cloudflare using §3.1 and its answer keys, essay and near-miss grading, failure reporting (#9), `Api.MOCK` still working. Open: `Bearer` header (#2), accounts, quotas, consent, reports, deployment | `backend/main.py`, `api.gd` |
 
 ### Future
 

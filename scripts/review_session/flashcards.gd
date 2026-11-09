@@ -5,10 +5,6 @@ extends Control
 ## Contract: docs/systems/gameplay-structure.md §3.4. Every style lives in flashcards.tscn; the card's
 ## tags are copies of %TagTemplate.
 
-const TEAL := Color("4F8F89")
-const GREEN := Color("78A982")
-const AMBER := Color("D6A85F")
-const CORAL := Color("C97970")
 const AGAIN_GAP := 3
 const QUESTION_FONT := 38
 # Once the answer shows, the question steps back to make room.
@@ -18,7 +14,7 @@ const DEAL_TIME := 0.22
 const DEAL_OFF := 800.0
 const DEAL_TILT := 0.2
 
-const TIER_COLORS := {"easy": GREEN, "medium": AMBER, "hard": CORAL}
+const TIER_COLORS := {"easy": Palette.GREEN, "medium": Palette.AMBER, "hard": Palette.CORAL}
 
 @onready var back_btn: Button = %BackButton
 @onready var progress_label: Label = %ProgressLabel
@@ -109,8 +105,8 @@ func _show_card() -> void:
 			tags.remove_child(c)
 			c.queue_free()
 	tags.add_child(_tag(str(badge["name"]), badge["color"]))
-	tags.add_child(_tag(str(q.get("type", "essay")).capitalize().replace("_", " "), TEAL))
-	tags.add_child(_tag(tier.capitalize(), TIER_COLORS.get(tier, AMBER)))
+	tags.add_child(_tag(str(q.get("type", "essay")).capitalize().replace("_", " "), Palette.TEAL))
+	tags.add_child(_tag(tier.capitalize(), TIER_COLORS.get(tier, Palette.AMBER)))
 	front_label.text = str(q.get("text", ""))
 	answer_label.text = _answer_text(q)
 	var source := str(q.get("source", ""))

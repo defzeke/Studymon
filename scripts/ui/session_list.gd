@@ -2,7 +2,6 @@ extends Control
 ## Worlds hub: a card per saved world (Play, Cards; the rest behind its "more" button) and New World.
 ## A world is a topic; contract: docs/ui-and-assets.md §2 Worlds.
 
-const ConfirmModal := preload("res://scripts/ui/widgets/confirm_modal.gd")
 const INTRO_SCENE := "res://scenes/overworld/world_intro.tscn"
 const BUILDER_SCENE := "res://scenes/review_session/categorizer.tscn"
 
@@ -90,9 +89,7 @@ func _load_topic(topic: Dictionary) -> void:
 
 func _on_play_world(topic: Dictionary) -> void:
 	_load_topic(topic)
-	var id := str(topic.get("id", ""))
-	SessionManager.current_topic_id = id
-	GameState.set_active_region(id)
+	SessionManager.current_topic_id = str(topic.get("id", ""))
 	get_tree().change_scene_to_file(INTRO_SCENE)
 
 func _on_edit(topic: Dictionary) -> void:

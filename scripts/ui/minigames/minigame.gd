@@ -8,7 +8,6 @@ extends CanvasLayer
 signal played
 signal finished
 
-const ConfirmModal := preload("res://scripts/ui/widgets/confirm_modal.gd")
 # The backdrops are drawn for a 720x1280 screen and cover the view (TextureRect keep-aspect-covered).
 const ART := Vector2(720, 1280)
 

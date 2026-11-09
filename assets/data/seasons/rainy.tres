@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="SeasonLook" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/season_look.gd" id="1_cl0ih"]
+[ext_resource type="PackedScene" path="res://scenes/overworld/weather/rain.tscn" id="2_t77r3"]
+
+[resource]
+script = ExtResource("1_cl0ih")
+sun_color = Color(0.78, 0.84, 0.9, 1)
+sun_energy = 0.35
+sky = Color(0.55, 0.62, 0.68, 1)
+ambient = Color(0.62, 0.68, 0.75, 1)
+ambient_energy = 0.85
+fog = 0.025
+canopies = PackedColorArray(0.18, 0.32, 0.24, 1)
+canopy_mix = 0.3
+grass = Color(0.3, 0.5, 0.3, 1)
+grass_mix = 0.3
+weather = ExtResource("2_t77r3")

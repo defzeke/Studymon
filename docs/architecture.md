@@ -53,53 +53,44 @@ the matching scenes. The boot flow and the reusable HUD widgets are sub-folders 
 res://
 ├── project.godot
 ├── icon.svg
-├── assets/
-│   ├── audio/            music/ (home_room.wav, loading.wav, overworld.wav), sfx/ (ten battle cues, sfx_charge,
-│   │                     sfx_charged); all our own, synthesised offline
+├── assets/               every file is listed in ui-and-assets.md §5
+│   ├── data/             the tuning tables as Resources, edited in the Inspector: foods/ (FoodItem),
+│   │                     costumes/ (Costume), sky_zones/ (SkyZone), seasons/ (SeasonLook)
+│   ├── audio/            music/ (home_room, loading, overworld, battle, four focus_* lullabies),
+│   │                     sfx/ (battle cues, sfx_charge, sfx_charged); all our own, synthesised offline
 │   ├── fonts/            JosefinSans-Regular.ttf, JosefinSans-Bold.ttf
-│   ├── models/           kuiz.glb (peek scene); map.glb + map_0.png, boy_explorer.glb + 2 .jpg,
-│   │                     explorer_girl.glb + 2 .jpg
-│   │                     textures (overworld)
+│   ├── materials/        ink_outline.tres (Kuiz's and the foes' inverted-hull outline)
+│   ├── models/           kuiz.glb; map.glb + map_0.png; boy_explorer.glb, explorer_girl.glb (+ textures);
+│   │                     robot_1.glb, robot_2.glb (battle foes)
 │   ├── theme/            app_theme.tres (the one shared Theme)
-│   └── sprites/
-│       ├── boot/         kuizmon_splash.png (60-frame splash sheet), kuizmon_loading.gif (its
-│       │                 source, not imported), loading.png (background), loading_screen_logo.gif (logo animation source, not imported) and
-│       │                 loading_screen_logo.png (its frames, keyed, as a sheet)
-│       ├── effects/      leaf.svg (loading leaves, autumn weather)
-│       ├── props/        foods, fridge, ball, screwdriver, soccer_ball, platform, ground,
-│       │                 platform_timed, trampoline, rocket, platform_space|galaxy|deep,
-│       │                 stars, meteor, tablet, towel, closet, dirt_spot_1-3, scratch_1-2,
-│       │                 costume_* (11)
-│       │                 (temporary placeholders)
-│       ├── rooms/        temporary placeholders: study_room.svg (+ _night), maintenance_bay.svg,
-│       │                 data_kitchen.svg, playroom.svg; soccer_field.svg, sky_jump.svg,
-│       │                 sky_space.svg, sky_galaxy.svg, sky_deep.svg
-│       ├── battle/       battle_backdrop.svg
-│       └── ui/           arrow.svg, icon_charge.svg, icon_book.svg, icon_settings.svg,
-│                         crystal.svg, stat_mood.svg, stat_health.svg, icon_games.svg,
-│                         game_soccer.svg, game_jump.svg, dock_table.svg,
-│                         icon_back.svg, icon_trainer.svg, icon_badge.svg, icon_crown.svg,
-│                         icon_lock.svg, icon_study.svg (region map HUD),
-│                         loading_spark.svg, tip_bulb.svg; campaign.png, charge.png,
-│                         settings.svg (unused)
+│   └── sprites/          boot/, effects/, props/, rooms/, battle/, ui/
 ├── scripts/
-│   ├── autoload/         the 6 autoloads: save_manager.gd, game_state.gd, api.gd,
-│   │                     companion_state.gd, session_manager.gd, music_manager.gd
+│   ├── autoload/         our 6 script autoloads: save_manager.gd, game_state.gd, api.gd,
+│   │                     companion_state.gd, session_manager.gd, music_manager.gd; and
+│   │                     cloud_save.gd (the CloudSave autoload scene's script)
 │   ├── audio/            synth.gd, clip_voice.gd (model sounds made in code)
 │   ├── battle/           battle.gd, arena_stage.gd, broken_bot_voice.gd
-│   ├── overworld/        region_map.gd, player.gd, joystick.gd, season.gd, encounter_trigger.gd,
-│   │                     gym_slot.gd, map_collision.gd, minimap.gd, explorer_picker.gd,
-│   │                     kuiz_follower.gd
+│   ├── data/             food_item.gd, costume.gd, sky_zone.gd, season_look.gd (the Resource classes)
+│   ├── kuiz/             kuiz_look.gd (dirt and outfit), kuiz_voice.gd: Kuiz in any scene
+│   ├── overworld/        region_map.gd, world_intro.gd, player.gd, joystick.gd, season.gd,
+│   │                     encounter_trigger.gd, gym_slot.gd, map_collision.gd, map_houses.gd,
+│   │                     minimap.gd, explorer_picker.gd, kuiz_follower.gd
 │   ├── review_session/   categorizer.gd, flashcards.gd
-│   └── ui/               home.gd, session_list.gd, settings.gd
-│       ├── boot/         splash.gd, loading.gd, peek.gd, tutorial.gd, kuiz_voice.gd, kuiz_look.gd
+│   └── ui/               home.gd, session_list.gd, settings.gd, palette.gd (Palette colours)
+│       ├── boot/         splash.gd, loading.gd, peek.gd, tutorial.gd
 │       ├── minigames/    minigame.gd, soccer.gd, sky_jump.gd (Playroom games)
-│       └── widgets/      confirm_modal.gd, stat_gauge.gd
-├── scenes/               session_list, settings (ui/)
-│   │                     encounter_trigger, gym_burst, region_map, explorer_picker (overworld/)
-│   │                     categorizer, flashcards (review_session/), battle (battle/)
-│   └── ui/boot/          splash, loading, peek
-├── backend/              main.py (FastAPI stub), requirements.txt, README.md
+│       └── widgets/      confirm_modal.gd (ConfirmModal), stat_gauge.gd, music_toggle.gd
+├── addons/GodotPlayGameServices/   the Google Play Games plugin (v3.4.0, MIT; Android .aar files and its
+│                                  GDScript clients), used for cloud saves
+├── scenes/
+│   ├── autoload/         cloud_save (the CloudSave autoload: the plugin's SignIn, Snapshots, Players nodes)
+│   ├── battle/           battle
+│   ├── kuiz/             kuiz_head (dirt decals and outfit stickers on Kuiz's Head bone)
+│   ├── overworld/        world_intro, region_map, encounter_trigger, house_trigger, gym_burst,
+│   │                     explorer_picker; weather/ rain, leaves, snow
+│   ├── review_session/   categorizer, flashcards
+│   └── ui/               session_list, settings; boot/ splash, loading, peek; widgets/ confirm_modal
+├── backend/              the study server: main.py (FastAPI), ai.py, tests/, evals/ (api-backend.md)
 ├── docs/                 ← this folder (includes quizmon-build-plan.md)
 └── README.md
 ```
@@ -120,11 +111,13 @@ Declared in this order (Godot instantiates top-down, so earlier autoloads are `_
 | # | Name | File | Owns |
 |---|---|---|---|
 | 1 | `SaveManager` | `scripts/autoload/save_manager.gd` | JSON persistence of every other state |
-| 2 | `GameState` | `scripts/autoload/game_state.gd` | account ids, auth token, campaign unlock flag, active region, large-text |
+| 2 | `GameState` | `scripts/autoload/game_state.gd` | player name, tutorial flag, AI consent, crystals and their spends, food stock, outfit, daily study goal, large text |
 | 3 | `Api` | `scripts/autoload/api.gd` | HTTP wrapper **and** the whole mock backend |
-| 4 | `CompanionState` | `scripts/autoload/companion_state.gd` | stats, XP/level, codex, pomodoro |
-| 5 | `SessionManager` | `scripts/autoload/session_manager.gd` | topics, extraction, gyms, mastery, champion, battle handoff |
-| 6 | `MusicManager` | `scripts/autoload/music_manager.gd` | main-room + loading BGM, one-shot SFX |
+| 4 | `CompanionState` | `scripts/autoload/companion_state.gd` | care stats, XP/level, the focus timer |
+| 5 | `SessionManager` | `scripts/autoload/session_manager.gd` | worlds, extraction, houses / gyms / Champion, runs and the battle handoff, mastery, flashcards |
+| 6 | `MusicManager` | `scripts/autoload/music_manager.gd` | every music track (boot, home, focus lullabies, map, battle), one-shot SFX |
+| 7 | `GodotPlayGameServices` | `addons/GodotPlayGameServices/scripts/autoloads/godot_play_game_services.gd` | the Play Games plugin's entry point (third-party, MIT, v3.4.0); only `CloudSave` uses it |
+| 8 | `CloudSave` | `scenes/autoload/cloud_save.tscn` (`scripts/autoload/cloud_save.gd`) | the save's copy in the player's Google Play Games Saved Games; Android only ([`data-model.md`](data-model.md) §8) |
 
 ```text
                         ┌──────────────┐
@@ -211,9 +204,9 @@ thread-load the next scene while they play, so those changes hit the resource ca
 | What topics exist? | `SessionManager._topics` (private, read via `get_topics_cache()`) |
 | What is being edited? | `SessionManager.pending_questions` + `editing_topic_id` |
 | What gyms exist? | derived on demand from `pending_questions` (`get_gym_structure()`) |
-| Which trainer/gym is cleared? | `SessionManager._cleared_trainers` / `_cleared_gyms` |
+| Which house / gym is cleared? | `SessionManager._cleared_houses` / `_cleared_gyms` / `_champion_defeated`, with `_best_stars` |
 | Mastery per question? | `SessionManager._mastery` |
-| Which battle am I in? | `SessionManager.battle_topic_id` / `battle_q_index` / `battle_is_boss` / `battle_is_champion` |
+| Which battle am I in? | `SessionManager.battle_topic_id` / `battle_kind` / `battle_type` / `battle_house` / `battle_run` |
 | Player's name? | `GameState.player_name`, set by the tutorial; saved |
 | Tutorial seen / food in stock? | `GameState.tutorial_done` / `food_stock`; both saved |
 | Music / sound volume? | `MusicManager.music_volume` / `sfx_volume` (0–1), saved |
@@ -228,11 +221,13 @@ which exist precisely so the overworld can pass a question to the battle scene a
 
 | Signal | Emitter | Listeners |
 |---|---|---|
-| `stats_changed`, `xp_changed`, `leveled_up`, `codex_entry_added`, `pomodoro_phase_changed` | `CompanionState` | nobody since the care room was removed |
-| `large_text_changed(enabled)` | `GameState` | nobody (settings applies it directly) |
+| `stats_changed` | `CompanionState` | `home.gd`, `battle.gd` |
+| `xp_changed`, `pomodoro_phase_changed` | `CompanionState` | `home.gd` |
+| `crystals_changed` | `GameState` | `home.gd` |
 | `job_status(job_id, status, progress, result)` | `Api` | `SessionManager`, `battle.gd` |
-| `topics_listed`, `extraction_*`, `topic_saved`, `region_generated`, `overworld_progress_changed` | `SessionManager` | `session_list.gd`, `categorizer.gd`, `region_map.gd` |
-| `mastery_changed`, `champion_defeated`, `insight_triggered` | `SessionManager` | `region_map.gd` (the rest have no listener) |
+| `topics_listed` | `SessionManager` | `session_list.gd` |
+| `extraction_*`, `region_generated` | `SessionManager` | `categorizer.gd` |
+| `overworld_progress_changed` | `SessionManager` | `region_map.gd` |
 
 `Api.job_status` is a **shared bus**: extraction jobs, the `"topics"` listing, and the `"grade"`
 result all arrive on the same signal and are disambiguated by `job_id` string. Any new async
@@ -265,7 +260,17 @@ operation must pick a unique `job_id` or it will be consumed by the wrong listen
    the top and the dock rises from the bottom.
 
 **The save is read at boot**, by a deferred `SaveManager.load_once()` from its `_ready()`. A first-time companion starts from
-`CompanionState`'s own defaults (level 1, energy 80, focus 70, mood 75, first codex line).
+`CompanionState`'s own defaults (level 1, energy 80, focus 70, mood 75). Gameplay saves are
+debounced to one write every 5 s and written at once on pause or close
+([`data-model.md`](data-model.md) §7).
 
-There is no login, no token exchange, and no read of `GameState.user_id` anywhere in the codebase —
+**On Android, `CloudSave` signs in to Google Play Games at boot** (silently, when the player already
+uses it) and loads the cloud copy:
+- On a new install it restores silently.
+- When the cloud copy is newer than this phone's progress, home asks which to keep.
+- Otherwise the phone's save is uploaded.
+
+Off Android it does nothing. See [`data-model.md`](data-model.md) §8.
+
+There is no login of our own (only the player's Google Play Games profile), no token exchange, and no read of `GameState.user_id` anywhere in the codebase —
 the auth layer described in Phase 1 was deliberately skipped (`loading.gd:2`).

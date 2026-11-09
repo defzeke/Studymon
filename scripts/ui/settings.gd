@@ -1,8 +1,8 @@
 extends Control
 ## Settings, opened from home's gear: music and sound volume, large text, and privacy & data (the
-## AI consent, the policy links, exporting / importing / deleting the save). Every change is saved.
+## AI consent, the policy links, the Google Play Games cloud save, exporting / importing / deleting the
+## save). Every change is saved.
 
-const ConfirmModal := preload("res://scripts/ui/widgets/confirm_modal.gd")
 ## The hosted policy pages; both stores need them reachable in the app. Set before exporting.
 const PRIVACY_URL := ""
 const TERMS_URL := ""
@@ -44,7 +44,7 @@ func _ready() -> void:
 	if not OS.is_debug_build() and "" in [PRIVACY_URL, TERMS_URL, SUPPORT_URL]:
 		push_error("Settings: set PRIVACY_URL, TERMS_URL and SUPPORT_URL before a store release.")
 	%DeleteDataButton.pressed.connect(func() -> void:
-		ConfirmModal.open(self, "Delete my data?", "This erases Kuiz, your worlds, questions and progress from this device. It cannot be undone.", "Delete", _delete_all, true))
+		ConfirmModal.open(self, "Delete my data?", "This erases Kuiz, your worlds, questions and progress from this device and its copy in your Google account. It cannot be undone.", "Delete", _delete_all, true))
 	ConfirmModal.tint_danger(%DeleteDataButton)
 	%ExportButton.pressed.connect(func() -> void:
 		%ExportDialog.current_file = "studymon_save_%s.json" % Time.get_date_string_from_system()
@@ -52,6 +52,9 @@ func _ready() -> void:
 	%ImportButton.pressed.connect(func() -> void: %ImportDialog.popup_centered(Vector2i(640, 760)))
 	%ExportDialog.file_selected.connect(_export)
 	%ImportDialog.file_selected.connect(_confirm_import)
+	%CloudButton.pressed.connect(CloudSave.sign_in)
+	CloudSave.account_changed.connect(_show_cloud)
+	_show_cloud(CloudSave.signed_in, CloudSave.player_name)
 
 func _export(path: String) -> void:
 	if SaveManager.export_to(path):
@@ -67,12 +70,25 @@ func _import(path: String) -> void:
 	if error != "":
 		ConfirmModal.open(self, "Import refused", error + " Your current save was not changed.", "OK", Callable(), false, "")
 		return
+	# Saved again, so the imported game is the newest copy and replaces the cloud one too.
+	SaveManager.save_game()
 	get_tree().change_scene_to_file("res://scenes/ui/boot/peek.tscn")
 
 # The fresh game starts at the tutorial, like a new install.
 func _delete_all() -> void:
+	CloudSave.delete_cloud()
 	SaveManager.delete_all()
 	get_tree().change_scene_to_file("res://scenes/ui/boot/peek.tscn")
+
+# Where the save is kept: the signed-in Play Games profile, or a Sign in button when there is none.
+func _show_cloud(signed_in: bool, player: String) -> void:
+	%CloudButton.visible = CloudSave.is_available() and not signed_in
+	if not CloudSave.is_available():
+		%CloudLabel.text = "Cloud save: Google Play Games, on Android."
+	elif signed_in:
+		%CloudLabel.text = "Saved to your Google account%s." % ((" as " + player) if player != "" else "")
+	else:
+		%CloudLabel.text = "Not signed in to Google Play Games: progress stays on this phone."
 
 func _on_back() -> void:
 	get_tree().change_scene_to_file("res://scenes/ui/boot/peek.tscn")

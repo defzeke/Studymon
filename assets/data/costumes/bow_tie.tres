@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="Costume" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/costume.gd" id="1_cf0a3"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/costume_bow_tie.svg" id="2_1ujw5"]
+
+[resource]
+script = ExtResource("1_cf0a3")
+id = "bow_tie"
+display_name = "Bow tie"
+texture = ExtResource("2_1ujw5")
+slot = "body"
+price = 40
+position = Vector3(0, -0.9, 0.92)
+width = 0.74

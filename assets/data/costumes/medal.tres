@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="Costume" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/costume.gd" id="1_efl8a"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/costume_medal.svg" id="2_allpv"]
+
+[resource]
+script = ExtResource("1_efl8a")
+id = "medal"
+display_name = "Medal"
+texture = ExtResource("2_allpv")
+slot = "body"
+level_needed = 10
+price = 250
+position = Vector3(0, -1, 0.9)
+width = 0.56

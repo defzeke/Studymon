@@ -46,6 +46,9 @@ const ENTER_TIME := 0.38
 @onready var ball: TextureRect = %SoccerBall
 @onready var label: Label = %SoccerLabel
 @onready var quit_btn: BaseButton = %SoccerQuit
+## A soft oval on the grass under the ball (its look is in peek.tscn); it stays on the ground while the
+## ball arcs.
+@onready var _shadow: Panel = %BallShadow
 
 var _shots := 0
 var _goals := 0
@@ -65,24 +68,12 @@ var _keeper_target := Vector2.ZERO
 var _sway := 0.0
 var _spin := 0.0
 var _ball_fx: Tween
-var _shadow: Panel
 
 func _ready() -> void:
 	super._ready()
 	quit_btn.pressed.connect(quit)
 	ball.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	ball.pivot_offset = ball.size / 2.0
-	# A soft oval on the grass under the ball; it stays on the ground while the ball arcs.
-	_shadow = Panel.new()
-	var oval := StyleBoxFlat.new()
-	oval.bg_color = Color(0.1608, 0.2196, 0.2275, 0.28)
-	oval.set_corner_radius_all(64)
-	_shadow.add_theme_stylebox_override("panel", oval)
-	_shadow.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_shadow.size = Vector2(ball.size.x * 0.9, ball.size.x * 0.28)
-	_shadow.pivot_offset = _shadow.size / 2.0
-	add_child(_shadow)
-	move_child(_shadow, ball.get_index())
 
 func _begin() -> void:
 	_shots = 0

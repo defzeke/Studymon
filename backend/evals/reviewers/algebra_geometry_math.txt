@@ -1,0 +1,11 @@
+Math Reviewer: Algebra and Geometry Formulas
+
+The slope of a line measures how steep it is. For two points (x₁, y₁) and (x₂, y₂), the slope is m = (y₂ − y₁) / (x₂ − x₁). A line that rises from left to right has a positive slope, a horizontal line has a slope of 0, and a vertical line has an undefined slope.
+
+The slope-intercept form of a linear equation is y = mx + b, where m is the slope and b is the y-intercept, the point where the line crosses the y-axis. Parallel lines have equal slopes. Perpendicular lines have slopes whose product is −1.
+
+A quadratic equation has the standard form ax² + bx + c = 0, where a ≠ 0. Its solutions are given by the quadratic formula x = (−b ± √(b² − 4ac)) / 2a. The expression b² − 4ac is the discriminant. If the discriminant is positive, the equation has two real roots; if it is zero, it has one real root; if it is negative, it has no real roots.
+
+In a right triangle, the Pythagorean theorem states that a² + b² = c², where c is the hypotenuse, the side opposite the right angle. For example, a right triangle with legs of 3 and 4 has a hypotenuse of 5.
+
+The area of a triangle is A = ½bh, where b is the base and h is the height. The area of a circle is A = πr², and its circumference is C = 2πr, where r is the radius. The sum of the interior angles of a polygon with n sides is (n − 2) × 180°, so the angles of a triangle add up to 180° and the angles of a quadrilateral add up to 360°.

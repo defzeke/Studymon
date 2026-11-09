@@ -5,6 +5,7 @@ extends Node3D
 ## turns to the explorer when they stop. Contract: docs/systems/overworld.md §3 Kuiz.
 
 const KUIZ: PackedScene = preload("res://assets/models/kuiz.glb")
+const INK_OUTLINE: StandardMaterial3D = preload("res://assets/materials/ink_outline.tres")
 ## Kuiz's height on the island (the glb is ~2.35 units tall, ears included).
 const HEIGHT := 0.6
 const MODEL_HEIGHT := 2.35
@@ -36,7 +37,6 @@ const TURN := 8.0
 const CRUMB := 0.08
 # The same look Kuiz has at home and in battle (arena_stage.gd _dress): an ink outline, vertex
 # colours, self-lit parts.
-const INK := Color("29383A")
 const FLAT_SELF_LIT := 0.85
 
 @export var player: Node3D
@@ -129,12 +129,8 @@ static func dress(model: Node3D, outline_boost: float) -> void:
 	for mi: MeshInstance3D in model.find_children("*", "MeshInstance3D", true, false):
 		var outline := float(mi.get_meta("extras", {}).get("outline", 0.0))
 		if outline > 0.0:
-			var ink := StandardMaterial3D.new()
-			ink.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-			ink.cull_mode = BaseMaterial3D.CULL_FRONT
-			ink.grow = true
+			var ink := INK_OUTLINE.duplicate() as StandardMaterial3D
 			ink.grow_amount = outline * outline_boost
-			ink.albedo_color = INK
 			mi.material_overlay = ink
 		for i in mi.get_surface_override_material_count():
 			var mat := mi.get_active_material(i) as BaseMaterial3D

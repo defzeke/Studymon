@@ -1,0 +1,35 @@
+Chemistry Reviewer: Atoms and the Periodic Table
+
+Subatomic particles
+
+| Particle | Charge | Relative mass | Location |
+|---|---|---|---|
+| Proton | +1 | 1 | nucleus |
+| Neutron | 0 | 1 | nucleus |
+| Electron | -1 | about 1/1836 | electron cloud around the nucleus |
+
+The atomic number is the number of protons in an atom, and it identifies the element. The mass number is the number of protons plus neutrons. Isotopes are atoms of the same element with different numbers of neutrons.
+
+Selected elements
+
+| Element | Symbol | Atomic number | Group | State at room temperature |
+|---|---|---|---|---|
+| Hydrogen | H | 1 | 1 | gas |
+| Helium | He | 2 | 18 (noble gases) | gas |
+| Carbon | C | 6 | 14 | solid |
+| Oxygen | O | 8 | 16 | gas |
+| Sodium | Na | 11 | 1 (alkali metals) | solid |
+| Chlorine | Cl | 17 | 17 (halogens) | gas |
+| Iron | Fe | 26 | 8 | solid |
+| Bromine | Br | 35 | 17 (halogens) | liquid |
+| Mercury | Hg | 80 | 12 | liquid |
+
+Rows of the periodic table are called periods, and columns are called groups. Elements in the same group have the same number of valence electrons, so they have similar chemical properties. Alkali metals in group 1 are very reactive and react with water. Noble gases in group 18 have full outer shells and are very unreactive.
+
+Types of chemical bonds
+
+| Bond | How it forms | Example |
+|---|---|---|
+| Ionic | electrons are transferred from a metal to a nonmetal | sodium chloride (NaCl) |
+| Covalent | nonmetal atoms share electrons | water (H2O) |
+| Metallic | metal atoms share a sea of free electrons | copper wire |

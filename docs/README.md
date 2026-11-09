@@ -29,6 +29,8 @@ Where the two disagree, the docs say so explicitly.
 | Work on crystals, purchases or usage limits | [`systems/monetization.md`](systems/monetization.md) |
 | Change a screen or add art | [`ui-and-assets.md`](ui-and-assets.md) |
 | Wire the real backend | [`api-backend.md`](api-backend.md) |
+| Fill in the Play Console, or change the privacy / terms / support pages in `site/` | [`store-listing.md`](store-listing.md) |
+| **Pick up the next work: integrate the AI, add Google sign-in, deploy the game** | [`next-steps.md`](next-steps.md) |
 | **Fix something that is broken** | [`known-issues.md`](known-issues.md) |
 | See plan-vs-reality per phase | [`build-plan-status.md`](build-plan-status.md) |
 
@@ -42,12 +44,12 @@ Where the two disagree, the docs say so explicitly.
 | Main scene | `res://scenes/ui/boot/splash.tscn` |
 | Viewport | 720 × 1280, stretch `canvas_items`, aspect `expand` |
 | Renderer | `mobile`, D3D12 on Windows |
-| Language | GDScript only (38 files, ~296 KB) |
-| Scenes | 12 (`.tscn`) |
-| Autoloads | 7 |
-| Backend | FastAPI gateway to Claude: `/v1/extract`, `/v1/grade` (`backend/`). The editor runs on mocks; release builds use the server |
-| Persistence | Single JSON file `user://studymon_save.json`, schema `"v": 14` |
-| Tests / CI | None |
+| Language | GDScript only (45 files) |
+| Scenes | 19 (`.tscn`) |
+| Autoloads | 8 (6 game autoloads, the Play Games plugin's, and `CloudSave`) |
+| Backend | FastAPI gateway to Gemma 4 on Cloudflare Workers AI: `/v1/extract`, `/v1/grade` (`backend/`, free on Render). The editor runs on mocks; release builds use the server |
+| Persistence | Single JSON file `user://studymon_save.json`, schema `"v": 17`, copied to the player's Google Play Games Saved Games on Android |
+| Tests / CI | GitHub Actions (`.github/workflows/checks.yml`): the headless gates (`tests/gates.sh`), `backend/tests` and the docs' links (`tests/links.sh`) |
 
 ---
 

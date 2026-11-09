@@ -1,4 +1,4 @@
-"""Answer-key checks and essay scoring, on fixed data: no Claude calls."""
+"""Answer-key checks, essay scoring, the model-call layer and the endpoints, on fixed data: no model calls."""
 import pathlib
 import sys
 
@@ -89,7 +89,7 @@ def test_topic_id_matches_client_slug():
 def test_extract_endpoint_returns_job_envelope(monkeypatch):
     import json
     from fastapi.testclient import TestClient
-    monkeypatch.setattr(ai, "generate_questions", lambda text, file=None, media_type="", existing=None: json.dumps({"questions": [q()]}))
+    monkeypatch.setattr(ai, "generate_questions", lambda text, images=None, existing=None: {"questions": [q()]})
     r = TestClient(main.app).post("/v1/extract", json={"job_id": "extract_7", "topic_name": "Bio", "text": REVIEWER})
     body = r.json()
     assert body["job_id"] == "extract_7" and body["status"] == "completed"
@@ -135,9 +135,9 @@ def test_docx_and_pptx_become_text(monkeypatch):
     main._used.clear()
     seen = {}
 
-    def fake(text, file=None, media_type="", existing=None):
-        seen["text"], seen["file"] = text, file
-        return json.dumps({"questions": [q()]})
+    def fake(text, images=None, existing=None):
+        seen["text"], seen["images"] = text, images
+        return {"questions": [q()]}
     monkeypatch.setattr(ai, "generate_questions", fake)
     d = docx.Document()
     for line in REVIEWER.split(". "):
@@ -146,7 +146,7 @@ def test_docx_and_pptx_become_text(monkeypatch):
     d.save(buf)
     body = {"job_id": "x", "topic_name": "Bio", "file_base64": _b64(buf.getvalue()), "file_type": "docx"}
     r = TestClient(main.app).post("/v1/extract", json=body).json()
-    assert r["status"] == "completed" and "chloroplast" in seen["text"] and seen["file"] is None
+    assert r["status"] == "completed" and "chloroplast" in seen["text"] and not seen["images"]
     deck = pptx.Presentation()
     slide = deck.slides.add_slide(deck.slide_layouts[1])
     slide.shapes.title.text = "Cells"
@@ -164,9 +164,9 @@ def test_photo_goes_as_image_and_skips_the_source_check(monkeypatch):
     main._used.clear()
     seen = {}
 
-    def fake(text, file=None, media_type="", existing=None):
-        seen["media_type"] = media_type
-        return json.dumps({"questions": [q(source="text only visible in the photo")]})
+    def fake(text, images=None, existing=None):
+        seen["media_type"] = images[0][1]
+        return {"questions": [q(source="text only visible in the photo")]}
     monkeypatch.setattr(ai, "generate_questions", fake)
     body = {"job_id": "p", "topic_name": "Bio", "file_base64": _b64(b"\x89PNG fake"), "file_type": "png"}
     r = TestClient(main.app).post("/v1/extract", json=body).json()
@@ -179,9 +179,132 @@ def test_more_questions_skip_existing_and_return_reviewer_text(monkeypatch):
     import json
     from fastapi.testclient import TestClient
     main._used.clear()
-    monkeypatch.setattr(ai, "generate_questions", lambda text, file=None, media_type="", existing=None: json.dumps({"questions": [
-        q(), q(text="Where does respiration release energy?", answer="mitochondria", source="Cellular respiration releases that energy in the mitochondria")]}))
+    monkeypatch.setattr(ai, "generate_questions", lambda text, images=None, existing=None: {"questions": [
+        q(), q(text="Where does respiration release energy?", answer="mitochondria", source="Cellular respiration releases that energy in the mitochondria")]})
     body = {"job_id": "m", "topic_name": "Bio", "text": REVIEWER, "existing": ["Which organelle holds chlorophyll?"]}
     r = TestClient(main.app).post("/v1/extract", json=body).json()
     assert [x["text"] for x in r["result"]["questions"]] == ["Where does respiration release energy?"]
     assert r["result"]["reviewer_text"] == REVIEWER
+
+
+class _Reply:
+    """A stand-in for one chat-completion response."""
+    def __init__(self, content, finish="stop", usage=(1000, 2000)):
+        from types import SimpleNamespace as NS
+        self.choices = [NS(finish_reason=finish, message=NS(content=content))]
+        self.usage = NS(prompt_tokens=usage[0], completion_tokens=usage[1])
+
+
+class _FakeCompletions:
+    def __init__(self, replies):
+        self.replies, self.calls = list(replies), []
+
+    def create(self, **kwargs):
+        self.calls.append(kwargs)
+        r = self.replies.pop(0)
+        if isinstance(r, Exception):
+            raise r
+        return r
+
+
+def _fake_client(monkeypatch, replies):
+    from types import SimpleNamespace as NS
+    fake = _FakeCompletions(replies)
+    monkeypatch.setattr(ai, "client", NS(chat=NS(completions=fake)))
+    monkeypatch.setattr(ai, "_schema_mode", True)
+    return fake
+
+
+def test_parse_json_strips_fences_and_prose():
+    assert ai.parse_json('```json\n{"a": 1}\n```') == {"a": 1}
+    assert ai.parse_json('Here you go: {"a": [1, 2]} hope it helps') == {"a": [1, 2]}
+    import pytest
+    with pytest.raises(ValueError):
+        ai.parse_json("no json here")
+
+
+def test_chat_retries_once_on_bad_json_and_counts_neurons(monkeypatch):
+    spent = []
+    monkeypatch.setattr(ai, "spend", spent.append)
+    fake = _fake_client(monkeypatch, [_Reply("not json"), _Reply('{"correct": true, "feedback": "Yes"}')])
+    r = ai.grade_identification({"question": "Q", "expected": "chloroplast", "accepted": [], "source": ""}, "chloroplasts")
+    assert r == {"score": 1.0, "feedback": "Yes"}
+    assert len(fake.calls) == 2 and fake.calls[1]["messages"][-1]["role"] == "user"
+    assert len(spent) == 2 and round(spent[0], 3) == round(ai.neurons(1000, 2000), 3)
+
+
+def test_chat_drops_response_format_when_refused(monkeypatch):
+    import httpx
+    import openai
+    refused = openai.BadRequestError("response_format is not supported", response=httpx.Response(
+        400, request=httpx.Request("POST", "http://x")), body=None)
+    fake = _fake_client(monkeypatch, [refused, _Reply('{"points": [], "feedback": "ok"}')])
+    r = ai.grade_essay({"question": "Q", "rubric": [{"point": "p", "keywords": [], "weight": 1}],
+                        "model_answer": "", "source": ""}, "an answer")
+    assert r["score"] == 0.0 and "response_format" in fake.calls[0] and "response_format" not in fake.calls[1]
+    assert ai._schema_mode is False
+
+
+def test_chat_turns_a_rate_limit_into_a_readable_error(monkeypatch):
+    import httpx
+    import openai
+    import pytest
+    busy = openai.RateLimitError("quota", response=httpx.Response(429, request=httpx.Request("POST", "http://x")), body=None)
+    _fake_client(monkeypatch, [busy])
+    with pytest.raises(ai.AIError, match="free allowance"):
+        ai.grade_identification({"question": "Q", "expected": "x", "accepted": [], "source": ""}, "y")
+
+
+def test_malformed_model_items_are_skipped():
+    assert ai.check_questions(["a string", 3, q(accepted="chloroplasts")], REVIEWER)[0]["accepted"] == ["chloroplast"]
+
+
+def test_spent_budget_answers_extract_offline_and_grade_with_429(monkeypatch):
+    from fastapi.testclient import TestClient
+    main._used.clear()
+    main._spent.clear()
+    monkeypatch.setattr(ai, "generate_questions", lambda *a, **k: (_ for _ in ()).throw(AssertionError("no model call")))
+    main.spend(main.DAILY_NEURONS)
+    c = TestClient(main.app)
+    r = c.post("/v1/extract", json={"job_id": "e1", "topic_name": "Bio", "text": REVIEWER}).json()
+    assert r["status"] == "completed" and r["result"]["offline"] is True and r["result"]["questions"] == []
+    assert r["result"]["reviewer_text"] == REVIEWER
+    photo = c.post("/v1/extract", json={"job_id": "e2", "topic_name": "Bio", "file_base64": _b64(b"\x89PNG"), "file_type": "png"})
+    assert photo.json()["status"] == "failed"
+    g = c.post("/v1/grade", json={"job_id": "g1", "mode": "identification", "question": "Q", "answer": "a"})
+    assert g.status_code == 429 and g.json()["status"] == "failed"
+    main._spent.clear()
+
+
+def test_ai_failure_falls_back_to_offline_text(monkeypatch):
+    from fastapi.testclient import TestClient
+    main._used.clear()
+    main._spent.clear()
+
+    def broken(*a, **k):
+        raise ai.AIError("Could not reach the AI service.")
+    monkeypatch.setattr(ai, "generate_questions", broken)
+    r = TestClient(main.app).post("/v1/extract", json={"job_id": "e3", "topic_name": "Bio", "text": REVIEWER}).json()
+    assert r["status"] == "completed" and r["result"]["offline"] and r["result"]["note"] == "Could not reach the AI service."
+
+
+def test_scanned_pdf_goes_as_page_images(monkeypatch):
+    import io
+    import pypdf
+    from fastapi.testclient import TestClient
+    main._used.clear()
+    main._spent.clear()
+    seen = {}
+
+    def fake(text, images=None, existing=None):
+        seen["text"], seen["images"] = text, images
+        return {"questions": [q(source="only on the scan")]}
+    monkeypatch.setattr(ai, "generate_questions", fake)
+    w = pypdf.PdfWriter()
+    w.add_blank_page(width=300, height=400)
+    buf = io.BytesIO()
+    w.write(buf)
+    body = {"job_id": "s", "topic_name": "Bio", "file_base64": _b64(buf.getvalue()), "file_type": "pdf"}
+    r = TestClient(main.app).post("/v1/extract", json=body).json()
+    assert r["status"] == "completed" and seen["text"] == ""
+    assert len(seen["images"]) == 1 and seen["images"][0][1] == "image/png" and seen["images"][0][0][:4] == b"\x89PNG"

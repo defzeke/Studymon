@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="SkyZone" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/sprites/props/platform_deep.svg" id="1_ggg6x"]
+[ext_resource type="Script" path="res://scripts/data/sky_zone.gd" id="2_drdm1"]
+
+[resource]
+script = ExtResource("2_drdm1")
+from_m = 1800
+banner = "Deep Space!"
+platform = ExtResource("1_ggg6x")

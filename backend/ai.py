@@ -1,22 +1,40 @@
-"""Claude calls, answer-key checks and essay scoring. Contract: docs/api-backend.md."""
+"""Model calls, answer-key checks and essay scoring. Contract: docs/api-backend.md.
+
+The model sits behind any OpenAI-compatible chat endpoint, set by environment variables, so changing
+provider or model is configuration only. The default is Gemma 4 on Cloudflare Workers AI.
+"""
 import base64
 import hashlib
 import io
 import json
+import os
 import re
+from typing import Callable
 
-import anthropic
 import docx
+import openai
 import pptx
 import pypdf
 
-# Contract: docs/api-backend.md §Models. One model per route; change here only.
-EXTRACT_MODEL = "claude-opus-5-5"
-GRADE_MODEL = "claude-opus-5-5"
-MAX_QUESTIONS = 45
+# Contract: docs/api-backend.md §3.
+AI_BASE_URL = os.environ.get("AI_BASE_URL", "")  # https://api.cloudflare.com/client/v4/accounts/<id>/ai/v1
+AI_API_KEY = os.environ.get("AI_API_KEY", "")
+EXTRACT_MODEL = os.environ.get("EXTRACT_MODEL", "@cf/google/gemma-4-26b-a4b-it")
+GRADE_MODEL = os.environ.get("GRADE_MODEL", EXTRACT_MODEL)
+# What a million input / output tokens cost in Cloudflare neurons (Workers AI pricing for Gemma 4 26B).
+NEURONS_PER_M_IN = float(os.environ.get("NEURONS_PER_M_IN", "9091"))
+NEURONS_PER_M_OUT = float(os.environ.get("NEURONS_PER_M_OUT", "27273"))
+MAX_QUESTIONS = 30
 MAX_DISTRACTORS = 3
+# A scanned PDF goes to the model as page images: at most this many pages, this wide.
+MAX_SCAN_PAGES = 10
+SCAN_WIDTH = 1400
 
-client = anthropic.Anthropic()
+client = openai.OpenAI(base_url=AI_BASE_URL or None, api_key=AI_API_KEY or "unset", max_retries=1, timeout=170)
+# main.py sets this to its daily budget meter; every call reports the neurons it used.
+spend: Callable[[float], None] = lambda neurons: None
+# False once the endpoint has refused `response_format`; the schema then rides in the prompt only.
+_schema_mode = True
 
 _STR_LIST = {"type": "array", "items": {"type": "string"}}
 
@@ -116,7 +134,7 @@ reviewer passage that answers it. "rubric" has 3 to 5 points a full answer cover
 short keywords a student would likely use, and a weight (bigger = more important). "model_answer" is \
 a 2 to 4 sentence ideal answer. "answer" is a one-line summary. "accepted" and "distractors" are empty.
 
-How many: about one question per 80 words of reviewer, at least 3 of each type and at most 45 in \
+How many: about one question per 100 words of reviewer, at least 3 of each type and at most 30 in \
 total. For each type aim for at least 3 easy, 3 medium and 1 hard. Cover the whole reviewer rather \
 than repeating one idea.
 
@@ -140,7 +158,7 @@ Feedback is one or two short sentences: what was good, and the most important th
 
 
 class AIError(Exception):
-    """A Claude call that produced no usable result; the message is safe to show the player."""
+    """A model call that produced no usable result; the message is safe to show the player."""
 
 
 def _norm(s: str) -> str:
@@ -182,51 +200,114 @@ def pdf_pages(data: bytes) -> int:
         return 0
 
 
-def _final(stream_kwargs: dict) -> str:
-    """Runs one streamed structured-output request and returns its JSON text."""
+def pdf_images(data: bytes) -> list[bytes]:
+    """A scanned PDF's first pages as PNGs (the model cannot read PDFs), or [] when none render."""
     try:
-        with client.beta.messages.stream(
-            thinking={"type": "adaptive"},
-            betas=["server-side-fallback-2026-07-01"],
-            fallbacks="default",
-            **stream_kwargs,
-        ) as stream:
-            message = stream.get_final_message()
-    except anthropic.RateLimitError as e:
-        raise AIError("The AI is busy right now. Try again in a minute.") from e
-    except anthropic.APIStatusError as e:
-        raise AIError("The AI service returned an error (%d)." % e.status_code) from e
-    except anthropic.APIConnectionError as e:
-        raise AIError("Could not reach the AI service.") from e
-    if message.stop_reason == "refusal":
-        raise AIError("This material couldn't be processed. Try a different reviewer.")
-    if message.stop_reason == "max_tokens":
-        raise AIError("The reviewer is too long to finish in one go. Split it into smaller parts.")
-    return next(b.text for b in message.content if b.type == "text")
+        import pypdfium2
+        pages = []
+        pdf = pypdfium2.PdfDocument(data)
+        for i in range(min(len(pdf), MAX_SCAN_PAGES)):
+            page = pdf[i]
+            image = page.render(scale=SCAN_WIDTH / max(page.get_width(), 1.0)).to_pil()
+            buf = io.BytesIO()
+            image.convert("RGB").save(buf, "PNG")
+            pages.append(buf.getvalue())
+        return pages
+    except Exception:
+        return []
 
 
-def generate_questions(text: str, file: bytes | None = None, media_type: str = "", existing: list | None = None) -> str:
-    """Claude's raw question-set JSON for a reviewer: text, or a PDF / photo (`file` with its MIME type)."""
+def parse_json(raw: str) -> dict:
+    """The JSON object in a model reply: code fences and text around the object are ignored."""
+    raw = raw.strip()
+    fenced = re.search(r"```(?:json)?\s*(.*?)```", raw, re.S)
+    if fenced:
+        raw = fenced.group(1).strip()
+    start, end = raw.find("{"), raw.rfind("}")
+    if start < 0 or end < start:
+        raise ValueError("no JSON object in the reply")
+    data = json.loads(raw[start:end + 1])
+    if not isinstance(data, dict):
+        raise ValueError("the reply is not a JSON object")
+    return data
+
+
+def neurons(prompt_tokens: int, completion_tokens: int) -> float:
+    return (prompt_tokens * NEURONS_PER_M_IN + completion_tokens * NEURONS_PER_M_OUT) / 1_000_000
+
+
+def _chat(model: str, system: str, content: list, schema: dict, max_tokens: int) -> dict:
+    """One chat call that must return a JSON object matching `schema`. The schema is in the prompt
+    as well as in `response_format`, so models without a JSON mode still follow it; a reply that does
+    not parse is asked for once more."""
+    global _schema_mode
+    messages = [
+        {"role": "system", "content": system + "\n\nReply with one JSON object and nothing else (no prose, "
+         "no code fences). It must match this JSON Schema:\n" + json.dumps(schema)},
+        {"role": "user", "content": content},
+    ]
+    asked_again = False
+    while True:
+        kwargs: dict = {"model": model, "messages": messages, "max_tokens": max_tokens, "temperature": 0.4}
+        if _schema_mode:
+            kwargs["response_format"] = {"type": "json_schema",
+                                         "json_schema": {"name": "result", "schema": schema, "strict": True}}
+        try:
+            reply = client.chat.completions.create(**kwargs)
+        except openai.BadRequestError as e:
+            if _schema_mode and "response_format" in str(e):
+                _schema_mode = False
+                continue
+            raise AIError("The AI service could not read this request.") from e
+        except openai.RateLimitError as e:
+            raise AIError("The AI has used today's free allowance. Try again tomorrow.") from e
+        except openai.APIStatusError as e:
+            raise AIError("The AI service returned an error (%d)." % e.status_code) from e
+        except openai.APIConnectionError as e:
+            raise AIError("Could not reach the AI service.") from e
+        if reply.usage:
+            spend(neurons(reply.usage.prompt_tokens, reply.usage.completion_tokens))
+        choice = reply.choices[0]
+        if choice.finish_reason == "length":
+            raise AIError("The reviewer is too long to finish in one go. Split it into smaller parts.")
+        try:
+            return parse_json(choice.message.content or "")
+        except ValueError as e:
+            if asked_again:
+                raise AIError("The AI's answer could not be read. Try again.") from e
+            asked_again = True
+            messages += [{"role": "assistant", "content": choice.message.content or ""},
+                         {"role": "user", "content": "That was not valid JSON. Reply again with only the JSON object."}]
+
+
+def generate_questions(text: str, images: list[tuple[bytes, str]] | None = None, existing: list | None = None) -> dict:
+    """The model's raw question set for a reviewer: its text, or photos / scanned pages as
+    (bytes, MIME type) pairs."""
     content: list = []
-    if file is not None:
-        kind = "document" if media_type == "application/pdf" else "image"
-        content.append({"type": kind, "source": {"type": "base64", "media_type": media_type,
-                                                 "data": base64.b64encode(file).decode()}})
-        content.append({"type": "text", "text": "<reviewer>The attached %s is the reviewer.</reviewer>\nWrite the question bank."
-                        % ("PDF" if kind == "document" else "photo of notes")})
+    if images:
+        for data, mime in images:
+            content.append({"type": "image_url", "image_url": {"url": "data:%s;base64,%s" % (mime, base64.b64encode(data).decode())}})
+        content.append({"type": "text", "text": "<reviewer>The attached image%s %s the reviewer (photographed or scanned "
+                        "notes).</reviewer>\nWrite the question bank." % (("s", "are") if len(images) > 1 else ("", "is"))})
     else:
         content.append({"type": "text", "text": "<reviewer>\n%s\n</reviewer>\nWrite the question bank." % text})
     if existing:
         content.append({"type": "text", "text": "The world already has these questions. Write new ones about other parts of "
                         "the reviewer; do not repeat or rephrase them:\n<existing>\n%s\n</existing>"
                         % "\n".join(str(e)[:300] for e in existing)})
-    return _final({
-        "model": EXTRACT_MODEL,
-        "max_tokens": 64000,
-        "system": [{"type": "text", "text": EXTRACT_SYSTEM, "cache_control": {"type": "ephemeral"}}],
-        "output_config": {"effort": "high", "format": {"type": "json_schema", "schema": QUESTION_SET_SCHEMA}},
-        "messages": [{"role": "user", "content": content}],
-    })
+    return _chat(EXTRACT_MODEL, EXTRACT_SYSTEM, content, QUESTION_SET_SCHEMA, 12000)
+
+
+def _strs(v) -> list:
+    """A list from the model, or [] when it sent something else (a string would split into letters)."""
+    return v if isinstance(v, list) else []
+
+
+def _weight(r: dict) -> float:
+    try:
+        return float(r.get("weight", 0))
+    except (TypeError, ValueError):
+        return 0.0
 
 
 def check_questions(raw: list, reviewer_text: str, existing: list | None = None) -> list:
@@ -236,6 +317,8 @@ def check_questions(raw: list, reviewer_text: str, existing: list | None = None)
     out: list = []
     seen: set = {_norm(str(e)) for e in existing or []}
     for q in raw[:MAX_QUESTIONS * 2]:
+        if not isinstance(q, dict):
+            continue
         conf = 1.0
         kind, text = q.get("type"), str(q.get("text", "")).strip()
         answer = str(q.get("answer", "")).strip()
@@ -254,16 +337,16 @@ def check_questions(raw: list, reviewer_text: str, existing: list | None = None)
             if _norm(answer) in _norm(text):
                 continue
             accepted = []
-            for a in [answer] + list(q.get("accepted", [])):
+            for a in [answer] + _strs(q.get("accepted")):
                 a = str(a).strip()
                 if a and _norm(a) not in [_norm(x) for x in accepted]:
                     accepted.append(a)
             d["accepted"] = accepted
             d["key_concepts"] = [answer]
         elif kind == "multiple_choice":
-            taken = {_norm(answer)} | {_norm(str(a)) for a in q.get("accepted", [])}
+            taken = {_norm(answer)} | {_norm(str(a)) for a in _strs(q.get("accepted"))}
             wrong = []
-            for w in q.get("distractors", []):
+            for w in _strs(q.get("distractors")):
                 w = str(w).strip()
                 if w and _norm(w) not in taken:
                     taken.add(_norm(w))
@@ -275,15 +358,15 @@ def check_questions(raw: list, reviewer_text: str, existing: list | None = None)
             d["distractors"] = wrong[:MAX_DISTRACTORS]
             d["key_concepts"] = [answer]
         elif kind == "essay":
-            rubric = [r for r in q.get("rubric", []) if str(r.get("point", "")).strip() and float(r.get("weight", 0)) > 0]
+            rubric = [r for r in (q.get("rubric") if isinstance(q.get("rubric"), list) else []) if isinstance(r, dict) and str(r.get("point", "")).strip() and _weight(r) > 0]
             if len(rubric) < 3:
                 continue
             if len(rubric) > 5:
                 rubric, conf = rubric[:5], conf - 0.15
-            total = sum(float(r["weight"]) for r in rubric)
+            total = sum(_weight(r) for r in rubric)
             d["rubric"] = [{"point": str(r["point"]).strip(),
-                            "keywords": [str(k).strip() for k in r.get("keywords", []) if str(k).strip()],
-                            "weight": round(float(r["weight"]) / total, 4)} for r in rubric]
+                            "keywords": [str(k).strip() for k in _strs(r.get("keywords")) if str(k).strip()],
+                            "weight": round(_weight(r) / total, 4)} for r in rubric]
             d["key_concepts"] = [r["point"] for r in d["rubric"]]
         else:
             continue
@@ -297,18 +380,11 @@ def check_questions(raw: list, reviewer_text: str, existing: list | None = None)
 
 
 def grade_identification(q: dict, given: str) -> dict:
-    raw = _final({
-        "model": GRADE_MODEL,
-        "max_tokens": 4000,
-        "system": GRADE_ID_SYSTEM,
-        "output_config": {"effort": "low", "format": {"type": "json_schema", "schema": ID_GRADE_SCHEMA}},
-        "messages": [{"role": "user", "content":
-            "Question: %s\nAnswer key: %s\nAlso accepted: %s\nReviewer source: %s\n<answer>%s</answer>" % (
-                q.get("question", ""), q.get("expected", ""), ", ".join(q.get("accepted", [])),
-                q.get("source", ""), given)}],
-    })
-    data = json.loads(raw)
-    return {"score": 1.0 if data["correct"] else 0.0, "feedback": str(data["feedback"])}
+    data = _chat(GRADE_MODEL, GRADE_ID_SYSTEM, [{"type": "text", "text":
+        "Question: %s\nAnswer key: %s\nAlso accepted: %s\nReviewer source: %s\n<answer>%s</answer>" % (
+            q.get("question", ""), q.get("expected", ""), ", ".join(q.get("accepted", [])),
+            q.get("source", ""), given)}], ID_GRADE_SCHEMA, 600)
+    return {"score": 1.0 if data.get("correct") is True else 0.0, "feedback": str(data.get("feedback", ""))}
 
 
 def essay_score(rubric: list, points: list, answer: str) -> tuple[float, list]:
@@ -317,7 +393,12 @@ def essay_score(rubric: list, points: list, answer: str) -> tuple[float, list]:
     said = _norm(answer)
     covered = [False] * len(rubric)
     for p in points:
-        i = int(p.get("index", -1))
+        if not isinstance(p, dict):
+            continue
+        try:
+            i = int(p.get("index", -1))
+        except (TypeError, ValueError):
+            continue
         evidence = _norm(str(p.get("evidence", "")))
         if 0 <= i < len(rubric) and p.get("covered") and len(evidence) >= 3 and evidence in said:
             covered[i] = True
@@ -330,15 +411,10 @@ def grade_essay(q: dict, given: str) -> dict:
     rubric = q.get("rubric", [])
     lines = "\n".join("%d. %s (keywords: %s)" % (i, r.get("point", ""), ", ".join(r.get("keywords", [])))
                       for i, r in enumerate(rubric))
-    raw = _final({
-        "model": GRADE_MODEL,
-        "max_tokens": 8000,
-        "system": GRADE_ESSAY_SYSTEM,
-        "output_config": {"effort": "medium", "format": {"type": "json_schema", "schema": ESSAY_GRADE_SCHEMA}},
-        "messages": [{"role": "user", "content":
-            "Question: %s\nRubric (index. point):\n%s\nModel answer: %s\nReviewer source: %s\n<answer>%s</answer>" % (
-                q.get("question", ""), lines, q.get("model_answer", ""), q.get("source", ""), given)}],
-    })
-    data = json.loads(raw)
-    score, covered = essay_score(rubric, data["points"], given)
-    return {"score": score, "covered": covered, "feedback": str(data["feedback"])}
+    data = _chat(GRADE_MODEL, GRADE_ESSAY_SYSTEM, [{"type": "text", "text":
+        "Question: %s\nRubric (index. point):\n%s\nModel answer: %s\nReviewer source: %s\n<answer>%s</answer>" % (
+            q.get("question", ""), lines, q.get("model_answer", ""), q.get("source", ""), given)}],
+        ESSAY_GRADE_SCHEMA, 1500)
+    points = data.get("points", [])
+    score, covered = essay_score(rubric, points if isinstance(points, list) else [], given)
+    return {"score": score, "covered": covered, "feedback": str(data.get("feedback", ""))}

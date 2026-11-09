@@ -6,58 +6,131 @@ Where the work stands. Short on purpose — this is a **register**, not a backlo
 > doc that owns it, and **those docs win** if the two disagree. See [`rules.md`](rules.md) §2. Do not
 > let a second status list grow here.
 
-Last updated: 2026-11-01.
+Last updated: 2026-11-09.
 
 ## In flight
 
-Uncommitted, for the maintainer to commit: a full Kuiz refuses food, the explorer picker opens first after the
-world intro, the map HUD restyled, the minimap opens large, and the settable focus timer with Kuiz reviewing,
-lullabies and refused navigation, the map HUD as one top band, a "Go home?" confirmation, the restyled battle and encounter panel, the explorer throwing Kuiz in, a simpler encounter pop-up, softer entrance sounds, battle music, and a mute for the map and battles. Checked windowed on Windows with a scratch harness; not yet played on a phone.
+Uncommitted: **the hand-over for the coworker** who takes over the backend, the AI and the release.
+- [`next-steps.md`](next-steps.md) replaces `backend-next-steps.md`. It covers three phases in order:
+  integrate the AI, add required Google sign-in through Play Games, and deploy the game.
+- `.github/workflows/pages.yml` is back, since the coworker can turn GitHub Pages on.
+- `rules.md` (Auth) and `launch-plan.md` §1 (Login) record the 2026-11-09 decision on sign-in.
 
-Everything below **Done** is on `world-assets`, pushed but not yet merged to `main` (last merged in
-PR #8).
+**Game check on 2026-11-09.** No errors were found.
+- Headless: all 7 gates, plus every other scene.
+- Windowed: the boot chain reaches home in about 12 s, and the world intro reaches the map in about
+  6 s.
+- The only failures are the known headless #22 cases.
+- Not covered: tapping through the game by hand, and phones.
 
-Still unverified across the committed work: none of the 2026-10-26 → 10-29 batches has been opened in
-the editor GUI or played on a phone; checks were headless (79 Godot checks, 15 `backend/tests`) and
-the scene gates. The houses have no door-swing animation (the glb merges all doors; needs a Blender
-split).
+Phases A and B of the 2026-11-08 plan are committed, but neither has met the real world yet:
+- **A, cloud saves** (`6415399`): not tried on a phone. It needs the Play Console Game ID and an Android
+  export ([`skills.md`](skills.md) §*Export for Android with Play Games*).
+- **B, Gemma 4 on Cloudflare** (`d869b04`): not run against the real model. It needs the Cloudflare
+  token.
 
-## Next: before the store release
+Branches: the batches through 2026-11-02 are also on `origin/dev` (PR #9). Nothing is on `main`.
 
-| Order | Item | Needs |
-|---|---|---|
-| 1 | Run `backend/evals/` with a real key (now also a Word and a photo reviewer), tune prompts, record cost in [`api-backend.md`](api-backend.md) §3; pick the model per route | an Anthropic key (about $2–3 a run) |
-| 2 | Deploy the backend over HTTPS with rate limiting; set the workspace **monthly spend limit**; set `Api.RELEASE_URL` | a host (Cloud Run / Fly.io) |
-| 3 | Host the privacy policy, terms and support pages; set the three URLs in `settings.gd` | a domain or static host |
-| 4 | `export_presets.cfg` for Android (`.aab`, keystore out of git, **user-data backup on**) and iOS; **start Google's 14-day closed test** | developer accounts, a Mac or macOS CI for iOS |
-| 5 | On real phones: pick a PDF, photo and .docx (issue #23), Export / Import a save, the whole loop | an Android phone and an iPhone |
-| 6 | A real app icon (still Godot's default `icon.svg`), adaptive icon, iOS icon set | art |
-| 7 | Privacy labels / Data safety, age rating 13+, screenshots, review notes with a sample reviewer | store consoles |
-| later | Study reminders (needs a local-notifications plugin); App Attest / Play Integrity; Sentry; debounce saves (#14) | — |
+Still unverified across the committed work:
+- None of the 2026-10-26 → 11-08 batches has been opened in the editor GUI or played on a phone. The
+  checks were headless: Godot checks, `backend/tests` and the scene gates, plus a windowed scratch
+  harness on Windows for the 11-06 batches.
+- The houses have no door-swing animation. The glb merges all the doors, so it needs a split in
+  Blender.
 
-**Phase 5**, the real backend and the App Store / Google Play launch, is partly built: the AI server
-exists but has not met the real model or a host. The researched plan, store requirements and
-mock-first prep are in [`launch-plan.md`](launch-plan.md); items 1–7 above are part of it.
+## Next: AI → Google sign-in → deploy
 
-Hygiene, after the slice plays:
+Owner: the coworker, who has the backend, the AI integration and the release. The step-by-step guide
+is [`next-steps.md`](next-steps.md); the researched background is [`launch-plan.md`](launch-plan.md).
+Tick each step here when it is done.
 
-| Item | What |
+**Phase 1 — Integrate the AI into the game:**
+
+| Step | Item |
 |---|---|
-| #14 | Debounce the save instead of one full write per tap |
-| #20 | Add a headless smoke-test script / CI |
-| #22 | Find why the headless boot chain fails its threaded loads |
+| 1.1 | A Cloudflare account, Account ID and Workers AI token; read Cloudflare's terms for a 13+ app (decision 2 below) |
+| 1.2 | Run the server locally against Gemma 4 |
+| 1.3 | Run `backend/evals/`, tune the prompts, and record the measured neurons in [`api-backend.md`](api-backend.md) §3 and in `LIKELY_NEURONS` |
+| 1.4 | Play the integration in the editor (`DEV_USES_SERVER`): consent, every upload type, More questions, grading, Report, the offline fallbacks |
+| 1.5 | Deploy `backend/` on Render (Blueprint from `render.yaml`) and pass the `X-Forwarded-For` limit test |
+| 1.6 | Set `Api.RELEASE_URL` |
+| 1.7 | Turn GitHub Pages on, publish `site/`, and set the three policy URLs in `settings.gd` |
+
+**Phase 2 — Google sign-in, required (through Google Play Games):**
+
+| Step | Item |
+|---|---|
+| 2.1 | Play Console ($25 once): app type Game, Play Games Services with Saved Games, the Android OAuth clients, and a **Game server** credential (a Web OAuth client) |
+| 2.2 | The server: `POST /v1/session` redeems the Play Games server auth code, then the AI routes require `Authorization: Bearer`, with limits per player and tests |
+| 2.3 | The game: request the server code after sign-in, keep the session in memory, send the header, and add the sign-in gate before the first-run intro (Android only) |
+| 2.4 | Update the docs, the privacy page, the consent text and the Data safety answers (User IDs) |
+
+**Phase 3 — Deploy the game (Android):**
+
+| Step | Item |
+|---|---|
+| 3.1 | The Android export: Gradle, `.aab`, the Game ID, user-data backup on, the keystore kept out of git |
+| 3.2 | A real app icon and the adaptive icon (needs art) |
+| 3.3 | Internal testing on a phone: cloud saves, the sign-in gate, the file picker (#23), the AI loop against Render, the offline fallbacks |
+| 3.4 | The closed test: 12 or more testers for 14 days. **Recruit them during Phase 1** |
+| 3.5 | The store listing from [`store-listing.md`](store-listing.md), then production with a staged rollout |
+
+**Later (not blocking):** iOS (macOS, $99 a year), study reminders (a local-notifications plugin),
+Play Integrity, Sentry, purchases.
+
+Hygiene: #22, find why the headless boot chain fails its threaded loads.
 
 ## Needs a decision
 
-1. **Codex.** The remote branch `feat/remove-codex` suggests it is being cut. `CompanionState` still
-   keeps `codex` / `codex_entry_added` and saves them, with no screen. Remove the data and the save
-   field, or build the screen?
-2. **Save cadence.** Event-driven saves, a dirty flag with a timer, or save on app pause only (#14)?
-3. **Hosting.** Recommended: the stateless FastAPI gateway on Cloud Run or Fly.io. See
-   [`launch-plan.md`](launch-plan.md) §1.
+1. ~~**Save cadence** (#14)~~. Settled: one write every 5 s, at once on pause or close. The cloud copy
+   uploads at most once a minute.
+2. **Cloudflare terms:** confirm nothing in Cloudflare's Self-Serve Subscription Agreement or Workers AI
+   terms rules out a 13+ app before launch ([`launch-plan.md`](launch-plan.md) §1). This is step 1.1.
+3. **Offline returning players** (Phase 2): when a player who already finished the intro can't sign
+   in because they are offline, the recommended default is to let them play their local save, with AI
+   calls waiting for a session. Confirm it while building 2.3.
 
 ## Done
 
+- **2026-11-09** — Backend hand-over runbook, and the eval prints neurons per call (`ed9ac8a`).
+  Superseded by [`next-steps.md`](next-steps.md).
+
+- **2026-11-09** — C4 (`997104d`): nine eval reviewers and fifteen graded answers, with coverage and
+  Filipino-language checks.
+
+- **2026-11-09** — CI on the Node 24 action majors (`39aaa11`).
+
+- **2026-11-09** — C3 (`67c5b08`): GitHub Actions runs `tests/gates.sh` (the headless gates on
+  Linux), `pytest backend/tests` and `tests/links.sh` on every push (#20). The first run passed.
+
+- **2026-11-09** — C2 (`1166a6c`): the privacy, terms and support pages in `site/` with a Pages
+  workflow, [`store-listing.md`](store-listing.md), and the consent text naming Identification
+  near-misses.
+
+- **2026-11-09** — C1 (`fa01fdd`): gameplay saves are debounced to one write every 5 s (#14), and this
+  register lists the plan to release.
+
+- **2026-11-08** — Phase A, cloud saves (`6415399`): the Google Play Games plugin
+  (`addons/GodotPlayGameServices/`, v3.4.0, MIT) and the `CloudSave` autoload, an Android-only copy of
+  the save in the player's Saved Games. Save v17 adds `saved_at`. Settings shows the account, and
+  "Delete my data" deletes the cloud copy too. Contract: [`data-model.md`](data-model.md) §8.
+- **2026-11-08** — Phase B, Gemma 4 on Cloudflare Workers AI (`d869b04`): the study server calls any
+  OpenAI-compatible endpoint (free 10,000 neurons a day). It has a daily neuron budget, sends scanned
+  PDFs as page images, and has `offline` fallbacks: questions written on the device and essays graded
+  offline. `render.yaml` deploys it free. Contract: [`api-backend.md`](api-backend.md).
+
+- **2026-11-06** — map, focus timer and battle polish (`19e5531`): a full Kuiz refuses food, the
+  explorer picker opens first after the world intro, the map HUD as one top band, the minimap opens
+  large, the settable focus timer with Kuiz reviewing, lullabies and refused navigation, a "Go home?"
+  confirmation, the restyled battle and encounter panel, the explorer throwing Kuiz in, a simpler
+  encounter pop-up, softer entrance sounds, battle music, and a mute for the map and battles
+  (`adventure_music`).
+- **2026-11-06** — transitions and restyles (`25f45d8`): boot music fades in, the Kuiz reveal after
+  loading, the room sign's dropdown of the four rooms, the world intro (Kuiz leaves its house on Play,
+  goes back in on the map's Back), Kuiz waddles on the island, the boy shows base colour only, the new
+  Study icon, the restyled Worlds, Settings, World Builder and Flashcards, the slower white handoff
+  after loading, the gear on the HUD, the focus timer on the table, a fix for the dark flash between
+  scenes, and changing explorer from the map.
 - **2026-10-29** — play-test fixes (`4dde4f1`): the intro asks only for the name; fridge food is
   priced (4–13 crystals); every closet costume is bought (40–250); each world keeps the explorer it
   picks; battles show only right or wrong during a run, with **Review answers** at the end; finishing

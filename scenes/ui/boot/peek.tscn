@@ -18,7 +18,7 @@
 [ext_resource type="Texture2D" uid="uid://dikx1hxt44uiv" path="res://assets/sprites/props/fridge.svg" id="16_fridge"]
 [ext_resource type="Texture2D" uid="uid://bioxxsfvhs5hg" path="res://assets/sprites/props/ball.svg" id="17_ball"]
 [ext_resource type="Texture2D" uid="uid://vbirq6xlxh8v" path="res://assets/sprites/props/screwdriver.svg" id="18_tool"]
-[ext_resource type="Script" path="res://scripts/ui/boot/kuiz_voice.gd" id="19_voice"]
+[ext_resource type="Script" path="res://scripts/kuiz/kuiz_voice.gd" id="19_voice"]
 [ext_resource type="Script" path="res://scripts/ui/widgets/stat_gauge.gd" id="20_gauge"]
 [ext_resource type="Texture2D" uid="uid://32bvb6rsidmj" path="res://assets/sprites/ui/crystal.svg" id="21_crystal"]
 [ext_resource type="Texture2D" uid="uid://byosiuiimvb77" path="res://assets/sprites/props/data_chips.svg" id="22_chips"]
@@ -34,10 +34,39 @@
 [ext_resource type="Script" path="res://scripts/ui/minigames/soccer.gd" id="32_soccer"]
 [ext_resource type="Script" path="res://scripts/ui/minigames/sky_jump.gd" id="33_sky_jump"]
 [ext_resource type="Texture2D" uid="uid://cgrv81fnvmq7w" path="res://assets/sprites/ui/dock_table.svg" id="34_table"]
-[ext_resource type="Script" path="res://scripts/ui/boot/kuiz_look.gd" id="35_look"]
+[ext_resource type="Script" path="res://scripts/kuiz/kuiz_look.gd" id="35_look"]
 [ext_resource type="Texture2D" uid="uid://cmuicehkvq3q5" path="res://assets/sprites/props/tablet.svg" id="36_tablet"]
 [ext_resource type="Texture2D" uid="uid://drtu6hu4051ya" path="res://assets/sprites/props/towel.svg" id="37_towel"]
 [ext_resource type="Texture2D" uid="uid://dqflo2jklkyca" path="res://assets/sprites/props/closet.svg" id="38_closet"]
+[ext_resource type="Texture2D" path="res://assets/sprites/rooms/sky_space.svg" id="90_sky_space"]
+[ext_resource type="Texture2D" path="res://assets/sprites/rooms/sky_galaxy.svg" id="91_sky_galaxy"]
+[ext_resource type="Texture2D" path="res://assets/sprites/rooms/sky_deep.svg" id="92_sky_deep"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/stars.svg" id="93_stars"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/rocket.svg" id="94_rocket"]
+[ext_resource type="Script" path="res://scripts/data/food_item.gd" id="100_food_item"]
+[ext_resource type="Script" path="res://scripts/data/costume.gd" id="101_costume"]
+[ext_resource type="Script" path="res://scripts/data/sky_zone.gd" id="102_sky_zone"]
+[ext_resource type="Resource" path="res://assets/data/foods/data_chips.tres" id="food_data_chips"]
+[ext_resource type="Resource" path="res://assets/data/foods/spicy_chips.tres" id="food_spicy_chips"]
+[ext_resource type="Resource" path="res://assets/data/foods/cache_cookie.tres" id="food_cache_cookie"]
+[ext_resource type="Resource" path="res://assets/data/foods/pi_pie.tres" id="food_pi_pie"]
+[ext_resource type="Resource" path="res://assets/data/foods/byte_burger.tres" id="food_byte_burger"]
+[ext_resource type="Resource" path="res://assets/data/foods/java_juice.tres" id="food_java_juice"]
+[ext_resource type="Resource" path="res://assets/data/costumes/party_hat.tres" id="costume_party_hat"]
+[ext_resource type="Resource" path="res://assets/data/costumes/crown.tres" id="costume_crown"]
+[ext_resource type="Resource" path="res://assets/data/costumes/beanie.tres" id="costume_beanie"]
+[ext_resource type="Resource" path="res://assets/data/costumes/bow.tres" id="costume_bow"]
+[ext_resource type="Resource" path="res://assets/data/costumes/flower.tres" id="costume_flower"]
+[ext_resource type="Resource" path="res://assets/data/costumes/glasses.tres" id="costume_glasses"]
+[ext_resource type="Resource" path="res://assets/data/costumes/shades.tres" id="costume_shades"]
+[ext_resource type="Resource" path="res://assets/data/costumes/hero_mask.tres" id="costume_hero_mask"]
+[ext_resource type="Resource" path="res://assets/data/costumes/bow_tie.tres" id="costume_bow_tie"]
+[ext_resource type="Resource" path="res://assets/data/costumes/scarf.tres" id="costume_scarf"]
+[ext_resource type="Resource" path="res://assets/data/costumes/medal.tres" id="costume_medal"]
+[ext_resource type="Resource" path="res://assets/data/sky_zones/sky.tres" id="zone_sky"]
+[ext_resource type="Resource" path="res://assets/data/sky_zones/space.tres" id="zone_space"]
+[ext_resource type="Resource" path="res://assets/data/sky_zones/galaxy.tres" id="zone_galaxy"]
+[ext_resource type="Resource" path="res://assets/data/sky_zones/deep_space.tres" id="zone_deep_space"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_studio"]
 sky_top_color = Color(0.99, 1, 0.995, 1)
@@ -372,6 +401,27 @@ corner_radius_top_right = 16
 corner_radius_bottom_right = 16
 corner_radius_bottom_left = 16
 
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ball_shadow"]
+bg_color = Color(0.1608, 0.2196, 0.2275, 0.28)
+corner_radius_top_left = 64
+corner_radius_top_right = 64
+corner_radius_bottom_right = 64
+corner_radius_bottom_left = 64
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_meter_back"]
+bg_color = Color(0.16078432, 0.21960784, 0.22745098, 0.35)
+corner_radius_top_left = 13
+corner_radius_top_right = 13
+corner_radius_bottom_right = 13
+corner_radius_bottom_left = 13
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_meter_fill"]
+bg_color = Color(0.9686, 0.9608, 0.9373, 1)
+corner_radius_top_left = 13
+corner_radius_top_right = 13
+corner_radius_bottom_right = 13
+corner_radius_bottom_left = 13
+
 [node name="Peek" type="Node3D"]
 script = ExtResource("1_peek")
 
@@ -417,6 +467,7 @@ unique_name_in_owner = true
 [node name="Look" type="Node" parent="."]
 unique_name_in_owner = true
 script = ExtResource("35_look")
+costumes = Array[ExtResource("101_costume")]([ExtResource("costume_party_hat"), ExtResource("costume_crown"), ExtResource("costume_beanie"), ExtResource("costume_bow"), ExtResource("costume_flower"), ExtResource("costume_glasses"), ExtResource("costume_shades"), ExtResource("costume_hero_mask"), ExtResource("costume_bow_tie"), ExtResource("costume_scarf"), ExtResource("costume_medal")])
 
 [node name="Voice" type="Node" parent="."]
 unique_name_in_owner = true
@@ -553,6 +604,75 @@ texture = ExtResource("26_sky")
 expand_mode = 1
 stretch_mode = 6
 
+[node name="ZoneBackdrops" type="Control" parent="Rooms/SkyJump"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Space" type="TextureRect" parent="Rooms/SkyJump/ZoneBackdrops"]
+modulate = Color(1, 1, 1, 0)
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("90_sky_space")
+expand_mode = 1
+stretch_mode = 6
+
+[node name="Galaxy" type="TextureRect" parent="Rooms/SkyJump/ZoneBackdrops"]
+modulate = Color(1, 1, 1, 0)
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("91_sky_galaxy")
+expand_mode = 1
+stretch_mode = 6
+
+[node name="DeepSpace" type="TextureRect" parent="Rooms/SkyJump/ZoneBackdrops"]
+modulate = Color(1, 1, 1, 0)
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("92_sky_deep")
+expand_mode = 1
+stretch_mode = 6
+
+[node name="Stars1" type="TextureRect" parent="Rooms/SkyJump"]
+unique_name_in_owner = true
+modulate = Color(1, 1, 1, 0)
+layout_mode = 0
+offset_right = 720.0
+offset_bottom = 1280.0
+mouse_filter = 2
+texture = ExtResource("93_stars")
+expand_mode = 1
+
+[node name="Stars2" type="TextureRect" parent="Rooms/SkyJump"]
+unique_name_in_owner = true
+modulate = Color(1, 1, 1, 0)
+layout_mode = 0
+offset_right = 720.0
+offset_bottom = 1280.0
+mouse_filter = 2
+texture = ExtResource("93_stars")
+expand_mode = 1
+
 [node name="JumpWorld" type="Control" parent="Rooms/SkyJump"]
 unique_name_in_owner = true
 layout_mode = 3
@@ -568,6 +688,17 @@ mouse_filter = 2
 texture = ExtResource("27_ground")
 expand_mode = 1
 stretch_mode = 0
+
+[node name="RocketFlame" type="TextureRect" parent="Rooms/SkyJump/JumpWorld"]
+unique_name_in_owner = true
+visible = false
+z_index = 1
+layout_mode = 0
+offset_right = 70.0
+offset_bottom = 112.0
+mouse_filter = 2
+texture = ExtResource("94_rocket")
+expand_mode = 1
 
 [node name="Tutorial" type="CanvasLayer" parent="."]
 unique_name_in_owner = true
@@ -701,6 +832,7 @@ polygon = PackedVector2Array(0, 0, 24, 0, 12, 16)
 [node name="Home" type="CanvasLayer" parent="."]
 visible = false
 script = ExtResource("10_home")
+foods = Array[ExtResource("100_food_item")]([ExtResource("food_data_chips"), ExtResource("food_spicy_chips"), ExtResource("food_cache_cookie"), ExtResource("food_pi_pie"), ExtResource("food_byte_burger"), ExtResource("food_java_juice")])
 
 [node name="Level" type="PanelContainer" parent="Home"]
 unique_name_in_owner = true
@@ -1365,6 +1497,161 @@ unique_name_in_owner = true
 layout_mode = 2
 theme_override_constants/separation = 12
 
+[node name="battery_health" type="HBoxContainer" parent="Home/CheckPanel/Body/Screen/List/CheckRows"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Name" type="Label" parent="Home/CheckPanel/Body/Screen/List/CheckRows/battery_health"]
+custom_minimum_size = Vector2(186, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_fonts/font = ExtResource("9_bold")
+theme_override_font_sizes/font_size = 22
+text = "Battery health"
+
+[node name="Meter" type="ProgressBar" parent="Home/CheckPanel/Body/Screen/List/CheckRows/battery_health"]
+custom_minimum_size = Vector2(0, 26)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+theme_override_styles/background = SubResource("StyleBoxFlat_meter_back")
+theme_override_styles/fill = SubResource("StyleBoxFlat_meter_fill")
+value = 100.0
+show_percentage = false
+
+[node name="Pct" type="Label" parent="Home/CheckPanel/Body/Screen/List/CheckRows/battery_health"]
+custom_minimum_size = Vector2(70, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_fonts/font = ExtResource("9_bold")
+theme_override_font_sizes/font_size = 22
+text = "100%"
+horizontal_alignment = 2
+
+[node name="health" type="HBoxContainer" parent="Home/CheckPanel/Body/Screen/List/CheckRows"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Name" type="Label" parent="Home/CheckPanel/Body/Screen/List/CheckRows/health"]
+custom_minimum_size = Vector2(186, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_fonts/font = ExtResource("9_bold")
+theme_override_font_sizes/font_size = 22
+text = "Frame"
+
+[node name="Meter" type="ProgressBar" parent="Home/CheckPanel/Body/Screen/List/CheckRows/health"]
+custom_minimum_size = Vector2(0, 26)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+theme_override_styles/background = SubResource("StyleBoxFlat_meter_back")
+theme_override_styles/fill = SubResource("StyleBoxFlat_meter_fill")
+value = 100.0
+show_percentage = false
+
+[node name="Pct" type="Label" parent="Home/CheckPanel/Body/Screen/List/CheckRows/health"]
+custom_minimum_size = Vector2(70, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_fonts/font = ExtResource("9_bold")
+theme_override_font_sizes/font_size = 22
+text = "100%"
+horizontal_alignment = 2
+
+[node name="dirt" type="HBoxContainer" parent="Home/CheckPanel/Body/Screen/List/CheckRows"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Name" type="Label" parent="Home/CheckPanel/Body/Screen/List/CheckRows/dirt"]
+custom_minimum_size = Vector2(186, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_fonts/font = ExtResource("9_bold")
+theme_override_font_sizes/font_size = 22
+text = "Clean"
+
+[node name="Meter" type="ProgressBar" parent="Home/CheckPanel/Body/Screen/List/CheckRows/dirt"]
+custom_minimum_size = Vector2(0, 26)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+theme_override_styles/background = SubResource("StyleBoxFlat_meter_back")
+theme_override_styles/fill = SubResource("StyleBoxFlat_meter_fill")
+value = 100.0
+show_percentage = false
+
+[node name="Pct" type="Label" parent="Home/CheckPanel/Body/Screen/List/CheckRows/dirt"]
+custom_minimum_size = Vector2(70, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_fonts/font = ExtResource("9_bold")
+theme_override_font_sizes/font_size = 22
+text = "100%"
+horizontal_alignment = 2
+
+[node name="hunger" type="HBoxContainer" parent="Home/CheckPanel/Body/Screen/List/CheckRows"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Name" type="Label" parent="Home/CheckPanel/Body/Screen/List/CheckRows/hunger"]
+custom_minimum_size = Vector2(186, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_fonts/font = ExtResource("9_bold")
+theme_override_font_sizes/font_size = 22
+text = "Fuel"
+
+[node name="Meter" type="ProgressBar" parent="Home/CheckPanel/Body/Screen/List/CheckRows/hunger"]
+custom_minimum_size = Vector2(0, 26)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+theme_override_styles/background = SubResource("StyleBoxFlat_meter_back")
+theme_override_styles/fill = SubResource("StyleBoxFlat_meter_fill")
+value = 100.0
+show_percentage = false
+
+[node name="Pct" type="Label" parent="Home/CheckPanel/Body/Screen/List/CheckRows/hunger"]
+custom_minimum_size = Vector2(70, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_fonts/font = ExtResource("9_bold")
+theme_override_font_sizes/font_size = 22
+text = "100%"
+horizontal_alignment = 2
+
+[node name="focus" type="HBoxContainer" parent="Home/CheckPanel/Body/Screen/List/CheckRows"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Name" type="Label" parent="Home/CheckPanel/Body/Screen/List/CheckRows/focus"]
+custom_minimum_size = Vector2(186, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_fonts/font = ExtResource("9_bold")
+theme_override_font_sizes/font_size = 22
+text = "Focus"
+
+[node name="Meter" type="ProgressBar" parent="Home/CheckPanel/Body/Screen/List/CheckRows/focus"]
+custom_minimum_size = Vector2(0, 26)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+theme_override_styles/background = SubResource("StyleBoxFlat_meter_back")
+theme_override_styles/fill = SubResource("StyleBoxFlat_meter_fill")
+value = 100.0
+show_percentage = false
+
+[node name="Pct" type="Label" parent="Home/CheckPanel/Body/Screen/List/CheckRows/focus"]
+custom_minimum_size = Vector2(70, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_fonts/font = ExtResource("9_bold")
+theme_override_font_sizes/font_size = 22
+text = "100%"
+horizontal_alignment = 2
+
 [node name="CheckHint" type="Label" parent="Home/CheckPanel/Body/Screen/List"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 64)
@@ -1445,6 +1732,51 @@ unique_name_in_owner = true
 layout_mode = 2
 theme_override_constants/separation = 10
 
+[node name="head" type="Button" parent="Home/Wardrobe/Body/WardrobeTabs"]
+custom_minimum_size = Vector2(0, 64)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_colors/font_hover_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_colors/font_pressed_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_fonts/font = ExtResource("9_bold")
+theme_override_font_sizes/font_size = 22
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn")
+theme_override_styles/hover = SubResource("StyleBoxFlat_btn")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_btn_pressed")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
+text = "Head"
+
+[node name="face" type="Button" parent="Home/Wardrobe/Body/WardrobeTabs"]
+custom_minimum_size = Vector2(0, 64)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_colors/font_hover_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_colors/font_pressed_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_fonts/font = ExtResource("9_bold")
+theme_override_font_sizes/font_size = 22
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn")
+theme_override_styles/hover = SubResource("StyleBoxFlat_btn")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_btn_pressed")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
+text = "Face"
+
+[node name="body" type="Button" parent="Home/Wardrobe/Body/WardrobeTabs"]
+custom_minimum_size = Vector2(0, 64)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_colors/font_hover_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_colors/font_pressed_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_fonts/font = ExtResource("9_bold")
+theme_override_font_sizes/font_size = 22
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn")
+theme_override_styles/hover = SubResource("StyleBoxFlat_btn")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_btn_pressed")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
+text = "Body"
+
 [node name="WardrobeGrid" type="GridContainer" parent="Home/Wardrobe/Body"]
 unique_name_in_owner = true
 layout_mode = 2
@@ -1452,6 +1784,25 @@ size_flags_vertical = 3
 theme_override_constants/h_separation = 12
 theme_override_constants/v_separation = 12
 columns = 3
+
+[node name="CostumeTemplate" type="Button" parent="Home/Wardrobe/Body"]
+unique_name_in_owner = true
+visible = false
+custom_minimum_size = Vector2(170, 170)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_colors/font_hover_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_colors/font_pressed_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_fonts/font = ExtResource("9_bold")
+theme_override_font_sizes/font_size = 22
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn")
+theme_override_styles/hover = SubResource("StyleBoxFlat_btn")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_btn_pressed")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
+text = "Costume"
+icon_alignment = 1
+vertical_icon_alignment = 0
+expand_icon = true
 
 [node name="WardrobeClose" type="Button" parent="Home/Wardrobe/Body"]
 unique_name_in_owner = true
@@ -1632,6 +1983,38 @@ theme_override_styles/pressed = SubResource("StyleBoxFlat_btn_pressed")
 theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
 text = "Buy"
 
+[node name="ShopRowTemplate" type="HBoxContainer" parent="Home/Shop/Body"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="Icon" type="TextureRect" parent="Home/Shop/Body/ShopRowTemplate"]
+custom_minimum_size = Vector2(72, 72)
+layout_mode = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Label" type="Label" parent="Home/Shop/Body/ShopRowTemplate"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.1608, 0.2196, 0.2275, 1)
+text = "Food  +10 hunger"
+
+[node name="Buy" type="Button" parent="Home/Shop/Body/ShopRowTemplate"]
+custom_minimum_size = Vector2(120, 64)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_colors/font_hover_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_colors/font_pressed_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_fonts/font = ExtResource("9_bold")
+theme_override_font_sizes/font_size = 26
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn")
+theme_override_styles/hover = SubResource("StyleBoxFlat_btn")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_btn_pressed")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
+text = "Buy · 4"
+
 [node name="Close" type="Button" parent="Home/Shop/Body"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 64)
@@ -1673,6 +2056,62 @@ theme_override_styles/panel = SubResource("StyleBoxFlat_box")
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_constants/separation = 8
+
+[node name="StudyRoom" type="Button" parent="Home/RoomMenu/Panel/RoomList"]
+custom_minimum_size = Vector2(120, 64)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_colors/font_hover_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_colors/font_pressed_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_fonts/font = ExtResource("9_bold")
+theme_override_font_sizes/font_size = 22
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn")
+theme_override_styles/hover = SubResource("StyleBoxFlat_btn")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_btn_pressed")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
+text = "The Study Room"
+
+[node name="MaintenanceBay" type="Button" parent="Home/RoomMenu/Panel/RoomList"]
+custom_minimum_size = Vector2(120, 64)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_colors/font_hover_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_colors/font_pressed_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_fonts/font = ExtResource("9_bold")
+theme_override_font_sizes/font_size = 22
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn")
+theme_override_styles/hover = SubResource("StyleBoxFlat_btn")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_btn_pressed")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
+text = "The Maintenance Bay"
+
+[node name="DataKitchen" type="Button" parent="Home/RoomMenu/Panel/RoomList"]
+custom_minimum_size = Vector2(120, 64)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_colors/font_hover_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_colors/font_pressed_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_fonts/font = ExtResource("9_bold")
+theme_override_font_sizes/font_size = 22
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn")
+theme_override_styles/hover = SubResource("StyleBoxFlat_btn")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_btn_pressed")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
+text = "The Data Kitchen"
+
+[node name="Playroom" type="Button" parent="Home/RoomMenu/Panel/RoomList"]
+custom_minimum_size = Vector2(120, 64)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_colors/font_hover_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_colors/font_pressed_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_fonts/font = ExtResource("9_bold")
+theme_override_font_sizes/font_size = 22
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn")
+theme_override_styles/hover = SubResource("StyleBoxFlat_btn")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_btn_pressed")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
+text = "The Playroom"
 
 [node name="ReviewBar" type="PanelContainer" parent="Home"]
 unique_name_in_owner = true
@@ -1919,6 +2358,14 @@ ignore_texture_size = true
 stretch_mode = 5
 flip_h = true
 
+[node name="BallShadow" type="Panel" parent="Soccer"]
+unique_name_in_owner = true
+offset_right = 108.0
+offset_bottom = 33.6
+pivot_offset = Vector2(54, 16.8)
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_ball_shadow")
+
 [node name="SoccerBall" type="TextureRect" parent="Soccer"]
 unique_name_in_owner = true
 offset_right = 120.0
@@ -1931,6 +2378,7 @@ stretch_mode = 5
 [node name="SkyJumpHud" type="CanvasLayer" parent="."]
 visible = false
 script = ExtResource("33_sky_jump")
+zones = Array[ExtResource("102_sky_zone")]([ExtResource("zone_sky"), ExtResource("zone_space"), ExtResource("zone_galaxy"), ExtResource("zone_deep_space")])
 
 [node name="JumpScore" type="PanelContainer" parent="SkyJumpHud"]
 anchors_preset = 5

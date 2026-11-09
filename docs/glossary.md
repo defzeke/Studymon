@@ -7,31 +7,29 @@ Terms used throughout this repo, in the sense this repo means them.
 | Term | Meaning |
 |---|---|
 | **Studymon** | The project: a study-review game where a companion is raised, then used to fight through a campaign built from reviewer material. |
-| **Companion** | Kuiz, the AI creature in the home rooms. Its state is `CompanionState` (level, XP, hunger, energy, mood, health, focus, bond, codex). |
+| **Companion** | Kuiz, the AI creature in the home rooms. Its state is `CompanionState` (level, XP, hunger, energy, mood, health, focus, dirt, battery health). |
 | **Dirt** | `CompanionState.dirt`, 0 (clean) to 100: builds up over time and with meals and play, shows as spots and scratches on Kuiz, scrubbed off with the towel. |
 | **Outfit** | What Kuiz wears from the Playroom closet, `GameState.outfit`: one costume per slot (head, face, body), each a sticker on its head. |
 | **Battery health** | `CompanionState.battery_health`: the battery's capacity, like a phone's. Charging wears it, a worn battery drains energy faster, and a new one (30 crystals, the check-up tablet) restores 100 %. |
 | **Crystals** | Home's currency, `GameState.crystals`, shown top right with the logo's forehead gem. Saved; battles, the study goal, level-ups and minigames earn it; food, costumes, world slots and a new battery spends it. It cannot be bought (free launch). |
-| **Care tap** | One press of Feed, Pet or Play. Grants XP, nudges one stat, increments bond, and is subject to hourly diminishing returns. |
+| **Care tap** | One care action (feed, pet, play, fix, clean). Grants XP, nudges one stat, and is subject to hourly diminishing returns. |
 | **Hunger / Energy / Mood / Health** | The four 0–100 stats on home's HUD gauges. Energy drains fastest; Hunger, Mood and Health drain at 0.7×, 0.6× and 0.2× of `STAT_DECAY_PER_SEC`. Focus (0.8×) is also 0–100 but only flashcards use it. |
-| **Bond** | A monotonic tap counter. It is saved, but nothing gates on it yet. |
 | **XP curve** | `CompanionState.xp_to_reach(lv)`: 20 XP for Level 2, then 5 more per level (Level 5 at 110, Level 6 at 150); no cap. |
-| **Curriculum** | The five AI-literacy lines in `CompanionState.CURRICULUM`, one unlocked per level. |
-| **Tidbit** | A curriculum line or other short prompt shown in the speech bubble. The bubble is currently always hidden (issue #4). |
-| **Codex** | The accumulated list of unlocked tidbits. A five-step AI-literacy track; its UI is reachable from the care room, and a remote branch proposes cutting it. |
-| **Insight** | A retention message produced by `SessionManager.last_insight` (missed question, mastery milestone), shown in the bubble. |
 | **Pomodoro** | The 25-minute focus / 5-minute rest timer. Missing the rest costs energy and mood; finishing it grants a small bonus. |
 | **Decay** | The per-second stat drain in `CompanionState._process`. It runs on every screen because the autoload is always alive. |
+| **Cloud save** | The save's copy in the player's **Google Play Games Saved Games** (a snapshot named `studymon` in their Google Drive app folder), kept by the `CloudSave` autoload on Android. The file on the phone stays the source of truth; the newer `saved_at` wins. No accounts of our own. |
+| **Palette** | `scripts/ui/palette.gd` (`class_name Palette`): the canonical colours as constants (`Palette.TEAL`, `Palette.SLATE` …). Code that needs a palette colour uses it instead of a hex literal. |
+| **Data resources** | The tuning tables as `.tres` files in `assets/data/`, one per item, edited in the Inspector: `FoodItem` (`foods/`, on the Home node's `foods`), `Costume` (`costumes/`, on the Look node's `costumes`), `SkyZone` (`sky_zones/`, on SkyJumpHud's `zones`) and `SeasonLook` (`seasons/`, on the region map's Season node). Their classes are in `scripts/data/`. A food's or costume's `id` is saved, so it never changes. |
 
 ## Review material and questions
 
 | Term | Meaning |
 |---|---|
-| **Reviewer** | The study material the player uploads or pastes (PDF or text). With the study server on, Claude reads it; in mock mode pasted text is parsed and a PDF is refused. |
+| **Reviewer** | The study material the player uploads or pastes (PDF or text). With the study server on, the AI (Gemma 4 on Cloudflare) reads it; in mock mode, or when the AI's free allowance is spent, pasted text is turned into questions on the device. |
 | **World** | The player-facing name for a topic: the Worlds hub lists saved worlds, and a new one is built from a reviewer. |
 | **Topic** | One reviewer's worth of content, identified by a slug (`topic_<name>`, or `topic_001`). Has a name, a question list, mastery records and gym progress. |
-| **Extraction** | Turning a reviewer into questions and their answer keys: `Api.upload_reviewer()`, which calls `POST /v1/extract` (Claude) or, on mocks, the sentence-splitting mock extractor. |
-| **Study server** | `backend/`: the stateless gateway between the game and Claude. It holds the API key and stores nothing. |
+| **Extraction** | Turning a reviewer into questions and their answer keys: `Api.upload_reviewer()`, which calls `POST /v1/extract` (Gemma 4 on Cloudflare) or, on mocks and when the server answers `offline`, the device's sentence-splitting `Api.offline_questions()`. |
+| **Study server** | `backend/`: the stateless gateway between the game and the AI model (Gemma 4 on Cloudflare Workers AI). It holds the API key, meters the free daily allowance (the **neuron budget**) and stores nothing. |
 | **Answer key** | What a question is checked against, written with the question and saved on the device: `answer`, `accepted`, `distractors`, `rubric`. See [`data-model.md`](data-model.md) §2. |
 | **Accepted answers** | `accepted`: other answers an Identification counts as exact (synonyms, abbreviations, spellings). Editable as "Also accept" in the categorizer. |
 | **Rubric** | An essay's marking guide: 3–5 `{point, keywords, weight}`. The server's score is the weight of the points the answer covers, with quoted evidence. |
@@ -85,7 +83,7 @@ Terms used throughout this repo, in the sense this repo means them.
 | **Sanctuary** | The Flashcard Sanctuary (`flashcards.tscn`): untimed card review of a topic. Again / Hard / Easy; Easy lifts a New or Remaster card to Learning, never to Mastered. |
 | **Home** | `home.gd` in `peek.tscn`: the game loop after the tutorial. A bottom bar walks Kuiz between the four rooms, each with its own action (charge, play, settings; screwdriver; food and fridge; ball). |
 | **Tutorial** | `tutorial.gd` in `peek.tscn`: Kuiz's first-run lines, the profile and name prompts, and the tour of the Study Room, Maintenance Bay, Data Kitchen and Playroom. The last three rooms are temporary art. |
-| **Ink outline** | The dark silhouette around Kuiz: an inverted hull (the mesh grown along its normals, front faces culled) in Deep Slate, sized by each node's `extras.outline`. |
+| **Ink outline** | The dark silhouette around Kuiz: an inverted hull (the mesh grown along its normals, front faces culled) in Deep Slate, sized by each node's `extras.outline`; one material, `assets/materials/ink_outline.tres`, duplicated per mesh at its width. |
 | **`.tscn` / `.tres`** | Godot scene and resource text files. Both are source here, not build output. |
 | **`ext_resource`** | A `.tscn` reference to an external file. If the target is missing, the scene fails to **parse** — no runtime fallback (issue #1). |
 | **`.import` / `.uid`** | Generated metadata for assets. Never hand-edit; let the editor regenerate them. |

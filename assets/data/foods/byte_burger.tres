@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="FoodItem" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/sprites/props/byte_burger.svg" id="1_eytht"]
+[ext_resource type="Script" path="res://scripts/data/food_item.gd" id="2_qhbmu"]
+
+[resource]
+script = ExtResource("2_qhbmu")
+id = "byte_burger"
+display_name = "Byte Burger"
+icon = ExtResource("1_eytht")
+start_stock = 1
+price = 13
+hunger = 40.0

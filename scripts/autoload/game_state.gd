@@ -1,8 +1,7 @@
 extends Node
-## GameState — global run-time state (canonical; superset of Phase 0 + Phase 1 needs).
-## Companion stats live in CompanionState; topics in SessionManager.
+## Player-wide state: name, tutorial, AI consent, crystals and what they buy, the daily study goal,
+## the outfit and large text. Kuiz's stats live in CompanionState, worlds in SessionManager.
 
-signal large_text_changed(enabled: bool)
 signal crystals_changed(amount: int)
 
 ## Saved: the name the tutorial asks for.
@@ -13,7 +12,7 @@ var tutorial_done: bool = false
 ## upload, withdrawn in Settings). Without it nothing is sent and essays are graded on the device.
 var ai_consent := false
 ## What the consent pop-up and Settings say is sent (Apple 5.1.2(i)); keep it true to the backend.
-const AI_CONSENT_TEXT := "To turn your reviewer into questions, Studymon sends the text or PDF you upload, and the essay answers you type in battles, to its study server, which passes them to Claude, an AI by Anthropic. They are used only to make and grade your questions, and Studymon does not keep them. Your worlds and progress stay on this device."
+const AI_CONSENT_TEXT := "To turn your reviewer into questions, Studymon sends the text, file or photo you upload, and the battle answers it cannot check by itself (essays and near-miss answers), to its study server, which passes them to Gemma, an open AI model by Google, running on Cloudflare Workers AI. They are used only to make and grade your questions, and Studymon does not keep them. Your worlds and progress are saved on this device and, when you are signed in to Google Play Games, in your Google account."
 ## Saved: food id -> count in stock.
 var food_stock: Dictionary = {}
 # Home's currency (top-right pill): battles, level-ups and minigames earn it; world slots and a new
@@ -28,12 +27,11 @@ var world_slots := FREE_WORLD_SLOTS
 const MINIGAME_DAILY_CRYSTALS := 60
 var minigame_day := ""
 var minigame_crystals := 0
-## What Kuiz wears: closet slot ("head", "face", "body") -> an id from kuiz_look.gd's COSTUMES; a
+## What Kuiz wears: closet slot ("head", "face", "body") -> a Costume id (assets/data/costumes/); a
 ## missing slot is bare.
 var outfit: Dictionary = {}
-var active_region_id: String = ""
 
-# --- Phase 9: Accessibility — font-size scaling hooked into app_theme.tres ---
+# Large text scales the shared theme (app_theme.tres) in memory.
 # Standard = theme default (28 / 32), Large = scaled for readability.
 const FONT_SIZE_STANDARD := 28
 const FONT_SIZE_LARGE := 36
@@ -101,7 +99,7 @@ func current_streak() -> int:
 func _yesterday(day: String) -> String:
 	return Time.get_date_string_from_unix_time(Time.get_unix_time_from_datetime_string(day) - 86400)
 
-## Closet costumes bought with crystals (kuiz_look.gd COSTUME_UNLOCKS); free ones are always owned. Saved.
+## Closet costumes bought with crystals (Costume ids, assets/data/costumes/). Saved.
 var owned_costumes: Array[String] = []
 
 ## Buys a costume for `price` crystals; false (nothing spent) without enough.
@@ -113,16 +111,11 @@ func buy_costume(id: String, price: int) -> bool:
 		owned_costumes.append(id)
 	return true
 
-func set_active_region(region_id: String) -> void:
-	active_region_id = region_id
-
-# --- Phase 9: large-text toggle — mutates loaded Theme instance in memory ---
 func set_large_text(enabled: bool) -> void:
 	if large_text_enabled == enabled:
 		return
 	large_text_enabled = enabled
 	_apply_theme_font_size()
-	large_text_changed.emit(enabled)
 
 func _apply_theme_font_size() -> void:
 	var theme_path := "res://assets/theme/app_theme.tres"
@@ -141,4 +134,4 @@ func _apply_theme_font_size() -> void:
 
 func _ready() -> void:
 	# Apply saved preference on boot (SaveManager loads before this in some flows, so defer one frame).
-	call_deferred("_apply_theme_font_size")
+	_apply_theme_font_size.call_deferred()
