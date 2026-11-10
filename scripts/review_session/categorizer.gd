@@ -24,6 +24,7 @@ const MAX_IMAGE_BYTES := 5 * 1024 * 1024
 @onready var play_btn: Button = %PlayButton
 @onready var back_btn: Button = %BackButton
 @onready var file_dialog: FileDialog = %FileDialog
+@onready var type_checks := {"multiple_choice": %TypeMultipleChoice, "identification": %TypeIdentification, "essay": %TypeEssay}
 
 var _studying: bool = false
 # Questions before "More questions" ran, to report how many it added; -1 for a normal upload.
@@ -75,12 +76,15 @@ func _on_file_selected(path: String) -> void:
 		return
 	var bytes := f.get_buffer(f.get_length())
 	f.close()
-	var txt := bytes.get_string_from_utf8()
-	if txt.length() == 0 or txt.contains("�"):
-		var kind: String = FILE_TYPES.get(path.get_extension().to_lower(), "")
+	var kind: String = FILE_TYPES.get(path.get_extension().to_lower(), "")
+	# A reviewer file is never decoded as text: a PDF's bytes are not UTF-8 and flood the log with errors.
+	var txt := "" if kind != "" else bytes.get_string_from_utf8()
+	if kind != "" or txt.length() == 0 or txt.contains("�"):
 		var cap := MAX_IMAGE_BYTES if kind in ["png", "jpeg", "webp"] else MAX_FILE_BYTES
-		if Api.MOCK or kind == "":
+		if kind == "":
 			status_label.text = "Can't read this file as text. Use a PDF, photo, Word or PowerPoint file, or paste the text."
+		elif Api.MOCK:
+			status_label.text = "PDF, photo, Word and PowerPoint files need the study server. This build uses the offline mock (Api.DEV_USES_SERVER is off)."
 		elif bytes.size() > cap:
 			status_label.text = "That file is over %d MB. Use a smaller one or paste the text instead." % (cap >> 20)
 		else:
@@ -128,6 +132,8 @@ func _on_study() -> void:
 	if _file.is_empty() and not v.get("ok", false):
 		status_label.text = str(v.get("error", "Too short"))
 		return
+	if not _pick_types():
+		return
 	if not GameState.ai_consent:
 		ConfirmModal.open(self, "Before the AI reads your notes", GameState.AI_CONSENT_TEXT, "I agree", _on_consent, false, "Not now")
 		return
@@ -144,6 +150,18 @@ func _on_study() -> void:
 	else:
 		SessionManager.start_upload(topic_name, _file, "", _file_type)
 
+## Hands the ticked question types to SessionManager; false (with a hint) when none is ticked.
+func _pick_types() -> bool:
+	var picked: Array[String] = []
+	for t in type_checks:
+		if (type_checks[t] as CheckBox).button_pressed:
+			picked.append(t)
+	if picked.is_empty():
+		status_label.text = "Tick at least one question type."
+		return false
+	SessionManager.question_types = picked
+	return true
+
 func _on_consent() -> void:
 	GameState.ai_consent = true
 	SaveManager.save_progress()
@@ -156,7 +174,7 @@ func _on_consent_more() -> void:
 
 # New questions from the world's saved reviewer, added to the ones it has (a saved world only).
 func _on_more() -> void:
-	if _studying:
+	if _studying or not _pick_types():
 		return
 	if not GameState.ai_consent:
 		ConfirmModal.open(self, "Before the AI reads your notes", GameState.AI_CONSENT_TEXT, "I agree", _on_consent_more, false, "Not now")

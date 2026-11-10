@@ -24,7 +24,7 @@ Then set `const DEV_USES_SERVER := true` in `scripts/autoload/api.gd` (release b
 | Method | Path | Body | Result |
 |---|---|---|---|
 | GET | `/health` | — | `{"ok": true}` |
-| POST | `/v1/extract` | `{job_id, topic_name, text}` or `{job_id, topic_name, file_base64, file_type}` | `{topic_id, questions[], reviewer_text}`, or `{…, questions: [], offline: true, note}` |
+| POST | `/v1/extract` | `{job_id, topic_name, text}` or `{job_id, topic_name, file_base64, file_type}`, optional `existing`, `types` | `{topic_id, questions[], reviewer_text}`, or `{…, questions: [], offline: true, note}` |
 | POST | `/v1/grade` | `{job_id, mode: "identification" \| "essay", question, answer, expected, accepted, rubric, model_answer, source}` | `{score, feedback, covered?}` |
 | POST | `/v1/reports` | `{job_id, kind, text}` | `{ok: true}` |
 

@@ -20,6 +20,7 @@ controlled on the server instead: per-IP daily limits and the daily neuron budge
 | Spend | Price | Where |
 |---|---|---|
 | **World slot** | `GameState.WORLD_SLOT_PRICE` (300) | the worlds list's New World, when every slot is full |
+| Fast travel | `GameState.TRAVEL_PRICE` (25) | a tap on the island's big map ([`overworld.md`](overworld.md)) |
 | Food | 4 – 13 (table below) | the Data Kitchen fridge |
 | Closet costume | 40 – 250, each unlocked at a level (`Costume.price` / `level_needed`, `assets/data/costumes/`); every costume is bought, only "None" is free | the Playroom closet |
 | New battery | 30 | the check-up tablet |

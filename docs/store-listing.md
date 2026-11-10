@@ -157,8 +157,8 @@ For *App access* and the closed or production review:
 > 4. The questions appear within about a minute; the server sleeps when idle. Tap
 >    **Confirm & Play** to walk the world and battle its trainers.
 >
-> Each question in the World Builder, and each answer in a battle's **Review answers**, has a
-> **Report** button.
+> Each question in the World Builder has a **Report** button, and each answer in a battle's
+> **Review answers** has a report flag (⚑).
 
 Sample reviewer to paste (original, about 150 words):
 

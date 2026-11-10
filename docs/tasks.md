@@ -15,6 +15,27 @@ Uncommitted: **the hand-over for the coworker** who takes over the backend, the 
   integrate the AI, add required Google sign-in through Play Games, and deploy the game.
 - `.github/workflows/pages.yml` is back, since the coworker can turn GitHub Pages on.
 - `rules.md` (Auth) and `launch-plan.md` §1 (Login) record the 2026-11-09 decision on sign-in.
+- The World Builder's question-type ticks (Multiple choice, Identification, Essay; one or more), sent as
+  `types` to `/v1/extract`. The prompt now keeps a quiz-style reviewer's own questions and answer-key
+  answers. Google's Gemma 4 endpoint works for development (`api-backend.md` §3). Checked live on a
+  quiz PDF from the server; not yet tapped through in the editor with `DEV_USES_SERVER`.
+- Long reviewers: the PDF is read in layout mode and sent in parts at the same time, the bank holds up
+  to 100, and a quiz item's answer line counts as its source. A 78-item quiz PDF kept 76–91 questions.
+  The World Builder no longer decodes a PDF as text (the UTF-8 error flood), and a long file name is
+  cut with an ellipsis.
+- Smarter grading and options: essays get full, partial or no credit per rubric point, at temperature
+  0, with feedback in the answer's language (grading evals 15 of 15, twice). Multiple Choice wrong
+  options match the answer's kind (other ages for an age), invented when the reviewer has none.
+- The island: runs play only questions of their own type, each once (no rewriting, no repeats; a
+  one-question type plays a one-item run), and only the types a world has get houses and a gym. House
+  badges replace the outlined labels. Fast travel: tap the big map, pay 25 crystals. Checked headless
+  and in a windowed screenshot; not tapped through by hand.
+- Houses are a route (House 1 nearest the spawn): only the next one opens, it is the green pin on the
+  map, and the quest card names it. Fast travel shrinks the explorer and Kuiz away in a burst and pops
+  them in at the pin. Review answers: Easy / Hard per question (sets its tier), and a small report flag
+  instead of the Report button.
+- `rules.md` §5 adds a rule: no objects hard-coded in scripts or scenes. Nodes go in scenes and
+  content goes in `assets/data/`.
 
 **Game check on 2026-11-09.** No errors were found.
 - Headless: all 7 gates, plus every other scene.

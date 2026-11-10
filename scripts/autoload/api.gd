@@ -9,7 +9,7 @@ signal job_status(job_id: String, status: String, progress: float, result: Varia
 ## The deployed study server. Must be HTTPS: Android and iOS refuse plain http. Set before exporting.
 const RELEASE_URL := ""
 ## true to try the local study server from the editor or a debug export instead of the mock.
-const DEV_USES_SERVER := false
+const DEV_USES_SERVER := true
 # 127.0.0.1, not localhost: localhost can resolve to IPv6 first, which uvicorn does not listen on.
 const DEV_URL := "http://127.0.0.1:8000"
 var MOCK := OS.is_debug_build() and not DEV_USES_SERVER
@@ -88,16 +88,19 @@ func grade_battle_question(job_id: String, q: Dictionary, answer: String, mode: 
 
 ## Turns a reviewer into questions with their answer keys: pasted text, or a file's bytes and its
 ## type ("pdf", "png", "jpeg", "webp", "docx", "pptx"), sent only when the server is on (the mock reads
-## text). The result arrives on job_status under `job_id`.
-func upload_reviewer(job_id: String, topic_name: String, source_text: String, file: PackedByteArray, file_type := "pdf", existing: Array[String] = []) -> void:
+## text), in the question `types` the player ticked (all when empty). The result arrives on
+## job_status under `job_id`.
+func upload_reviewer(job_id: String, topic_name: String, source_text: String, file: PackedByteArray, file_type := "pdf", existing: Array[String] = [], types: Array[String] = []) -> void:
 	if MOCK:
-		_execute_mock_upload(job_id, topic_name, source_text)
+		_execute_mock_upload(job_id, topic_name, source_text, types)
 		return
 	if not GameState.ai_consent:
 		_fail_later(job_id, "Allow the AI to read your reviewer first.")
 		return
 	job_status.emit.call_deferred(job_id, "processing", 0.0, null)
 	var body := {"job_id": job_id, "topic_name": topic_name, "existing": existing.slice(0, 60)}
+	if not types.is_empty():
+		body["types"] = types
 	if file.is_empty():
 		body["text"] = source_text
 	else:
@@ -219,13 +222,13 @@ func essay_offline(q: Dictionary, answer: String) -> Dictionary:
 
 ## MOCKS — the offline stand-ins for the study server (Api.MOCK)
 
-func _execute_mock_upload(job_id: String, topic_name: String, source_text: String) -> void:
+func _execute_mock_upload(job_id: String, topic_name: String, source_text: String, types: Array[String]) -> void:
 	# A short "AI is studying..." beat before the result.
 	call_deferred("_mock_upload_done", {"job_id": job_id, "status": "processing"})
 	# Complete after ~0.8s via timer if tree is ready, else immediate.
 	# Questions are parsed from the USER's reviewer text; canned placeholders
 	# only apply when no usable text survived (e.g. binary PDF bytes).
-	var questions := offline_questions(source_text)
+	var questions := offline_questions(source_text, types)
 	if questions.is_empty():
 		questions = _fallback_questions()
 	var topic_id := _slug_topic_id(topic_name)
@@ -249,10 +252,14 @@ func _execute_mock_upload(job_id: String, topic_name: String, source_text: Strin
 		call_deferred("_mock_poll_done", payload)
 
 ## The offline question builder: turns reviewer sentences into battle-ready questions, rotating
-## Identification / Essay / Multiple Choice and tagging a tier by sentence length. The mock uses it, and
+## through the question `types` (Identification / Essay / Multiple Choice when empty) and tagging a
+## tier by sentence length. The mock uses it, and
 ## so does a real upload when the server answers `offline` (the AI's free allowance is spent).
 ## [] when the text has no usable sentences. Contract: docs/systems/review-session.md.
-func offline_questions(source_text: String) -> Array:
+func offline_questions(source_text: String, types: Array[String] = []) -> Array:
+	var kinds: Array[String] = types.duplicate()
+	if kinds.is_empty():
+		kinds = ["identification", "essay", "multiple_choice"]
 	var sentences := _split_sentences(source_text)
 	# Keep content-bearing sentences only.
 	var usable: Array = []
@@ -282,13 +289,15 @@ func offline_questions(source_text: String) -> Array:
 		var tier: String = ["easy", "medium", "hard"][mini(2, length_rank[i] * 3 / usable.size())]
 		var concepts: Array = terms.slice(0, mini(3, terms.size()))
 		var answer := str(terms[0]) if not terms.is_empty() else ""
-		var kind := idx % 3
+		var kind: String = kinds[idx % kinds.size()]
 		var wrong: Array = []
-		if kind == 2:
+		if kind == "multiple_choice":
 			wrong = _distractors_for(answer, terms_by, i)
 			if wrong.size() < 3:
-				kind = 0
-		if kind == 1:
+				if not kinds.has("identification"):
+					continue
+				kind = "identification"
+		if kind == "essay":
 			questions.append({
 				"id": "q%d" % (idx + 1),
 				"text": "Explain in your own words: %s" % excerpt,
@@ -304,13 +313,13 @@ func offline_questions(source_text: String) -> Array:
 				continue
 			questions.append({
 				"id": "q%d" % (idx + 1),
-				"text": ("Which term is described here? \"%s\"" if kind == 2 else "What key term is described here? \"%s\"") % _blank(excerpt, answer),
-				"type": "multiple_choice" if kind == 2 else "identification",
+				"text": ("Which term is described here? \"%s\"" if kind == "multiple_choice" else "What key term is described here? \"%s\"") % _blank(excerpt, answer),
+				"type": kind,
 				"difficulty": tier,
 				"answer": answer,
 				"distractors": wrong,
 				"key_concepts": concepts,
-				"confidence": 0.8 if kind == 2 else 0.85,
+				"confidence": 0.8 if kind == "multiple_choice" else 0.85,
 				"source": excerpt,
 			})
 		idx += 1

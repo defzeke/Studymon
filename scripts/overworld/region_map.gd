@@ -20,11 +20,14 @@ extends Node3D
 ## The area around a house, its footprint grown by this much: entering it opens the doorway, and
 ## leaving it lets a house whose panel was closed open again.
 @export var house_margin := 0.6
-## A house's label shows only while the explorer is this close, so 15 labels do not crowd the screen.
+## A house badge opens to show its type and tier only while the explorer is this close.
 @export var house_label_near := 4.0
-## A Challenge House trigger: encounter_trigger.tscn plus the Icon that bobs over its roof and the
+## A Challenge House trigger: encounter_trigger.tscn plus the Badge that bobs over its roof and the
 ## dark Doorway that unfolds over its door (house_trigger.tscn).
 @export var house_scene: PackedScene
+## Fast travel lands only on ground meshes whose name holds one of these: outdoors, never a floor
+## inside a house or gym.
+@export var travel_ground_keywords: PackedStringArray = ["Ground_Roads", "Grass_Blocks", "Sand_", "_Path"]
 
 @export_group("HUD")
 ## The Champion chip's icon once the Champion is open or beaten, and while it is still locked.
@@ -32,6 +35,9 @@ extends Node3D
 @export var icon_lock: Texture2D
 
 const ExplorerPicker := preload("res://scenes/overworld/explorer_picker.tscn")
+const PlayerScript := preload("res://scripts/overworld/player.gd")
+## MapCollision's obstacle layer (trees, walls, lamp posts): fast travel never lands in one.
+const OBSTACLE_LAYER := 2
 ## Each question type's colour: the icon over its houses.
 const TYPE_COLORS := {"identification": Palette.TEAL, "essay": Palette.LILAC, "multiple_choice": Palette.AMBER}
 ## A house label floats this high so it clears the roof; the map's houses stand about 2 units tall.
@@ -40,6 +46,8 @@ const HOUSE_LABEL_HEIGHT := 2.6
 const FADE_SEC := 0.35
 ## Arriving: held for the first heavy frames, which would skip a tween, then this long.
 const ARRIVE_FADE_SEC := 0.8
+## Fast travel: the explorer shrinks away in this long, and pops back in about 1.5 times as long.
+const TRAVEL_SEC := 0.3
 
 @onready var map: Node3D = %Map
 @onready var player: CharacterBody3D = %Player
@@ -64,6 +72,8 @@ const ARRIVE_FADE_SEC := 0.8
 @onready var encounter_question: Label = %EncounterQuestion
 @onready var encounter_close_btn: Button = %EncounterCloseButton
 @onready var encounter_clear_btn: Button = %EncounterClearButton
+@onready var minimap: Control = $HUD/Minimap
+@onready var travel_hint: Label = %TravelHint
 
 var _topic_id: String = ""
 var _pick_on_arrival := false
@@ -106,6 +116,9 @@ func _ready() -> void:
 	%ExplorerButton.pressed.connect(_on_change_explorer)
 	encounter_close_btn.pressed.connect(_on_encounter_close)
 	encounter_clear_btn.pressed.connect(_on_encounter_cleared)
+	minimap.travel_picked.connect(_on_travel_picked)
+	%MapOverlay.visibility_changed.connect(_reset_travel_hint)
+	_reset_travel_hint()
 	_show_encounter(false)
 	SessionManager.overworld_progress_changed.connect(_refresh_progress)
 	if spawn != null:
@@ -160,11 +173,14 @@ func _build_route() -> void:
 	var gyms := SessionManager.get_gym_structure()
 	if gyms.is_empty():
 		return
-	# One gym per question type, in slot order; every house plays the type of a gym near it.
-	for gi in mini(gyms.size(), gym_slots.size()):
-		_add_gym_node(str(gyms[gi]["type"]), gym_slots[gi], gi)
+	# One gym per question type the world has, in its type's slot; every house plays the type of a gym near it.
+	for gi in gyms.size():
+		var slot := _slot_of(str(gyms[gi]["type"]))
+		if slot != null:
+			_add_gym_node(str(gyms[gi]["type"]), slot, gi)
 	_houses = MapHouses.find(map)
 	_assign_types(gyms)
+	_number_houses()
 	for house in _houses:
 		_add_house_node(house)
 	_add_champion_node()
@@ -178,7 +194,7 @@ func _build_route() -> void:
 # Shares the houses out between the question types: each house goes to the nearest gym that still has
 # room, so every type gets about the same number of houses and they cluster around their gym.
 func _assign_types(gyms: Array[Dictionary]) -> void:
-	var slots := mini(gyms.size(), gym_slots.size())
+	var slots := gyms.size()
 	if slots == 0:
 		return
 	var room := ceili(float(_houses.size()) / slots)
@@ -186,8 +202,9 @@ func _assign_types(gyms: Array[Dictionary]) -> void:
 	for h in _houses.size():
 		var at: Vector3 = (_houses[h]["box"] as AABB).get_center()
 		for g in slots:
-			if gym_slots[g].entrance != null:
-				pairs.append([Vector2(at.x, at.z).distance_to(Vector2(gym_slots[g].entrance.global_position.x, gym_slots[g].entrance.global_position.z)), h, g])
+			var slot := _slot_of(str(gyms[g]["type"]))
+			if slot != null and slot.entrance != null:
+				pairs.append([Vector2(at.x, at.z).distance_to(Vector2(slot.entrance.global_position.x, slot.entrance.global_position.z)), h, g])
 	pairs.sort()
 	var taken: Array[int] = []
 	taken.resize(slots)
@@ -198,6 +215,39 @@ func _assign_types(gyms: Array[Dictionary]) -> void:
 			_houses[h]["type"] = str(gyms[g]["type"])
 			taken[g] += 1
 
+# The houses' route ("num", from 1): nearest the spawn first, then each next one nearest the last. They
+# are cleared in this order; only the next uncleared one can be entered (cleared ones replay).
+func _number_houses() -> void:
+	var left: Array = _houses.filter(func(h: Dictionary) -> bool: return h.has("type"))
+	var at := spawn.global_position if spawn != null else Vector3.ZERO
+	var n := 1
+	while not left.is_empty():
+		var from := Vector2(at.x, at.z)
+		left.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+			return _house_xz(a).distance_to(from) < _house_xz(b).distance_to(from))
+		var h: Dictionary = left.pop_front()
+		h["num"] = n
+		n += 1
+		at = (h["box"] as AABB).get_center()
+
+func _house_xz(h: Dictionary) -> Vector2:
+	var c := (h["box"] as AABB).get_center()
+	return Vector2(c.x, c.z)
+
+# The first house on the route not yet cleared; {} once every house is.
+func _next_house() -> Dictionary:
+	var best: Dictionary = {}
+	for h in _houses:
+		if h.has("num") and not SessionManager.is_house_cleared(_topic_id, h["type"], h["id"]) \
+				and (best.is_empty() or int(h["num"]) < int(best["num"])):
+			best = h
+	return best
+
+# A type's gym building: gym_slots is in SessionManager.RUN_TYPES order, whichever types the world has.
+func _slot_of(gym_type: String) -> GymSlot:
+	var i := SessionManager.RUN_TYPES.find(gym_type)
+	return gym_slots[i] if i >= 0 and i < gym_slots.size() else null
+
 # A house is a Challenge House: walking into the house itself opens the panel (_physics_process), and its
 # door "opens" (a dark doorway) while the explorer is near it, like the gyms' doors.
 func _add_house_node(house: Dictionary) -> void:
@@ -206,13 +256,12 @@ func _add_house_node(house: Dictionary) -> void:
 	var t: String = house["type"]
 	var id: String = house["id"]
 	var cleared := SessionManager.is_house_cleared(_topic_id, t, id)
-	var state := "%d/3 stars" % SessionManager.best_stars("house", _topic_id, "%s#%s" % [t, id]) if cleared else "Easy"
+	var stars := SessionManager.best_stars("house", _topic_id, "%s#%s" % [t, id])
+	var state := "House %d · %s" % [house["num"], "★".repeat(stars) + "☆".repeat(3 - stars) if cleared else "Easy"]
 	var box: AABB = house["box"]
 	var area := house_scene.instantiate() as EncounterTrigger
 	area.position = Vector3(box.get_center().x, 0.0, box.get_center().z)
 	area.box = Vector3(box.size.x + house_margin * 2.0, box.size.y, box.size.z + house_margin * 2.0)
-	area.text = "%s\n%s" % [_type_name(t), state]
-	area.label_height = HOUSE_LABEL_HEIGHT
 	trainers_root.add_child(area)
 	area.label.visible = false
 	var doorway := _add_doorway(area, house)
@@ -221,7 +270,9 @@ func _add_house_node(house: Dictionary) -> void:
 		_open_doorway(doorway, false)
 		if _dismissed_house == id:
 			_dismissed_house = "")
-	_add_house_icon(area, TYPE_COLORS.get(t, Palette.TEAL), cleared)
+	var quest := "cleared" if cleared else ("next" if _next_house() == house else "locked")
+	area.set_meta("house_state", quest)
+	_add_house_badge(area, t, state, quest)
 	if cleared:
 		area.dim()
 
@@ -245,15 +296,38 @@ func _open_doorway(doorway: MeshInstance3D, open: bool) -> void:
 	if not open:
 		t.tween_callback(doorway.hide)
 
-# The icon over the roof (house_trigger.tscn's Icon) in the house's type colour, faint once the house
-# is cleared, bobbing.
-func _add_house_icon(area: EncounterTrigger, color: Color, cleared: bool) -> void:
-	var icon := area.get_node("Icon") as Sprite3D
-	icon.modulate = Color(color, 0.4 if cleared else 1.0)
-	icon.position = Vector3(0, HOUSE_LABEL_HEIGHT - 0.3, 0)
-	var t := icon.create_tween().set_loops()
-	t.tween_property(icon, "position:y", HOUSE_LABEL_HEIGHT - 0.15, 0.7).set_trans(Tween.TRANS_SINE)
-	t.tween_property(icon, "position:y", HOUSE_LABEL_HEIGHT - 0.3, 0.7).set_trans(Tween.TRANS_SINE)
+# The badge over the roof (house_trigger.tscn's Badge, drawn by its BadgeView): a circle in the type's
+# colour from afar, opening into a pill with the type and "Easy" or the stars near the explorer. Faint
+# once the house is cleared, bobbing.
+func _add_house_badge(area: EncounterTrigger, t: String, state: String, quest: String) -> void:
+	var view := area.get_node("BadgeView") as SubViewport
+	var chip := view.get_node("Pill/Row/Chip") as PanelContainer
+	var style := chip.get_theme_stylebox("panel").duplicate() as StyleBoxFlat
+	style.bg_color = TYPE_COLORS.get(t, Palette.TEAL)
+	chip.add_theme_stylebox_override("panel", style)
+	(view.get_node("Pill/Row/Text/Lines/Name") as Label).text = _type_name(t)
+	(view.get_node("Pill/Row/Text/Lines/Tier") as Label).text = state
+	var badge := area.get_node("Badge") as Sprite3D
+	badge.texture = view.get_texture()
+	badge.modulate.a = {"next": 1.0, "cleared": 0.55}.get(quest, 0.35)
+	_show_badge_text(area, quest == "next")
+	badge.position = Vector3(0, HOUSE_LABEL_HEIGHT - 0.3, 0)
+	var tw := badge.create_tween().set_loops()
+	tw.tween_property(badge, "position:y", HOUSE_LABEL_HEIGHT - 0.15, 0.7).set_trans(Tween.TRANS_SINE)
+	tw.tween_property(badge, "position:y", HOUSE_LABEL_HEIGHT - 0.3, 0.7).set_trans(Tween.TRANS_SINE)
+
+# Opens or closes a house badge's text, then redraws its BadgeView once at the new size.
+func _show_badge_text(area: Node, shown: bool) -> void:
+	var view := area.get_node("BadgeView") as SubViewport
+	var text := view.get_node("Pill/Row/Text") as Control
+	if text.visible == shown and view.has_meta("drawn"):
+		return
+	view.set_meta("drawn", true)
+	text.visible = shown
+	var pill := view.get_node("Pill") as Control
+	pill.reset_size()
+	view.size = Vector2i(pill.get_combined_minimum_size().ceil())
+	view.render_target_update_mode = SubViewport.UPDATE_ONCE
 
 # The explorer walked into something: if it is part of a house (its contact point lies on the house's
 # footprint, give or take the windows), that house opens. Windows, trees and lamp posts can keep the
@@ -272,12 +346,73 @@ func _physics_process(_delta: float) -> void:
 				_on_house_touched(house)
 				return
 
-# House labels show only near the explorer; the icons mark the houses from afar.
+# The next house's badge always shows its text; a cleared one only near the explorer; a locked one never.
 func _process(_delta: float) -> void:
 	for area: Node in trainers_root.get_children():
-		if area is EncounterTrigger:
+		if area is EncounterTrigger and not area.is_queued_for_deletion():
+			var quest := str(area.get_meta("house_state", ""))
 			var near := player.global_position.distance_to((area as Node3D).global_position) < house_label_near
-			(area as EncounterTrigger).label.visible = near
+			_show_badge_text(area, quest == "next" or (quest == "cleared" and near))
+
+# Fast travel: the island map's tap, checked here, confirmed and paid before the explorer moves.
+func _reset_travel_hint() -> void:
+	travel_hint.text = "Tap a road or field to travel there for %d crystals." % GameState.TRAVEL_PRICE
+
+func _on_travel_picked(at: Vector3) -> void:
+	var spot := _travel_spot(at)
+	if spot == Vector3.INF:
+		travel_hint.text = "Can't land there. Pick a road, path or field."
+	elif GameState.crystals < GameState.TRAVEL_PRICE:
+		travel_hint.text = "Travel costs %d crystals. You have %d." % [GameState.TRAVEL_PRICE, GameState.crystals]
+	else:
+		_reset_travel_hint()
+		ConfirmModal.open(back_btn.get_parent(), "Travel here?", "You and Kuiz hop to the pin for %d crystals. You have %d." % [GameState.TRAVEL_PRICE, GameState.crystals], "Travel", _travel_to.bind(spot), false, "Stay")
+
+func _travel_to(spot: Vector3) -> void:
+	if GameState.crystals < GameState.TRAVEL_PRICE:
+		return
+	GameState.add_crystals(-GameState.TRAVEL_PRICE)
+	SaveManager.save_progress()
+	await minimap.close()
+	# Vanish in a burst while the screen dims, land, then pop back in with a second burst.
+	player.locked = true
+	_spawn_gym_burst(player.global_position)
+	var out := create_tween().set_parallel()
+	out.tween_property(player.model, "scale", Vector3.ONE * 0.01, TRAVEL_SEC).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
+	out.tween_property(kuiz, "scale", Vector3.ONE * 0.01, TRAVEL_SEC).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
+	out.tween_property(_fade, "color:a", 0.85, TRAVEL_SEC)
+	await out.finished
+	player.global_position = spot
+	kuiz.place_behind()
+	_spawn_gym_burst(spot)
+	var back := create_tween().set_parallel()
+	back.tween_property(_fade, "color:a", 0.0, TRAVEL_SEC * 1.4).set_trans(Tween.TRANS_SINE)
+	back.tween_property(player.model, "scale", Vector3.ONE, TRAVEL_SEC * 1.6).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	back.tween_property(kuiz, "scale", Vector3.ONE, TRAVEL_SEC * 1.6).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT).set_delay(0.12)
+	await back.finished
+	player.locked = false
+
+# The ground under `at` when the explorer can stand there: an outdoor ground mesh above the water, not
+# in a house, with no tree, wall or lamp post in the way. Vector3.INF otherwise.
+func _travel_spot(at: Vector3) -> Vector3:
+	var space := player.get_world_3d().direct_space_state
+	var hit := space.intersect_ray(PhysicsRayQueryParameters3D.create(Vector3(at.x, 100.0, at.z), Vector3(at.x, -10.0, at.z), PlayerScript.GROUND_LAYER))
+	if hit.is_empty() or hit.position.y < PlayerScript.WATERLINE:
+		return Vector3.INF
+	var ground := String((hit.collider as Node).get_parent().name)
+	if not Array(travel_ground_keywords).any(func(k: String) -> bool: return ground.contains(k)):
+		return Vector3.INF
+	for house in _houses:
+		var box: AABB = (house["box"] as AABB).grow(house_margin)
+		if at.x > box.position.x and at.x < box.end.x and at.z > box.position.z and at.z < box.end.z:
+			return Vector3.INF
+	var probe := PhysicsShapeQueryParameters3D.new()
+	var ball := SphereShape3D.new()
+	ball.radius = 0.45
+	probe.shape = ball
+	probe.transform = Transform3D(Basis(), hit.position + Vector3.UP * 0.6)
+	probe.collision_mask = OBSTACLE_LAYER
+	return hit.position if space.intersect_shape(probe, 1).is_empty() else Vector3.INF
 
 func _type_name(t: String) -> String:
 	return t.capitalize().replace("_", " ")
@@ -360,7 +495,7 @@ func _fill_encounter(title: String, tag: String, note: String, action: String, c
 	%EncounterFacts.visible = kind != ""
 	%EncounterReady.visible = kind != ""
 	if kind != "":
-		var items := SessionManager.run_items(kind, gym_type)
+		var items := SessionManager.run_items(_topic_id, kind, gym_type)
 		var ready := roundi(CompanionState.readiness())
 		%FactItems.text = str(items)
 		%FactLevel.text = str(SessionManager.RUN_TIER[kind]).capitalize()
@@ -368,9 +503,6 @@ func _fill_encounter(title: String, tag: String, note: String, action: String, c
 		%ReadyValue.text = "%d%%" % ready
 		%ReadyBar.value = ready
 		%ReadyName.text = "Kuiz readiness (low: feed and rest it)" if ready < 25 else "Kuiz readiness"
-		var have := SessionManager.get_pending_questions().size()
-		if have < items:
-			notes.append("Only %d question%s here, so they repeat." % [have, "" if have == 1 else "s"])
 	encounter_question.text = "\n".join(notes)
 	encounter_question.visible = not notes.is_empty()
 	encounter_clear_btn.text = action
@@ -381,15 +513,21 @@ func _fill_encounter(title: String, tag: String, note: String, action: String, c
 func _on_house_touched(house: Dictionary) -> void:
 	var t: String = house["type"]
 	var id: String = house["id"]
-	_pending_encounter = {"kind": "house", "gym": t, "house": house}
 	var cleared := SessionManager.is_house_cleared(_topic_id, t, id)
+	var next := _next_house()
+	if not cleared and next != house:
+		# No "kind": the panel only explains, and closing it still keeps this house shut until stepped away from.
+		_pending_encounter = {"house": house}
+		_fill_encounter("House %d" % house["num"], "Locked", "Clear House %d (%s) first. It's the green pin on your map." % [next["num"], _type_name(next["type"])], "", false)
+		return
+	_pending_encounter = {"kind": "house", "gym": t, "house": house}
 	var stars := SessionManager.best_stars("house", _topic_id, "%s#%s" % [t, id])
 	var note := "%d of %d %s houses cleared" % [SessionManager.houses_cleared(_topic_id, t), _houses_of(t), _type_name(t)]
 	if cleared:
 		note += ". Replays pay a quarter."
 	elif not SessionManager.is_gym_open(_topic_id, t):
 		note += ". Clear one to open the gym."
-	_fill_encounter("Challenge House", _type_name(t) + ("  " + "★".repeat(stars) if cleared else ""), note, "Replay" if cleared else "Go inside", true, "house", t)
+	_fill_encounter("House %d" % house["num"], _type_name(t) + ("  " + "★".repeat(stars) if cleared else ""), note, "Replay" if cleared else "Go inside", true, "house", t)
 
 func _on_gym_touched(_body: Node3D, gym_type: String) -> void:
 	_pending_encounter = {"kind": "gym", "gym": gym_type}
@@ -407,7 +545,12 @@ func _on_champion_touched(_body: Node3D) -> void:
 		return
 	var crowned := SessionManager.is_champion_defeated(_topic_id)
 	_pending_encounter = {"kind": "champion"}
-	_fill_encounter("Champion Gym", "Crowned" if crowned else "The toughest robot", "Multiple choice, then identification, then essay." + (" Replays pay a quarter." if crowned else ""), "Replay" if crowned else "Challenge Champion!", true, "champion")
+	var have := SessionManager.get_gym_structure().map(func(g: Dictionary) -> String: return str(g["type"]))
+	var order: Array[String] = []
+	for seg: Array in SessionManager.RUN_QUOTAS["champion"]:
+		if have.has(seg[0]):
+			order.append(_type_name(seg[0]))
+	_fill_encounter("Champion Gym", "Crowned" if crowned else "The toughest robot", "%s." % ", then ".join(order) + (" Replays pay a quarter." if crowned else ""), "Replay" if crowned else "Challenge Champion!", true, "champion")
 
 # The explorer stands still while a panel is open.
 func _show_encounter(shown: bool) -> void:
@@ -517,22 +660,26 @@ func _refresh_progress() -> void:
 	quest_count.text = "%d / %d done" % [houses_done + gyms_done + (1 if crowned else 0), _houses.size() + gyms.size() + 1]
 	_show_objectives(_objectives(gyms, _houses.size() - houses_done))
 
-# Every step still to do, in order: a house of each type (which opens its gym), then the gym; then the
-# Champion; and the houses still standing, which are optional but pay their first-clear bonus.
+# Every step still to do, in order: the next house on the route (the green pin), then each open gym,
+# then the Champion. A gym opens with the first house of its type the route reaches.
 func _objectives(gyms: Array[Dictionary], houses_left: int) -> Array[String]:
 	var steps: Array[String] = []
+	if SessionManager.is_champion_defeated(_topic_id):
+		steps.append("Region complete! You are the Champion.")
+	var next := _next_house()
+	if not next.is_empty():
+		steps.append("Clear House %d (%s), the green pin" % [next["num"], _type_name(next["type"])])
 	if not SessionManager.is_champion_defeated(_topic_id):
 		for g in gyms:
 			var t: String = str(g["type"])
-			if not SessionManager.is_gym_open(_topic_id, t):
-				steps.append("Enter a house marked %s" % _type_name(t))
-			if not SessionManager.is_gym_cleared(_topic_id, t):
+			if SessionManager.is_gym_open(_topic_id, t) and not SessionManager.is_gym_cleared(_topic_id, t):
 				steps.append("Clear the %s Gym" % _type_name(t))
-		steps.append("Challenge the Champion Gym" if not gyms.is_empty() else "Walk into a house or gym")
-	else:
-		steps.append("Region complete! You are the Champion.")
-	if houses_left > 0:
-		steps.append("Clear the other houses (%d left)" % houses_left)
+		if SessionManager.is_champion_available(_topic_id):
+			steps.append("Challenge the Champion Gym")
+		elif not gyms.is_empty():
+			steps.append("Win every gym badge to open the Champion")
+	if houses_left > 1:
+		steps.append("%d houses left on the route" % houses_left)
 	return steps
 
 # Fills the step rows placed in %Objectives (their look is set in the scene); as many steps show as

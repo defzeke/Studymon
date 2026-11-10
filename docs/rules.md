@@ -110,6 +110,16 @@ interactive control needs a visible focus/pressed state and a touch target of at
 [`ui-and-assets.md`](ui-and-assets.md#color-palette); do not introduce off-palette colours. Existing
 screens still carry pre-palette values (issue #21).
 
+**Do not hard-code objects in scripts or scenes.**
+- **Nodes live in scenes.** Do not build UI or 3D nodes in code with `.new()`. Put them in a
+  `.tscn` so they can be edited in the editor. Repeated rows copy a hidden template node
+  ([`ui-and-assets.md`](ui-and-assets.md) §2).
+- **Content lives in data files.** Items, foods, costumes, explorers, names and their prices are
+  content. Keep them in a resource under `assets/data/`, like `assets/data/costumes/*.tres`. They
+  are not literals in a `.gd` file or inline in a `.tscn`.
+- Tuning constants stay in code and are documented in their `systems/*.md` (§2).
+- Older code still breaks this rule. Move it when you touch that code.
+
 **Assets are committed with their import.** New art goes under `assets/` with a lowercase
 `snake_case` name, and the inventory in [`ui-and-assets.md`](ui-and-assets.md) is updated. Do not
 leave untracked art that a scene references.

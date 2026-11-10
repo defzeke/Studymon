@@ -40,18 +40,26 @@ If `pending_questions` is empty (direct scene run), `region_map.gd` `_ready()` s
 
 ## 2. Houses and gyms
 
-`get_gym_structure()` returns one entry per question type, `[{type}]` in GymSlot order (Identification,
-Essay, Multiple Choice), as soon as the topic has a question; the runs fill themselves from the
-questions ([`battle.md`](battle.md) §1).
+`get_gym_structure()` returns one entry per question type **the topic has**, `[{type}]` in
+`RUN_TYPES` order (Identification, Essay, Multiple Choice). Each type keeps its own GymSlot
+(`_slot_of()`: the slot at its `RUN_TYPES` index), so a Multiple-Choice-only world opens only the third
+gym, and the houses are shared out among the types it has. Runs play only questions of their type
+([`battle.md`](battle.md) §1).
 
-- **Every house is a Challenge House** (Easy; 10 MC, 5 ID or 5 Essay). The island has 15, so each type
-  gets 5: `_assign_types()` gives each house to the nearest gym that still has room (`ceil(15 / 3)`),
+- **Every house is a Challenge House** (Easy; up to 10 MC, 5 ID or 5 Essay). The island has 15, so each
+  of three types gets 5: `_assign_types()` gives each house to the nearest gym that still has room
+  (`ceil(15 / types)`),
   so a type's houses cluster around its gym. Each house is its own run with its own first-clear
   bonus and stars, and starts at a different point of the question pool (its number is the
   `variant` passed to `begin_run()`), so two houses of one type do not play the same items.
+- **The houses form a route** (`_number_houses()`, each house's `num`): House 1 is the one nearest the
+  spawn, and each next one is the nearest to the last. Houses are cleared **in that order**: only the
+  next uncleared one (`_next_house()`) can be entered; a later one shows a "Locked" panel naming the
+  house to clear first. Cleared houses can always be replayed. Each house carries its state in the
+  `house_state` meta (`next`, `cleared` or `locked`), which the badge and the minimap read.
 - A **Gym** (Medium, 20 / 10 / 10) at the slot's `entrance` opens once **any** house of its type is
   cleared. The other houses stay open for practice and their first-clear pay.
-- The Champion Gym (all three types, 40 items) opens once all three gyms are cleared.
+- The Champion Gym (every type the world has, up to 40 items) opens once all of its gyms are cleared.
 
 ### Finding the houses
 
@@ -113,7 +121,7 @@ clears both roots first.
 
 | Trigger | Shape | Label |
 |---|---|---|
-| House | **the house itself**: bumping into it (below) opens the panel; a box of the footprint grown by `house_margin` (0.6) only opens the doorway and re-arms the house | the type and `Easy` or its stars, 2.6 up; shown only within `house_label_near` (4.0) of the explorer, so 15 labels do not crowd the screen |
+| House | **the house itself**: bumping into it (below) opens the panel; a box of the footprint grown by `house_margin` (0.6) only opens the doorway and re-arms the house | a badge over the roof: a circle in the type's colour, opening into a pill with the type and `Easy` or its stars within `house_label_near` (4.0) of the explorer |
 | Gym | cylinder r 0.7 at the slot's `Entrance` | `GYM n` / `LOCKED` / stars, and the type |
 | Champion | cylinder r 0.7 | `CHAMPION` and `LOCKED` / `FIGHT!` / `DOWN` |
 
@@ -127,8 +135,13 @@ the explorer leaves its 0.6 box, so leaning on the wall does not reopen it every
 headless by pushing the explorer at every house from all four sides: every house opens, from at
 least three sides each (the misses are the narrow gaps between the h1/h2, h9/h10 and h11/h15 pairs,
 where the neighbour is bumped first). Each house is a `house_trigger.tscn` (the encounter trigger plus
-an `Icon` and a `Doorway`), so its icon, a bobbing `icon_trainer.svg` over its roof, is tinted in its type's colour (Identification teal, Essay lilac `8D82A8`,
-Multiple Choice amber), faint once cleared: the icons mark the houses from afar.
+a `Badge`, its `BadgeView` and a `Doorway`). The badge is a `Sprite3D` showing `BadgeView`, a small
+`SubViewport` with a Warm Off-White pill: a circle in the type's colour (Identification teal, Essay
+lilac, Multiple Choice amber) holding `icon_trainer.svg`, and the type and tier beside it. From afar
+only the circle shows; the next house's text is always open, a cleared house's opens near the
+explorer, and a locked house's never does (its circle is faint). The tier line reads "House n · Easy"
+or "House n" and its stars. `_show_badge_text()` resizes the viewport and
+redraws it once (`UPDATE_ONCE`) only when that changes. It bobs, and is faint once the house is cleared.
 
 ### Entering a building (houses and gyms alike)
 
@@ -243,6 +256,18 @@ A tap opens `%MapOverlay`: the same picture at 600 px in a card that grows out o
 legend and an X. X or a tap outside closes it. The explorer stays locked while it is open, and the minimap will not
 open over anything else that locks the explorer.
 
+**Quest pins.** A house's dot follows its `house_state`: the next house is a green pin with a pulsing
+halo (the legend's "Next"), cleared houses off-white, locked ones faint grey.
+
+**Fast travel.** A tap on the big map emits `travel_picked` with the world point under it, pinned in coral.
+`region_map._travel_spot()` accepts it only on outdoor ground: a ground-layer mesh named in
+`travel_ground_keywords` (roads, grass, sand, paths), above the waterline, outside every house's box
+grown by `house_margin`, with no obstacle within 0.45 of it. `%TravelHint` says why a spot is refused or
+that crystals are short. A good spot asks "Travel here?" (`ConfirmModal`); confirming spends
+`GameState.TRAVEL_PRICE` (25) crystals, saves and closes the map. The explorer and Kuiz then shrink
+away in a burst while `%Fade` dims (`TRAVEL_SEC`, 0.3 s), land, and pop back to full size with a
+second burst as the fade clears; the explorer stays locked until they have landed.
+
 **Joystick** (`joystick.gd`). A 320 px square at the bottom-left; base radius 120, knob 52, dead zone
 15 %. Touch reaches it as emulated mouse events, so one finger drives it; the knob springs back on
 release. Drawn with `_draw()` in Deep Slate, Warm Off-White and Muted Teal, so it needs no assets.
@@ -279,14 +304,16 @@ and plays the entrance (§3 *Entering a building*) before `change_scene_to_file(
 | `_best_stars` | `"<kind>:<topic_id>:<run key>"` (run key: the type, or `type#house_id`) | best of 0–3 per run |
 
 A run is cleared by surviving every item; stars (accuracy) only scale the pay. A gym opens with the
-first house of its type (`houses_cleared(topic, type) > 0`), the Champion with all three gyms.
+first house of its type (`houses_cleared(topic, type) > 0`), the Champion with every gym the world has.
+A world whose types change (a re-extract with other ticks) shares the houses out again, so a house
+cleared as one type can come back as another and show uncleared.
 `overworld_progress_changed` fires on each clear. A v13 key without a house id still counts toward its
 type, so an older save keeps its open gyms.
 
 The HUD's quest card (`_refresh_progress`) shows Houses cleared of 15 with a bar, a badge per cleared
 gym, and the Champion as Locked / Ready! / Crowned. The bullet list beside the minimap shows the next
-three steps (`_objectives()`): "Enter a house marked <type>" for each type whose gym is still shut, the
-gyms, the Champion, and then "Clear the other houses (n left)". Layout in
+steps (`_objectives()`): "Clear House n (<type>), the green pin", each open gym not yet cleared, the
+Champion (or "Win every gym badge to open the Champion"), and the houses left on the route. Layout in
 [`ui-and-assets.md`](../ui-and-assets.md) §2 `region_map.tscn`.
 
 ---

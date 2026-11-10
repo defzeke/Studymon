@@ -51,6 +51,8 @@ var _adding := false
 ## Why the last extraction's questions were written on the device instead of by the AI ("" when the
 ## AI wrote them). The World Builder shows it.
 var offline_note := ""
+## The question types the World Builder's ticks ask for; the next extraction keeps only these.
+var question_types: Array[String] = ["identification", "essay", "multiple_choice"]
 var _topics: Array[Dictionary] = []
 var _active_job_id: String = ""
 # Progress per world; saved by to_dict().
@@ -133,7 +135,7 @@ func start_more_questions(topic_name: String) -> bool:
 		existing.append(str(q.get("text", "")))
 	_active_job_id = Api.new_job_id("extract")
 	extraction_started.emit(_active_job_id)
-	Api.upload_reviewer(_active_job_id, topic_name, last_source_text, PackedByteArray(), "pdf", existing)
+	Api.upload_reviewer(_active_job_id, topic_name, last_source_text, PackedByteArray(), "pdf", existing, question_types)
 	return true
 
 ## A saved world, as opposed to one being built for the first time.
@@ -197,32 +199,26 @@ func validate_source_text(text: String) -> Dictionary:
 	return {"ok": true, "words": word_count, "chars": char_count}
 
 func start_upload(topic_name: String, pdf_bytes: PackedByteArray, source_hint: String = "", file_type := "pdf") -> void:
-	# Wire reviewer input through to the extractor. Precedence: explicit hint
-	# (paste box) > decodable bytes > previous last_source_text. Bytes that are not text (a PDF, photo,
-	# Word or PowerPoint file of `file_type`) go to the server as they are; the mock cannot read them
-	# and falls back to editable placeholders.
+	# Wire reviewer input through to the extractor. Precedence: explicit hint (paste box) > the file's
+	# bytes > previous last_source_text. The bytes (a PDF, photo, Word or PowerPoint file of
+	# `file_type`) go to the server as they are, never decoded here: a PDF is not UTF-8.
 	var hint := source_hint.strip_edges()
 	var pdf := PackedByteArray()
 	if hint != "":
 		last_source_text = source_hint
 	elif pdf_bytes.size() > 0:
-		var decoded := pdf_bytes.get_string_from_utf8()
-		if decoded.length() > 0 and not decoded.contains("�"):
-			last_source_text = decoded
-		else:
-			last_source_text = ""
-			pdf = pdf_bytes
+		last_source_text = ""
+		pdf = pdf_bytes
 	_active_job_id = Api.new_job_id("extract")
 	extraction_started.emit(_active_job_id)
-	Api.upload_reviewer(_active_job_id, topic_name, last_source_text, pdf, file_type)
+	Api.upload_reviewer(_active_job_id, topic_name, last_source_text, pdf, file_type, [], question_types)
 
 func start_upload_from_text(topic_name: String, source_text: String) -> void:
 	var v := validate_source_text(source_text)
 	if not v.get("ok", false):
 		extraction_failed.emit("", str(v.get("error", "Invalid input")))
 		return
-	last_source_text = source_text
-	start_upload(topic_name, source_text.to_utf8_buffer())
+	start_upload(topic_name, PackedByteArray(), source_text)
 
 func _on_job_status(job_id: String, status: String, progress: float, result: Variant) -> void:
 	# Handle topics listing (Api mocks topics via job_status with job_id "topics")
@@ -255,11 +251,16 @@ func _on_job_status(job_id: String, status: String, progress: float, result: Var
 				# and the questions are written here instead.
 				offline_note = str(result.get("note", "")) if result.get("offline", false) else ""
 				if offline_note != "":
-					made = Api.offline_questions(str(result.get("reviewer_text", "")))
+					made = Api.offline_questions(str(result.get("reviewer_text", "")), question_types)
 					if made.is_empty():
 						_adding = false
 						extraction_failed.emit(job_id, offline_note)
 						return
+				made = made.filter(func(q: Variant) -> bool: return q is Dictionary and question_types.has(str(q.get("type", ""))))
+				if made.is_empty():
+					_adding = false
+					extraction_failed.emit(job_id, "No questions of the ticked types came out. Tick another type or add more detail.")
+					return
 				var questions: Array[Dictionary] = []
 				for q in made:
 					if q is Dictionary:
@@ -335,13 +336,12 @@ func build_map_data(topic_id: String, questions: Array[Dictionary]) -> Dictionar
 func get_pending_questions() -> Array[Dictionary]:
 	return pending_questions.duplicate(true)
 
-## One entry per question type, in GymSlot order; empty until the topic has a question.
+## One entry per question type the topic has, in RUN_TYPES order; empty until it has a question.
 func get_gym_structure() -> Array[Dictionary]:
 	var out: Array[Dictionary] = []
-	if pending_questions.is_empty():
-		return out
 	for t in RUN_TYPES:
-		out.append({"type": t})
+		if pending_questions.any(func(q: Dictionary) -> bool: return str(q.get("type", "")) == t):
+			out.append({"type": t})
 	return out
 
 func is_house_cleared(topic_id: String, gym_type: String, house_id: String) -> bool:
@@ -363,13 +363,9 @@ func is_gym_cleared(topic_id: String, gym_type: String) -> bool:
 func is_gym_open(topic_id: String, gym_type: String) -> bool:
 	return houses_cleared(topic_id, gym_type) > 0
 
-## How many items a run plays.
-func run_items(kind: String, gym_type: String) -> int:
-	var n := 0
-	for seg: Array in RUN_QUOTAS[kind]:
-		if kind == "champion" or str(seg[0]) == gym_type:
-			n += int(seg[1])
-	return n
+## How many items a run plays: its quota, or fewer when the world has fewer questions of the type.
+func run_items(topic_id: String, kind: String, gym_type: String) -> int:
+	return build_run(topic_id, kind, gym_type).size()
 
 ## `run_key` is the type, or "type#house_id" for a house.
 func best_stars(kind: String, topic_id: String, run_key: String) -> int:
@@ -408,9 +404,9 @@ func reshuffle_run() -> void:
 func _run_key() -> String:
 	return battle_type + ("#" + battle_house if battle_house != "" else "")
 
-## The items of a run: [{q_index, question}]. A segment takes the questions of its type nearest the run's
-## tier first (Remaster, then New, then the rest), then questions convertible to the type, then cycles
-## through them again so a short reviewer still fills the quota.
+## The items of a run: [{q_index, question}]. A segment plays only questions of its own type, nearest
+## the run's tier first (Remaster, then New, then the rest), each at most once: a world with fewer
+## questions of the type than the quota plays a shorter run. Contract: docs/systems/battle.md.
 func build_run(topic_id: String, kind: String, gym_type: String, shuffle := false, variant := 0) -> Array[Dictionary]:
 	var qs: Array = _questions_for(topic_id)
 	var out: Array[Dictionary] = []
@@ -427,69 +423,23 @@ func _segment(topic_id: String, qs: Array, type: String, count: int, target: int
 	var order: Array = range(qs.size())
 	var mastery_rank := [Mastery.REMASTER, Mastery.NEW, Mastery.LEARNING, Mastery.MASTERED]
 	order.sort_custom(func(a: int, b: int) -> bool:
-		var ka := [0 if str(qs[a].get("type", "")) == type else 1, absi(_tier_rank(qs[a]) - target), mastery_rank.find(get_mastery_state(topic_id, a)), a]
-		var kb := [0 if str(qs[b].get("type", "")) == type else 1, absi(_tier_rank(qs[b]) - target), mastery_rank.find(get_mastery_state(topic_id, b)), b]
+		var ka := [absi(_tier_rank(qs[a]) - target), mastery_rank.find(get_mastery_state(topic_id, a)), a]
+		var kb := [absi(_tier_rank(qs[b]) - target), mastery_rank.find(get_mastery_state(topic_id, b)), b]
 		return ka < kb)
-	# Items played as the segment's type come first; only when no question can be, the run falls back to
-	# the forms the questions can take, so every house and gym can always be entered.
 	var pool: Array[Dictionary] = []
-	var fallback: Array[Dictionary] = []
 	for i: int in order:
-		var q := _as_type(qs[i], type, qs)
-		(pool if str(q["type"]) == type else fallback).append({"q_index": i, "question": q})
-	if pool.is_empty():
-		pool = fallback
+		if str(qs[i].get("type", "")) == type:
+			pool.append({"q_index": i, "question": (qs[i] as Dictionary).duplicate(true)})
 	var out: Array[Dictionary] = []
 	if pool.is_empty():
 		return out
+	# `variant` (the house number) starts each house at a different question.
 	var start := (variant * count) % pool.size()
-	for n in count:
-		out.append((pool[(start + n) % pool.size()] as Dictionary).duplicate(true))
+	for n in mini(count, pool.size()):
+		out.append(pool[(start + n) % pool.size()])
 	if shuffle:
 		out.shuffle()
 	return out
-
-## `q` rewritten as `type` when it has what that type needs, else `q` as it is (always playable).
-## The correct answer is the answer key, or else the first key idea. Identification needs one; Multiple
-## Choice needs one plus wrong options (its own, then other questions' answers and key ideas), and
-## without wrong options is played as Identification; Essay takes its key ideas from the answer.
-func _as_type(q: Dictionary, type: String, qs: Array) -> Dictionary:
-	var d := q.duplicate(true)
-	if str(d.get("type", "")) == type:
-		return d
-	var answer := str(d.get("answer", "")).strip_edges()
-	var ideas: Array = d.get("key_concepts", [])
-	if answer == "" and not ideas.is_empty():
-		answer = str(ideas[0]).strip_edges()
-	match type:
-		"identification":
-			if answer == "":
-				return d
-			d["answer"] = answer
-		"multiple_choice":
-			if answer == "":
-				return d
-			d["answer"] = answer
-			var wrong: Array = []
-			for x in d.get("distractors", []):
-				wrong.append(str(x))
-			for other: Dictionary in qs:
-				var options: Array = [other.get("answer", "")]
-				options.append_array(other.get("key_concepts", []))
-				for o in options:
-					var s := str(o).strip_edges()
-					if wrong.size() < 3 and s != "" and s.to_lower() != answer.to_lower() and not wrong.has(s):
-						wrong.append(s)
-			if wrong.is_empty():
-				d["type"] = "identification"
-				return d
-			d["distractors"] = wrong
-		"essay":
-			if ideas.is_empty() and answer != "":
-				d["key_concepts"] = [answer]
-			d["text"] = "Explain: " + str(d.get("text", ""))
-	d["type"] = type
-	return d
 
 ## Rank of a question's tier, Easy 0 to Hard 2 (unknown tiers count as medium).
 func _tier_rank(q: Dictionary) -> int:
@@ -620,6 +570,18 @@ func record_battle_outcome(topic_id: String, q_idx: int, won: bool) -> void:
 				st = Mastery.LEARNING
 	rec["state"] = st
 	_mastery[k] = rec
+
+## The player's Easy / Hard after a battle (Review answers): sets the question's tier in its world, so
+## runs and flashcards treat it as that tier. Saved.
+func rate_question(topic_id: String, q_index: int, difficulty: String) -> void:
+	var lists: Array = [_questions_for(topic_id)]
+	for t in _topics:
+		if str(t.get("id", "")) == topic_id:
+			lists.append(t.get("questions", []))
+	for qs: Array in lists:
+		if q_index >= 0 and q_index < qs.size():
+			(qs[q_index] as Dictionary)["difficulty"] = difficulty
+	SaveManager.save_progress()
 
 func _questions_for(topic_id: String) -> Array:
 	if topic_id == editing_topic_id or topic_id == current_topic_id:

@@ -28,17 +28,15 @@ pool), and each type has one gym; the Champion plays all three types back to bac
 
 `build_run(topic, kind, type)` returns `[{q_index, question}]`:
 
-1. For each segment of the quota, rank the topic's questions: same type first, then nearest the run's
-   tier, then Remaster, New, Learning, Mastered, then question order.
-2. A question of another type is **rewritten** to the segment's type when it can be. Its correct answer
-   is the answer key, or else its first key idea. Identification needs one; Multiple Choice needs one
-   plus wrong options (its own, then other questions' answers and key ideas) and is played as
-   Identification without any; Essay takes its key ideas from the answer and the prompt becomes
-   "Explain: …". When **no** question can take the segment's type, the segment uses the forms they
-   can take instead (a world of one unanswered essay plays that essay in every house), so every house
-   and gym can always be entered. The house panel says when a world has fewer questions than items.
-3. If the pool is shorter than the count, it **cycles**, so a short reviewer still gets a full run
-   with no item twice in a row (unless it has a single question).
+1. For each segment of the quota, take only the topic's questions **of the segment's type**, ranked
+   nearest the run's tier, then Remaster, New, Learning, Mastered, then question order. A question is
+   never rewritten as another type.
+2. Each question plays **at most once**: with fewer questions of the type than the quota, the run is
+   shorter (a world with one Identification question plays a one-item Identification house). The
+   house's `variant` (its number) starts it at a different question. The panel's item count is
+   `run_items(topic, kind, type)`, the real length.
+3. A segment of a type the world has none of is empty; the map makes no houses or gym for that type
+   ([`overworld.md`](overworld.md) §2).
 4. `reshuffle_run()` (Try Again) shuffles each segment.
 
 Handoff: `SessionManager.begin_run(topic_id, kind, gym_type)` sets `battle_topic_id`, `battle_kind`,
@@ -179,9 +177,11 @@ Offline, on an error, or on mocks, a near-miss counts as a miss.
 The marking guide is the question's `rubric`: 3–5 `{point, keywords, weight}`. Without one,
 `Api.rubric_for()` makes one point per key idea (or one from the answer).
 
-- **Server** (`mode: "essay"`): the AI marks each point covered or not. It must quote the player's
-  own words as evidence, and **the server computes the score**: the sum of the weights of covered
-  points whose evidence really is in the answer. The model never sets the number itself, so an answer
+- **Server** (`mode: "essay"`): the AI gives each point full, partial or no credit (partial: vague,
+  incomplete, or only named; none: missing or wrong). It must quote the player's own words as
+  evidence, and **the server computes the score**: full counts the point's weight, partial half,
+  and only when the evidence really is in the answer (exactly, or 80 % of its words for a quote the
+  model tidied). `covered[]` marks the fully covered points. The model never sets the number itself, so an answer
   asking for full marks gets nothing. Reply: `{score, covered[], feedback}`.
 - **Offline** (`Api.essay_offline()`, used on mocks and whenever the server cannot answer): a point
   counts when one of its keywords (or the point itself) appears as whole words in the answer.

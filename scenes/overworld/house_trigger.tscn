@@ -2,6 +2,7 @@
 
 [ext_resource type="PackedScene" path="res://scenes/overworld/encounter_trigger.tscn" id="1_trigger"]
 [ext_resource type="Texture2D" path="res://assets/sprites/ui/icon_trainer.svg" id="2_icon"]
+[ext_resource type="FontFile" uid="uid://rrcw5ky5bnsk" path="res://assets/fonts/JosefinSans-Bold.ttf" id="3_font"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_doorway"]
 shading_mode = 0
@@ -10,14 +11,98 @@ albedo_color = Color(0.11764706, 0.15686275, 0.16078432, 1)
 [sub_resource type="QuadMesh" id="QuadMesh_doorway"]
 material = SubResource("StandardMaterial3D_doorway")
 
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_pill"]
+content_margin_left = 6.0
+content_margin_top = 6.0
+content_margin_right = 6.0
+content_margin_bottom = 6.0
+bg_color = Color(0.9686, 0.9608, 0.9373, 1)
+border_width_left = 5
+border_width_top = 5
+border_width_right = 5
+border_width_bottom = 5
+border_color = Color(0.1608, 0.2196, 0.2275, 1)
+corner_radius_top_left = 64
+corner_radius_top_right = 64
+corner_radius_bottom_right = 64
+corner_radius_bottom_left = 64
+corner_detail = 16
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_chip"]
+content_margin_left = 12.0
+content_margin_top = 12.0
+content_margin_right = 12.0
+content_margin_bottom = 12.0
+bg_color = Color(0.3098, 0.5608, 0.5373, 1)
+border_width_left = 4
+border_width_top = 4
+border_width_right = 4
+border_width_bottom = 4
+border_color = Color(0.1608, 0.2196, 0.2275, 1)
+corner_radius_top_left = 48
+corner_radius_top_right = 48
+corner_radius_bottom_right = 48
+corner_radius_bottom_left = 48
+corner_detail = 16
+
 [node name="HouseTrigger" instance=ExtResource("1_trigger")]
 
-[node name="Icon" type="Sprite3D" parent="."]
+[node name="Badge" type="Sprite3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.3, 0)
 billboard = 1
 no_depth_test = true
-pixel_size = 0.003
+render_priority = 10
+pixel_size = 0.0055
+
+[node name="BadgeView" type="SubViewport" parent="."]
+transparent_bg = true
+gui_disable_input = true
+size = Vector2i(112, 112)
+render_target_update_mode = 0
+
+[node name="Pill" type="PanelContainer" parent="BadgeView"]
+offset_right = 112.0
+offset_bottom = 112.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_pill")
+
+[node name="Row" type="HBoxContainer" parent="BadgeView/Pill"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="Chip" type="PanelContainer" parent="BadgeView/Pill/Row"]
+custom_minimum_size = Vector2(96, 96)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_chip")
+
+[node name="Icon" type="TextureRect" parent="BadgeView/Pill/Row/Chip"]
+layout_mode = 2
 texture = ExtResource("2_icon")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Text" type="MarginContainer" parent="BadgeView/Pill/Row"]
+visible = false
+layout_mode = 2
+theme_override_constants/margin_right = 26
+
+[node name="Lines" type="VBoxContainer" parent="BadgeView/Pill/Row/Text"]
+layout_mode = 2
+size_flags_vertical = 4
+theme_override_constants/separation = -4
+
+[node name="Name" type="Label" parent="BadgeView/Pill/Row/Text/Lines"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.1608, 0.2196, 0.2275, 1)
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 38
+text = "Identification"
+
+[node name="Tier" type="Label" parent="BadgeView/Pill/Row/Text/Lines"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.4078, 0.4667, 0.4706, 1)
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 28
+text = "Easy"
 
 [node name="Doorway" type="MeshInstance3D" parent="."]
 visible = false

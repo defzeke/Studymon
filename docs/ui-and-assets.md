@@ -66,7 +66,7 @@ text** checkbox in `settings.tscn` calls `set_large_text()` and saves.
 | `scenes/overworld/region_map.tscn` | `Node3D` | `scripts/overworld/region_map.gd` (+ `player.gd`, `joystick.gd`) | 3D island: explorer, Challenge Houses, gyms, champion |
 | `scenes/overworld/world_intro.tscn` | `Node3D` | `scripts/overworld/world_intro.gd` | Between home and the island: Kuiz leaves its house on Play, and goes back in on the map's Back |
 | `scenes/overworld/explorer_picker.tscn` | `CanvasLayer` | `scripts/overworld/explorer_picker.gd` | "Choose your explorer" card, instanced over the region map |
-| `scenes/overworld/house_trigger.tscn` | `Area3D` (inherits `encounter_trigger.tscn`) | `scripts/overworld/encounter_trigger.gd` | a Challenge House trigger: the label, plus the `Icon` (Sprite3D, `icon_trainer.svg`) over the roof and the dark `Doorway` quad; one per house |
+| `scenes/overworld/house_trigger.tscn` | `Area3D` (inherits `encounter_trigger.tscn`) | `scripts/overworld/encounter_trigger.gd` | a Challenge House trigger: the `Badge` (Sprite3D) over the roof showing `BadgeView` (a SubViewport: `Pill` → `Row` → `Chip` with `icon_trainer.svg`, and `Text` → `Lines` → `Name`, `Tier`), and the dark `Doorway` quad; one per house |
 | `scenes/overworld/weather/rain.tscn`, `leaves.tscn`, `snow.tscn` | `GPUParticles3D` | — | the season's weather around the explorer (each one is its `SeasonLook.weather`) |
 | `scenes/kuiz/kuiz_head.tscn` | `BoneAttachment3D` | — | Kuiz's dirt decals and outfit stickers, put on its Head bone by `kuiz_look.gd` |
 | `scenes/ui/widgets/confirm_modal.tscn` | `Control` | `scripts/ui/widgets/confirm_modal.gd` | the one pop-up (see Pop-ups below) |
@@ -506,8 +506,10 @@ because hiding it would resize `CardArea` mid-slide.
 
 Titled "World Builder", on the Study Room art under a Muted Teal veil (`Veil`, 0.9 alpha) so text stays readable.
 Inside `Margin` → `Content`: `TopBar` (`BackButton`, `Title`), a `SourceCard` panel ("1 · Your reviewer":
-`TopicName` `LineEdit`, `FileButton` which shows the picked file name, `PasteArea`, `SanityLabel`,
-`StudyButton`, `StatusLabel`, `LoadingBar`), then `QuestionsBlock` ("2 · Questions": `Scroll` → `QuestionsBox`
+`TopicName` `LineEdit`, `FileButton` which shows the picked file name (`clip_text`, ellipsis overrun, so a
+long name never widens the card), `PasteArea`, `SanityLabel`,
+`TypesHeader`, `TypesRow` (an `HFlowContainer` of three `CardCheck` boxes, all ticked by default:
+`%TypeMultipleChoice`, `%TypeIdentification`, `%TypeEssay`), `StudyButton`, `StatusLabel`, `LoadingBar`), then `QuestionsBlock` ("2 · Questions": `Scroll` → `QuestionsBox`
 with one row per question, the hidden `RowTemplate`, `AddQuestionButton`), `PlayButton` and `BackButton`. `FileDialog` is the native
 OS dialog (`use_native_dialog`) where the platform has one; the weekly-limit notice is a `ConfirmModal`.
 
@@ -521,7 +523,7 @@ and `Wrong1`–`Wrong3`, shown only for Multiple Choice.
 
 `FileDialog` uses `file_mode = 0` (open file) and `access = 2` (filesystem), with **no filters** —
 any file type can be selected. Only the first 4000 characters of a text file are shown in the paste
-box, although all bytes are kept for the upload call (`categorizer.gd:89-96`).
+box, although all bytes are kept for the upload call (`categorizer.gd`, `_on_file_selected`).
 
 ### `region_map.tscn`
 
@@ -544,7 +546,8 @@ The HUD, top to bottom, in the home HUD's look (Off-White, Deep Slate 3 px outli
   as there are `Step` rows in `%Objectives`, so adding a row in the editor shows one more.
 - **Minimap** (top right; `minimap.gd`, 168 px): the whole island from straight above, rendered once into a
   SubViewport, with live dots for the explorer (teal), houses, gyms (amber) and the Champion (coral). A tap opens it
-  large in `%MapOverlay`, with a legend; X or a tap outside closes it.
+  large in `%MapOverlay`, with a legend (You, Next, Houses, Gyms, Champion) and `%TravelHint`; X or a tap outside closes it. A tap on the large map
+  (`%BigDots`, which takes input) picks a fast-travel spot.
 - **Encounter pop-up** (`%EncounterPanel`, `_fill_encounter()`): a title and tag, three facts (items, level, minutes), Kuiz's readiness as a bar, one short note, and the action. A locked gym or Champion shows only its title, tag and what opens it.
 - **Joystick** (bottom left) and **Study** (bottom right): a 124 px Off-White card with a stack of
   flashcards (`ui/icon_study.svg`) over "Study"; opens the Flashcard Sanctuary.
@@ -555,13 +558,16 @@ The HUD, top to bottom, in the home HUD's look (Off-White, Deep Slate 3 px outli
 `FleeButton` and `TitleLabel` in a pill, `EnemyCard`, `PlayerCard`), `Dialogue` (`QuestionType`, `QuestionText`,
 `AnswerInput`, `MCBox`, `SubmitButton`, `JudgingLabel`, `ResultLabel`, and `ResultPanel` with its title, XP label, retry /
 review answers / continue), then the effects and the full-screen `ReviewPanel`: a dim over a `MenuCard`, each answer a Soft
-Sage copy of `%ReviewRow` with a teal or coral head line, the details and Report. The cards use the home HUD's look, and the
+Sage copy of `%ReviewRow` with a teal or coral head line, the details, and a `Rate` row ("How was it?",
+toggle buttons `Easy` and `Hard`, and the report flag `Report`, ⚑). The cards use the home HUD's look, and the
 buttons the menu theme's variations.
 
 The enemy and player cards sit over `ArenaStage`, the 3D scene that holds the models. The Broken
 Bot foe makes its own sounds on its clips (§2 Model sounds). For a Multiple Choice question
 `battle.gd` hides `AnswerInput` and `SubmitButton` and builds a `VBoxContainer` of four option
-`Button`s (56 px tall) in their place at runtime. `PlayerCard`'s box ends in `%GaugeRow`: four `stat_gauge.gd` rings (38 px) placed in the scene, each **named after the `CompanionState` stat it shows** (`hunger`, `energy`, `mood`, `health`; icon and ring colour set in the Inspector). `_refresh_gauges()` follows `CompanionState.stats_changed`, so a run's costs and hits show live. `stat_gauge.gd` is a `@tool` script, so the rings draw in the editor. `battle.gd`'s exports are grouped **Intro**, **Sound effects** and **Juice** (shake, flash strength, the `hurt_flash_color` / `lose_flash_color` screen flashes, the end-banner hold). After each answer `ResultPanel` is a short beat that shows only "Correct! Streak N" or "Not quite." and "n of N answered" (Next held 0.8 s); no answer is shown during a run. At the end (cleared or defeated) `%ReviewButton` (**Review answers**) opens `%ReviewPanel`: a scrollable `%ReviewList` of copies of the hidden `%ReviewRow` (a `Text` label with ✓ / ✗, the question, your answer, the correct answer or model answer with rubric marks, feedback and explanation, and a **Report** button), closed by `%CloseButton`. `region_map.tscn` has a full-screen off-white fade (`FadeLayer`, `CanvasLayer` 100 → `%Fade`, transparent in the editor): out when a house or gym is entered, in on arrival. Over the island, each of the 15 houses carries a bobbing `house_icon` (`ui/icon_trainer.svg`) in its type's colour (Identification teal, Essay lilac `8D82A8`, Multiple Choice amber; faint once cleared) and a `Label3D` (type, `Easy` or stars) shown only within 4 units of the explorer; walking up to a house unfolds a dark doorway (`1E2829`) over its door.
+`Button`s (56 px tall) in their place at runtime. `PlayerCard`'s box ends in `%GaugeRow`: four `stat_gauge.gd` rings (38 px) placed in the scene, each **named after the `CompanionState` stat it shows** (`hunger`, `energy`, `mood`, `health`; icon and ring colour set in the Inspector). `_refresh_gauges()` follows `CompanionState.stats_changed`, so a run's costs and hits show live. `stat_gauge.gd` is a `@tool` script, so the rings draw in the editor. `battle.gd`'s exports are grouped **Intro**, **Sound effects** and **Juice** (shake, flash strength, the `hurt_flash_color` / `lose_flash_color` screen flashes, the end-banner hold). After each answer `ResultPanel` is a short beat that shows only "Correct! Streak N" or "Not quite." and "n of N answered" (Next held 0.8 s); no answer is shown during a run. At the end (cleared or defeated) `%ReviewButton` (**Review answers**) opens `%ReviewPanel`: a scrollable `%ReviewList` of copies of the hidden `%ReviewRow` (a `Text` label with ✓ / ✗, the question, your answer, the correct answer or model answer with rubric marks, feedback and explanation, then **Easy** / **Hard** and a report flag), closed by `%CloseButton`. Easy or Hard
+calls `SessionManager.rate_question()`, which sets that question's `difficulty` in its world and saves;
+the row hides them for the preview run. `region_map.tscn` has a full-screen off-white fade (`FadeLayer`, `CanvasLayer` 100 → `%Fade`, transparent in the editor): out when a house or gym is entered, in on arrival. Over the island, each of the 15 houses carries a bobbing badge (`house_trigger.tscn`'s `Badge`): a circle in its type's colour (Identification teal, Essay lilac `8D82A8`, Multiple Choice amber) with `ui/icon_trainer.svg`, opening into a pill with the type and "House n · Easy" or stars for the next house on the route and, near the explorer, for cleared ones; locked houses' circles are faint ([`systems/overworld.md`](systems/overworld.md) §2); walking up to a house unfolds a dark doorway (`1E2829`) over its door.
 
 
 ---

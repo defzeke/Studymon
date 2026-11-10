@@ -75,6 +75,9 @@ class ExtractRequest(BaseModel):
     file_type: Literal["", "pdf", "png", "jpeg", "webp", "docx", "pptx"] = ""
     # "More questions" for a saved world: the questions it already has, so new ones do not repeat them.
     existing: list[str] = Field(default_factory=list, max_length=60)
+    # The question types the player ticked in the World Builder.
+    types: list[Literal["identification", "essay", "multiple_choice"]] = Field(
+        default_factory=lambda: list(ai.QUESTION_TYPES), min_length=1, max_length=3)
 
 
 class RubricPoint(BaseModel):
@@ -187,11 +190,11 @@ def extract(req: ExtractRequest, request: Request):
     if not budget_fits("extract"):
         return _offline(req.job_id, req.topic_name, text, "The AI has used today's free allowance. Try again tomorrow.")
     try:
-        raw = ai.generate_questions(text, images, req.existing).get("questions", [])
+        raw = ai.generate_questions(text, images, req.existing, req.types).get("questions", [])
     except ai.AIError as e:
         return _offline(req.job_id, req.topic_name, text, str(e))
     # `text` "" (a photo or scan) skips the check that each answer is in the reviewer.
-    questions = ai.check_questions(raw if isinstance(raw, list) else [], text, req.existing)
+    questions = ai.check_questions(raw if isinstance(raw, list) else [], text, req.existing, req.types)
     if not questions:
         return _offline(req.job_id, req.topic_name, text, "No usable questions came out of this reviewer. Try adding more detail.")
     # The reviewer's text goes back so the device can keep it for "More questions" (none for a photo).

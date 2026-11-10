@@ -878,13 +878,40 @@ theme_override_font_sizes/font_size = 22
 text = "Your answer"
 autowrap_mode = 3
 
-[node name="Report" type="Button" parent="ReviewPanel/Card/Box/Scroll/ReviewList/ReviewRow/Box"]
-custom_minimum_size = Vector2(130, 48)
+[node name="Rate" type="HBoxContainer" parent="ReviewPanel/Card/Box/Scroll/ReviewList/ReviewRow/Box"]
 layout_mode = 2
-size_flags_horizontal = 8
+theme_override_constants/separation = 8
+
+[node name="Ask" type="Label" parent="ReviewPanel/Card/Box/Scroll/ReviewList/ReviewRow/Box/Rate"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.4078, 0.4667, 0.4706, 1)
+theme_override_font_sizes/font_size = 20
+text = "How was it?"
+
+[node name="Easy" type="Button" parent="ReviewPanel/Card/Box/Scroll/ReviewList/ReviewRow/Box/Rate"]
+custom_minimum_size = Vector2(96, 48)
+layout_mode = 2
 theme_type_variation = &"MenuQuiet"
 theme_override_font_sizes/font_size = 20
-text = "Report"
+toggle_mode = true
+text = "Easy"
+
+[node name="Hard" type="Button" parent="ReviewPanel/Card/Box/Scroll/ReviewList/ReviewRow/Box/Rate"]
+custom_minimum_size = Vector2(96, 48)
+layout_mode = 2
+theme_type_variation = &"MenuQuiet"
+theme_override_font_sizes/font_size = 20
+toggle_mode = true
+text = "Hard"
+
+[node name="Report" type="Button" parent="ReviewPanel/Card/Box/Scroll/ReviewList/ReviewRow/Box/Rate"]
+custom_minimum_size = Vector2(48, 48)
+layout_mode = 2
+tooltip_text = "Report this question or feedback as wrong or offensive"
+theme_type_variation = &"MenuQuiet"
+theme_override_font_sizes/font_size = 20
+text = "⚑"
 
 [node name="CloseButton" type="Button" parent="ReviewPanel/Card/Box"]
 unique_name_in_owner = true

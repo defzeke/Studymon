@@ -98,6 +98,8 @@ custom_minimum_size = Vector2(0, 56)
 layout_mode = 2
 theme_type_variation = &"MenuQuiet"
 text = "Upload a file"
+clip_text = true
+text_overrun_behavior = 3
 
 [node name="PasteArea" type="TextEdit" parent="Margin/Content/SourceCard/Source" unique_id=25044953]
 unique_name_in_owner = true
@@ -112,6 +114,39 @@ visible = false
 layout_mode = 2
 theme_type_variation = &"CardBody"
 autowrap_mode = 2
+
+[node name="TypesHeader" type="Label" parent="Margin/Content/SourceCard/Source"]
+layout_mode = 2
+theme_type_variation = &"CardHint"
+text = "Question types (pick one or more)"
+
+[node name="TypesRow" type="HFlowContainer" parent="Margin/Content/SourceCard/Source"]
+layout_mode = 2
+theme_override_constants/h_separation = 20
+
+[node name="TypeMultipleChoice" type="CheckBox" parent="Margin/Content/SourceCard/Source/TypesRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 52)
+layout_mode = 2
+theme_type_variation = &"CardCheck"
+button_pressed = true
+text = "Multiple choice"
+
+[node name="TypeIdentification" type="CheckBox" parent="Margin/Content/SourceCard/Source/TypesRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 52)
+layout_mode = 2
+theme_type_variation = &"CardCheck"
+button_pressed = true
+text = "Identification"
+
+[node name="TypeEssay" type="CheckBox" parent="Margin/Content/SourceCard/Source/TypesRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 52)
+layout_mode = 2
+theme_type_variation = &"CardCheck"
+button_pressed = true
+text = "Essay"
 
 [node name="StudyButton" type="Button" parent="Margin/Content/SourceCard/Source" unique_id=1211033097]
 unique_name_in_owner = true

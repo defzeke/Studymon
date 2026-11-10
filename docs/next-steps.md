@@ -120,8 +120,9 @@ uv run --env-file .env --no-project --with-requirements requirements.txt python 
   and `GRADE_ESSAY_SYSTEM`. Change one rule at a time and re-run the next day.
 - Don't loosen the checks in `check_questions()` to make a run pass. They protect players from
   questions their reviewer doesn't support.
-- Keep `MAX_QUESTIONS = 30` in `ai.py` unless the long reviewer (`earth_science_long`) shows that
-  questions get worse near the cap.
+- `MAX_QUESTIONS` is 100 so a long quiz keeps every item, and a long reviewer goes in parts of
+  `CHUNK_CHARS`. Each part costs a call: measure the neurons per part on Cloudflare and lower the cap
+  or raise `CHUNK_CHARS` if a day's budget runs out too fast.
 
 **Record the results:**
 - In [`api-backend.md`](api-backend.md) §3, replace the estimated neurons per call with the measured
@@ -151,7 +152,7 @@ The editor normally runs on the mock. To play against your local server:
 | Report | **Report** on a question row | The server log shows `content report` |
 | Essay grading | A battle with an essay question | A score and feedback from the server |
 | Identification near-miss | Type a close but not exact answer | The server decides it, and feedback appears |
-| Review answers | End of a run | **Report** on an answer works |
+| Review answers | End of a run | Easy / Hard sets the question's tier; the report flag (⚑) works |
 | Free allowance spent | Restart the server with `DAILY_NEURONS=0` | Extraction comes back `offline` with simpler questions written on the device. Essays say "Graded offline." A near-miss Identification answer counts as wrong |
 | Server down | Stop the server | Extraction shows an error. After the timeout, grading behaves as in the row above |
 | Consent withdrawn | Settings → untick *Let the AI read my reviewers and answers* | Nothing is sent; answers grade on the device |

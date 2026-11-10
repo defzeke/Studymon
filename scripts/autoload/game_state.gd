@@ -22,6 +22,8 @@ var crystals: int = 0
 ## world frees its slot, never refunds it. Saved.
 const FREE_WORLD_SLOTS := 3
 const WORLD_SLOT_PRICE := 300
+## Fast travel on the island map: tap a spot, pay this. Contract: docs/systems/monetization.md.
+const TRAVEL_PRICE := 25
 var world_slots := FREE_WORLD_SLOTS
 ## Minigames pay at most this many crystals per local day, so studying stays the main income. Saved.
 const MINIGAME_DAILY_CRYSTALS := 60

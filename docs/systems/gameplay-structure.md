@@ -78,10 +78,10 @@ Generation rules for the extractor and the AI:
 - Every question is grounded in `source`; no outside trivia.
 - Easy recalls a term or definition. Medium explains or distinguishes. Hard applies, compares or synthesises.
 - Per gym aim for at least 3 Easy, 3 Medium and 1 Hard. A short reviewer gets fewer tiers, never an empty gym.
-- MC: one correct option and three plausible distractors from other concepts in the same reviewer, each under about 40 characters.
+- MC: one correct option and three wrong options of the same kind (an age gets other ages, a name other names), from the reviewer when it has enough, otherwise invented and clearly wrong to someone who studied it; never a near-copy of the answer; each under about 40 characters. The server lowers the confidence of a question whose options mix numbers and words.
 - Identification: the question must not contain its answer; `accepted` lists genuine equivalents only.
 - Essay: a 3–5 point `rubric` (point, 2–4 keywords, weight) and a `model_answer`; its points are the `key_concepts`.
-- Count: about one question per 100 words, at least 3 per type, at most 30 (fewer output tokens keep more of the free AI allowance).
+- Count: a quiz-style reviewer gets one question per quiz item. Notes get about one question per 100 words, at least 3 per type, at most 30 per part of about 6,000 characters. The bank holds at most 100.
 
 These rules are the server's system prompt (`backend/ai.py` `EXTRACT_SYSTEM`); the server also checks
 the output and drops what breaks them ([`../api-backend.md`](../api-backend.md) §2).
@@ -101,8 +101,8 @@ the **Champion Gym** closes the region. Each is one **run** of a fixed item coun
 
 - Gate: any house of a type → that gym → Champion (all gyms cleared). The other houses are optional
   practice, each paying its own first-clear bonus. A run is cleared by surviving every item with at least one star (70 % right).
-- Questions are not one-to-one with items: `build_run()` rewrites a question as the needed type and
-  cycles through the pool, so a short reviewer still fills the quota.
+- The counts are the most a run plays: `build_run()` takes only questions of the run's type, each once,
+  so a short reviewer plays shorter runs. A type the world has no questions of gets no houses or gym.
 - Time: counts give about a minute per item. After each answer a 0.8 s beat shows only right or wrong;
   the answers are read at the end in Review answers. There is no timer.
 - A run is won with at least one star (70 % right); below that, or out of HP, it is a defeat.

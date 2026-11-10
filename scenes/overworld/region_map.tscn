@@ -6,27 +6,27 @@
 [ext_resource type="PackedScene" uid="uid://yjyho2qlkvpo" path="res://assets/models/boy_explorer.glb" id="4_boy"]
 [ext_resource type="Script" uid="uid://fhnue17kcwx2" path="res://scripts/overworld/joystick.gd" id="5_stick"]
 [ext_resource type="Script" uid="uid://r7eum1000fmp" path="res://scripts/overworld/season.gd" id="6_season"]
-[ext_resource type="Script" path="res://scripts/overworld/gym_slot.gd" id="7_slot"]
-[ext_resource type="Script" path="res://scripts/overworld/map_collision.gd" id="8_collision"]
+[ext_resource type="Script" uid="uid://cj45lhg2u44sa" path="res://scripts/overworld/gym_slot.gd" id="7_slot"]
+[ext_resource type="Script" uid="uid://vbxwq3i83ysl" path="res://scripts/overworld/map_collision.gd" id="8_collision"]
 [ext_resource type="PackedScene" path="res://scenes/overworld/encounter_trigger.tscn" id="9_trigger"]
 [ext_resource type="PackedScene" path="res://scenes/overworld/gym_burst.tscn" id="10_burst"]
-[ext_resource type="Script" path="res://scripts/overworld/minimap.gd" id="11_minimap"]
-[ext_resource type="FontFile" path="res://assets/fonts/JosefinSans-Bold.ttf" id="12_bold"]
-[ext_resource type="Texture2D" path="res://assets/sprites/ui/icon_back.svg" id="13_back"]
-[ext_resource type="Texture2D" path="res://assets/sprites/ui/icon_study.svg" id="15_study"]
-[ext_resource type="Script" path="res://scripts/overworld/kuiz_follower.gd" id="16_kuiz"]
-[ext_resource type="Texture2D" path="res://assets/sprites/ui/icon_trainer.svg" id="17_trainer"]
-[ext_resource type="Texture2D" path="res://assets/sprites/ui/icon_expand.svg" id="30_expand"]
-[ext_resource type="Texture2D" path="res://assets/sprites/ui/icon_close.svg" id="31_close"]
-[ext_resource type="Script" path="res://scripts/ui/widgets/music_toggle.gd" id="32_music"]
-[ext_resource type="Texture2D" path="res://assets/sprites/ui/icon_badge.svg" id="18_badge"]
-[ext_resource type="Texture2D" path="res://assets/sprites/ui/icon_crown.svg" id="19_crown"]
-[ext_resource type="Texture2D" path="res://assets/sprites/ui/icon_lock.svg" id="20_lock"]
+[ext_resource type="Script" uid="uid://bytab6fddtx74" path="res://scripts/overworld/minimap.gd" id="11_minimap"]
+[ext_resource type="FontFile" uid="uid://rrcw5ky5bnsk" path="res://assets/fonts/JosefinSans-Bold.ttf" id="12_bold"]
+[ext_resource type="Texture2D" uid="uid://cuqgkq5b6rled" path="res://assets/sprites/ui/icon_back.svg" id="13_back"]
+[ext_resource type="Texture2D" uid="uid://cwabgbmum10wa" path="res://assets/sprites/ui/icon_study.svg" id="15_study"]
+[ext_resource type="Script" uid="uid://gf4vvyiduyhe" path="res://scripts/overworld/kuiz_follower.gd" id="16_kuiz"]
+[ext_resource type="Texture2D" uid="uid://bu1ku3yed1ber" path="res://assets/sprites/ui/icon_trainer.svg" id="17_trainer"]
+[ext_resource type="Texture2D" uid="uid://bppww04pq6i3r" path="res://assets/sprites/ui/icon_badge.svg" id="18_badge"]
+[ext_resource type="Texture2D" uid="uid://bolp3wg1yjl2a" path="res://assets/sprites/ui/icon_crown.svg" id="19_crown"]
+[ext_resource type="Texture2D" uid="uid://craqkapmphiv2" path="res://assets/sprites/ui/icon_lock.svg" id="20_lock"]
+[ext_resource type="Texture2D" uid="uid://bfmtarvq7uvtq" path="res://assets/sprites/ui/icon_expand.svg" id="30_expand"]
+[ext_resource type="Texture2D" uid="uid://dccxl0aa5275f" path="res://assets/sprites/ui/icon_close.svg" id="31_close"]
+[ext_resource type="Script" uid="uid://xltm5van66tl" path="res://scripts/ui/widgets/music_toggle.gd" id="32_music"]
 [ext_resource type="PackedScene" path="res://scenes/overworld/house_trigger.tscn" id="40_house"]
 [ext_resource type="Resource" path="res://assets/data/seasons/sunny.tres" id="41_sunny"]
-[ext_resource type="Resource" path="res://assets/data/seasons/rainy.tres" id="44_rainy"]
 [ext_resource type="Resource" path="res://assets/data/seasons/autumn.tres" id="42_autumn"]
 [ext_resource type="Resource" path="res://assets/data/seasons/snowy.tres" id="43_snowy"]
+[ext_resource type="Resource" path="res://assets/data/seasons/rainy.tres" id="44_rainy"]
 
 [sub_resource type="Environment" id="Environment_island"]
 background_mode = 1
@@ -38,48 +38,6 @@ ambient_light_energy = 0.7
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_player"]
 radius = 0.22
 height = 0.9
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_hud_plate"]
-bg_color = Color(0.1608, 0.2196, 0.2275, 0.78)
-border_width_left = 3
-border_width_top = 3
-border_width_right = 3
-border_width_bottom = 3
-border_color = Color(0.9686, 0.9608, 0.9373, 0.9)
-corner_radius_top_left = 22
-corner_radius_top_right = 22
-corner_radius_bottom_right = 22
-corner_radius_bottom_left = 22
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_fact"]
-content_margin_left = 8.0
-content_margin_top = 12.0
-content_margin_right = 8.0
-content_margin_bottom = 8.0
-bg_color = Color(0.9098, 0.9412, 0.9176, 1)
-corner_radius_top_left = 18
-corner_radius_top_right = 18
-corner_radius_bottom_right = 18
-corner_radius_bottom_left = 18
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_card"]
-content_margin_left = 18.0
-content_margin_top = 12.0
-content_margin_right = 18.0
-content_margin_bottom = 14.0
-bg_color = Color(0.9686, 0.9608, 0.9373, 1)
-border_width_left = 3
-border_width_top = 3
-border_width_right = 3
-border_width_bottom = 3
-border_color = Color(0.1608, 0.2196, 0.2275, 1)
-corner_radius_top_left = 24
-corner_radius_top_right = 24
-corner_radius_bottom_right = 24
-corner_radius_bottom_left = 24
-shadow_color = Color(0.1608, 0.2196, 0.2275, 0.25)
-shadow_size = 6
-shadow_offset = Vector2(0, 3)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_round"]
 content_margin_left = 14.0
@@ -115,6 +73,58 @@ corner_radius_top_left = 36
 corner_radius_top_right = 36
 corner_radius_bottom_right = 36
 corner_radius_bottom_left = 36
+shadow_color = Color(0.1608, 0.2196, 0.2275, 0.25)
+shadow_size = 6
+shadow_offset = Vector2(0, 3)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_card"]
+content_margin_left = 18.0
+content_margin_top = 12.0
+content_margin_right = 18.0
+content_margin_bottom = 14.0
+bg_color = Color(0.9686, 0.9608, 0.9373, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.1608, 0.2196, 0.2275, 1)
+corner_radius_top_left = 24
+corner_radius_top_right = 24
+corner_radius_bottom_right = 24
+corner_radius_bottom_left = 24
+shadow_color = Color(0.1608, 0.2196, 0.2275, 0.25)
+shadow_size = 6
+shadow_offset = Vector2(0, 3)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_houses_back"]
+bg_color = Color(0.1608, 0.2196, 0.2275, 0.15)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_houses_fill"]
+bg_color = Color(0.3098, 0.5608, 0.5373, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_minimap"]
+content_margin_left = 7.0
+content_margin_top = 7.0
+content_margin_right = 7.0
+content_margin_bottom = 7.0
+bg_color = Color(0.9686, 0.9608, 0.9373, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.1608, 0.2196, 0.2275, 1)
+corner_radius_top_left = 14
+corner_radius_top_right = 14
+corner_radius_bottom_right = 14
+corner_radius_bottom_left = 14
 shadow_color = Color(0.1608, 0.2196, 0.2275, 0.25)
 shadow_size = 6
 shadow_offset = Vector2(0, 3)
@@ -157,38 +167,16 @@ shadow_color = Color(0.1608, 0.2196, 0.2275, 0.25)
 shadow_size = 6
 shadow_offset = Vector2(0, 3)
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_minimap"]
-content_margin_left = 7.0
-content_margin_top = 7.0
-content_margin_right = 7.0
-content_margin_bottom = 7.0
-bg_color = Color(0.9686, 0.9608, 0.9373, 1)
-border_width_left = 3
-border_width_top = 3
-border_width_right = 3
-border_width_bottom = 3
-border_color = Color(0.1608, 0.2196, 0.2275, 1)
-corner_radius_top_left = 14
-corner_radius_top_right = 14
-corner_radius_bottom_right = 14
-corner_radius_bottom_left = 14
-shadow_color = Color(0.1608, 0.2196, 0.2275, 0.25)
-shadow_size = 6
-shadow_offset = Vector2(0, 3)
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_houses_back"]
-bg_color = Color(0.1608, 0.2196, 0.2275, 0.15)
-corner_radius_top_left = 4
-corner_radius_top_right = 4
-corner_radius_bottom_right = 4
-corner_radius_bottom_left = 4
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_houses_fill"]
-bg_color = Color(0.3098, 0.5608, 0.5373, 1)
-corner_radius_top_left = 4
-corner_radius_top_right = 4
-corner_radius_bottom_right = 4
-corner_radius_bottom_left = 4
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_fact"]
+content_margin_left = 8.0
+content_margin_top = 12.0
+content_margin_right = 8.0
+content_margin_bottom = 8.0
+bg_color = Color(0.9098, 0.9412, 0.9176, 1)
+corner_radius_top_left = 18
+corner_radius_top_right = 18
+corner_radius_bottom_right = 18
+corner_radius_bottom_left = 18
 
 [node name="RegionMap" type="Node3D" unique_id=542269348 node_paths=PackedStringArray("gym_slots", "champion_slot")]
 script = ExtResource("1")
@@ -224,7 +212,7 @@ rainy = ExtResource("44_rainy")
 autumn = ExtResource("42_autumn")
 snowy = ExtResource("43_snowy")
 
-[node name="MapCollision" type="Node" parent="." node_paths=PackedStringArray("map")]
+[node name="MapCollision" type="Node" parent="." unique_id=1350925631 node_paths=PackedStringArray("map")]
 script = ExtResource("8_collision")
 map = NodePath("../Map")
 
@@ -232,38 +220,38 @@ map = NodePath("../Map")
 unique_name_in_owner = true
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 0, 9)
 
-[node name="GymSlot1" type="Node3D" parent="." node_paths=PackedStringArray("entrance")]
+[node name="GymSlot1" type="Node3D" parent="." unique_id=1130592913 node_paths=PackedStringArray("entrance")]
 script = ExtResource("7_slot")
 entrance = NodePath("Entrance")
 door_open_clip = &"Gym2_Door_Open"
 door_close_clip = &"Gym2_Door_Close"
 
-[node name="Entrance" type="Marker3D" parent="GymSlot1"]
+[node name="Entrance" type="Marker3D" parent="GymSlot1" unique_id=1645667140]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13.54317, 0, 5.032681)
 
-[node name="GymSlot2" type="Node3D" parent="." node_paths=PackedStringArray("entrance")]
+[node name="GymSlot2" type="Node3D" parent="." unique_id=53380994 node_paths=PackedStringArray("entrance")]
 script = ExtResource("7_slot")
 entrance = NodePath("Entrance")
 door_open_clip = &"Gym3_Door_Open"
 door_close_clip = &"Gym3_Door_Close"
 
-[node name="Entrance" type="Marker3D" parent="GymSlot2"]
+[node name="Entrance" type="Marker3D" parent="GymSlot2" unique_id=785346184]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14.15683, 0, -5.717319)
 
-[node name="GymSlot3" type="Node3D" parent="." node_paths=PackedStringArray("entrance")]
+[node name="GymSlot3" type="Node3D" parent="." unique_id=8826518 node_paths=PackedStringArray("entrance")]
 script = ExtResource("7_slot")
 entrance = NodePath("Entrance")
 
 [node name="Entrance" type="Marker3D" parent="GymSlot3" unique_id=1445727592]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -15, 0, 9)
 
-[node name="ChampionSlot" type="Node3D" parent="." node_paths=PackedStringArray("entrance")]
+[node name="ChampionSlot" type="Node3D" parent="." unique_id=955995401 node_paths=PackedStringArray("entrance")]
 script = ExtResource("7_slot")
 entrance = NodePath("Entrance")
 door_open_clip = &"Gym_Door_Open"
 door_close_clip = &"Gym_Door_Close"
 
-[node name="Entrance" type="Marker3D" parent="ChampionSlot"]
+[node name="Entrance" type="Marker3D" parent="ChampionSlot" unique_id=1734539920]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.15608, 0, -6.842329)
 
 [node name="Trainers" type="Node3D" parent="." unique_id=91714387]
@@ -292,28 +280,28 @@ transform = Transform3D(1, 0, 0, 0, 0.5855, 0.8107, 0, -0.8107, 0.5855, 0, 7, 4.
 keep_aspect = 0
 fov = 40.0
 
-[node name="Kuiz" type="Node3D" parent="." node_paths=PackedStringArray("player")]
+[node name="Kuiz" type="Node3D" parent="." unique_id=1463957945 node_paths=PackedStringArray("player")]
 unique_name_in_owner = true
 script = ExtResource("16_kuiz")
 player = NodePath("../Player")
 
 [node name="HUD" type="CanvasLayer" parent="." unique_id=1690847508]
 
-[node name="BackButton" type="Button" parent="HUD"]
+[node name="BackButton" type="Button" parent="HUD" unique_id=788089058]
 unique_name_in_owner = true
 offset_left = 16.0
 offset_top = 16.0
 offset_right = 88.0
 offset_bottom = 88.0
 theme_override_styles/normal = SubResource("StyleBoxFlat_round")
-theme_override_styles/hover = SubResource("StyleBoxFlat_round")
 theme_override_styles/pressed = SubResource("StyleBoxFlat_round_down")
+theme_override_styles/hover = SubResource("StyleBoxFlat_round")
 theme_override_styles/focus = SubResource("StyleBoxFlat_round")
 icon = ExtResource("13_back")
 icon_alignment = 1
 expand_icon = true
 
-[node name="QuestCard" type="PanelContainer" parent="HUD"]
+[node name="QuestCard" type="PanelContainer" parent="HUD" unique_id=1247509159]
 anchors_preset = 10
 anchor_right = 1.0
 offset_left = 100.0
@@ -324,16 +312,16 @@ grow_horizontal = 2
 mouse_filter = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_card")
 
-[node name="Body" type="VBoxContainer" parent="HUD/QuestCard"]
+[node name="Body" type="VBoxContainer" parent="HUD/QuestCard" unique_id=573058980]
 layout_mode = 2
 mouse_filter = 2
 theme_override_constants/separation = 6
 
-[node name="Header" type="HBoxContainer" parent="HUD/QuestCard/Body"]
+[node name="Header" type="HBoxContainer" parent="HUD/QuestCard/Body" unique_id=182463228]
 layout_mode = 2
 mouse_filter = 2
 
-[node name="Title" type="Label" parent="HUD/QuestCard/Body/Header"]
+[node name="Title" type="Label" parent="HUD/QuestCard/Body/Header" unique_id=1741503266]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_colors/font_color = Color(0.4078, 0.4667, 0.4706, 1)
@@ -341,7 +329,7 @@ theme_override_fonts/font = ExtResource("12_bold")
 theme_override_font_sizes/font_size = 15
 text = "NEXT UP"
 
-[node name="QuestCount" type="Label" parent="HUD/QuestCard/Body/Header"]
+[node name="QuestCount" type="Label" parent="HUD/QuestCard/Body/Header" unique_id=378704346]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.4078, 0.4667, 0.4706, 1)
@@ -349,19 +337,19 @@ theme_override_fonts/font = ExtResource("12_bold")
 theme_override_font_sizes/font_size = 15
 text = "0 / 0 done"
 
-[node name="Objectives" type="VBoxContainer" parent="HUD/QuestCard/Body"]
+[node name="Objectives" type="VBoxContainer" parent="HUD/QuestCard/Body" unique_id=1813530853]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 3
 mouse_filter = 2
 alignment = 1
 
-[node name="Step1" type="HBoxContainer" parent="HUD/QuestCard/Body/Objectives"]
+[node name="Step1" type="HBoxContainer" parent="HUD/QuestCard/Body/Objectives" unique_id=1816583264]
 layout_mode = 2
 mouse_filter = 2
 theme_override_constants/separation = 8
 
-[node name="Dot" type="Label" parent="HUD/QuestCard/Body/Objectives/Step1"]
+[node name="Dot" type="Label" parent="HUD/QuestCard/Body/Objectives/Step1" unique_id=1311055833]
 layout_mode = 2
 size_flags_vertical = 0
 theme_override_colors/font_color = Color(0.8392, 0.6588, 0.3725, 1)
@@ -369,7 +357,7 @@ theme_override_fonts/font = ExtResource("12_bold")
 theme_override_font_sizes/font_size = 22
 text = "●"
 
-[node name="Text" type="Label" parent="HUD/QuestCard/Body/Objectives/Step1"]
+[node name="Text" type="Label" parent="HUD/QuestCard/Body/Objectives/Step1" unique_id=1535656090]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_colors/font_color = Color(0.1608, 0.2196, 0.2275, 1)
@@ -378,19 +366,19 @@ theme_override_font_sizes/font_size = 22
 text = "Objective"
 autowrap_mode = 3
 
-[node name="QuestTasks" type="HBoxContainer" parent="HUD/QuestCard/Body"]
+[node name="QuestTasks" type="HBoxContainer" parent="HUD/QuestCard/Body" unique_id=968277979]
 unique_name_in_owner = true
 layout_mode = 2
 mouse_filter = 2
 theme_override_constants/separation = 12
 alignment = 1
 
-[node name="Houses" type="HBoxContainer" parent="HUD/QuestCard/Body/QuestTasks"]
+[node name="Houses" type="HBoxContainer" parent="HUD/QuestCard/Body/QuestTasks" unique_id=68657152]
 layout_mode = 2
 mouse_filter = 2
 theme_override_constants/separation = 6
 
-[node name="Icon" type="TextureRect" parent="HUD/QuestCard/Body/QuestTasks/Houses"]
+[node name="Icon" type="TextureRect" parent="HUD/QuestCard/Body/QuestTasks/Houses" unique_id=540478299]
 custom_minimum_size = Vector2(34, 34)
 layout_mode = 2
 size_flags_vertical = 4
@@ -398,20 +386,20 @@ texture = ExtResource("17_trainer")
 expand_mode = 1
 stretch_mode = 5
 
-[node name="Text" type="VBoxContainer" parent="HUD/QuestCard/Body/QuestTasks/Houses"]
+[node name="Text" type="VBoxContainer" parent="HUD/QuestCard/Body/QuestTasks/Houses" unique_id=424694883]
 layout_mode = 2
 size_flags_vertical = 4
 mouse_filter = 2
 theme_override_constants/separation = 0
 
-[node name="Title" type="Label" parent="HUD/QuestCard/Body/QuestTasks/Houses/Text"]
+[node name="Title" type="Label" parent="HUD/QuestCard/Body/QuestTasks/Houses/Text" unique_id=1779542241]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.4078, 0.4667, 0.4706, 1)
 theme_override_fonts/font = ExtResource("12_bold")
 theme_override_font_sizes/font_size = 13
 text = "Houses"
 
-[node name="HousesValue" type="Label" parent="HUD/QuestCard/Body/QuestTasks/Houses/Text"]
+[node name="HousesValue" type="Label" parent="HUD/QuestCard/Body/QuestTasks/Houses/Text" unique_id=1816512602]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.1608, 0.2196, 0.2275, 1)
@@ -419,7 +407,7 @@ theme_override_fonts/font = ExtResource("12_bold")
 theme_override_font_sizes/font_size = 18
 text = "0 / 0"
 
-[node name="HousesBar" type="ProgressBar" parent="HUD/QuestCard/Body/QuestTasks/Houses/Text"]
+[node name="HousesBar" type="ProgressBar" parent="HUD/QuestCard/Body/QuestTasks/Houses/Text" unique_id=2075271125]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 5)
 layout_mode = 2
@@ -428,17 +416,17 @@ theme_override_styles/fill = SubResource("StyleBoxFlat_houses_fill")
 max_value = 1.0
 show_percentage = false
 
-[node name="Gyms" type="HBoxContainer" parent="HUD/QuestCard/Body/QuestTasks"]
+[node name="Gyms" type="HBoxContainer" parent="HUD/QuestCard/Body/QuestTasks" unique_id=198043791]
 layout_mode = 2
 mouse_filter = 2
 theme_override_constants/separation = 6
 
-[node name="GymBadges" type="HBoxContainer" parent="HUD/QuestCard/Body/QuestTasks/Gyms"]
+[node name="GymBadges" type="HBoxContainer" parent="HUD/QuestCard/Body/QuestTasks/Gyms" unique_id=1241880576]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_constants/separation = 1
 
-[node name="BadgeTemplate" type="TextureRect" parent="HUD/QuestCard/Body/QuestTasks/Gyms/GymBadges"]
+[node name="BadgeTemplate" type="TextureRect" parent="HUD/QuestCard/Body/QuestTasks/Gyms/GymBadges" unique_id=485494435]
 unique_name_in_owner = true
 visible = false
 custom_minimum_size = Vector2(24, 24)
@@ -448,20 +436,20 @@ texture = ExtResource("18_badge")
 expand_mode = 1
 stretch_mode = 5
 
-[node name="Text" type="VBoxContainer" parent="HUD/QuestCard/Body/QuestTasks/Gyms"]
+[node name="Text" type="VBoxContainer" parent="HUD/QuestCard/Body/QuestTasks/Gyms" unique_id=11517054]
 layout_mode = 2
 size_flags_vertical = 4
 mouse_filter = 2
 theme_override_constants/separation = 0
 
-[node name="Title" type="Label" parent="HUD/QuestCard/Body/QuestTasks/Gyms/Text"]
+[node name="Title" type="Label" parent="HUD/QuestCard/Body/QuestTasks/Gyms/Text" unique_id=873041076]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.4078, 0.4667, 0.4706, 1)
 theme_override_fonts/font = ExtResource("12_bold")
 theme_override_font_sizes/font_size = 13
 text = "Gyms"
 
-[node name="GymsValue" type="Label" parent="HUD/QuestCard/Body/QuestTasks/Gyms/Text"]
+[node name="GymsValue" type="Label" parent="HUD/QuestCard/Body/QuestTasks/Gyms/Text" unique_id=1106033069]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.1608, 0.2196, 0.2275, 1)
@@ -469,12 +457,12 @@ theme_override_fonts/font = ExtResource("12_bold")
 theme_override_font_sizes/font_size = 18
 text = "0 / 0"
 
-[node name="Champion" type="HBoxContainer" parent="HUD/QuestCard/Body/QuestTasks"]
+[node name="Champion" type="HBoxContainer" parent="HUD/QuestCard/Body/QuestTasks" unique_id=367145340]
 layout_mode = 2
 mouse_filter = 2
 theme_override_constants/separation = 6
 
-[node name="ChampionIcon" type="TextureRect" parent="HUD/QuestCard/Body/QuestTasks/Champion"]
+[node name="ChampionIcon" type="TextureRect" parent="HUD/QuestCard/Body/QuestTasks/Champion" unique_id=1817595603]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(32, 32)
 layout_mode = 2
@@ -483,20 +471,20 @@ texture = ExtResource("20_lock")
 expand_mode = 1
 stretch_mode = 5
 
-[node name="Text" type="VBoxContainer" parent="HUD/QuestCard/Body/QuestTasks/Champion"]
+[node name="Text" type="VBoxContainer" parent="HUD/QuestCard/Body/QuestTasks/Champion" unique_id=652802249]
 layout_mode = 2
 size_flags_vertical = 4
 mouse_filter = 2
 theme_override_constants/separation = 0
 
-[node name="Title" type="Label" parent="HUD/QuestCard/Body/QuestTasks/Champion/Text"]
+[node name="Title" type="Label" parent="HUD/QuestCard/Body/QuestTasks/Champion/Text" unique_id=568473587]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.4078, 0.4667, 0.4706, 1)
 theme_override_fonts/font = ExtResource("12_bold")
 theme_override_font_sizes/font_size = 13
 text = "Champion"
 
-[node name="ChampionValue" type="Label" parent="HUD/QuestCard/Body/QuestTasks/Champion/Text"]
+[node name="ChampionValue" type="Label" parent="HUD/QuestCard/Body/QuestTasks/Champion/Text" unique_id=1426342339]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.1608, 0.2196, 0.2275, 1)
@@ -504,7 +492,7 @@ theme_override_fonts/font = ExtResource("12_bold")
 theme_override_font_sizes/font_size = 18
 text = "Locked"
 
-[node name="Minimap" type="PanelContainer" parent="HUD"]
+[node name="Minimap" type="PanelContainer" parent="HUD" unique_id=418105692]
 anchors_preset = 1
 anchor_left = 1.0
 anchor_right = 1.0
@@ -516,30 +504,30 @@ grow_horizontal = 0
 theme_override_styles/panel = SubResource("StyleBoxFlat_minimap")
 script = ExtResource("11_minimap")
 
-[node name="MinimapViewport" type="SubViewport" parent="HUD/Minimap"]
+[node name="MinimapViewport" type="SubViewport" parent="HUD/Minimap" unique_id=1435073092]
 unique_name_in_owner = true
 handle_input_locally = false
 size = Vector2i(600, 600)
 render_target_update_mode = 1
 
-[node name="MinimapCamera" type="Camera3D" parent="HUD/Minimap/MinimapViewport"]
+[node name="MinimapCamera" type="Camera3D" parent="HUD/Minimap/MinimapViewport" unique_id=951193664]
 unique_name_in_owner = true
 projection = 1
 current = true
 
-[node name="MiniPicture" type="TextureRect" parent="HUD/Minimap"]
+[node name="MiniPicture" type="TextureRect" parent="HUD/Minimap" unique_id=2018570775]
 unique_name_in_owner = true
 layout_mode = 2
 mouse_filter = 2
 expand_mode = 1
 stretch_mode = 5
 
-[node name="MinimapDots" type="Control" parent="HUD/Minimap"]
+[node name="MinimapDots" type="Control" parent="HUD/Minimap" unique_id=2052535430]
 unique_name_in_owner = true
 layout_mode = 2
 mouse_filter = 2
 
-[node name="ExpandHint" type="TextureRect" parent="HUD/Minimap"]
+[node name="ExpandHint" type="TextureRect" parent="HUD/Minimap" unique_id=2133430595]
 custom_minimum_size = Vector2(32, 32)
 layout_mode = 2
 size_flags_horizontal = 8
@@ -561,7 +549,7 @@ offset_bottom = -24.0
 grow_vertical = 0
 script = ExtResource("5_stick")
 
-[node name="MusicButton" type="Button" parent="HUD"]
+[node name="MusicButton" type="Button" parent="HUD" unique_id=314593430]
 unique_name_in_owner = true
 anchors_preset = 3
 anchor_left = 1.0
@@ -575,14 +563,14 @@ offset_bottom = -164.0
 grow_horizontal = 0
 grow_vertical = 0
 theme_override_styles/normal = SubResource("StyleBoxFlat_round")
-theme_override_styles/hover = SubResource("StyleBoxFlat_round")
 theme_override_styles/pressed = SubResource("StyleBoxFlat_round_down")
+theme_override_styles/hover = SubResource("StyleBoxFlat_round")
 theme_override_styles/focus = SubResource("StyleBoxFlat_round")
 icon_alignment = 1
 expand_icon = true
 script = ExtResource("32_music")
 
-[node name="ExplorerButton" type="Button" parent="HUD"]
+[node name="ExplorerButton" type="Button" parent="HUD" unique_id=490825815]
 unique_name_in_owner = true
 anchors_preset = 3
 anchor_left = 1.0
@@ -596,8 +584,8 @@ offset_bottom = -164.0
 grow_horizontal = 0
 grow_vertical = 0
 theme_override_styles/normal = SubResource("StyleBoxFlat_round")
-theme_override_styles/hover = SubResource("StyleBoxFlat_round")
 theme_override_styles/pressed = SubResource("StyleBoxFlat_round_down")
+theme_override_styles/hover = SubResource("StyleBoxFlat_round")
 theme_override_styles/focus = SubResource("StyleBoxFlat_round")
 icon = ExtResource("17_trainer")
 icon_alignment = 1
@@ -618,21 +606,22 @@ offset_bottom = -24.0
 grow_horizontal = 0
 grow_vertical = 0
 theme_override_colors/font_color = Color(0.1608, 0.2196, 0.2275, 1)
-theme_override_colors/font_hover_color = Color(0.1608, 0.2196, 0.2275, 1)
-theme_override_colors/font_pressed_color = Color(0.1608, 0.2196, 0.2275, 1)
 theme_override_colors/font_focus_color = Color(0.1608, 0.2196, 0.2275, 1)
+theme_override_colors/font_pressed_color = Color(0.1608, 0.2196, 0.2275, 1)
+theme_override_colors/font_hover_color = Color(0.1608, 0.2196, 0.2275, 1)
 theme_override_fonts/font = ExtResource("12_bold")
 theme_override_font_sizes/font_size = 22
 theme_override_styles/normal = SubResource("StyleBoxFlat_study")
-theme_override_styles/hover = SubResource("StyleBoxFlat_study")
 theme_override_styles/pressed = SubResource("StyleBoxFlat_study_down")
+theme_override_styles/hover = SubResource("StyleBoxFlat_study")
 theme_override_styles/focus = SubResource("StyleBoxFlat_study")
 text = "Study"
 icon = ExtResource("15_study")
 icon_alignment = 1
 vertical_icon_alignment = 0
 expand_icon = true
-[node name="EncounterPanel" type="ColorRect" parent="HUD"]
+
+[node name="EncounterPanel" type="ColorRect" parent="HUD" unique_id=1494342114]
 unique_name_in_owner = true
 visible = false
 anchors_preset = 15
@@ -642,7 +631,7 @@ grow_horizontal = 2
 grow_vertical = 2
 color = Color(0.1608, 0.2196, 0.2275, 0.6)
 
-[node name="Center" type="CenterContainer" parent="HUD/EncounterPanel"]
+[node name="Center" type="CenterContainer" parent="HUD/EncounterPanel" unique_id=1059283020]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -651,20 +640,20 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 
-[node name="Card" type="PanelContainer" parent="HUD/EncounterPanel/Center"]
+[node name="Card" type="PanelContainer" parent="HUD/EncounterPanel/Center" unique_id=445273719]
 custom_minimum_size = Vector2(540, 0)
 layout_mode = 2
 theme_type_variation = &"MenuCard"
 
-[node name="List" type="VBoxContainer" parent="HUD/EncounterPanel/Center/Card"]
+[node name="List" type="VBoxContainer" parent="HUD/EncounterPanel/Center/Card" unique_id=898592947]
 layout_mode = 2
 theme_override_constants/separation = 14
 
-[node name="Head" type="VBoxContainer" parent="HUD/EncounterPanel/Center/Card/List"]
+[node name="Head" type="VBoxContainer" parent="HUD/EncounterPanel/Center/Card/List" unique_id=2009224179]
 layout_mode = 2
 theme_override_constants/separation = 2
 
-[node name="EncounterTitle" type="Label" parent="HUD/EncounterPanel/Center/Card/List/Head"]
+[node name="EncounterTitle" type="Label" parent="HUD/EncounterPanel/Center/Card/List/Head" unique_id=346147127]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(496, 0)
 layout_mode = 2
@@ -673,7 +662,7 @@ text = "Challenge House"
 horizontal_alignment = 1
 autowrap_mode = 3
 
-[node name="EncounterTag" type="Label" parent="HUD/EncounterPanel/Center/Card/List/Head"]
+[node name="EncounterTag" type="Label" parent="HUD/EncounterPanel/Center/Card/List/Head" unique_id=16684435]
 unique_name_in_owner = true
 layout_mode = 2
 theme_type_variation = &"CardHeader"
@@ -681,21 +670,21 @@ theme_override_font_sizes/font_size = 24
 text = "Multiple Choice"
 horizontal_alignment = 1
 
-[node name="EncounterFacts" type="HBoxContainer" parent="HUD/EncounterPanel/Center/Card/List"]
+[node name="EncounterFacts" type="HBoxContainer" parent="HUD/EncounterPanel/Center/Card/List" unique_id=1470532470]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_constants/separation = 10
 
-[node name="Items" type="PanelContainer" parent="HUD/EncounterPanel/Center/Card/List/EncounterFacts"]
+[node name="Items" type="PanelContainer" parent="HUD/EncounterPanel/Center/Card/List/EncounterFacts" unique_id=1879924874]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_styles/panel = SubResource("StyleBoxFlat_fact")
 
-[node name="Box" type="VBoxContainer" parent="HUD/EncounterPanel/Center/Card/List/EncounterFacts/Items"]
+[node name="Box" type="VBoxContainer" parent="HUD/EncounterPanel/Center/Card/List/EncounterFacts/Items" unique_id=1354250694]
 layout_mode = 2
 theme_override_constants/separation = 0
 
-[node name="FactItems" type="Label" parent="HUD/EncounterPanel/Center/Card/List/EncounterFacts/Items/Box"]
+[node name="FactItems" type="Label" parent="HUD/EncounterPanel/Center/Card/List/EncounterFacts/Items/Box" unique_id=1269246708]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.1608, 0.2196, 0.2275, 1)
@@ -704,23 +693,23 @@ theme_override_font_sizes/font_size = 30
 text = "0"
 horizontal_alignment = 1
 
-[node name="Name" type="Label" parent="HUD/EncounterPanel/Center/Card/List/EncounterFacts/Items/Box"]
+[node name="Name" type="Label" parent="HUD/EncounterPanel/Center/Card/List/EncounterFacts/Items/Box" unique_id=706137711]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.4078, 0.4667, 0.4706, 1)
 theme_override_font_sizes/font_size = 18
 text = "items"
 horizontal_alignment = 1
 
-[node name="Level" type="PanelContainer" parent="HUD/EncounterPanel/Center/Card/List/EncounterFacts"]
+[node name="Level" type="PanelContainer" parent="HUD/EncounterPanel/Center/Card/List/EncounterFacts" unique_id=861814001]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_styles/panel = SubResource("StyleBoxFlat_fact")
 
-[node name="Box" type="VBoxContainer" parent="HUD/EncounterPanel/Center/Card/List/EncounterFacts/Level"]
+[node name="Box" type="VBoxContainer" parent="HUD/EncounterPanel/Center/Card/List/EncounterFacts/Level" unique_id=455746810]
 layout_mode = 2
 theme_override_constants/separation = 0
 
-[node name="FactLevel" type="Label" parent="HUD/EncounterPanel/Center/Card/List/EncounterFacts/Level/Box"]
+[node name="FactLevel" type="Label" parent="HUD/EncounterPanel/Center/Card/List/EncounterFacts/Level/Box" unique_id=1788113170]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.1608, 0.2196, 0.2275, 1)
@@ -729,23 +718,23 @@ theme_override_font_sizes/font_size = 30
 text = "0"
 horizontal_alignment = 1
 
-[node name="Name" type="Label" parent="HUD/EncounterPanel/Center/Card/List/EncounterFacts/Level/Box"]
+[node name="Name" type="Label" parent="HUD/EncounterPanel/Center/Card/List/EncounterFacts/Level/Box" unique_id=1336966053]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.4078, 0.4667, 0.4706, 1)
 theme_override_font_sizes/font_size = 18
 text = "level"
 horizontal_alignment = 1
 
-[node name="Minutes" type="PanelContainer" parent="HUD/EncounterPanel/Center/Card/List/EncounterFacts"]
+[node name="Minutes" type="PanelContainer" parent="HUD/EncounterPanel/Center/Card/List/EncounterFacts" unique_id=1084389932]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_styles/panel = SubResource("StyleBoxFlat_fact")
 
-[node name="Box" type="VBoxContainer" parent="HUD/EncounterPanel/Center/Card/List/EncounterFacts/Minutes"]
+[node name="Box" type="VBoxContainer" parent="HUD/EncounterPanel/Center/Card/List/EncounterFacts/Minutes" unique_id=773494301]
 layout_mode = 2
 theme_override_constants/separation = 0
 
-[node name="FactMinutes" type="Label" parent="HUD/EncounterPanel/Center/Card/List/EncounterFacts/Minutes/Box"]
+[node name="FactMinutes" type="Label" parent="HUD/EncounterPanel/Center/Card/List/EncounterFacts/Minutes/Box" unique_id=1394164378]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.1608, 0.2196, 0.2275, 1)
@@ -754,22 +743,22 @@ theme_override_font_sizes/font_size = 30
 text = "0"
 horizontal_alignment = 1
 
-[node name="Name" type="Label" parent="HUD/EncounterPanel/Center/Card/List/EncounterFacts/Minutes/Box"]
+[node name="Name" type="Label" parent="HUD/EncounterPanel/Center/Card/List/EncounterFacts/Minutes/Box" unique_id=824277973]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.4078, 0.4667, 0.4706, 1)
 theme_override_font_sizes/font_size = 18
 text = "minutes"
 horizontal_alignment = 1
 
-[node name="EncounterReady" type="VBoxContainer" parent="HUD/EncounterPanel/Center/Card/List"]
+[node name="EncounterReady" type="VBoxContainer" parent="HUD/EncounterPanel/Center/Card/List" unique_id=119598269]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_constants/separation = 6
 
-[node name="ReadyRow" type="HBoxContainer" parent="HUD/EncounterPanel/Center/Card/List/EncounterReady"]
+[node name="ReadyRow" type="HBoxContainer" parent="HUD/EncounterPanel/Center/Card/List/EncounterReady" unique_id=101395027]
 layout_mode = 2
 
-[node name="ReadyName" type="Label" parent="HUD/EncounterPanel/Center/Card/List/EncounterReady/ReadyRow"]
+[node name="ReadyName" type="Label" parent="HUD/EncounterPanel/Center/Card/List/EncounterReady/ReadyRow" unique_id=1438539795]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
@@ -777,7 +766,7 @@ theme_type_variation = &"CardBody"
 theme_override_font_sizes/font_size = 22
 text = "Kuiz readiness"
 
-[node name="ReadyValue" type="Label" parent="HUD/EncounterPanel/Center/Card/List/EncounterReady/ReadyRow"]
+[node name="ReadyValue" type="Label" parent="HUD/EncounterPanel/Center/Card/List/EncounterReady/ReadyRow" unique_id=259114162]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.1608, 0.2196, 0.2275, 1)
@@ -785,14 +774,14 @@ theme_override_fonts/font = ExtResource("12_bold")
 theme_override_font_sizes/font_size = 22
 text = "50%"
 
-[node name="ReadyBar" type="ProgressBar" parent="HUD/EncounterPanel/Center/Card/List/EncounterReady"]
+[node name="ReadyBar" type="ProgressBar" parent="HUD/EncounterPanel/Center/Card/List/EncounterReady" unique_id=538379327]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 14)
 layout_mode = 2
 theme_type_variation = &"CardBar"
 show_percentage = false
 
-[node name="EncounterQuestion" type="Label" parent="HUD/EncounterPanel/Center/Card/List"]
+[node name="EncounterQuestion" type="Label" parent="HUD/EncounterPanel/Center/Card/List" unique_id=696294555]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(496, 0)
 layout_mode = 2
@@ -801,7 +790,7 @@ text = "Note"
 horizontal_alignment = 1
 autowrap_mode = 3
 
-[node name="EncounterClearButton" type="Button" parent="HUD/EncounterPanel/Center/Card/List"]
+[node name="EncounterClearButton" type="Button" parent="HUD/EncounterPanel/Center/Card/List" unique_id=95257841]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 68)
 layout_mode = 2
@@ -809,14 +798,14 @@ theme_type_variation = &"MenuPrimary"
 theme_override_font_sizes/font_size = 28
 text = "Go inside"
 
-[node name="EncounterCloseButton" type="Button" parent="HUD/EncounterPanel/Center/Card/List"]
+[node name="EncounterCloseButton" type="Button" parent="HUD/EncounterPanel/Center/Card/List" unique_id=614483345]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 60)
 layout_mode = 2
 theme_type_variation = &"MenuQuiet"
 text = "Close"
 
-[node name="MapOverlay" type="ColorRect" parent="HUD"]
+[node name="MapOverlay" type="ColorRect" parent="HUD" unique_id=2128320382]
 unique_name_in_owner = true
 visible = false
 anchors_preset = 15
@@ -826,7 +815,7 @@ grow_horizontal = 2
 grow_vertical = 2
 color = Color(0.1608, 0.2196, 0.2275, 0.6)
 
-[node name="Center" type="CenterContainer" parent="HUD/MapOverlay"]
+[node name="Center" type="CenterContainer" parent="HUD/MapOverlay" unique_id=507840898]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -835,25 +824,25 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 
-[node name="MapCard" type="PanelContainer" parent="HUD/MapOverlay/Center"]
+[node name="MapCard" type="PanelContainer" parent="HUD/MapOverlay/Center" unique_id=1392690272]
 unique_name_in_owner = true
 layout_mode = 2
 theme_type_variation = &"MenuCard"
 
-[node name="Box" type="VBoxContainer" parent="HUD/MapOverlay/Center/MapCard"]
+[node name="Box" type="VBoxContainer" parent="HUD/MapOverlay/Center/MapCard" unique_id=353413292]
 layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="Head" type="HBoxContainer" parent="HUD/MapOverlay/Center/MapCard/Box"]
+[node name="Head" type="HBoxContainer" parent="HUD/MapOverlay/Center/MapCard/Box" unique_id=738772443]
 layout_mode = 2
 
-[node name="Title" type="Label" parent="HUD/MapOverlay/Center/MapCard/Box/Head"]
+[node name="Title" type="Label" parent="HUD/MapOverlay/Center/MapCard/Box/Head" unique_id=375255836]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_type_variation = &"CardTitle"
 text = "Island map"
 
-[node name="MapClose" type="Button" parent="HUD/MapOverlay/Center/MapCard/Box/Head"]
+[node name="MapClose" type="Button" parent="HUD/MapOverlay/Center/MapCard/Box/Head" unique_id=86740580]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(60, 60)
 layout_mode = 2
@@ -862,7 +851,7 @@ icon = ExtResource("31_close")
 icon_alignment = 1
 expand_icon = true
 
-[node name="BigPicture" type="TextureRect" parent="HUD/MapOverlay/Center/MapCard/Box"]
+[node name="BigPicture" type="TextureRect" parent="HUD/MapOverlay/Center/MapCard/Box" unique_id=225456177]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(600, 600)
 layout_mode = 2
@@ -870,7 +859,7 @@ mouse_filter = 2
 expand_mode = 1
 stretch_mode = 5
 
-[node name="BigDots" type="Control" parent="HUD/MapOverlay/Center/MapCard/Box/BigPicture"]
+[node name="BigDots" type="Control" parent="HUD/MapOverlay/Center/MapCard/Box/BigPicture" unique_id=1045707335]
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 15
@@ -878,82 +867,105 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-mouse_filter = 2
 
-[node name="Legend" type="HBoxContainer" parent="HUD/MapOverlay/Center/MapCard/Box"]
+[node name="Legend" type="HBoxContainer" parent="HUD/MapOverlay/Center/MapCard/Box" unique_id=825679341]
 layout_mode = 2
 mouse_filter = 2
 theme_override_constants/separation = 22
 alignment = 1
 
-[node name="You" type="HBoxContainer" parent="HUD/MapOverlay/Center/MapCard/Box/Legend"]
+[node name="You" type="HBoxContainer" parent="HUD/MapOverlay/Center/MapCard/Box/Legend" unique_id=943709942]
 layout_mode = 2
 mouse_filter = 2
 theme_override_constants/separation = 6
 
-[node name="Dot" type="Label" parent="HUD/MapOverlay/Center/MapCard/Box/Legend/You"]
+[node name="Dot" type="Label" parent="HUD/MapOverlay/Center/MapCard/Box/Legend/You" unique_id=58684150]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.3098, 0.5608, 0.5373, 1)
 theme_override_font_sizes/font_size = 20
 text = "●"
 
-[node name="Name" type="Label" parent="HUD/MapOverlay/Center/MapCard/Box/Legend/You"]
+[node name="Name" type="Label" parent="HUD/MapOverlay/Center/MapCard/Box/Legend/You" unique_id=2145461351]
 layout_mode = 2
 theme_type_variation = &"CardHint"
 text = "You"
 
-[node name="Houses" type="HBoxContainer" parent="HUD/MapOverlay/Center/MapCard/Box/Legend"]
+[node name="Next" type="HBoxContainer" parent="HUD/MapOverlay/Center/MapCard/Box/Legend"]
 layout_mode = 2
 mouse_filter = 2
 theme_override_constants/separation = 6
 
-[node name="Dot" type="Label" parent="HUD/MapOverlay/Center/MapCard/Box/Legend/Houses"]
+[node name="Dot" type="Label" parent="HUD/MapOverlay/Center/MapCard/Box/Legend/Next"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.4706, 0.6627, 0.5098, 1)
+theme_override_font_sizes/font_size = 20
+text = "●"
+
+[node name="Name" type="Label" parent="HUD/MapOverlay/Center/MapCard/Box/Legend/Next"]
+layout_mode = 2
+theme_type_variation = &"CardHint"
+text = "Next"
+
+[node name="Houses" type="HBoxContainer" parent="HUD/MapOverlay/Center/MapCard/Box/Legend" unique_id=2053286196]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 6
+
+[node name="Dot" type="Label" parent="HUD/MapOverlay/Center/MapCard/Box/Legend/Houses" unique_id=1365040644]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.1608, 0.2196, 0.2275, 1)
 theme_override_font_sizes/font_size = 20
 text = "●"
 
-[node name="Name" type="Label" parent="HUD/MapOverlay/Center/MapCard/Box/Legend/Houses"]
+[node name="Name" type="Label" parent="HUD/MapOverlay/Center/MapCard/Box/Legend/Houses" unique_id=932615668]
 layout_mode = 2
 theme_type_variation = &"CardHint"
 text = "Houses"
 
-[node name="Gyms" type="HBoxContainer" parent="HUD/MapOverlay/Center/MapCard/Box/Legend"]
+[node name="Gyms" type="HBoxContainer" parent="HUD/MapOverlay/Center/MapCard/Box/Legend" unique_id=574006471]
 layout_mode = 2
 mouse_filter = 2
 theme_override_constants/separation = 6
 
-[node name="Dot" type="Label" parent="HUD/MapOverlay/Center/MapCard/Box/Legend/Gyms"]
+[node name="Dot" type="Label" parent="HUD/MapOverlay/Center/MapCard/Box/Legend/Gyms" unique_id=1572057351]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.8392, 0.6588, 0.3725, 1)
 theme_override_font_sizes/font_size = 20
 text = "●"
 
-[node name="Name" type="Label" parent="HUD/MapOverlay/Center/MapCard/Box/Legend/Gyms"]
+[node name="Name" type="Label" parent="HUD/MapOverlay/Center/MapCard/Box/Legend/Gyms" unique_id=250967468]
 layout_mode = 2
 theme_type_variation = &"CardHint"
 text = "Gyms"
 
-[node name="Champion" type="HBoxContainer" parent="HUD/MapOverlay/Center/MapCard/Box/Legend"]
+[node name="Champion" type="HBoxContainer" parent="HUD/MapOverlay/Center/MapCard/Box/Legend" unique_id=167782138]
 layout_mode = 2
 mouse_filter = 2
 theme_override_constants/separation = 6
 
-[node name="Dot" type="Label" parent="HUD/MapOverlay/Center/MapCard/Box/Legend/Champion"]
+[node name="Dot" type="Label" parent="HUD/MapOverlay/Center/MapCard/Box/Legend/Champion" unique_id=62572080]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.7882, 0.4745, 0.4392, 1)
 theme_override_font_sizes/font_size = 20
 text = "●"
 
-[node name="Name" type="Label" parent="HUD/MapOverlay/Center/MapCard/Box/Legend/Champion"]
+[node name="Name" type="Label" parent="HUD/MapOverlay/Center/MapCard/Box/Legend/Champion" unique_id=1411588198]
 layout_mode = 2
 theme_type_variation = &"CardHint"
 text = "Champion"
 
-[node name="FadeLayer" type="CanvasLayer" parent="."]
+[node name="TravelHint" type="Label" parent="HUD/MapOverlay/Center/MapCard/Box"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(600, 0)
+layout_mode = 2
+theme_type_variation = &"CardHint"
+horizontal_alignment = 1
+autowrap_mode = 2
+
+[node name="FadeLayer" type="CanvasLayer" parent="." unique_id=272175307]
 layer = 100
 
-[node name="Fade" type="ColorRect" parent="FadeLayer"]
+[node name="Fade" type="ColorRect" parent="FadeLayer" unique_id=905844535]
 unique_name_in_owner = true
 anchors_preset = 15
 anchor_right = 1.0

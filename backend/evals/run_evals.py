@@ -86,10 +86,13 @@ def grading() -> bool:
     ok = True
     for c in cases:
         q = dict(by_name[c["same_as"]], **{k: v for k, v in c.items() if k != "same_as"}) if "same_as" in c else c
-        if q["mode"] == "identification":
-            r = ai.grade_identification(q, q["answer"])
-        else:
-            r = ai.grade_essay(q, q["answer"])
+        try:
+            grade = ai.grade_identification if q["mode"] == "identification" else ai.grade_essay
+            r = grade(q, q["answer"])
+        except ai.AIError as e:
+            ok = False
+            print("%-24s FAIL %s" % (c["name"], e))
+            continue
         s = r["score"]
         good = {"pass": s >= ESSAY_PASS, "fail": s < 0.34, "partial": 0.2 <= s < ESSAY_PASS}[c["expect"]]
         ok &= good

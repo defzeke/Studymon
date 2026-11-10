@@ -36,7 +36,7 @@ signal job_status(job_id: String, status: String, progress: float, result: Varia
 | Method | MOCK behaviour | Real behaviour |
 |---|---|---|
 | `new_job_id(kind)` | `"<kind>_<n>"`, unique per session | same |
-| `upload_reviewer(job_id, topic, text, file, file_type, existing)` | `offline_questions()` on the text (§5), 0.8 s → `job_status(job_id, "completed", …)` | `processing`, then `POST /v1/extract` |
+| `upload_reviewer(job_id, topic, text, file, file_type, existing, types)` | `offline_questions()` on the text in `types` (§5), 0.8 s → `job_status(job_id, "completed", …)` | `processing`, then `POST /v1/extract` |
 | `grade_battle_question(job_id, q, answer, mode)` | `mode "essay"` → `essay_offline()`; `"identification"` → score 0 (a near-miss stays a miss) | `POST /v1/grade` |
 | `check_identification(q, answer, strict)` | on the device, never networked: `{verdict, feedback}` | same |
 | `essay_offline(q, answer)` / `rubric_for(q)` | the offline essay mark ([`systems/battle.md`](systems/battle.md) §5) | used whenever the server cannot answer |
@@ -86,6 +86,7 @@ message in `result`. Request validation errors are 422 (reported by the client a
 {"job_id": "extract_3", "topic_name": "Biology", "text": "…"}                         // 80 – 200 000 chars
 {"job_id": "extract_3", "topic_name": "Biology", "file_base64": "…", "file_type": "pdf"}
 // optional on either: "existing": ["question text", …]  (≤ 60, "More questions": do not repeat these)
+// optional on either: "types": ["multiple_choice", "identification", "essay"]  (1–3; default all three)
 // result
 {"topic_id": "topic_biology", "questions": [question…], "reviewer_text": "…"}         // question shape: §5
 // result when the AI could not write them (budget spent, or the call failed)
@@ -94,15 +95,26 @@ message in `result`. Request validation errors are 422 (reported by the client a
 
 | `file_type` | Limit | Sent to the model as | Grounding text |
 |---|---|---|---|
-| `pdf` | 20 MB, 100 pages | its `pypdf` text; a **scan** (no text layer) as up to 10 page images rendered by `pypdfium2` | that text, or none for a scan |
+| `pdf` | 20 MB, 100 pages | its `pypdf` text in layout mode (a quiz item's lines stay together; plain mode is the fallback), spaces collapsed; a **scan** (no text layer) as up to 10 page images rendered by `pypdfium2` | that text, or none for a scan |
 | `png`, `jpeg`, `webp` (a photo of notes) | 5 MB | an image | none: the source check is skipped |
 | `docx`, `pptx` | 20 MB | text, converted here (`python-docx`, `python-pptx`; tables and slide text) | that text |
 
 Gemma has no PDF input, so the server always sends text or images.
 
+**Long reviewers go in parts.** Text over `CHUNK_CHARS` (6,000) is split between paragraphs, so a quiz
+item stays whole, and up to `MAX_PARALLEL` (4) parts are asked at the same time
+(`ai.generate_questions`). A part that fails is asked once more, then skipped; the call fails only when
+every part fails. Measured 2026-11-09 on a 13-page, 78-item quiz PDF through Google: 4 parts, 70–120 s,
+76–91 questions kept. Back-to-back runs sometimes lost parts to Google errors.
+
 `reviewer_text` (the text above, capped at 200 000 chars; empty for a photo or scan) goes back so the
 device can keep it with the world for "More questions". Questions whose text is in `existing` are
-dropped.
+dropped, and so are questions of a type not in `types`.
+
+**Question types.** The model is told to write only the `types` the player ticked, at least 3 of each.
+**Quiz-style reviewers.** When the reviewer already has questions (a quiz, Q&A list, numbered items
+with an answer key or a marked choice), the prompt keeps each one as a question and takes its answer
+from the key, the marked choice or the notes. A question with no answer anywhere is left out.
 
 **Offline answer.** When the day's budget (§6) is spent, or the model call fails, or no question
 survives the checks, the result is `offline` with the reviewer's text. `SessionManager` then builds
@@ -117,7 +129,11 @@ tags as data.
 The JSON schema (`ai.QUESTION_SET_SCHEMA`) is sent two ways:
 - in the prompt;
 - as `response_format` (`json_schema`). If the endpoint refuses that, it is dropped for the rest of
-  the process.
+  the process. `AI_JSON_SCHEMA=0` never sends it: Google's endpoint accepts it but then stops Gemma
+  after one question.
+
+The reply is parsed after any `<thought>…</thought>` block, which Gemma on Google's endpoint can send
+first.
 
 The reply is parsed tolerantly (`ai.parse_json`: code fences and stray text are ignored), and a reply
 that does not parse is asked for once more.
@@ -127,14 +143,15 @@ The server then **checks every question and drops the ones the game cannot trust
 | Check | On failure |
 |---|---|
 | an item that is not an object, or a list field that is not a list | dropped / emptied |
-| `source` appears in the reviewer (whitespace and case ignored); skipped for a photo or scan | dropped |
+| every sentence of `source` appears in the reviewer (whitespace, case and Unicode forms such as math letters ignored; a quiz item's source may join its question to its answer line); skipped for a photo or scan | dropped |
 | a duplicate question text | dropped |
 | Identification: its answer is not inside its question; `accepted` starts with `answer`, deduplicated | dropped / repaired |
-| Multiple Choice: at least 3 distinct wrong options, none equal to the answer or an accepted alias; extras trimmed | dropped / repaired |
+| Multiple Choice: a leading option letter (`C. `) is stripped from the answer and the wrong options; at least 3 distinct wrong options, none equal to the answer or an accepted alias; extras trimmed | dropped / repaired |
 | Essay: 3–5 rubric points with weight > 0; weights rescaled to sum to 1; extras trimmed | dropped / repaired |
 
 The server sets `id` (`q_<sha1 of the text>`) and `confidence` (1.0, −0.15 per repair), and caps the
-bank at **30** (`MAX_QUESTIONS`; fewer output tokens keep more of the free allowance). Failures the
+bank at **100** (`MAX_QUESTIONS`), so a long quiz keeps every item. Notes still get at most 30 per
+part from the prompt. Failures the
 player sees: too short, a PDF over the limits or unreadable, a photo or scan when the AI is
 unavailable.
 
@@ -145,12 +162,16 @@ unavailable.
  "expected": "…", "accepted": ["…"], "rubric": [{"point", "keywords", "weight"}],
  "model_answer": "…", "source": "…"}
 // result, identification: {"score": 1.0 | 0.0, "feedback": "…"}
-// result, essay:          {"score": 0..1, "covered": [bool per rubric point], "feedback": "…"}
+// result, essay:          {"score": 0..1, "covered": [bool per rubric point, true when fully covered], "feedback": "…"}
 ```
 
 The typed answer is wrapped in `<answer>` tags as data. For an essay, the model returns per point
-`{covered, evidence}` and the **server** scores it: a point counts only when its evidence is really in
-the answer ([`systems/battle.md`](systems/battle.md) §5). An essay request with no rubric fails. When
+`{credit: full | partial | none, evidence}` and the **server** scores it: full is worth the point's
+weight, partial half, and a point earns credit only when its evidence is really in the answer
+([`systems/battle.md`](systems/battle.md) §5). Grading runs at temperature 0, and words addressed to
+the grader are ignored. Feedback comes in the answer's language. Every model call retries a Google or
+Cloudflare error up to 3 times (`max_retries`). Measured 2026-11-09 on Google: the 15 graded answers in
+`evals/grading_cases.json` all passed, twice in a row (12 of 15 before). An essay request with no rubric fails. When
 the day's budget is spent the reply is a 429, and the battle grades on the device.
 
 ### `GET /health`
@@ -167,13 +188,22 @@ the day's budget is spent the reply is a 429, and the battle grades on the devic
 | `AI_API_KEY` | a Cloudflare API token with Workers AI permission |
 | `EXTRACT_MODEL`, `GRADE_MODEL` | `@cf/google/gemma-4-26b-a4b-it` (Gemma 4, Apache 2.0, 256K context, vision) |
 | `NEURONS_PER_M_IN`, `NEURONS_PER_M_OUT` | 9,091 and 27,273 (Cloudflare's price for that model, in neurons per million tokens) |
+| `AI_JSON_SCHEMA` | `1`: send the schema as `response_format` too (§2) |
+
+**Google, for development.** The same Gemma 4 runs on Google's Gemini API through its
+OpenAI-compatible endpoint. The local `backend/.env` can point there:
+`AI_BASE_URL=https://generativelanguage.googleapis.com/v1beta/openai/`, `AI_API_KEY` = a Google AI
+Studio key, both models `gemma-4-26b-a4b-it`, `NEURONS_PER_M_IN` and `_OUT` = `0` (Google counts no
+neurons; its own rate limits answer 429, and the game goes offline), and `AI_JSON_SCHEMA=0`. Measured
+2026-11-09 on a quiz-style PDF: every quiz item kept with its answer-key answer. Google sometimes
+answers 500, and the call then goes offline. Release stays on Cloudflare (see the terms note below).
 
 **Cost: $0** on Cloudflare's Workers Free plan, which includes **10,000 neurons a day** (UTC) for the
 whole account. The plan cannot bill past that: further calls fail, and the game falls back offline.
 
 | Route | Rough tokens | Neurons per call |
 |---|---|---|
-| `/v1/extract` | ~5k in, ~8k out (30 questions) | ~260 |
+| `/v1/extract` | ~5k in, ~8k out per part (up to 30 questions) | ~260 per part |
 | `/v1/grade`, essay | ~1.5k in, ~0.2k out | ~20 |
 | `/v1/grade`, Identification check | ~0.5k in, ~0.1k out | ~7 |
 
@@ -312,7 +342,8 @@ questions.
 
 Google Play requires an in-app way to report offensive AI output. These call `Api.report_content()`:
 - the World Builder's **Report** on each question row;
-- each row of the battle's end-of-run **Review answers** list.
+- the small flag (⚑) on each row of the battle's end-of-run **Review answers** list, beside the
+  row's Easy / Hard rating.
 
 The server only logs the report (`log.warning`); read reports in the host's log viewer.
 

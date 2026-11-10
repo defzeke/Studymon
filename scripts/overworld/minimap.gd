@@ -15,6 +15,9 @@ const OPEN_TIME := 0.28
 const DIM_ALPHA := 0.6
 const SMALL_SCALE := 0.3
 
+## A tap on the big view: the world point under it, at the explorer's height. The map checks and prices it.
+signal travel_picked(world: Vector3)
+
 @onready var map: Node3D = %Map
 @onready var player: Node3D = %Player
 @onready var trainers: Node3D = %Trainers
@@ -27,6 +30,8 @@ const SMALL_SCALE := 0.3
 @onready var big_dots: Control = %BigDots
 
 var _moving := false
+## The spot picked for fast travel, pinned on the big view; INF when none.
+var pick := Vector3.INF
 
 func _ready() -> void:
 	var box := AABB()
@@ -51,10 +56,11 @@ func _ready() -> void:
 	%BigPicture.texture = viewport.get_texture()
 	dots.draw.connect(_draw_dots.bind(dots, 1.0))
 	big_dots.draw.connect(_draw_dots.bind(big_dots, BIG_DOTS))
-	%MapClose.pressed.connect(_close)
+	%MapClose.pressed.connect(close)
 	overlay.gui_input.connect(func(event: InputEvent) -> void:
 		if _tapped(event):
-			_close())
+			close())
+	big_dots.gui_input.connect(_on_big_tap)
 
 func _tapped(event: InputEvent) -> bool:
 	return event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT
@@ -83,9 +89,18 @@ func _open() -> void:
 	await t.finished
 	_moving = false
 
-func _close() -> void:
+func _on_big_tap(event: InputEvent) -> void:
+	if not _tapped(event) or _moving:
+		return
+	big_dots.accept_event()
+	var o := camera.project_ray_origin(event.position * Vector2(viewport.size) / big_dots.size)
+	pick = Vector3(o.x, player.global_position.y, o.z)
+	travel_picked.emit(pick)
+
+func close() -> void:
 	if _moving:
 		return
+	pick = Vector3.INF
 	_moving = true
 	var t := create_tween().set_parallel().set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
 	t.tween_property(overlay, "color:a", 0.0, OPEN_TIME)
@@ -102,15 +117,31 @@ func _process(_delta: float) -> void:
 		big_dots.queue_redraw()
 
 func _draw_dots(on: Control, k: float) -> void:
+	# A house's dot follows the map's quest (region_map sets "house_state"): the next house to clear is a
+	# pulsing green pin, cleared houses off-white, locked ones faint.
+	var pulse := 0.5 + 0.5 * sin(Time.get_ticks_msec() / 250.0)
 	for t in trainers.get_children():
 		var at_t := _to_dots(t.global_position, on)
-		on.draw_circle(at_t, 4.0 * k, Palette.SLATE)
-		on.draw_circle(at_t, 2.5 * k, Palette.OFF_WHITE)
+		match str(t.get_meta("house_state", "")):
+			"next":
+				on.draw_circle(at_t, (8.0 + 3.0 * pulse) * k, Color(Palette.GREEN, 0.35))
+				on.draw_circle(at_t, 7.0 * k, Palette.SLATE)
+				on.draw_circle(at_t, 5.0 * k, Palette.GREEN)
+			"locked":
+				on.draw_circle(at_t, 3.5 * k, Color(Palette.SLATE, 0.6))
+				on.draw_circle(at_t, 2.0 * k, Palette.SLATE_GRAY)
+			_:
+				on.draw_circle(at_t, 4.0 * k, Palette.SLATE)
+				on.draw_circle(at_t, 2.5 * k, Palette.OFF_WHITE)
 	for g in gyms.get_children():
 		var champ := str(g.get("text")).begins_with("CHAMPION")
 		var at := _to_dots(g.global_position, on)
 		on.draw_circle(at, 7.0 * k, Palette.SLATE)
 		on.draw_circle(at, 5.0 * k, Palette.CORAL if champ else Palette.AMBER)
+	if pick != Vector3.INF and on == big_dots:
+		var at_p := _to_dots(pick, on)
+		on.draw_circle(at_p, 9.0 * k, Palette.SLATE)
+		on.draw_circle(at_p, 6.0 * k, Palette.CORAL)
 	var me := _to_dots(player.global_position, on)
 	on.draw_circle(me, 8.0 * k, Palette.OFF_WHITE)
 	on.draw_circle(me, 5.5 * k, Palette.TEAL)

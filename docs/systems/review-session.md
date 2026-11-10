@@ -22,7 +22,7 @@ session_list.tscn  (Worlds hub: reached from home Play)
    ▼                                        │
 categorizer.tscn  ◄─────────────────────────┘
    │  1. name the topic
-   │  2. paste text  OR  pick a file
+   │  2. paste text  OR  pick a file, and tick the question types (one or more)
    │  3. "AI is studying..." (0.8 s mock job)
    │  4. editable question list (add / edit / retype / delete)
    │  5. Confirm & Play
@@ -58,13 +58,15 @@ afterwards drops the file. On mocks, or for any other file, it is refused with a
 
 ## 3. Upload precedence
 
-For text the categorizer calls `start_upload_from_text()`, which validates, sets `last_source_text`,
-and delegates to `start_upload()`; for a PDF it calls `start_upload(name, bytes)`. `start_upload()`
-sends bytes that do not decode as text on as a PDF, takes a fresh `Api.new_job_id("extract")`,
-emits `extraction_started` and calls `Api.upload_reviewer(job_id, name, text, pdf)`.
+For text the categorizer calls `start_upload_from_text()`, which validates and passes the text to
+`start_upload()` as its hint; for a file it calls `start_upload(name, bytes, "", file_type)`.
+`start_upload()` sends the file's bytes on as they are, never decoded, takes a fresh
+`Api.new_job_id("extract")`, emits `extraction_started` and calls `Api.upload_reviewer()`.
 
-Binary detection is literally `decoded.contains("�")` — the U+FFFD replacement character
-(`categorizer.gd`, `_on_file_selected`; `session_manager.gd`, `start_upload`).
+`_on_file_selected` picks by extension: a PDF, photo, Word or PowerPoint file (`FILE_TYPES`) is kept
+as bytes and never decoded, because decoding a PDF as UTF-8 floods the log with errors. Any other file
+is read as text, and is refused when it holds a U+FFFD replacement character. Under `Api.MOCK` a
+reviewer file is refused with a note that it needs the study server (`Api.DEV_USES_SERVER`).
 
 ---
 
@@ -97,13 +99,15 @@ then uses five canned questions, and a real upload fails with the server's reaso
 - Keeps sentences with **≥ 6 words and ≥ 40 chars**, up to **12** sentences.
 - **Tier** (`difficulty`): by sentence length, the shortest third `easy`, the middle `medium`, the
   longest third `hard`; an essay is never `easy`.
-- Rotates by created-question index:
+- Rotates by created-question index through the ticked types (`SessionManager.question_types`), in
+  this order when all three are ticked:
   - 0 → **Identification**: `What key term is described here? "<excerpt>"`, answer = the
     highest-ranked extracted term, confidence `0.85`
   - 1 → **Essay**: `Explain in your own words: <excerpt>`, confidence `0.7`
   - 2 → **Multiple Choice**: `Which term is described here? "<excerpt>"`, answer = the top term,
     `distractors` = top terms of the *other* sentences (`_distractors_for`), confidence `0.8`. With
-    fewer than three distinct wrong options it becomes an Identification.
+    fewer than three distinct wrong options it becomes an Identification, or is skipped when
+    Identification is not ticked.
 - `key_concepts` = first ≤ 3 extracted terms.
 - `source` = first 220 chars of the sentence.
 
@@ -136,7 +140,7 @@ Multiple Choice on generalization, and a hard Essay on trial-and-error practice 
 | `"topics"` | `completed` | Merges `result.topics` into the cache, emits `topics_listed` |
 | not the current upload's id | any | **ignored** (grades, older uploads) |
 | the current upload's id | `processing` | `extraction_progress(job_id, progress)` |
-| the current upload's id | `completed` with `questions` | Normalises each `type` to lowercase, defaults `confidence` to 0.7, sets `pending_questions` / `editing_topic_id` / `current_topic_id`, emits `extraction_completed` |
+| the current upload's id | `completed` with `questions` | Drops questions of a type not in `question_types` (none left → `extraction_failed`), normalises each `type` to lowercase, defaults `confidence` to 0.7, sets `pending_questions` / `editing_topic_id` / `current_topic_id`, emits `extraction_completed` |
 | the current upload's id | `completed` without `questions` | `extraction_failed(job_id, "No questions extracted")` |
 | the current upload's id | `failed` | `extraction_failed(job_id, str(result))`: the server's or the network's message |
 

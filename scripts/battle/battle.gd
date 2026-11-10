@@ -102,6 +102,8 @@ var _kind := "house"
 var _standalone := false
 var _index := 0
 var _q: Dictionary = {}
+# The current item's index in its world's questions (-1 for the preview), for the Easy / Hard rating.
+var _q_index := -1
 var _qtype: String = "essay"
 var _tier: String = "medium"
 var _mc_options: Array[String] = []
@@ -194,6 +196,7 @@ func _refresh_gauges() -> void:
 func _bind_item() -> void:
 	var item: Dictionary = _run[_index]
 	_q = item["question"]
+	_q_index = int(item.get("q_index", -1))
 	_qtype = str(_q.get("type", "essay")).to_lower()
 	_mc_options = []
 	if _qtype == "multiple_choice":
@@ -386,7 +389,7 @@ func _resolve(correct: bool, feedback: String, miss_scale := 1.0) -> void:
 		SessionManager.record_battle_outcome(SessionManager.battle_topic_id, q_idx, correct)
 	var last := _index == _run.size() - 1
 	_last_feedback = feedback
-	_answers.append({"q": _q, "type": _qtype, "given": _given, "correct": correct, "feedback": feedback, "covered": _last_covered.duplicate()})
+	_answers.append({"q": _q, "q_index": _q_index, "type": _qtype, "given": _given, "correct": correct, "feedback": feedback, "covered": _last_covered.duplicate()})
 	CompanionState.play_item(correct)
 	if correct:
 		_correct += 1
@@ -627,7 +630,8 @@ func _lose(finished: bool) -> void:
 	_end_sequence(false, "DEFEATED")
 
 # Review answers: every item answered this run with what was given and the right answer. Rows are
-# copies of %ReviewRow; each can be reported (Google Play's AI-content rule).
+# copies of %ReviewRow. Easy / Hard sets the question's tier in its world (which runs pick it); the
+# small flag reports it (Google Play's AI-content rule).
 func _show_answers() -> void:
 	_sfx(sfx_click)
 	for c in review_list.get_children():
@@ -641,7 +645,15 @@ func _show_answers() -> void:
 		head.text = lines[0]
 		head.add_theme_color_override("font_color", Color("437A74") if _answers[i]["correct"] else Color("A8564D"))
 		(row.get_node("Box/Body") as Label).text = lines[1] if lines.size() > 1 else ""
-		var report := row.get_node("Box/Report") as Button
+		var easy := row.get_node("Box/Rate/Easy") as Button
+		var hard := row.get_node("Box/Rate/Hard") as Button
+		var rated := str(_answers[i]["q"].get("difficulty", ""))
+		easy.set_pressed_no_signal(rated == "easy")
+		hard.set_pressed_no_signal(rated == "hard")
+		row.get_node("Box/Rate").visible = int(_answers[i]["q_index"]) >= 0 and not _standalone
+		easy.pressed.connect(_rate_answer.bind(i, "easy", easy, hard))
+		hard.pressed.connect(_rate_answer.bind(i, "hard", hard, easy))
+		var report := row.get_node("Box/Rate/Report") as Button
 		report.pressed.connect(_report_answer.bind(i, report))
 		review_list.add_child(row)
 	review_panel.show()
@@ -664,11 +676,18 @@ func _answer_text(i: int) -> String:
 			text += "\n" + extra.strip_edges()
 	return text
 
+func _rate_answer(i: int, difficulty: String, chosen: Button, other: Button) -> void:
+	_sfx(sfx_click)
+	chosen.set_pressed_no_signal(true)
+	other.set_pressed_no_signal(false)
+	_answers[i]["q"]["difficulty"] = difficulty
+	SessionManager.rate_question(SessionManager.battle_topic_id, int(_answers[i]["q_index"]), difficulty)
+
 func _report_answer(i: int, button: Button) -> void:
 	_sfx(sfx_click)
 	Api.report_content(Api.new_job_id("report"), "feedback", _answer_text(i))
 	button.disabled = true
-	button.text = "Reported"
+	button.text = "✓"
 
 # Try Again: the same run reshuffled, from item 1, Kuiz at full HP.
 func _on_retry() -> void:
