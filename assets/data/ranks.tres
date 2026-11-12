@@ -1,0 +1,8 @@
+[gd_resource type="Resource" script_class="RankLadder" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/rank_ladder.gd" id="1_rank"]
+
+[resource]
+script = ExtResource("1_rank")
+from_levels = Array[int]([1, 11, 21, 31, 41, 51, 61, 71, 81, 91, 100])
+titles = Array[String](["Kindergarten", "Elementary", "Junior High", "Senior High", "College", "Dean's Lister", "Graduate", "Master's", "PhD", "Professor", "Einstein"])

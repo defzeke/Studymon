@@ -3,6 +3,8 @@ extends Node
 
 signal stats_changed
 signal xp_changed(current_xp: int, level: int)
+## Kuiz went up from `from_level` to `level` (one signal for several levels at once).
+signal leveled_up(from_level: int, level: int)
 signal pomodoro_phase_changed(mode: String)
 
 # Levels never cap. See xp_to_reach().
@@ -13,8 +15,13 @@ const FIRST_LEVEL_XP := 20
 const LEVEL_XP_STEP := 5
 # Reaching a level pays this many crystals (flat, so care alone cannot outpace studying).
 const LEVEL_CRYSTALS := 25
+## Kuiz's school title per band of levels, Kindergarten to Einstein.
+const RANKS: RankLadder = preload("res://assets/data/ranks.tres")
 const STAT_MAX := 100.0
-const STAT_DECAY_PER_SEC := 0.15
+# Minutes each stat takes to fall from full to low (LOW_STAT, where Kuiz shows it); energy's is on a
+# new battery, sooner on a worn one (battery_drain()).
+const FULL_TO_LOW_MIN := {"energy": 60.0, "hunger": 15.0, "mood": 20.0, "focus": 30.0, "health": 60.0}
+const LOW_STAT := 25.0
 # The clock decay announces itself this often (issue #13); care actions announce at once.
 const DECAY_EMIT_SEC := 0.2
 const DAILY_CAP_BASE_XP := 10  # per action per hour before diminishing returns
@@ -25,10 +32,13 @@ const HOURLY_HARD_CAP := 30
 const FEED_HUNGER := 12.0
 const FIX_HEALTH := 25.0
 const PLAY_MOOD := 8.0
+# A finished minigame round: a real treat, worth about three ball throws, and a little tiring.
+const GAME_MOOD := 25.0
+const GAME_ENERGY := 3.0
+# On the island Kuiz's mood climbs (net about +4 a minute against its decay).
+const EXPLORE_MOOD_PER_SEC := 0.125
 const CHARGE_PER_SEC := 6.0
-# Dirt builds up slowly (and a little with each meal and throw); the towel scrubs it off.
-const DIRT_PER_SEC := 0.06
-const MESS := 3.0
+# Dirt comes only from play (fast throws, minigame rounds: soil()); the towel scrubs it off.
 const CLEAN_MOOD := 5.0
 # Battery health wears like a phone's: every point of energy charged costs BATTERY_WEAR health, and
 # a worn battery drains faster (energy drain x 1 + (100 - health) / BATTERY_DRAIN_SPAN, so x2 at 50%).
@@ -36,6 +46,8 @@ const CLEAN_MOOD := 5.0
 const BATTERY_WEAR := 0.02
 const BATTERY_DRAIN_SPAN := 50.0
 const BATTERY_PRICE := 30
+# Below this energy Kuiz is too tired to battle or review: it needs a charge first.
+const TIRED_ENERGY := LOW_STAT
 # Playing a battle run moves the stats item by item instead of by the clock (decay is paused meanwhile).
 # Contract: docs/systems/battle.md §3.
 const PLAY_ENERGY := 0.5
@@ -71,10 +83,13 @@ var dirt: float = 0.0
 var battery_health: float = 100.0
 ## True while a battle run is on; the clock decay is paused.
 var in_run := false
+## Saved: Kuiz is on home's charger, so time away charges it instead of draining it.
+var charging := false
+var _paused_at := 0
 var _decay_emit_wait := 0.0
 
 # Taps of each care action this hour, for the XP caps.
-var _action_tap_counts: Dictionary = {"feed": 0, "pet": 0, "play": 0, "fix": 0, "clean": 0}
+var _action_tap_counts: Dictionary = {"feed": 0, "pet": 0, "play": 0, "game": 0, "fix": 0, "clean": 0}
 var _last_hour_reset: int = 0
 
 var _pomodoro_mode: String = ""  # "focus", "rest", ""
@@ -90,25 +105,44 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	if in_run:
-		dirt = minf(STAT_MAX, dirt + DIRT_PER_SEC * delta)
 		return
-	var drain := STAT_DECAY_PER_SEC * delta
-	energy = maxf(0.0, energy - drain * battery_drain())
-	focus = maxf(0.0, focus - drain * 0.8)
-	mood = maxf(0.0, mood - drain * 0.6)
-	hunger = maxf(0.0, hunger - drain * 0.7)
-	health = maxf(0.0, health - drain * 0.2)
-	dirt = minf(STAT_MAX, dirt + DIRT_PER_SEC * delta)
+	_decay(delta)
 	_decay_emit_wait -= delta
 	if _decay_emit_wait <= 0.0:
 		_decay_emit_wait = DECAY_EMIT_SEC
 		stats_changed.emit()
 	_maybe_reset_hourly_cap()
 
+func _decay(delta: float) -> void:
+	for stat: String in FULL_TO_LOW_MIN:
+		var rate: float = (STAT_MAX - LOW_STAT) / (FULL_TO_LOW_MIN[stat] * 60.0)
+		if stat == "energy":
+			rate *= battery_drain()
+		set(stat, maxf(0.0, float(get(stat)) - rate * delta))
+
+## Time the game was closed or in the background still counts: the stats decay as if it had run, and
+## Kuiz left on the charger charges instead.
+func pass_time(seconds: float) -> void:
+	if seconds <= 0.0:
+		return
+	_decay(seconds)
+	if charging:
+		recharge(seconds)
+	stats_changed.emit()
+
+# A paused phone runs no frames, so the time away is added on resume.
+func _notification(what: int) -> void:
+	var now := int(Time.get_unix_time_from_system())
+	if what == NOTIFICATION_APPLICATION_PAUSED:
+		_paused_at = now
+	elif what == NOTIFICATION_APPLICATION_RESUMED and _paused_at > 0:
+		pass_time(now - _paused_at)
+		_paused_at = 0
+
 func _maybe_reset_hourly_cap() -> void:
 	var now := int(Time.get_unix_time_from_system())
 	if now - _last_hour_reset >= 3600:
-		_action_tap_counts = {"feed": 0, "pet": 0, "play": 0, "fix": 0, "clean": 0}
+		_action_tap_counts = {"feed": 0, "pet": 0, "play": 0, "game": 0, "fix": 0, "clean": 0}
 		_last_hour_reset = now
 
 func add_xp(amount: int) -> void:
@@ -122,13 +156,29 @@ func reward_card_banked() -> void:
 	focus = minf(STAT_MAX, focus + 2.0)
 	add_xp(1)
 
+## A flashcard rated: reviewing cheers Kuiz up a little, more for a card it knew.
+func reward_card_rated(knew: bool) -> void:
+	mood = minf(STAT_MAX, mood + (PLAY_MOOD_RIGHT if knew else PLAY_MOOD_WRONG))
+	stats_changed.emit()
+
+## Called each frame on the island: exploring lifts Kuiz's mood (the decay announces it).
+func explore(delta: float) -> void:
+	mood = minf(STAT_MAX, mood + EXPLORE_MOOD_PER_SEC * delta)
+
 func reward_deck_done() -> void:
 	mood = minf(STAT_MAX, mood + 3.0)
 
 func _check_level_up() -> void:
+	var from := level
 	while xp >= xp_to_reach(level + 1):
 		level += 1
 		GameState.add_crystals(LEVEL_CRYSTALS)
+	if level > from:
+		leveled_up.emit(from, level)
+
+## Kuiz's title at `lv` (Kindergarten at 1 ... Einstein from 100).
+func rank(lv: int) -> String:
+	return RANKS.title(lv)
 
 ## Cumulative XP at which `lv` is reached (Lv1 = 0, Lv2 = 20, Lv5 = 110, Lv6 = 150...).
 static func xp_to_reach(lv: int) -> int:
@@ -157,6 +207,10 @@ func care(action: String, food: FoodItem = null) -> void:
 			mood = minf(STAT_MAX, mood + PLAY_MOOD)
 			energy = maxf(0.0, energy - 2.0)
 			gained = maxi(1, roundi(2 * xp_mult))
+		"game":
+			mood = minf(STAT_MAX, mood + GAME_MOOD)
+			energy = maxf(0.0, energy - GAME_ENERGY)
+			gained = maxi(1, roundi(2 * xp_mult))
 		"fix":
 			health = minf(STAT_MAX, health + FIX_HEALTH)
 			gained = maxi(1, roundi(2 * xp_mult))
@@ -173,8 +227,8 @@ func care(action: String, food: FoodItem = null) -> void:
 func scrub(amount: float) -> void:
 	dirt = maxf(0.0, dirt - amount)
 
-## Meals and play leave a little mess.
-func soil(amount := MESS) -> void:
+## Play leaves a little mess.
+func soil(amount: float) -> void:
 	dirt = minf(STAT_MAX, dirt + amount)
 
 ## Home's Charge toggle: energy refills while Kuiz sleeps on the charger, wearing the battery.
@@ -184,9 +238,13 @@ func recharge(delta: float) -> void:
 	battery_health = maxf(0.0, battery_health - gained * BATTERY_WEAR)
 
 ## Battle readiness: each care stat has one job in a run. Contract: docs/systems/battle.md §Stats.
-## Health sets Kuiz's battle HP.
+## Readiness (all four home stats) sets Kuiz's battle HP.
 func battle_max_hp() -> int:
-	return roundi(lerpf(70.0, 120.0, health / STAT_MAX))
+	return roundi(lerpf(70.0, 120.0, readiness() / STAT_MAX))
+
+## Too low on energy to battle or review: it must charge first.
+func too_tired() -> bool:
+	return energy < TIRED_ENERGY
 
 ## Energy scales the XP a run pays.
 func xp_mult() -> float:
@@ -244,6 +302,7 @@ func to_dict() -> Dictionary:
 		"health": health,
 		"dirt": dirt,
 		"battery_health": battery_health,
+		"charging": charging,
 		"focus_minutes": focus_minutes,
 		"rest_minutes": rest_minutes,
 	}
@@ -258,6 +317,7 @@ func from_dict(data: Dictionary) -> void:
 	health = float(data.get("health", 100.0))
 	dirt = float(data.get("dirt", 0.0))
 	battery_health = float(data.get("battery_health", 100.0))
+	charging = bool(data.get("charging", false))
 	focus_minutes = _stepped(int(data.get("focus_minutes", POMODORO_FOCUS_MIN)), POMODORO_FOCUS_RANGE)
 	rest_minutes = _stepped(int(data.get("rest_minutes", POMODORO_REST_MIN)), POMODORO_REST_RANGE)
 	# Saves from the capped curve (Lv5 max) may hold XP past Lv5: catch the levels up silently.
@@ -323,6 +383,15 @@ func _stop_pomodoro() -> void:
 	_pomodoro_mode = ""
 	_pomodoro_remaining = 0
 	stats_changed.emit()
+
+## The break's Resume review: ends the break early and starts the next focus session, with no penalty.
+func resume_review() -> void:
+	if _pomodoro_mode != "rest":
+		return
+	_pomodoro_mode = "focus"
+	_pomodoro_remaining = focus_minutes * 60
+	stats_changed.emit()
+	pomodoro_phase_changed.emit("focus")
 
 func skip_pomodoro() -> void:
 	if _pomodoro_mode == "focus":

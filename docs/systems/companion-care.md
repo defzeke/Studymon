@@ -17,19 +17,32 @@ care stats into battle (see [`battle.md`](battle.md) §3).
 
 | Stat | Start | Range | Decay | Grown by |
 |---|---|---|---|---|
-| `hunger` | 80.0 | 0–100 | **0.105 / s** (0.7×) | `feed` +8 – 40 by food (`FoodItem.hunger`, `assets/data/foods/`) |
-| `energy` | 80.0 | 0–100 | **0.15 / s** × battery wear (`battery_drain()`: 1 + (100 − battery health) / 50, so ×2 at 50 %) | charging +6 / s (`recharge()`), rest complete +6, `play` −2, skip focus −3, missed rest −5 |
-| `mood` | 75.0 | 0–100 | **0.09 / s** (0.6×) | `pet` +8, `play` +8, rest complete +6, skip focus −2, missed rest −3 |
-| `health` | 100.0 | 0–100 | **0.03 / s** (0.2×) | `fix` +25 |
+| `hunger` | 80.0 | 0–100 | **full to low in 15 min** | `feed` +8 – 40 by food (`FoodItem.hunger`, `assets/data/foods/`) |
+| `energy` | 80.0 | 0–100 | **full to low in 60 min** on a new battery, × battery wear (`battery_drain()`: 1 + (100 − battery health) / 50, so ×2 at 50 % (30 min), ×3 at 0 % (20 min)) | charging +6 / s (`recharge()`), rest complete +6, `play` −2, `game` −3, skip focus −3, missed rest −5 |
+| `mood` | 75.0 | 0–100 | **full to low in 20 min** | `pet` +8, `play` +8, `game` +25, a flashcard rated +1.5 (Easy) or +0.3, exploring the island +0.125 / s (`explore()`), rest complete +6, skip focus −2, missed rest −3 |
+| `health` | 100.0 | 0–100 | **full to low in 60 min** | `fix` +25 |
 | `battery_health` | 100.0 | 0–100 | **−0.02 per energy point charged** (a full 0→100 charge costs 2 %) | a new battery (`replace_battery()`, 30 crystals) back to 100 |
-| `dirt` | 0.0 | 0–100 | **builds up 0.06 / s** | meals +3, fast throws +1.5, minigame rounds +4; the towel scrubs it off (`scrub()`) |
-| `focus` | 70.0 | 0–100 | **0.12 / s** (0.8×) | flashcards +2 per card; not on the home HUD |
+| `dirt` | 0.0 | 0–100 | **none with time**: only play soils Kuiz (`soil()`) | fast throws +1.5, minigame rounds +4; the towel scrubs it off (`scrub()`) |
+| `focus` | 70.0 | 0–100 | **full to low in 30 min** | flashcards +2 per card; not on the home HUD |
 | `level` | 1 | 1 and up, no cap | — | XP thresholds (§3) |
 | `xp` | 0 | unbounded | — | care taps + battle rewards |
 
-Decay is applied in `_process` (`companion_state.gd:62-67`), i.e. it runs whenever the game is
-running, on every screen. With `energy`
-decaying 0.15/s, a full bar drains in ~11 minutes of real time.
+Decay is applied in `_process`, i.e. it runs whenever the game is running, on every screen. Each
+stat falls at a steady rate set by `FULL_TO_LOW_MIN`, the minutes it takes from full to low
+(`LOW_STAT`, 25 %, where Kuiz shows it): hunger 15, mood 20, focus 30, energy and health 60. Energy's
+rate is multiplied by `battery_drain()`. From low to empty takes a third as long again.
+
+**Time away counts.** The stats keep falling while the game is closed or in the background:
+`pass_time(seconds)` runs the same decay for the time since `saved_at` when the save loads, and for the
+time between `NOTIFICATION_APPLICATION_PAUSED` and `RESUMED` on a phone. Kuiz left on the charger
+(`charging`, saved, set by home's Charge) charges instead, up to full, wearing the battery as usual.
+Kuiz stays on the charger across a restart: home reopens in the Study Room with the lights off and Kuiz
+asleep on it (no charge sound), until the player taps Charge again.
+
+**Too tired.** Below `TIRED_ENERGY` (25 %) `too_tired()` is true: the map's house, gym and Champion
+panels disable their button with a "battery is low" note, and the map's Study button and the Worlds
+hub's **Cards** show a notice instead of opening flashcards. Charging in the Study Room fixes it. A
+run already under way is not stopped.
 
 `stats_changed` is emitted **every frame** from the same `_process`. All decay writes are `maxf(0, …)`
 so stats bottom out cleanly at zero.
@@ -45,6 +58,7 @@ so stats bottom out cleanly at zero.
 | `"feed"` | `hunger += 12` | 2 | home: food dropped on Kuiz |
 | `"pet"` | `mood += 8` | 1 | home: holding or stroking Kuiz (at most every 3 s) |
 | `"play"` | `mood += 8`, `energy -= 2` | 2 | home: a fast ball throw |
+| `"game"` | `mood += 25` (`GAME_MOOD`), `energy -= 3` | 2 | home: a finished minigame round |
 | `"fix"` | `health += 25` | 2 | home: a finished screwdriver tune-up |
 | `"clean"` | `mood += 5` | 2 | home: the towel got Kuiz spotless (the scrubbing itself lowers `dirt`) |
 
@@ -79,6 +93,11 @@ static func xp_to_reach(lv)  # cumulative: 20 * (lv - 1) + 5 * (lv - 1) * (lv - 
 
 Levels never cap.
 
+**Titles.** Each band of levels has a school title (`rank(level)`, the `RankLadder` in
+`assets/data/ranks.tres`): Kindergarten 1–10, Elementary 11–20, Junior High 21–30, Senior High
+31–40, College 41–50, Dean's Lister 51–60, Graduate 61–70, Master's 71–80, PhD 81–90, Professor
+91–99 and Einstein from 100 on. The level pill shows it, and the level-up party says when it changes.
+
 | Level | Cumulative XP needed | Delta from previous |
 |---|---|---|
 | 1 | 0 | — |
@@ -91,7 +110,10 @@ Levels never cap.
 | n | `xp_to_reach(n)` | 5 more each level |
 
 `_check_level_up()` loops while `xp >= xp_to_reach(level + 1)`, so a single large XP grant can
-cross several levels; each level pays `LEVEL_CRYSTALS`.
+cross several levels; each level pays `LEVEL_CRYSTALS`. It then emits `leveled_up(from_level, level)`
+once, and home, battle and flashcards open the level-up party (`LevelUpModal`,
+[`ui-and-assets.md`](../ui-and-assets.md) §Pop-ups). At home Kuiz plays `Celebrate` under it, and a
+level reached in a minigame waits until the game closes.
 Levels 1–5 match the old capped table (Lv5 at 110 XP), so older saves keep their level; on load any
 XP past the next threshold (from the capped days) levels Kuiz up silently.
 
@@ -120,8 +142,8 @@ showed them once the care room went. Older saves still hold `codex` (and `bond`)
 ## 5. Room interactions
 
 The old care room was deleted. The 3D home (`home.gd`) calls `care()` from its room actions —
-food (`feed`), the screwdriver (`fix`), the towel (`clean`), petting (`pet`), the ball and each
-finished minigame round (`play`) — and
+food (`feed`), the screwdriver (`fix`), the towel (`clean`), petting (`pet`), the ball (`play`) and each
+finished minigame round (`game`) — and
 `recharge()` while charging. Its top HUD shows level, XP, the four home stats and crystals, and the
 first stat below 25 % shows on Kuiz as a resting mood (sick, hungry, tired, sad; it only dozes
 in the Study Room). Minigame rounds pay crystals, and the Maintenance Bay's tablet spends them on a
@@ -138,16 +160,16 @@ to the dock: nothing is eaten, spent or saved.
 
 ## 6. Pomodoro (Phase 4)
 
-Logic lives in `CompanionState`. Two places start it: **Focus** on the Study Room's table (`home.gd`,
-`%TimerPanel`, where the player sets the focus and break lengths) and the Study screen's focus button
-(`flashcards.gd`, `%TimerButton`). It keeps running on other screens, and each tick counts from the wall clock,
+Logic lives in `CompanionState`. **Focus** on the Study Room's table starts it (`home.gd`,
+`%TimerPanel`, where the player sets the focus and break lengths); the Study screen has no timer. It keeps running on other screens, and each tick counts from the wall clock,
 because a locked phone stops the `Timer`; time away only counts toward the current phase, so the next phase starts
 on the player's return. A finished focus session adds focus, the stat that forgives a run's first miss, in
 proportion to its length (`POMODORO_FOCUS_BONUS` for 25 minutes), and focus also shows as a row on home's check-up
 tablet. One timer drives both phases.
 
 **Reviewing** (focus, on home). Start closes the panel; `%ReviewBar` under the room sign shows the time left and
-**Take a break**, and during the break the time and **End break**, in every room. Kuiz rests on `peek.READ`, the
+**Take a break**, and during the break the time, **Resume review** (`resume_review()`: the next focus session
+starts at once, no penalty) and **End break**, in every room. The room dropdown opens under the bar while it shows. Kuiz rests on `peek.READ`, the
 book part of `Learn_Something_New` on a loop (`READ_LOOP_FROM` 1.1 s to `READ_LOOP_TO` 2.35 s, two eye-scan lines apart, where the poses match), silent and at `READ_SPEED` (0.6). The music crossfades to a shuffle
 of lullabies at `FOCUS_LEVEL` (`MusicManager.play_focus()`, [`ui-and-assets.md`](../ui-and-assets.md) §4). The arrows,
 the room dropdown, Study, the gear, Charge and Focus are all refused: Kuiz plays `Angry` and a `REVIEW_LINES` toast
@@ -197,8 +219,10 @@ If you want to change pacing, these are the only knobs that matter:
 | Goal | Constant(s) |
 |---|---|
 | Faster/slower leveling | `FIRST_LEVEL_XP`, `LEVEL_XP_STEP` |
+| Battery life | `ENERGY_DRAIN_PER_SEC`, `TIRED_ENERGY` |
 | Battery wear | `BATTERY_WEAR`, `BATTERY_DRAIN_SPAN`, `BATTERY_PRICE` |
-| Faster/slower stat pressure | `STAT_DECAY_PER_SEC` |
+| Faster/slower stat pressure | `FULL_TO_LOW_MIN` |
+| Mood from minigames, flashcards, the island | `GAME_MOOD`, `PLAY_MOOD_RIGHT` / `_WRONG`, `EXPLORE_MOOD_PER_SEC` |
 | Softer tap spam | `DAILY_CAP_BASE_XP` **and** fix the `int()` truncation |
 | Longer sessions | `POMODORO_FOCUS_SEC` / `POMODORO_REST_SEC` |
 | Harsher missed rest | `MISSED_REST_*_PENALTY` |
@@ -207,7 +231,7 @@ If you want to change pacing, these are the only knobs that matter:
 
 ## 9. Stats in battle runs
 
-Each care stat has one job in a battle run ([`battle.md`](battle.md) §3): health sets Kuiz's battle HP
+Each care stat has a job in a battle run ([`battle.md`](battle.md) §3): readiness (the four home stats averaged) sets Kuiz's battle HP
 (70–120), energy scales XP paid (×0.8–1.2), mood scales crystals paid (×0.8–1.2), hunger softens counter
 damage (up to −20 %) and focus 50+ forgives the first miss. While `CompanionState.in_run` is true every
 stat's clock decay is paused and each item answered costs energy 0.5 and hunger 0.4 and raises mood (+1.5 right,

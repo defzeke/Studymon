@@ -1,0 +1,251 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/widgets/top_up.gd" id="1_top_up"]
+[ext_resource type="Theme" path="res://assets/theme/app_theme.tres" id="2_theme"]
+[ext_resource type="FontFile" path="res://assets/fonts/JosefinSans-Bold.ttf" id="3_bold"]
+[ext_resource type="Texture2D" path="res://assets/sprites/ui/gold.svg" id="4_gold"]
+[ext_resource type="Texture2D" path="res://assets/sprites/ui/crystal.svg" id="5_crystal"]
+[ext_resource type="Resource" path="res://assets/data/gold_packs/gold_50.tres" id="6_p50"]
+[ext_resource type="Resource" path="res://assets/data/gold_packs/gold_120.tres" id="7_p120"]
+[ext_resource type="Resource" path="res://assets/data/gold_packs/gold_320.tres" id="8_p320"]
+[ext_resource type="Resource" path="res://assets/data/gold_packs/gold_700.tres" id="9_p700"]
+[ext_resource type="Resource" path="res://assets/data/crystal_bundles/crystals_100.tres" id="10_c100"]
+[ext_resource type="Resource" path="res://assets/data/crystal_bundles/crystals_550.tres" id="11_c550"]
+[ext_resource type="Resource" path="res://assets/data/crystal_bundles/crystals_1200.tres" id="12_c1200"]
+[ext_resource type="Script" path="res://scripts/data/gold_pack.gd" id="13_pack_script"]
+[ext_resource type="Script" path="res://scripts/data/crystal_bundle.gd" id="14_bundle_script"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_row"]
+content_margin_left = 14.0
+content_margin_top = 8.0
+content_margin_right = 10.0
+content_margin_bottom = 8.0
+bg_color = Color(0.9098, 0.9412, 0.9176, 1)
+corner_radius_top_left = 18
+corner_radius_top_right = 18
+corner_radius_bottom_right = 18
+corner_radius_bottom_left = 18
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_balance"]
+content_margin_left = 16.0
+content_margin_top = 6.0
+content_margin_right = 18.0
+content_margin_bottom = 6.0
+bg_color = Color(0.9686, 0.9608, 0.9373, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.1608, 0.2196, 0.2275, 1)
+corner_radius_top_left = 30
+corner_radius_top_right = 30
+corner_radius_bottom_right = 30
+corner_radius_bottom_left = 30
+
+[node name="TopUp" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("2_theme")
+script = ExtResource("1_top_up")
+packs = Array[ExtResource("13_pack_script")]([ExtResource("6_p50"), ExtResource("7_p120"), ExtResource("8_p320"), ExtResource("9_p700")])
+bundles = Array[ExtResource("14_bundle_script")]([ExtResource("10_c100"), ExtResource("11_c550"), ExtResource("12_c1200")])
+
+[node name="Dim" type="ColorRect" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.16078432, 0.21960784, 0.22745098, 0)
+
+[node name="Center" type="CenterContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Card" type="PanelContainer" parent="Center"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(600, 0)
+layout_mode = 2
+theme_type_variation = &"MenuCard"
+
+[node name="Box" type="VBoxContainer" parent="Center/Card"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Title" type="Label" parent="Center/Card/Box"]
+layout_mode = 2
+theme_type_variation = &"CardTitle"
+text = "Shop"
+horizontal_alignment = 1
+
+[node name="Balance" type="HBoxContainer" parent="Center/Card/Box"]
+layout_mode = 2
+theme_override_constants/separation = 14
+alignment = 1
+
+[node name="Gold" type="PanelContainer" parent="Center/Card/Box/Balance"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_balance")
+
+[node name="Row" type="HBoxContainer" parent="Center/Card/Box/Balance/Gold"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Icon" type="TextureRect" parent="Center/Card/Box/Balance/Gold/Row"]
+custom_minimum_size = Vector2(40, 40)
+layout_mode = 2
+texture = ExtResource("4_gold")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="GoldLabel" type="Label" parent="Center/Card/Box/Balance/Gold/Row"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.1608, 0.2196, 0.2275, 1)
+theme_override_fonts/font = ExtResource("3_bold")
+theme_override_font_sizes/font_size = 28
+text = "0"
+vertical_alignment = 1
+
+[node name="Crystals" type="PanelContainer" parent="Center/Card/Box/Balance"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_balance")
+
+[node name="Row" type="HBoxContainer" parent="Center/Card/Box/Balance/Crystals"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Icon" type="TextureRect" parent="Center/Card/Box/Balance/Crystals/Row"]
+custom_minimum_size = Vector2(40, 40)
+layout_mode = 2
+texture = ExtResource("5_crystal")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="CrystalLabel" type="Label" parent="Center/Card/Box/Balance/Crystals/Row"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.1608, 0.2196, 0.2275, 1)
+theme_override_fonts/font = ExtResource("3_bold")
+theme_override_font_sizes/font_size = 28
+text = "0"
+vertical_alignment = 1
+
+[node name="TopUpHeader" type="Label" parent="Center/Card/Box"]
+layout_mode = 2
+theme_type_variation = &"CardHeader"
+text = "Top up Gold"
+
+[node name="Packs" type="VBoxContainer" parent="Center/Card/Box"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="PackTemplate" type="PanelContainer" parent="Center/Card/Box/Packs"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_row")
+
+[node name="Row" type="HBoxContainer" parent="Center/Card/Box/Packs/PackTemplate"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Icon" type="TextureRect" parent="Center/Card/Box/Packs/PackTemplate/Row"]
+custom_minimum_size = Vector2(48, 48)
+layout_mode = 2
+size_flags_vertical = 4
+texture = ExtResource("4_gold")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Amount" type="Label" parent="Center/Card/Box/Packs/PackTemplate/Row"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.1608, 0.2196, 0.2275, 1)
+theme_override_fonts/font = ExtResource("3_bold")
+theme_override_font_sizes/font_size = 28
+text = "50 Gold"
+vertical_alignment = 1
+
+[node name="Buy" type="Button" parent="Center/Card/Box/Packs/PackTemplate/Row"]
+custom_minimum_size = Vector2(150, 58)
+layout_mode = 2
+size_flags_vertical = 4
+theme_type_variation = &"MenuPrimary"
+theme_override_font_sizes/font_size = 24
+text = "PHP 49"
+
+[node name="Note" type="Label" parent="Center/Card/Box"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(540, 0)
+layout_mode = 2
+theme_type_variation = &"CardHint"
+text = "Test mode: top-ups here are free and charge nothing."
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="ExchangeHeader" type="Label" parent="Center/Card/Box"]
+layout_mode = 2
+theme_type_variation = &"CardHeader"
+text = "Trade Gold for crystals"
+
+[node name="Bundles" type="VBoxContainer" parent="Center/Card/Box"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="BundleTemplate" type="PanelContainer" parent="Center/Card/Box/Bundles"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_row")
+
+[node name="Row" type="HBoxContainer" parent="Center/Card/Box/Bundles/BundleTemplate"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Icon" type="TextureRect" parent="Center/Card/Box/Bundles/BundleTemplate/Row"]
+custom_minimum_size = Vector2(48, 48)
+layout_mode = 2
+size_flags_vertical = 4
+texture = ExtResource("5_crystal")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Amount" type="Label" parent="Center/Card/Box/Bundles/BundleTemplate/Row"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.1608, 0.2196, 0.2275, 1)
+theme_override_fonts/font = ExtResource("3_bold")
+theme_override_font_sizes/font_size = 28
+text = "100 crystals"
+vertical_alignment = 1
+
+[node name="Buy" type="Button" parent="Center/Card/Box/Bundles/BundleTemplate/Row"]
+custom_minimum_size = Vector2(150, 58)
+layout_mode = 2
+size_flags_vertical = 4
+theme_type_variation = &"MenuPrimary"
+theme_override_constants/icon_max_width = 30
+theme_override_font_sizes/font_size = 24
+text = "10"
+icon = ExtResource("4_gold")
+
+[node name="Close" type="Button" parent="Center/Card/Box"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 64)
+layout_mode = 2
+theme_type_variation = &"MenuQuiet"
+text = "Close"

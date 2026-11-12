@@ -34,7 +34,6 @@ const TIER_COLORS := {"easy": Palette.GREEN, "medium": Palette.AMBER, "hard": Pa
 @onready var hard_btn: Button = %HardButton
 @onready var easy_btn: Button = %EasyButton
 @onready var done_label: Label = %DoneLabel
-@onready var timer_btn: Button = %TimerButton
 
 var _topic_id: String = ""
 var _questions: Array[Dictionary] = []
@@ -60,9 +59,7 @@ func _ready() -> void:
 	again_btn.pressed.connect(_rate.bind("again"))
 	hard_btn.pressed.connect(_rate.bind("hard"))
 	easy_btn.pressed.connect(_rate.bind("easy"))
-	# The study timer: a 25-minute focus session (+focus for Kuiz), then a 5-minute rest; it keeps
-	# running on other screens. Contract: docs/systems/companion-care.md §6.
-	timer_btn.pressed.connect(CompanionState.start_pomodoro)
+	CompanionState.leveled_up.connect(func(from: int, lv: int) -> void: LevelUpModal.open(self, from, lv))
 	_show_card()
 	%CardArea.resized.connect(_center_pivots)
 	_center_pivots.call_deferred()
@@ -70,13 +67,6 @@ func _ready() -> void:
 func _center_pivots() -> void:
 	for c: Control in [card_panel, under_near, under_far]:
 		c.pivot_offset = c.size / 2.0
-
-func _process(_delta: float) -> void:
-	var p := CompanionState.get_pomodoro_state()
-	timer_btn.disabled = p["mode"] != ""
-	var left: int = p["remaining"] if p["mode"] != "" else p["focus_total"]
-	var label := "Rest" if p["mode"] == "rest" else "Focus"
-	timer_btn.text = "%s %02d:%02d" % [label, floori(left / 60.0), left % 60]
 
 # A rounded tag on the card: the mastery state, the type and the tier. Each copy gets its own stylebox
 # so its colour does not repaint the others.
@@ -90,7 +80,7 @@ func _tag(text: String, color: Color) -> Label:
 	return l
 
 func _show_card() -> void:
-	progress_label.text = "%d left · %d banked · Kuiz focus %d%s" % [_queue.size(), _banked, roundi(CompanionState.focus), _goal_note]
+	progress_label.text = "%d left · %d banked%s" % [_queue.size(), _banked, _goal_note]
 	progress_bar.value = float(_banked) / maxf(1.0, _deck_size)
 	under_near.visible = _queue.size() > 1
 	under_far.visible = _queue.size() > 2
@@ -157,6 +147,7 @@ func _rate(rating: String) -> void:
 	var qi: int = _queue.pop_front()
 	if GameState.note_study(1, 0) > 0:
 		_goal_note = " · Daily goal met! +%d crystals" % GameState.STUDY_GOAL_CRYSTALS
+	CompanionState.reward_card_rated(rating == "easy")
 	match rating:
 		"again":
 			_queue.insert(mini(AGAIN_GAP, _queue.size()), qi)

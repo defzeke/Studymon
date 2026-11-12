@@ -69,7 +69,9 @@ text** checkbox in `settings.tscn` calls `set_large_text()` and saves.
 | `scenes/overworld/house_trigger.tscn` | `Area3D` (inherits `encounter_trigger.tscn`) | `scripts/overworld/encounter_trigger.gd` | a Challenge House trigger: the `Badge` (Sprite3D) over the roof showing `BadgeView` (a SubViewport: `Pill` → `Row` → `Chip` with `icon_trainer.svg`, and `Text` → `Lines` → `Name`, `Tier`), and the dark `Doorway` quad; one per house |
 | `scenes/overworld/weather/rain.tscn`, `leaves.tscn`, `snow.tscn` | `GPUParticles3D` | — | the season's weather around the explorer (each one is its `SeasonLook.weather`) |
 | `scenes/kuiz/kuiz_head.tscn` | `BoneAttachment3D` | — | Kuiz's dirt decals and outfit stickers, put on its Head bone by `kuiz_look.gd` |
-| `scenes/ui/widgets/confirm_modal.tscn` | `Control` | `scripts/ui/widgets/confirm_modal.gd` | the one pop-up (see Pop-ups below) |
+| `scenes/ui/widgets/confirm_modal.tscn` | `Control` | `scripts/ui/widgets/confirm_modal.gd` | the confirm / notice pop-up (see Pop-ups below) |
+| `scenes/ui/widgets/level_up_modal.tscn` | `Control` | `scripts/ui/widgets/level_up_modal.gd` | the level-up party (see Pop-ups below) |
+| `scenes/ui/widgets/top_up.tscn` | `Control` | `scripts/ui/widgets/top_up.gd` | the Gold shop: packs and crystal trades (see Pop-ups below) |
 | `scenes/autoload/cloud_save.tscn` | `Node` (the `CloudSave` autoload) | `scripts/autoload/cloud_save.gd` | the Play Games plugin's `SignIn`, `Snapshots` and `Players` client nodes; Android only |
 | `scenes/battle/battle.tscn` | `Control` | `scripts/battle/battle.gd`, `scripts/battle/arena_stage.gd` | 3D arena behind the battle HUD: intro, strikes, ten SFX cues |
 | `scenes/review_session/flashcards.tscn` | `Control` | `scripts/review_session/flashcards.gd` | Flashcard Sanctuary: untimed card review |
@@ -176,26 +178,26 @@ Peek                Node3D (peek.gd)
 ├── Top               CanvasLayer: RoomSign, the room-name pill under the HUD row
 ├── BootFade          CanvasLayer 10: BootWhite, the cover Kuiz dissolves out of on the session's first opening
 └── Home              CanvasLayer (home.gd), hidden until the tutorial ends
-    ├── Level         top-left pill: teal level badge, "LEVEL" and an amber XP bar
+    ├── Level         top-left pill: teal level badge, Kuiz's title (%LevelTitle) and an amber XP bar
     ├── Stats         top-centre: four stat gauges (stat_gauge.gd): Hunger, Energy, Mood, Health
     ├── Crystals      top-right pill: crystal icon and the count
     ├── RoomPrev/Next outlined arrows either side of the room sign; walk to the previous / next room
     ├── Settings      round gear under the crystal pill, in every room; opens settings.tscn
-    ├── ReviewBar     under the room sign while a session runs: mode, time left, Take a break / End break
+    ├── ReviewBar     under the room sign while a session runs: mode, time left, Take a break / Resume review + End break
     ├── TimerPanel    the focus timer's setup: focus and break steppers, Start focus, Close
     ├── RoomMenu      full-screen tap-to-close catcher over a Panel with RoomList: the sign's dropdown
     ├── Table         ui/dock_table.svg across the bottom: the dock the items stand on
     ├── Bar           the dock row over the table (no panel of its own): one action group per
     │                 room; every item is a bare icon (no circle) with an Off-White caption on the cloth
     ├── Ball          props/ball.svg, Playroom only
-    ├── Shop          the fridge: ShopList (one copy of the hidden ShopRowTemplate — Icon, Label, Buy — per
-    │                 food), Close
+    ├── Shop          the fridge: Scroll → ShopList (one copy of the hidden ShopRowTemplate per food: a
+    │                 Soft Sage row card with Icon, Name / Effect / Have, and a crystal Buy), Close
     ├── Picker        the Games card: Kuiz Keeper, Sky Jump, Close
     ├── CheckPanel    the tablet's check-up: a Deep Slate bezel around a teal screen; CheckRows holds one row
     │                 per stat (Name, Meter, Pct), each named after its CompanionState stat,
     │                 New battery, Close
-    ├── Wardrobe      the closet: WardrobeTabs (head, face, body buttons), WardrobeGrid (copies of the
-    │                 hidden CostumeTemplate), Close
+    ├── Wardrobe      the closet: WardrobeTabs (head, face, body buttons), WardrobeScroll → WardrobeGrid
+    │                 (copies of the hidden CostumeTemplate), Close
     ├── Toast         a pill above the dock for short hints ("Kuiz is sleeping…")
     └── Held          the food or screwdriver being dragged
 ├── Soccer            CanvasLayer (minigames/soccer.gd): score pill, back arrow, BallShadow, SoccerBall
@@ -299,10 +301,10 @@ arrives:
 | Maintenance Bay | **Check-up** (`props/tablet.svg`) opens the tablet: Battery health (`battery_health`, the battery's capacity like a phone's, not its charge; the Energy gauge shows the charge), Frame (health), Clean (100 − dirt) and Fuel (hunger) bars, off-white when fine, amber below half, coral below a quarter, and a hint naming the most urgent fix. **New battery** (30 crystals) puts battery health back to 100 % (`replace_battery()`); without enough crystals a toast says to win minigames, and at 100 % it is greyed out | `Celebrate` on a new battery |
 | Maintenance Bay | **Clean** (`props/towel.svg`): drag the towel over Kuiz and rub; every pixel scrubbed takes 0.06 dirt off, and getting Kuiz spotless in one scrub is `care("clean")` (mood +5, XP) and a "Squeaky clean!" toast | `Pet` while it is rubbed, `Celebrate` when spotless |
 | Maintenance Bay | **Tighten**: drag the **screwdriver** from the bar and hold it over Kuiz: it twists, and after 2 s the tune-up is done (`care("fix")`: health +25) and it returns to the bar | `State_Sick` (screws working loose) while it is held there, `Celebrate` when done, `Idle` if it is taken away early |
-| Data Kitchen | **Food**: ‹ › step through the foods in stock (one with none left is skipped; it is only in the fridge), then drag it onto Kuiz to eat it (one from stock; `care("feed", food)`: that food's hunger, plus mood or focus for two of them, and a little dirt); dropped anywhere else it goes back. With nothing in stock the slot reads "Empty! Check the fridge" | `Surprised` (mouth open) when the food reaches it, then `Happy`, or `Pet` (hearts) for Spicy Memory Chips, its favourite |
-| Data Kitchen | **Fridge** (`props/fridge.svg`, the first item in the kitchen bar): a list of the six foods with what each restores, how many you have and a **Buy · N** button each (its price in crystals, disabled when you can't afford it; prices in [`systems/monetization.md`](systems/monetization.md)) | — |
+| Data Kitchen | **Food**: ‹ › step through the foods in stock (one with none left is skipped; it is only in the fridge), then drag it onto Kuiz to eat it (one from stock; `care("feed", food)`: that food's hunger, plus mood or focus for two of them); dropped anywhere else it goes back. With nothing in stock the slot reads "Empty! Check the fridge" | `Surprised` (mouth open) when the food reaches it, then `Happy`, or `Pet` (hearts) for Spicy Memory Chips, its favourite |
+| Data Kitchen | **Fridge** (`props/fridge.svg`, the first item in the kitchen bar): a scrolling list of the six foods, each on a Soft Sage row card: its icon, the name in bold, what it restores in teal ("+12 hunger · +8 mood"), "You have N" in grey, and a teal Buy button showing the crystal icon and price (its price in crystals, disabled when you can't afford it; prices in [`systems/monetization.md`](systems/monetization.md)) | — |
 | Playroom | **Ball**: it waits in the dock; drag it out and fling it (a fast throw is `care("play")`: mood +8, energy −2). It falls, bounces off the screen edges, the floor above the dock and Kuiz's head, and once it settles it rolls back into its dock slot | Turns its head to follow the ball (and anything being dragged), `Happy` on a throw, `Surprised` when hit |
-| Playroom | **Closet** (`props/closet.svg`) opens tabs for **Head** (Party hat, Crown, Beanie, Bow, Flower), **Face** (Glasses, Shades, Hero mask) and **Body** (Bow tie, Scarf, Medal), each with None; Kuiz wears one per tab at once, so a hat, glasses and a scarf go together. A tap wears it at once and saves it (`GameState.outfit`) | `Happy` |
+| Playroom | **Closet** (`props/closet.svg`) opens tabs for **Head** (Sprout, Party hat, Crown, Beanie, Bow, Flower, Grad cap, and the Gold-only Halo and Wizard hat), **Face** (Blush, Glasses, Shades, Monocle, Hero mask, and the Gold-only Pixel shades and Star visor) and **Body** (Bow tie, Scarf, Necktie, Bandana, Medal, and the Gold-only Gold chain and Jewel collar), each with None, in a grid that scrolls; Kuiz wears one per tab at once, so a hat, glasses and a scarf go together. A tap wears it at once and saves it (`GameState.outfit`) | `Happy` |
 | Playroom | **Games** (`ui/icon_games.svg`) opens the Minigames card: Kuiz Keeper or Sky Jump (below) | — |
 | Anywhere | **Pet**: hold a finger on Kuiz for 0.35 s or stroke it 70 px; it plays `Pet` (hearts, purr) and keeps playing it while the hand stays; `care("pet")` (mood +8) counts at most every 3 s | `Pet`, looking at the hand |
 
@@ -342,10 +344,11 @@ there are no sound files for them:
 The top row fades in with the bar. Every piece uses the palette, a Deep Slate 3 px outline and a
 soft drop shadow, like the props.
 
-- **Level** (top left): an Off-White pill with a teal badge holding the level number, "LEVEL" in
-  Slate Gray and an amber bar for the XP between this level and the next (levels never cap). It
+- **Level** (top left): an Off-White pill with a teal badge holding the level number, Kuiz's title
+  in Slate Gray (`%LevelTitle`, `CompanionState.rank()`, mixed case so "Kindergarten" keeps the pill clear
+  of the stats) and an amber bar for the XP between this level and the next (levels never cap). It
   follows `CompanionState.xp_changed`. Tapping it shows a card below it (`LevelInfo`, drawn over
-  the room arrow) with the numbers: "Level 6", "2 / 45 XP" into this level and "43 XP to Level
+  the room arrow) with the numbers: "Level 6 · Kindergarten", "2 / 45 XP" into this level and "43 XP to Level
   7"; it fades after 3 s or on a second tap.
 - **Stats** (top centre): four round gauges (`scripts/ui/widgets/stat_gauge.gd`): an icon on an
   Off-White disc, ringed by an arc that fills clockwise from the top. **Hunger** (Data Chips,
@@ -357,8 +360,9 @@ soft drop shadow, like the props.
   [`companion-care.md`](systems/companion-care.md) §1.
 - **Crystals** (top right): the currency, `GameState.crystals`, with the forehead gem from the
   logo (`ui/crystal.svg`), saved (v8). Minigame rounds earn it (Kuiz Keeper 1 per goal, Sky Jump
-  1 per 50 m); food, costumes, world slots and a new battery spend it. The pill only shows the
-  balance: there is no shop (free launch, [`systems/monetization.md`](systems/monetization.md)).
+  1 per 50 m); food, costumes, world slots and a new battery spend it. In a debug build a teal "+"
+  badge (`%Plus`) sits at its end and a tap opens the Gold shop (`TopUp`, see Pop-ups); release builds hide it until Play Billing is wired
+  ([`systems/monetization.md`](systems/monetization.md)).
 
 ### Kuiz's look (`kuiz_look.gd`)
 
@@ -368,8 +372,8 @@ Kuiz's `Head` bone, so it follows every clip and turn: its `Dirt/Mark1..6` decal
 the dark screen covers the face below it, the ears rise to y 1.45 behind z 0.26, and the shell's
 bottom edge is at y −0.9 (Kuiz is all head; body items hang from that edge).
 
-- **Dirt** (`CompanionState.dirt`, 0–100): builds up at 0.06 / s, plus a little with each meal
-  (+3), fast throw (+1.5) and minigame round (+4). Six `Decal`s (three mud/grime spots, two
+- **Dirt** (`CompanionState.dirt`, 0–100): only play soils Kuiz, a fast throw (+1.5) and a
+  minigame round (+4); it does not build up with time. Six `Decal`s (three mud/grime spots, two
   scratches, one more spot) project onto the shell itself, so they hug its curve from every angle:
   each sits on a rest-pose vertex of `Head_Shell` (or `EarMesh_R`) with its box (0.5 deep) along
   that vertex's normal. They sit on the forehead, the sides, the lower edge and the right ear; each fades in over
@@ -402,7 +406,7 @@ again if its energy is still low.
 dock and room sign hide, its backdrop (under `Rooms`, behind Kuiz) fades in, and the 3D Kuiz is
 moved on screen with `peek.place()`. The ◀ arrow at the top left leaves; each finished round pops
 up the score and the crystals it earned with **Play again** / **Back** (`ConfirmModal`) and counts
-as play care (`care("play")`: mood +8, energy −2, XP). Best scores last for the session only. `minigame.gd` is the shared base.
+as minigame care (`care("game")`: mood +25, energy −3, XP). Best scores last for the session only. `minigame.gd` is the shared base.
 
 - **Kuiz Keeper** (`soccer.gd`, Pou-style penalty shots): the ball sits on the spot; swipe it up
   at the goal. The swipe's direction aims and its speed lifts the shot; the fastest sail over the
@@ -487,8 +491,8 @@ under it reads "N of S world slots · Study streak D".
 
 ### `flashcards.tscn`
 
-The menu look (teal veil, `MenuRound` back, `MenuQuiet` timer, `MenuPrimary` Show answer), with the card as a
-small deck. `Margin` → `List`: `TopBar` (`BackButton`, "Flashcards" over `ProgressLabel`, `%TimerButton`),
+The menu look (teal veil, `MenuRound` back, `MenuPrimary` Show answer), with the card as a
+small deck. `Margin` → `List`: `TopBar` (`BackButton`, "Flashcards" over `ProgressLabel`: cards left, banked and the daily-goal note),
 `Progress`, `CardArea`, then `FlipButton` or `RateRow` (Again Soft Coral, Hard Muted Amber, Easy Soft Green).
 
 `CardArea` is a plain `Control` so its children can tilt: `UnderFar` and `UnderNear` are Soft Sage cards fanned
@@ -548,9 +552,11 @@ The HUD, top to bottom, in the home HUD's look (Off-White, Deep Slate 3 px outli
   SubViewport, with live dots for the explorer (teal), houses, gyms (amber) and the Champion (coral). A tap opens it
   large in `%MapOverlay`, with a legend (You, Next, Houses, Gyms, Champion) and `%TravelHint`; X or a tap outside closes it. A tap on the large map
   (`%BigDots`, which takes input) picks a fast-travel spot.
-- **Encounter pop-up** (`%EncounterPanel`, `_fill_encounter()`): a title and tag, three facts (items, level, minutes), Kuiz's readiness as a bar, one short note, and the action. A locked gym or Champion shows only its title, tag and what opens it.
-- **Joystick** (bottom left) and **Study** (bottom right): a 124 px Off-White card with a stack of
-  flashcards (`ui/icon_study.svg`) over "Study"; opens the Flashcard Sanctuary.
+- **Encounter pop-up** (`%EncounterPanel`, `_fill_encounter()`): a title and tag, three facts (items, level, minutes), Kuiz's readiness as a bar, one short note, and the action. While Kuiz is too tired (energy under 25 %) the note adds `TIRED_NOTE` and the action is disabled. A locked gym or Champion shows only its title, tag and what opens it.
+- **Joystick** (bottom left) and **Study** (bottom right): a 124 px Off-White card with two
+  flashcards, a teal question card over an answer card (`ui/icon_study.svg`), over "Study"; opens the
+  Flashcard Sanctuary. Above it, centred on it in one column, the round 72 px `%ExplorerButton` and
+  then `%MusicButton`, 12 px apart.
 
 ### `battle.tscn`
 
@@ -574,7 +580,13 @@ the row hides them for the preview run. `region_map.tscn` has a full-screen off-
 
 ### Pop-ups
 
-`scenes/ui/widgets/confirm_modal.tscn` with `confirm_modal.gd` (`ConfirmModal.open(host, title, message, confirm_text, on_confirm, danger, cancel_text)`) is the one pop-up; its `Dim`, `Card`, `Title`, `Body`, `Cancel` and `Confirm` are laid out in the scene and the script fills the text: a dimmed screen, a card that scales in (0.85 → 1, back-ease, 0.28 s) and out (0.14 s), a bold title (coral when `danger`), centred wrapped text and full-width buttons. An empty `cancel_text` makes it a notice. Esc cancels. Tweens ignore `Engine.time_scale`, so battle hit-stop does not freeze it. The script is `class_name ConfirmModal`, so callers use it directly. Used by home (costumes), the Worlds hub (reset, delete, slots), the World Builder, Settings, the map's "Go home?" and the minigames' end screen.
+**Level-up party** (`level_up_modal.tscn`, `LevelUpModal.open(host, from_level, level)`): home (on the Home layer, with Kuiz playing `Celebrate`), battle and flashcards open it on `CompanionState.leveled_up`. The screen dims lightly (0.45) so Kuiz shows below; `sfx_level_up` plays; the card springs in (elastic, 0.6 s) in the top 58 % of the screen: "LEVEL UP!" in amber with a slate outline, a teal badge ringed in amber with the old level, Kuiz's title on a lavender pill, "New title unlocked!" when the band changed, and "+N crystals". At 0.45 s, as the bell chord lands, the number ticks to the new level, the badge pops and then breathes, and `Burst` throws confetti out of it while `Rain` drifts down from the top (both `CPUParticles2D`, palette colours, fading out). **Yay!** or Esc closes it.
+
+**Gold shop** (`top_up.tscn`, `TopUp.open(host)`, debug builds only): the Gold and crystal balances, "Top up Gold" rows (copies of `%PackTemplate`: coin, amount, a "PHP N" button that asks to confirm a free test top-up) with the test-mode note, "Trade Gold for crystals" rows (copies of `%BundleTemplate`, the Gold price on the button, disabled without enough), and Close; a tap outside closes it too. Contract: [`systems/monetization.md`](systems/monetization.md).
+
+**Confirm / notice:**
+
+`scenes/ui/widgets/confirm_modal.tscn` with `confirm_modal.gd` (`ConfirmModal.open(host, title, message, confirm_text, on_confirm, danger, cancel_text)`) is the one pop-up; its `Dim`, `Card`, `Title`, `Body`, `Cancel` and `Confirm` are laid out in the scene and the script fills the text: a dimmed screen, a card that scales in (0.85 → 1, back-ease, 0.28 s) and out (0.14 s), a bold title (coral when `danger`), centred wrapped text and full-width buttons. An empty `cancel_text` makes it a notice. Esc cancels. Tweens ignore `Engine.time_scale`, so battle hit-stop does not freeze it. The script is `class_name ConfirmModal`, so callers use it directly. Used by home (costumes), the Worlds hub (reset, delete, slots), the World Builder, Settings, the map's "Go home?" and the minigames' end screen. A tired Kuiz (energy under 25 %) gets a "Kuiz is too tired" notice from the map's Study button and the hub's **Cards**.
 
 ## 3. Interaction conventions
 
@@ -637,6 +649,7 @@ One-shots (`sfx/`, 22 050 Hz mono, each with a short soft reverb tail):
 | `sfx_lose` | a gentle falling music-box line over a soft pad | losing a battle |
 | `sfx_charge` | a soft rising hum and a bell | Study Room lights off (Charge) |
 | `sfx_charged` | two low, sleepy bells and a warm swell | right after `sfx_charge` |
+| `sfx_level_up` | a music-box run up C major into a bell chord over a low C, with glockenspiel sparkles (2.8 s) | the level-up party |
 
 Kuiz and the Broken Bot make their sounds in code on their own players (§2 Model sounds).
 
@@ -690,8 +703,9 @@ rasterises them sharp on high-density phones; the drawing itself is unchanged.
 | `sprites/ui/arrow.svg` | home's room arrows (top) and food arrows (bar); an Off-White chevron with a Deep Slate outline, flipped for ◀ |
 | `sprites/ui/icon_back.svg` | the round Back button on the region map and the menu screens (a Deep Slate chevron) |
 | `sprites/ui/icon_trainer.svg` (also the round explorer button), `icon_badge.svg`, `icon_crown.svg`, `icon_lock.svg` | region map's quest card: Trainers, gym badges, the Champion ready / locked (temporary placeholders) |
-| `sprites/ui/icon_study.svg` | region map's Study button: a stack of flashcards with an amber star (temporary placeholder) |
+| `sprites/ui/icon_study.svg` | region map's Study button: a teal question card over an answer card with a green check, and an amber sparkle |
 | `sprites/ui/crystal.svg` | home's crystal (currency) pill: the logo's forehead gem (temporary placeholder) |
+| `sprites/ui/gold.svg` | Gold, the top-up currency: an amber coin with an off-white star, in the Gold shop |
 | `sprites/ui/stat_mood.svg`, `stat_health.svg` | home's Mood and Health gauges (temporary placeholders) |
 | `sprites/props/data_chips.svg`, `spicy_chips.svg`, `cache_cookie.svg`, `pi_pie.svg`, `byte_burger.svg`, `java_juice.svg` | home's six foods (temporary placeholders); `data_chips.svg` is also the Hunger gauge icon |
 | `sprites/props/fridge.svg` | home's Data Kitchen fridge button, in the kitchen bar (temporary placeholder) |
@@ -709,7 +723,7 @@ rasterises them sharp on high-density phones; the drawing itself is unchanged.
 | `sprites/props/tablet.svg`, `towel.svg` | home's Maintenance Bay check-up tablet and towel (temporary placeholders) |
 | `sprites/props/closet.svg` | home's Playroom closet (temporary placeholder) |
 | `sprites/props/dirt_spot_1.svg`, `dirt_spot_2.svg`, `dirt_spot_3.svg`, `scratch_1.svg`, `scratch_2.svg` | dirt on Kuiz (`kuiz_look.gd`; temporary placeholders) |
-| `sprites/props/costume_party_hat.svg`, `costume_crown.svg`, `costume_beanie.svg`, `costume_bow.svg`, `costume_flower.svg`, `costume_glasses.svg`, `costume_shades.svg`, `costume_hero_mask.svg`, `costume_bow_tie.svg`, `costume_scarf.svg`, `costume_medal.svg` | Kuiz's costumes, worn and shown in the closet (temporary placeholders) |
+| `sprites/props/costume_party_hat.svg`, `costume_crown.svg`, `costume_beanie.svg`, `costume_bow.svg`, `costume_flower.svg`, `costume_glasses.svg`, `costume_shades.svg`, `costume_hero_mask.svg`, `costume_bow_tie.svg`, `costume_scarf.svg`, `costume_medal.svg`, `costume_sprout.svg`, `costume_grad_cap.svg`, `costume_halo.svg`, `costume_wizard_hat.svg`, `costume_blush.svg`, `costume_monocle.svg`, `costume_pixel_shades.svg`, `costume_star_visor.svg`, `costume_necktie.svg`, `costume_bandana.svg`, `costume_gold_chain.svg`, `costume_jewel_collar.svg` | Kuiz's costumes, worn and shown in the closet (temporary placeholders) |
 | `icon.svg` | project icon |
 
 ### Source / not imported
@@ -739,8 +753,9 @@ None known. `bot_lv1..5.png` was only read by the deleted `companion.gd`.
   C crystals · Study streak D"; New World with every slot full opens a `ConfirmModal` to buy a slot.
 - **Categorizer**: `%MoreButton` ("More questions from this reviewer") under the Study button, shown
   for a saved world that kept its reviewer text.
-- **Study screen** (`flashcards.tscn`): `%TimerButton` in the top bar, "Focus 25:00" / "Rest mm:ss",
-  disabled while the timer runs; `ProgressLabel` adds Kuiz's focus and the daily-goal note.
-- **Closet**: every costume is bought with crystals (only "None" is free). One not owned yet shows
-  "Level N" (disabled) or its price; tapping a priced one asks to buy it (`ConfirmModal`).
+- **Study screen** (`flashcards.tscn`): no focus timer (it runs from home only); `ProgressLabel`
+  adds the daily-goal note.
+- **Closet**: every costume is bought (only "None" is free), with crystals, or with Gold for a premium
+  one (`Costume.gold_price`). One not owned yet shows "Level N" (disabled), "N crystals" or "N Gold";
+  tapping it asks to buy it (`ConfirmModal`), or toasts what it costs when the player is short.
 - **Check-up tablet**: a fifth row, **Focus**.

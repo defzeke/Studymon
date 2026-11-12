@@ -1,6 +1,7 @@
 class_name Costume
 extends Resource
-## A closet costume: a sticker on Kuiz's Head bone, bought with crystals once Kuiz reaches its level.
+## A closet costume: a sticker on Kuiz's Head bone, bought with crystals once Kuiz reaches its level, or
+## with Gold if it is premium.
 ## One .tres per costume in assets/data/costumes/, listed on the Look node's `costumes` (peek.tscn), in
 ## closet order. Contract: docs/ui-and-assets.md §2 Kuiz's look, docs/systems/monetization.md.
 
@@ -11,6 +12,8 @@ extends Resource
 @export_enum("head", "face", "body") var slot := "head"
 @export var level_needed := 1
 @export var price := 0
+## Premium: bought with this much Gold instead (price is ignored).
+@export var gold_price := 0
 @export_group("Placement")
 ## The sticker's centre in Head-bone space (model units), its width and its tilt (radians).
 @export var position := Vector3.ZERO

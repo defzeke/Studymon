@@ -556,10 +556,10 @@ anchor_left = 1.0
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = -204.0
-offset_top = -236.0
-offset_right = -132.0
-offset_bottom = -164.0
+offset_left = -122.0
+offset_top = -316.0
+offset_right = -50.0
+offset_bottom = -244.0
 grow_horizontal = 0
 grow_vertical = 0
 theme_override_styles/normal = SubResource("StyleBoxFlat_round")
@@ -578,9 +578,9 @@ anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
 offset_left = -122.0
-offset_top = -236.0
+offset_top = -232.0
 offset_right = -50.0
-offset_bottom = -164.0
+offset_bottom = -160.0
 grow_horizontal = 0
 grow_vertical = 0
 theme_override_styles/normal = SubResource("StyleBoxFlat_round")
@@ -890,18 +890,18 @@ layout_mode = 2
 theme_type_variation = &"CardHint"
 text = "You"
 
-[node name="Next" type="HBoxContainer" parent="HUD/MapOverlay/Center/MapCard/Box/Legend"]
+[node name="Next" type="HBoxContainer" parent="HUD/MapOverlay/Center/MapCard/Box/Legend" unique_id=999620181]
 layout_mode = 2
 mouse_filter = 2
 theme_override_constants/separation = 6
 
-[node name="Dot" type="Label" parent="HUD/MapOverlay/Center/MapCard/Box/Legend/Next"]
+[node name="Dot" type="Label" parent="HUD/MapOverlay/Center/MapCard/Box/Legend/Next" unique_id=721193504]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.4706, 0.6627, 0.5098, 1)
 theme_override_font_sizes/font_size = 20
 text = "●"
 
-[node name="Name" type="Label" parent="HUD/MapOverlay/Center/MapCard/Box/Legend/Next"]
+[node name="Name" type="Label" parent="HUD/MapOverlay/Center/MapCard/Box/Legend/Next" unique_id=1464974825]
 layout_mode = 2
 theme_type_variation = &"CardHint"
 text = "Next"
@@ -954,7 +954,7 @@ layout_mode = 2
 theme_type_variation = &"CardHint"
 text = "Champion"
 
-[node name="TravelHint" type="Label" parent="HUD/MapOverlay/Center/MapCard/Box"]
+[node name="TravelHint" type="Label" parent="HUD/MapOverlay/Center/MapCard/Box" unique_id=1451381776]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(600, 0)
 layout_mode = 2

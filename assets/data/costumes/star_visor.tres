@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="Costume" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/costume.gd" id="1_costume"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/costume_star_visor.svg" id="2_art"]
+
+[resource]
+script = ExtResource("1_costume")
+id = "star_visor"
+display_name = "Star Visor"
+texture = ExtResource("2_art")
+slot = "face"
+gold_price = 40
+position = Vector3(0, -0.15, 1.12)
+width = 1.9

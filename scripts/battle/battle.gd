@@ -160,6 +160,7 @@ func _ready() -> void:
 	CompanionState.in_run = true
 	_refresh_gauges()
 	CompanionState.stats_changed.connect(_refresh_gauges)
+	CompanionState.leveled_up.connect(func(from: int, lv: int) -> void: LevelUpModal.open(self, from, lv))
 	_refresh_bars()
 	var foe: String = FOE_NAMES[_kind]
 	enemy_name.text = foe

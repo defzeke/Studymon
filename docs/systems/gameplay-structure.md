@@ -133,7 +133,7 @@ the canonical palette (Soft Sage room, Warm Off-White card, Muted Teal controls)
 - Easy moves NEW or REMASTER to LEARNING only (`promote_from_review()`); a Learning or Mastered
   card is unchanged. **MASTERED is earned only in battle.**
 - Rewards, each paid once per card because only a card that moves up pays: `+1 XP` and `+2 focus`
-  per promotion (`CompanionState.reward_card_banked()`), `+3 mood` when a deck with banked cards
+  per promotion (`CompanionState.reward_card_banked()`), each rating lifts mood (`reward_card_rated()`: +1.5 Easy, +0.3 Again or Hard), `+3 mood` when a deck with banked cards
   finishes (`reward_deck_done()`). No timer, no HP loss, no game over.
 - Entry points: the **Study** button on the island HUD (returns to the island) and the **Cards**
   button on each session-list row (returns to the list). The caller sets

@@ -97,6 +97,9 @@ func _on_edit(topic: Dictionary) -> void:
 	get_tree().change_scene_to_file(BUILDER_SCENE)
 
 func _on_open_cards(topic: Dictionary) -> void:
+	if CompanionState.too_tired():
+		ConfirmModal.open(self, "Kuiz is too tired", "Its battery is low. Charge it in the Study Room before reviewing.", "OK", Callable(), false, "")
+		return
 	_load_topic(topic)
 	SessionManager.current_topic_id = str(topic.get("id", ""))
 	SessionManager.flashcards_return = "res://scenes/ui/session_list.tscn"

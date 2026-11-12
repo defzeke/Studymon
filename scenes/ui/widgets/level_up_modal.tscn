@@ -1,0 +1,212 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/widgets/level_up_modal.gd" id="1_modal"]
+[ext_resource type="Theme" path="res://assets/theme/app_theme.tres" id="2_theme"]
+[ext_resource type="FontFile" path="res://assets/fonts/JosefinSans-Bold.ttf" id="3_bold"]
+[ext_resource type="Texture2D" path="res://assets/sprites/ui/crystal.svg" id="4_crystal"]
+
+[sub_resource type="Gradient" id="Gradient_colors"]
+interpolation_mode = 1
+offsets = PackedFloat32Array(0, 0.17, 0.34, 0.51, 0.68, 0.85)
+colors = PackedColorArray(0.8392, 0.6588, 0.3725, 1, 0.3098, 0.5608, 0.5373, 1, 0.7882, 0.4745, 0.4392, 1, 0.5529, 0.5098, 0.6588, 1, 0.4706, 0.6627, 0.5098, 1, 0.9686, 0.9608, 0.9373, 1)
+
+[sub_resource type="Gradient" id="Gradient_fade"]
+offsets = PackedFloat32Array(0, 0.75, 1)
+colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_badge"]
+bg_color = Color(0.3098, 0.5608, 0.5373, 1)
+border_width_left = 8
+border_width_top = 8
+border_width_right = 8
+border_width_bottom = 8
+border_color = Color(0.8392, 0.6588, 0.3725, 1)
+corner_radius_top_left = 90
+corner_radius_top_right = 90
+corner_radius_bottom_right = 90
+corner_radius_bottom_left = 90
+shadow_color = Color(0.1608, 0.2196, 0.2275, 0.25)
+shadow_size = 6
+shadow_offset = Vector2(0, 4)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_rank"]
+bg_color = Color(0.5529, 0.5098, 0.6588, 1)
+content_margin_left = 24.0
+content_margin_top = 8.0
+content_margin_right = 24.0
+content_margin_bottom = 4.0
+corner_radius_top_left = 30
+corner_radius_top_right = 30
+corner_radius_bottom_right = 30
+corner_radius_bottom_left = 30
+
+[node name="LevelUpModal" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("2_theme")
+script = ExtResource("1_modal")
+
+[node name="Dim" type="ColorRect" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.16078432, 0.21960784, 0.22745098, 0)
+
+[node name="Top" type="CenterContainer" parent="."]
+layout_mode = 1
+anchor_right = 1.0
+anchor_bottom = 0.58
+grow_horizontal = 2
+mouse_filter = 2
+
+[node name="Card" type="PanelContainer" parent="Top"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(540, 0)
+layout_mode = 2
+theme_type_variation = &"MenuCard"
+
+[node name="Pad" type="MarginContainer" parent="Top/Card"]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 6
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 10
+
+[node name="Box" type="VBoxContainer" parent="Top/Card/Pad"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="Banner" type="Label" parent="Top/Card/Pad/Box"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.8392, 0.6588, 0.3725, 1)
+theme_override_colors/font_outline_color = Color(0.1608, 0.2196, 0.2275, 1)
+theme_override_constants/outline_size = 14
+theme_override_fonts/font = ExtResource("3_bold")
+theme_override_font_sizes/font_size = 58
+text = "LEVEL UP!"
+horizontal_alignment = 1
+
+[node name="BadgeRow" type="CenterContainer" parent="Top/Card/Pad/Box"]
+layout_mode = 2
+
+[node name="Badge" type="PanelContainer" parent="Top/Card/Pad/Box/BadgeRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(156, 156)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_badge")
+
+[node name="Number" type="Label" parent="Top/Card/Pad/Box/BadgeRow/Badge"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_fonts/font = ExtResource("3_bold")
+theme_override_font_sizes/font_size = 84
+text = "2"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="RankRow" type="CenterContainer" parent="Top/Card/Pad/Box"]
+layout_mode = 2
+
+[node name="RankPill" type="PanelContainer" parent="Top/Card/Pad/Box/RankRow"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_rank")
+
+[node name="Rank" type="Label" parent="Top/Card/Pad/Box/RankRow/RankPill"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9686, 0.9608, 0.9373, 1)
+theme_override_fonts/font = ExtResource("3_bold")
+theme_override_font_sizes/font_size = 32
+text = "Kindergarten"
+horizontal_alignment = 1
+
+[node name="NewTitle" type="Label" parent="Top/Card/Pad/Box"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.8392, 0.6588, 0.3725, 1)
+theme_override_fonts/font = ExtResource("3_bold")
+theme_override_font_sizes/font_size = 24
+text = "New title unlocked!"
+horizontal_alignment = 1
+
+[node name="RewardRow" type="HBoxContainer" parent="Top/Card/Pad/Box"]
+layout_mode = 2
+theme_override_constants/separation = 8
+alignment = 1
+
+[node name="Icon" type="TextureRect" parent="Top/Card/Pad/Box/RewardRow"]
+custom_minimum_size = Vector2(44, 44)
+layout_mode = 2
+texture = ExtResource("4_crystal")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Reward" type="Label" parent="Top/Card/Pad/Box/RewardRow"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.1608, 0.2196, 0.2275, 1)
+theme_override_fonts/font = ExtResource("3_bold")
+theme_override_font_sizes/font_size = 30
+text = "+25 crystals"
+vertical_alignment = 1
+
+[node name="Yay" type="Button" parent="Top/Card/Pad/Box"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 68)
+layout_mode = 2
+theme_type_variation = &"MenuPrimary"
+text = "Yay!"
+
+[node name="Rain" type="CPUParticles2D" parent="."]
+unique_name_in_owner = true
+emitting = false
+amount = 140
+lifetime = 3.6
+one_shot = true
+emission_shape = 3
+emission_rect_extents = Vector2(360, 8)
+direction = Vector2(0, 1)
+spread = 20.0
+gravity = Vector2(0, 220)
+initial_velocity_min = 120.0
+initial_velocity_max = 280.0
+angular_velocity_min = -360.0
+angular_velocity_max = 360.0
+angle_max = 360.0
+scale_amount_min = 12.0
+scale_amount_max = 20.0
+color_ramp = SubResource("Gradient_fade")
+color_initial_ramp = SubResource("Gradient_colors")
+
+[node name="Burst" type="CPUParticles2D" parent="."]
+unique_name_in_owner = true
+emitting = false
+amount = 120
+lifetime = 2.2
+one_shot = true
+explosiveness = 1.0
+emission_shape = 1
+emission_sphere_radius = 40.0
+direction = Vector2(0, -1)
+spread = 180.0
+gravity = Vector2(0, 900)
+initial_velocity_min = 380.0
+initial_velocity_max = 780.0
+angular_velocity_min = -420.0
+angular_velocity_max = 420.0
+damping_min = 60.0
+damping_max = 140.0
+angle_max = 360.0
+scale_amount_min = 12.0
+scale_amount_max = 22.0
+color_ramp = SubResource("Gradient_fade")
+color_initial_ramp = SubResource("Gradient_colors")

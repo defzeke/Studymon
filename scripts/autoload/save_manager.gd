@@ -39,6 +39,7 @@ func save_game() -> bool:
 	data["ai_consent"] = GameState.ai_consent
 	data["food_stock"] = GameState.food_stock
 	data["crystals"] = GameState.crystals
+	data["gold"] = GameState.gold
 	data["world_slots"] = GameState.world_slots
 	data["study_streak"] = GameState.study_streak
 	data["study_goal_day"] = GameState.study_goal_day
@@ -94,6 +95,7 @@ func _reset() -> void:
 	GameState.food_stock = {}
 	GameState.outfit = {}
 	GameState.add_crystals(-GameState.crystals)
+	GameState.add_gold(-GameState.gold)
 	GameState.world_slots = GameState.FREE_WORLD_SLOTS
 	GameState.minigame_day = ""
 	GameState.minigame_crystals = 0
@@ -180,6 +182,8 @@ func load_game() -> bool:
 		return false
 	CompanionState.from_dict(parsed)
 	saved_at = int(parsed.get("saved_at", 0))
+	if saved_at > 0:
+		CompanionState.pass_time(Time.get_unix_time_from_system() - saved_at)
 	# Older saves may also hold keys no longer read, all ignored: "campaign_ready" /
 	# "campaign_unlocked_flag" (before v15), "codex", "bond" and "active_region_id" (before v16).
 	GameState.player_name = str(parsed.get("player_name", ""))
@@ -191,6 +195,8 @@ func load_game() -> bool:
 		for id in stock:
 			GameState.food_stock[str(id)] = int(stock[id])
 	GameState.crystals = maxi(0, int(parsed.get("crystals", 0)))
+	GameState.gold = maxi(0, int(parsed.get("gold", 0)))
+	GameState.gold_changed.emit(GameState.gold)
 	GameState.world_slots = maxi(GameState.FREE_WORLD_SLOTS, int(parsed.get("world_slots", GameState.FREE_WORLD_SLOTS)))
 	GameState.minigame_day = str(parsed.get("minigame_day", ""))
 	GameState.minigame_crystals = maxi(0, int(parsed.get("minigame_crystals", 0)))

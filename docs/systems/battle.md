@@ -90,11 +90,13 @@ mid-run (Flee) forfeits it with no pay.
 
 ## 3. Stats
 
-Kuiz's care stats do one job each. Nothing blocks play; a low stat only weakens its multiplier.
+Kuiz's care stats do one job each, and together they set battle HP. Only energy blocks play: below
+`TIRED_ENERGY` (25 %) the map will not start a run (`CompanionState.too_tired()`,
+[`companion-care.md`](companion-care.md) §1). Otherwise a low stat only weakens its multiplier.
 
 | Stat | Effect in a run | Where |
 |---|---|---|
-| Health | Kuiz's battle HP, 70 to 120 | `battle_max_hp()` |
+| Readiness (hunger, energy, mood, health averaged) | Kuiz's battle HP, 70 to 120 | `battle_max_hp()` |
 | Energy | XP paid ×0.8 to ×1.2 | `xp_mult()` |
 | Mood | Crystals paid ×0.8 to ×1.2 | `crystal_mult()` |
 | Hunger | Counter damage down to −20 % | `counter_mult()` |
@@ -112,7 +114,7 @@ while a run is on (`CompanionState.in_run`), and instead:
 
 `play_item(correct)` and `hurt(counter)` in `companion_state.gd` (constants `PLAY_*`, `HURT_*`). A clean House of
 10 to 20 items costs about 5 to 10 energy and raises mood about 15 to 30; the 40-item Champion costs 20 energy
-and 16 hunger. Being hit hurts the health stat itself, which sets the next run's battle HP, so a hurt Kuiz
+and 16 hunger. Being hit hurts the health stat itself, which lowers the next run's battle HP, so a hurt Kuiz
 needs the screwdriver at home. Kuiz's card in the battle shows the four stats live.
 `readiness()` (the four home stats averaged) is shown on a house / gym panel with a warning under 25 %.
 `dirt` has no battle effect.

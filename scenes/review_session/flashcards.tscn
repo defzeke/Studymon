@@ -4,7 +4,6 @@
 [ext_resource type="Texture2D" path="res://assets/sprites/rooms/study_room.svg" id="2_room"]
 [ext_resource type="Texture2D" path="res://assets/sprites/ui/icon_back.svg" id="3_back"]
 [ext_resource type="FontFile" path="res://assets/fonts/JosefinSans-Bold.ttf" id="4_bold"]
-[ext_resource type="Texture2D" path="res://assets/sprites/ui/icon_timer.svg" id="5_timer"]
 [ext_resource type="Texture2D" path="res://assets/sprites/ui/crystal.svg" id="6_gem"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_card"]
@@ -235,17 +234,6 @@ theme_override_colors/font_color = Color(0.9098, 0.9412, 0.9176, 1)
 theme_override_font_sizes/font_size = 20
 text = "0 left · 0 banked"
 clip_text = true
-
-[node name="TimerButton" type="Button" parent="Margin/List/TopBar"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 64)
-layout_mode = 2
-size_flags_vertical = 4
-theme_type_variation = &"MenuQuiet"
-theme_override_font_sizes/font_size = 22
-text = "Focus 25:00"
-icon = ExtResource("5_timer")
-expand_icon = true
 
 [node name="Progress" type="ProgressBar" parent="Margin/List"]
 unique_name_in_owner = true

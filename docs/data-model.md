@@ -33,6 +33,8 @@ That is fine for the current scope but means there is **no type safety and no au
   "health": 100.0,  // v8; missing loads as 100
   "dirt": 0.0,      // v9; missing loads as 0 (clean)
   "battery_health": 100.0, // v10; missing loads as 100 (new)
+  "charging": false, // Kuiz left on the charger; missing loads as false. On load the time since
+                     // saved_at decays the stats (or charges, if true); home reopens still charging
 
   // GameState
   "large_text_enabled": false,
@@ -41,6 +43,7 @@ That is fine for the current scope but means there is **no type safety and no au
   "ai_consent": false,
   "food_stock": { "apple": 3 },
   "crystals": 0,    // v8: home's currency; missing loads as 0
+  "gold": 0,        // the peso top-up currency; missing loads as 0
   "world_slots": 3, // worlds the player can keep; bought slots are permanent; missing / below 3 loads as 3
   "minigame_day": "2026-10-29", "minigame_crystals": 20,   // today's minigame pay toward the daily cap
   "study_streak": 4, "study_goal_day": "2026-10-29",       // the daily study goal (monetization.md)

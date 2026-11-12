@@ -1,8 +1,9 @@
 # Monetization and the crystal economy
 
-**No real money.** Studymon is a free launch with no in-app purchases; the placeholder Crystal Shop
-was removed because unfinished purchase UI is a common App Review rejection. Crystals are earned and
-spent only in the game.
+**Real money is coming, not live.** Gold, a second currency topped up in pesos, exists in debug builds
+only (decided 2026-11-12). Release builds hide its shop until Google Play Billing is wired, because a
+purchase screen that cannot pay is a common store rejection. Until then crystals are earned and spent
+only in the game. See Gold below.
 
 **The weekly AI limit was removed** (save v12): it only blocked players. AI cost and abuse are
 controlled on the server instead: per-IP daily limits and the daily neuron budget of the free AI allowance
@@ -22,7 +23,7 @@ controlled on the server instead: per-IP daily limits and the daily neuron budge
 | **World slot** | `GameState.WORLD_SLOT_PRICE` (300) | the worlds list's New World, when every slot is full |
 | Fast travel | `GameState.TRAVEL_PRICE` (25) | a tap on the island's big map ([`overworld.md`](overworld.md)) |
 | Food | 4 – 13 (table below) | the Data Kitchen fridge |
-| Closet costume | 40 – 250, each unlocked at a level (`Costume.price` / `level_needed`, `assets/data/costumes/`); every costume is bought, only "None" is free | the Playroom closet |
+| Closet costume | 30 – 250, each unlocked at a level (`Costume.price` / `level_needed`, `assets/data/costumes/`); every costume is bought, only "None" is free | the Playroom closet |
 | New battery | 30 | the check-up tablet |
 
 Studying is meant to be the main income: a world's campaign (houses, three gyms, the Champion) pays
@@ -76,7 +77,38 @@ A costume Kuiz already wears counts as owned, so no save loses one.
 - Slots live in the local save, so they are a game mechanic, not cost control: AI cost is protected
   by the server's daily limits.
 
-## Future work
+## Gold (`GameState.gold`, saved)
 
-Any real purchase, if it ever comes, would need store billing and server-side receipt checks, so a
-save file can never grant it.
+The premium currency. It is topped up for pesos and spent on crystals or on premium costumes; everything
+else stays priced in crystals. Tapping home's crystal pill opens the shop (`TopUp`, `top_up.tscn`): the two
+balances, the Gold packs and the crystal trades. Both are data, one `.tres` each, listed on the scene's
+root.
+
+| Gold pack (`GoldPack`, `assets/data/gold_packs/`) | Price | Product id |
+|---|---|---|
+| 50 Gold | PHP 49 | `gold_50` |
+| 120 Gold | PHP 99 | `gold_120` |
+| 320 Gold | PHP 249 | `gold_320` |
+| 700 Gold | PHP 499 | `gold_700` |
+
+| Trade (`CrystalBundle`, `assets/data/crystal_bundles/`) | Gold | Crystals |
+|---|---|---|
+| Small | 10 | 100 |
+| Medium | 50 | 550 |
+| Large | 100 | 1200 |
+
+Premium costumes are the one thing Gold buys directly: two per closet slot, any level
+(`Costume.gold_price`, `GameState.buy_costume()`): Halo 30 and Wizard hat 40 (head), Pixel shades 30
+and Star visor 40 (face), Gold chain 30 and Jewel collar 40 (body).
+
+`GameState.buy_crystals(bundle)` trades, and refuses without enough Gold. The prices are placeholders
+to tune. "PHP" is written out because the font has no peso sign.
+
+**Not live yet.** `TopUp.available()` is `OS.is_debug_build()`: in a debug build a pack asks to confirm
+a free test top-up and adds the Gold; a release build's crystal pill does nothing. To ship it:
+
+1. Vendor the Godot Google Play Billing plugin and create the four products in the Play Console.
+2. Buy through it, and verify each purchase on the study server (receipt check) before granting Gold,
+   so a save file can never grant it. Consume the purchase after granting.
+3. Make `available()` true in release, and update the store listing ("Contains in-app purchases"),
+   the Data safety answers and the privacy page.

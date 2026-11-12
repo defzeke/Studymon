@@ -203,7 +203,8 @@ the same rig, size (about 1 unit tall) and clips. A save from before keeps one g
 which is ignored: each of its worlds asks once.
 Coming from `world_intro.tscn` (`SessionManager.pick_explorer`), or with no explorer saved yet, the picker opens first,
 as the map starts fading in, with the current one selected; a return from a battle or Study skips it. The round
-`%ExplorerButton` above Study reopens it any time the explorer is free to move. The map fades in over
+`%ExplorerButton` above Study reopens it any time the explorer is free to move. While the map is
+open, exploring lifts Kuiz's mood (`CompanionState.explore()`, about +4 a minute net). The map fades in over
 `ARRIVE_FADE_SEC` (0.8 s), held for its first two frames.
 
 **Seasons** (`season.gd`). The island follows the real-world season, from the device's local date,
@@ -278,7 +279,8 @@ release. Drawn with `_draw()` in Deep Slate, Warm Off-White and Muted Teal, so i
 
 One shared `PanelContainer` (`HUD/EncounterPanel`) is reconfigured per encounter. Walking into an
 `Area3D` sets `_pending_encounter` and fills the title, body (items, tier, minutes, Kuiz readiness)
-and action button.
+and action button. Below 25 % energy (`CompanionState.too_tired()`) the button is disabled and the
+note says to charge Kuiz at home.
 
 | Encounter | `_pending_encounter` | Button |
 |---|---|---|

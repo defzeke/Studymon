@@ -40,6 +40,8 @@ const PlayerScript := preload("res://scripts/overworld/player.gd")
 const OBSTACLE_LAYER := 2
 ## Each question type's colour: the icon over its houses.
 const TYPE_COLORS := {"identification": Palette.TEAL, "essay": Palette.LILAC, "multiple_choice": Palette.AMBER}
+# Below CompanionState.TIRED_ENERGY Kuiz cannot battle or review until it charges at home.
+const TIRED_NOTE := "Kuiz's battery is low. Go home and charge it in the Study Room first."
 ## A house label floats this high so it clears the roof; the map's houses stand about 2 units tall.
 const HOUSE_LABEL_HEIGHT := 2.6
 ## Entering a house or gym fades the screen to %Fade's colour over FADE_SEC; coming back fades it in.
@@ -347,7 +349,8 @@ func _physics_process(_delta: float) -> void:
 				return
 
 # The next house's badge always shows its text; a cleared one only near the explorer; a locked one never.
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
+	CompanionState.explore(delta)
 	for area: Node in trainers_root.get_children():
 		if area is EncounterTrigger and not area.is_queued_for_deletion():
 			var quest := str(area.get_meta("house_state", ""))
@@ -492,6 +495,9 @@ func _fill_encounter(title: String, tag: String, note: String, action: String, c
 	var notes: Array[String] = []
 	if note != "":
 		notes.append(note)
+	var tired := kind != "" and CompanionState.too_tired()
+	if tired:
+		notes.append(TIRED_NOTE)
 	%EncounterFacts.visible = kind != ""
 	%EncounterReady.visible = kind != ""
 	if kind != "":
@@ -506,7 +512,7 @@ func _fill_encounter(title: String, tag: String, note: String, action: String, c
 	encounter_question.text = "\n".join(notes)
 	encounter_question.visible = not notes.is_empty()
 	encounter_clear_btn.text = action
-	encounter_clear_btn.disabled = false
+	encounter_clear_btn.disabled = tired
 	encounter_clear_btn.visible = can_go
 	_show_encounter(true)
 
@@ -572,6 +578,8 @@ func _on_encounter_cleared() -> void:
 	if kind == "gym" and not SessionManager.is_gym_open(_topic_id, gym_type):
 		return
 	if kind == "champion" and not SessionManager.is_champion_available(_topic_id):
+		return
+	if CompanionState.too_tired():
 		return
 	var house: Dictionary = _pending_encounter.get("house", {})
 	var house_id: String = house.get("id", "")
@@ -703,6 +711,9 @@ func _go_home() -> void:
 	_leave("res://scenes/overworld/world_intro.tscn")
 
 func _on_study() -> void:
+	if CompanionState.too_tired():
+		ConfirmModal.open(back_btn.get_parent(), "Kuiz is too tired", TIRED_NOTE, "OK", Callable(), false, "")
+		return
 	SessionManager.flashcards_return = "res://scenes/overworld/region_map.tscn"
 	_leave("res://scenes/review_session/flashcards.tscn")
 

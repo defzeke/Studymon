@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="GoldPack" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/gold_pack.gd" id="1_pack"]
+
+[resource]
+script = ExtResource("1_pack")
+gold = 700
+pesos = 499
+product_id = "gold_700"

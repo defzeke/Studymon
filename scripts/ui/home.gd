@@ -126,7 +126,7 @@ const CHECK_HINTS := {
 @onready var shop_list: VBoxContainer = %ShopList
 @onready var shop_close_btn: BaseButton = %Close
 @onready var buy_template: Button = %BuyTemplate
-@onready var shop_row_template: HBoxContainer = %ShopRowTemplate
+@onready var shop_row_template: PanelContainer = %ShopRowTemplate
 @onready var costume_template: Button = %CostumeTemplate
 @onready var ball: TextureRect = %Ball
 @onready var ball_slot: TextureRect = %BallSlot
@@ -198,6 +198,7 @@ func _ready() -> void:
 	%TimerClose.pressed.connect(timer_panel.hide)
 	%TimerStart.pressed.connect(_on_timer_start)
 	%TimerSkip.pressed.connect(_on_timer_skip)
+	%ReviewResume.pressed.connect(CompanionState.resume_review)
 	%FocusLess.pressed.connect(_step_timer.bind(CompanionState.step_focus_minutes, -1))
 	%FocusMore.pressed.connect(_step_timer.bind(CompanionState.step_focus_minutes, 1))
 	%BreakLess.pressed.connect(_step_timer.bind(CompanionState.step_rest_minutes, -1))
@@ -222,13 +223,18 @@ func _ready() -> void:
 	%PickerClose.pressed.connect(picker.hide)
 	for btn: BaseButton in games:
 		btn.pressed.connect(_play_game.bind(games[btn]))
-		games[btn].played.connect(_care.bind("play"))
+		games[btn].played.connect(_care.bind("game"))
 		games[btn].played.connect(CompanionState.soil.bind(4.0))
 	_build_shop()
 	_pick_food(0)
 	CompanionState.stats_changed.connect(_refresh_stats)
 	CompanionState.xp_changed.connect(func(_xp: int, _level: int) -> void: _refresh_level())
+	CompanionState.leveled_up.connect(_on_level_up)
 	%Level.gui_input.connect(_on_level_input)
+	%Plus.visible = TopUp.available()
+	%Crystals.gui_input.connect(func(event: InputEvent) -> void:
+		if _tapped(event) and TopUp.available() and _can_leave():
+			TopUp.open(self))
 	for stat: String in gauges:
 		gauges[stat].gui_input.connect(_on_gauge_input.bind(stat))
 	GameState.crystals_changed.connect(func(amount: int) -> void: crystal_label.text = str(amount))
@@ -260,6 +266,10 @@ func start() -> void:
 			var away := -SLIDE_IN if rest_y < _view().y / 2.0 else SLIDE_IN
 			create_tween().tween_property(c, "position:y", rest_y, SLIDE_TIME).from(rest_y + away).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	await peek.to_room_pose()
+	# Kuiz left on the charger is still asleep on it (home opens in the Study Room, where Charge is).
+	if CompanionState.charging and not charge_btn.button_pressed:
+		charge_btn.set_pressed_no_signal(true)
+		_on_charge(true, false)
 	# A newer save in the player's Google account: ask which one to keep, now or when it arrives.
 	CloudSave.offer_choice(self)
 	if not CloudSave.choice_ready.is_connected(_on_cloud_choice):
@@ -299,6 +309,8 @@ func _on_sign_input(event: InputEvent) -> void:
 	if _tapped(event) and visible and _can_walk():
 		for i in ROOMS.size():
 			_press_look(room_list.get_node(ROOMS[i]), i == _room_i)
+		# The dropdown opens under the sign, or under the review bar while a session shows there.
+		(room_list.get_parent() as Control).position.y = (review_bar if review_bar.visible else room_sign).get_rect().end.y + 8.0
 		room_menu.show()
 
 func _pick_room(room_i: int) -> void:
@@ -337,9 +349,17 @@ func _refresh_level() -> void:
 	var floor_xp := CompanionState.xp_to_reach(lv)
 	var next_xp := CompanionState.xp_to_reach(lv + 1)
 	xp_bar.value = float(CompanionState.xp - floor_xp) / (next_xp - floor_xp)
-	%LevelName.text = "Level %d" % lv
+	%LevelTitle.text = CompanionState.rank(lv)
+	%LevelName.text = "Level %d · %s" % [lv, CompanionState.rank(lv)]
 	%LevelXp.text = "%d / %d XP" % [CompanionState.xp - floor_xp, next_xp - floor_xp]
 	%LevelNext.text = "%d XP to Level %d" % [next_xp - CompanionState.xp, lv + 1]
+
+# Kuiz celebrates under the party; a level reached in a minigame waits until the game closes.
+func _on_level_up(from_level: int, level: int) -> void:
+	if _game != null:
+		await _game.finished
+	peek.act("Celebrate")
+	LevelUpModal.open(self, from_level, level)
 
 # The level pill toggles a card below it with the level, XP into it and XP to the next one.
 func _on_level_input(event: InputEvent) -> void:
@@ -464,11 +484,13 @@ func _set_arrows_enabled(on: bool) -> void:
 	for b: BaseButton in [prev_btn, next_btn]:
 		b.disabled = not on
 
-func _on_charge(charging: bool) -> void:
+func _on_charge(charging: bool, sound := true) -> void:
 	if charging and _reviewing():
 		charge_btn.set_pressed_no_signal(false)
 		_scold()
 		return
+	CompanionState.charging = charging
+	SaveManager.save_progress()
 	peek.set_lights(not charging)
 	_set_bar_enabled(not charging)
 	if _charge_pulse:
@@ -477,7 +499,8 @@ func _on_charge(charging: bool) -> void:
 	charge_btn.scale = Vector2.ONE
 	if charging:
 		peek.act("State_Charging")
-		MusicManager.play_sfx_chain([CHARGE_SFX, CHARGED_SFX])
+		if sound:
+			MusicManager.play_sfx_chain([CHARGE_SFX, CHARGED_SFX])
 		# A bare icon has no lit state, so the bolt pulses while Kuiz charges.
 		_charge_pulse = create_tween().set_loops()
 		_charge_pulse.tween_property(charge_btn, "scale", Vector2.ONE * 1.12, 0.5).set_trans(Tween.TRANS_SINE)
@@ -554,6 +577,7 @@ func _refresh_timer() -> void:
 	%ReviewTime.text = clock
 	%ReviewMode.text = "Reviewing" if mode == "focus" else "Break"
 	%TimerSkip.text = "Take a break" if mode == "focus" else "End break"
+	%ReviewResume.visible = mode == "rest"
 
 func _on_play() -> void:
 	if _can_leave():
@@ -652,13 +676,16 @@ func _refresh_food() -> void:
 	food_label.text = "%s ×%d" % [food.display_name, _stock(_food_i)]
 
 func _build_shop() -> void:
-	# One copy of the hidden %ShopRowTemplate (Icon, Label, Buy) per food.
+	# One copy of the hidden %ShopRowTemplate (Row: Icon, Info with Name / Effect / Have, Buy) per food.
 	for food in foods:
-		var row := shop_row_template.duplicate() as HBoxContainer
+		var row := shop_row_template.duplicate() as PanelContainer
 		row.show()
-		(row.get_node("Icon") as TextureRect).texture = food.icon
-		var buy := row.get_node("Buy") as Button
-		buy.text = "Buy · %d" % food.price
+		(row.get_node("Row/Icon") as TextureRect).texture = food.icon
+		(row.get_node("Row/Info/Name") as Label).text = food.display_name
+		(row.get_node("Row/Info/Effect") as Label).text = "+%d hunger%s" % [food.hunger, _food_extra(food)]
+		var buy := row.get_node("Row/Buy") as Button
+		buy.text = str(food.price)
+		buy.tooltip_text = "Buy for %d crystals" % food.price
 		buy.pressed.connect(_buy_food.bind(food))
 		row.set_meta("food", food)
 		shop_list.add_child(row)
@@ -670,14 +697,14 @@ func _open_shop() -> void:
 func _refresh_shop() -> void:
 	for row in shop_list.get_children():
 		var food: FoodItem = row.get_meta("food")
-		(row.get_node("Label") as Label).text = "%s  +%d hunger%s\nYou have %d" % [food.display_name, food.hunger, _food_extra(food), GameState.food_stock[food.id]]
-		(row.get_node("Buy") as Button).disabled = GameState.crystals < food.price
+		(row.get_node("Row/Info/Have") as Label).text = "You have %d" % GameState.food_stock[food.id]
+		(row.get_node("Row/Buy") as Button).disabled = GameState.crystals < food.price
 
 func _food_extra(food: FoodItem) -> String:
 	if food.focus > 0.0:
-		return ", +%d focus" % food.focus
+		return "  ·  +%d focus" % food.focus
 	if food.mood > 0.0:
-		return ", +%d mood" % food.mood
+		return "  ·  +%d mood" % food.mood
 	return ""
 
 # One more of a food from the fridge, for its price in crystals.
@@ -706,7 +733,6 @@ func _eat(food: FoodItem) -> void:
 	held.scale = Vector2.ONE
 	CompanionState.care("feed", food)
 	SaveManager.save_progress()
-	CompanionState.soil()
 	peek.act("Pet" if food.favorite else "Happy")
 
 func _on_slot_input(event: InputEvent, kind: String) -> void:
@@ -863,9 +889,12 @@ func _costume_button(c: Costume) -> Button:
 	elif CompanionState.level < c.level_needed:
 		b.text = "%s\nLevel %d" % [c.display_name, c.level_needed]
 		b.disabled = true
+	elif c.gold_price > 0:
+		b.text = "%s\n%d Gold" % [c.display_name, c.gold_price]
+		b.pressed.connect(_offer_costume.bind(c))
 	else:
 		b.text = "%s\n%d crystals" % [c.display_name, c.price]
-		b.pressed.connect(_offer_costume.bind(c.id, c.display_name, c.price))
+		b.pressed.connect(_offer_costume.bind(c))
 	return b
 
 func _wear(id: String) -> void:
@@ -877,17 +906,24 @@ func _wear(id: String) -> void:
 	peek.act("Happy")
 	_refresh_wardrobe()
 
-# A costume not owned yet: buy it with crystals, then wear it.
-func _offer_costume(id: String, title: String, price: int) -> void:
-	if GameState.crystals < price:
-		_toast("%s costs %d crystals. Clear houses and gyms to earn them." % [title, price])
+# A costume not owned yet: buy it with crystals (or Gold, if premium), then wear it.
+func _offer_costume(c: Costume) -> void:
+	if c.gold_price > 0:
+		if GameState.gold < c.gold_price:
+			_toast("%s costs %d Gold. %s" % [c.display_name, c.gold_price, "Tap + by your crystals to top up." if TopUp.available() else "Gold top-ups open soon."])
+			return
+		ConfirmModal.open(self, "Buy %s?" % c.display_name, "It costs %d Gold; you have %d." % [c.gold_price, GameState.gold], "Buy", _buy_costume.bind(c), false)
 		return
-	ConfirmModal.open(self, "Buy %s?" % title, "It costs %d crystals; you have %d." % [price, GameState.crystals], "Buy", _buy_costume.bind(id, price), false)
+	if GameState.crystals < c.price:
+		_toast("%s costs %d crystals. Clear houses and gyms to earn them." % [c.display_name, c.price])
+		return
+	ConfirmModal.open(self, "Buy %s?" % c.display_name, "It costs %d crystals; you have %d." % [c.price, GameState.crystals], "Buy", _buy_costume.bind(c), false)
 
-func _buy_costume(id: String, price: int) -> void:
-	if GameState.buy_costume(id, price):
+func _buy_costume(c: Costume) -> void:
+	if GameState.buy_costume(c):
+		SaveManager.save_progress()
 		_show_closet_slot(_closet_slot)
-		_wear(id)
+		_wear(c.id)
 
 # The open tab and the costume worn in it show as pressed buttons.
 func _refresh_wardrobe() -> void:

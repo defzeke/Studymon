@@ -101,7 +101,7 @@ health, audio, web history, device IDs, crash logs and diagnostics.
 | Sexuality, profanity, drugs, alcohol, tobacco, gambling, horror | No |
 | Users interact or share content with each other | **No**: nothing a player makes reaches another player |
 | Shares the user's location | No |
-| Digital purchases | No (crystals are earned only) |
+| Digital purchases | No while the Gold shop is debug-only; Yes once Play Billing ships ([`systems/monetization.md`](systems/monetization.md)) |
 | Unrestricted internet access | No (only the study server) |
 
 ---

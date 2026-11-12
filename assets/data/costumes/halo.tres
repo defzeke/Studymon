@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="Costume" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/costume.gd" id="1_costume"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/costume_halo.svg" id="2_art"]
+
+[resource]
+script = ExtResource("1_costume")
+id = "halo"
+display_name = "Halo"
+texture = ExtResource("2_art")
+gold_price = 30
+position = Vector3(0, 1.75, 0.2)
+width = 1.3

@@ -1,7 +1,12 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="250" height="250" viewBox="0 0 100 100">
-<rect x="30" y="12" width="64" height="48" rx="8" fill="#8D82A8" stroke="#29383A" stroke-width="6" stroke-linejoin="round" stroke-linecap="round" transform="rotate(10 62 36)"/>
-<rect x="20" y="22" width="64" height="48" rx="8" fill="#E8F0EA" stroke="#29383A" stroke-width="6" stroke-linejoin="round" stroke-linecap="round" transform="rotate(-6 52 46)"/>
-<rect x="12" y="36" width="70" height="52" rx="8" fill="#F7F5EF" stroke="#29383A" stroke-width="6" stroke-linejoin="round" stroke-linecap="round"/>
-<path d="M24 52 H58 M24 64 H70 M24 76 H52" stroke="#687778" stroke-width="5" stroke-linecap="round"/>
-<polygon points="70.0,42.0 72.6,48.4 79.5,48.9 74.3,53.4 75.9,60.1 70.0,56.5 64.1,60.1 65.7,53.4 60.5,48.9 67.4,48.4" fill="#D6A85F" stroke="#29383A" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+<g transform="rotate(12 62 46)">
+<rect x="38" y="12" width="50" height="68" rx="8" fill="#F7F5EF" stroke="#29383A" stroke-width="6" stroke-linejoin="round"/>
+<path d="M66 50 L72 56 L82 42" fill="none" stroke="#78A982" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<g transform="rotate(-8 38 56)">
+<rect x="12" y="22" width="52" height="70" rx="8" fill="#4F8F89" stroke="#29383A" stroke-width="6" stroke-linejoin="round"/>
+<path d="M29 48 A9 9 0 1 1 42 56 Q38 59 38 65" fill="none" stroke="#F7F5EF" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="38" cy="77" r="4.5" fill="#F7F5EF"/>
+</g>
+<path d="M78 8 L81 15 L88 18 L81 21 L78 28 L75 21 L68 18 L75 15 Z" fill="#D6A85F" stroke="#29383A" stroke-width="3.5" stroke-linejoin="round"/>
 </svg>

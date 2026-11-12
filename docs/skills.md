@@ -167,7 +167,8 @@ All companion tuning is in `scripts/autoload/companion_state.gd`:
 |---|---|---|
 | `FIRST_LEVEL_XP` / `LEVEL_XP_STEP` | `20` / `5` | XP for Lv2, then 5 more per level (`xp_to_reach()`: Lv5 at 110); no cap |
 | `DAILY_CAP_BASE_XP` | `10` | Same-action taps per hour before diminishing returns |
-| `STAT_DECAY_PER_SEC` | `0.15` | Energy drain per second (focus ×0.8, mood ×0.6) |
+| `FULL_TO_LOW_MIN` | energy 60, hunger 15, mood 20, focus 30, health 60 | Minutes from full to low (25 %); energy's × `battery_drain()` |
+| `TIRED_ENERGY` | `25` | Below it Kuiz cannot start a run or flashcards |
 | `POMODORO_FOCUS_SEC` / `REST_SEC` | `1500` / `300` | Focus and rest lengths |
 | `care()` | `feed +2`, `pet +1`, `play +2` | XP per tap; also ±8 to a stat |
 

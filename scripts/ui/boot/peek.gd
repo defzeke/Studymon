@@ -200,6 +200,13 @@ func _reveal() -> void:
 	stage.position.y = CLOSE_Y
 	var cover: ColorRect = %BootWhite
 	cover.show()
+	# Kuiz left asleep (on the charger, or tired out in this room, where it dozes) stays asleep
+	# through the reveal; home then puts it back on the charger.
+	var asleep := CompanionState.charging or CompanionState.energy < CompanionState.LOW_STAT
+	if asleep:
+		anim.play("State_Charging" if CompanionState.charging else "State_Tired")
+		if CompanionState.charging:
+			set_lights(false)
 	# The first frames are heavy and would skip a tween started now.
 	await get_tree().process_frame
 	await get_tree().process_frame
@@ -210,8 +217,16 @@ func _reveal() -> void:
 	await emerge.finished
 	cover.hide()
 	await get_tree().create_timer(REVEAL_REST_TIME).timeout
-	await jump(_open_iris.bind(white))
-	act("Happy")
+	if asleep:
+		# No hop: the iris opens on a sleeping Kuiz while it settles to room size.
+		_open_iris(white)
+		var settle := create_tween().set_parallel().set_trans(Tween.TRANS_SINE)
+		settle.tween_property(stage, "scale", Vector3.ONE * ROOM_SCALE, IRIS_TIME * 0.5)
+		settle.tween_property(stage, "position:y", ROOM_Y, IRIS_TIME * 0.5)
+		await settle.finished
+	else:
+		await jump(_open_iris.bind(white))
+		act("Happy")
 	# The landing beats the iris; the HUD waits until the room is fully open.
 	await get_tree().create_timer(IRIS_TIME * 0.5).timeout
 	revealing = false

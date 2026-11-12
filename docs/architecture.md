@@ -253,7 +253,10 @@ operation must pick a unique `job_id` or it will be consumed by the wrong listen
    `%BootWhite` holds pure white for 0.35 s, then dissolves off a large Kuiz over 0.9 s while it
    grows slightly. After a 0.45 s rest Kuiz jumps, and at the top of the jump a teal-ringed circle opens
    from its head over `IRIS_TIME` (1 s) to show the Study Room (a shader on `Rooms/White`), and it
-   lands at room size and plays `Happy`. Later openings go straight to the room. With the tutorial not
+   lands at room size and plays `Happy`. A Kuiz left asleep (`CompanionState.charging`, or energy under 25 %,
+   when it dozes in this room) sleeps through it instead: `State_Charging` (lights off) or `State_Tired`
+   from the first frame, no jump and no `Happy`; the iris opens while it settles to room size, and home
+   puts it back on the charger. Later openings go straight to the room. With the tutorial not
    done it plays `Peek_Surprise` → looping `Idle`, and `peeked` starts `tutorial.gd`. A tap after its
    last line emits `finished`, and `home.gd` takes over.
 6. `home.gd:start()` — shows the bar and HUD; after the reveal (`peek.revealed`) the HUD drops in from

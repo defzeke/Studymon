@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="Costume" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/costume.gd" id="1_costume"]
+[ext_resource type="Texture2D" path="res://assets/sprites/props/costume_necktie.svg" id="2_art"]
+
+[resource]
+script = ExtResource("1_costume")
+id = "necktie"
+display_name = "Necktie"
+texture = ExtResource("2_art")
+slot = "body"
+level_needed = 3
+price = 70
+position = Vector3(0, -1.2, 0.88)
+width = 0.42

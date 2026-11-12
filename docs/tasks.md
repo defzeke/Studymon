@@ -6,11 +6,37 @@ Where the work stands. Short on purpose — this is a **register**, not a backlo
 > doc that owns it, and **those docs win** if the two disagree. See [`rules.md`](rules.md) §2. Do not
 > let a second status list grow here.
 
-Last updated: 2026-11-09.
+Last updated: 2026-11-12.
 
 ## In flight
 
-Uncommitted: **the hand-over for the coworker** who takes over the backend, the AI and the release.
+Uncommitted: **care pacing and the level-up notice.**
+- Energy lasts an hour from full to low (25 %) on a new battery, faster on a worn one; below 25 % Kuiz
+  cannot start a run or open flashcards until it charges ([`systems/companion-care.md`](systems/companion-care.md) §1).
+- Dirt no longer builds with time or meals: only ball throws and minigames soil Kuiz.
+- Battle HP follows readiness (all four home stats), not health alone ([`systems/battle.md`](systems/battle.md) §3).
+- A **Level up!** notice on home, battle and flashcards (`ConfirmModal.level_up()`).
+- The fridge's rows wrap their text, so they fit the panel.
+- Time away counts: the stats decay for the time the game was closed or paused; Kuiz left charging
+  charges instead (save field `charging`, [`data-model.md`](data-model.md)), and home reopens with Kuiz still
+  asleep on the charger.
+- The break's **Resume review** button, and the room dropdown opens under the review bar.
+- The Study screen has no focus timer, and its progress line no longer shows Kuiz's focus.
+- The map's music and explorer buttons sit in one column over Study, which has a new icon.
+- Mood: a minigame round is its own care action, `game` (+25, was the ball's +8), each flashcard rated
+  lifts it a little, and exploring the island lifts it. Decay is now minutes from full to low per stat:
+  hunger 15, mood 20, focus 30, energy and health 60.
+- The level-up party (`LevelUpModal`): jingle, confetti, Kuiz celebrating. Kuiz's school title per 10
+  levels, Kindergarten to Einstein (100+), on the level pill.
+- Gold, a peso top-up currency traded for crystals: the shop behind the crystal pill, **debug builds
+  only**. Next: Play Billing and server receipt checks ([`systems/monetization.md`](systems/monetization.md)).
+- The fridge's rows are cards: name, effect, stock, and a crystal Buy button.
+- The closet: six more crystal costumes and six Gold-only ones (two per slot), in a scrolling grid. The
+  level pill's title in mixed case so it clears the stats; a "+" on the crystal pill (debug builds).
+  A Kuiz left asleep sleeps through the boot reveal (no hop, no `Happy`).
+- Checked headless (all gates) and windowed screenshots of the party and the shop; not tapped through by hand.
+
+Committed in `fb578cb` and `d44f7c7`: **the hand-over for the coworker** who takes over the backend, the AI and the release.
 - [`next-steps.md`](next-steps.md) replaces `backend-next-steps.md`. It covers three phases in order:
   integrate the AI, add required Google sign-in through Play Games, and deploy the game.
 - `.github/workflows/pages.yml` is back, since the coworker can turn GitHub Pages on.

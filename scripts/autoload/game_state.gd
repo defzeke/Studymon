@@ -3,6 +3,7 @@ extends Node
 ## the outfit and large text. Kuiz's stats live in CompanionState, worlds in SessionManager.
 
 signal crystals_changed(amount: int)
+signal gold_changed(amount: int)
 
 ## Saved: the name the tutorial asks for.
 var player_name: String = ""
@@ -18,6 +19,8 @@ var food_stock: Dictionary = {}
 # Home's currency (top-right pill): battles, level-ups and minigames earn it; world slots and a new
 # battery spend it. Contract: docs/systems/monetization.md.
 var crystals: int = 0
+## Saved: the premium currency, topped up for pesos (TopUp) and spent only on crystals.
+var gold := 0
 ## World slots: how many worlds the player can keep at once. Bought slots are permanent: deleting a
 ## world frees its slot, never refunds it. Saved.
 const FREE_WORLD_SLOTS := 3
@@ -46,6 +49,18 @@ var large_text_enabled: bool = false
 func add_crystals(amount: int) -> void:
 	crystals = maxi(0, crystals + amount)
 	crystals_changed.emit(crystals)
+
+func add_gold(amount: int) -> void:
+	gold = maxi(0, gold + amount)
+	gold_changed.emit(gold)
+
+## Trades a bundle's Gold for its crystals; false (nothing spent) without enough Gold.
+func buy_crystals(bundle: CrystalBundle) -> bool:
+	if gold < bundle.gold:
+		return false
+	add_gold(-bundle.gold)
+	add_crystals(bundle.crystals)
+	return true
 
 ## Spends WORLD_SLOT_PRICE crystals on one more world slot; false (nothing spent) without enough.
 func buy_world_slot() -> bool:
@@ -105,12 +120,17 @@ func _yesterday(day: String) -> String:
 var owned_costumes: Array[String] = []
 
 ## Buys a costume for `price` crystals; false (nothing spent) without enough.
-func buy_costume(id: String, price: int) -> bool:
-	if crystals < price:
-		return false
-	add_crystals(-price)
-	if not owned_costumes.has(id):
-		owned_costumes.append(id)
+func buy_costume(c: Costume) -> bool:
+	if c.gold_price > 0:
+		if gold < c.gold_price:
+			return false
+		add_gold(-c.gold_price)
+	else:
+		if crystals < c.price:
+			return false
+		add_crystals(-c.price)
+	if not owned_costumes.has(c.id):
+		owned_costumes.append(c.id)
 	return true
 
 func set_large_text(enabled: bool) -> void:
