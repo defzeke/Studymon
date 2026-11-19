@@ -168,7 +168,7 @@ func _ready() -> void:
 	enemy_level.text = "Lv%d" % (SessionManager.DIFFICULTIES.find(_tier) + 1)
 	player_name.text = "KUIZ"
 	player_level.text = "Lv%d" % CompanionState.level
-	stage.setup(_kind != "house")
+	stage.setup(_kind != "house", SessionManager.battle_boss if not _standalone else null)
 	_bind_item()
 	judging_label.visible = false
 	result_panel.visible = false
@@ -612,6 +612,9 @@ func _study_goal_line() -> String:
 func _lose(finished: bool) -> void:
 	_over = true
 	_phase = "end"
+	_player_hp = 0
+	create_tween().tween_property(player_hp_bar, "value", 0.0, 0.3)
+	player_hp_text.text = "0/%d" % _player_max
 	var line := "%d/%d correct before falling." % [_correct, _run.size()]
 	if finished:
 		line = "Only %d/%d correct: you need %d%% to win." % [_correct, _run.size(), roundi(SessionManager.STAR_ACCURACY[0] * 100)]

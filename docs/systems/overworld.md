@@ -109,7 +109,8 @@ RegionMap            Node3D (region_map.gd)
 `gym_slots` export in question-type order, plus `champion_slot` for the Champion. `gyms[0]` uses
 `GymSlot1` (the blue building by the south road), `gyms[1]` `GymSlot2` (orange, west), `gyms[2]`
 `GymSlot3` (no building, so no door clips), and the Champion `ChampionSlot` (the big red `Gym`,
-north). A slot's `Entrance` marker is where its trigger stands (0.8 in front of the double door for
+north). A slot's `boss` is the leader fought inside (`blue_boss.glb`, `yellow_boss.glb`,
+`red_boss.glb` on the Champion; GymSlot3 has none, so it sends a random robot). A slot's `Entrance` marker is where its trigger stands (0.8 in front of the double door for
 the buildings), and its `door_open_clip` / `door_close_clip` are the map's own animation names,
 played as the explorer walks in and out. Move a marker in the editor to re-route; add a slot to the
 list for a fourth gym. Triggers come from `encounter_trigger.tscn` and the clear burst from

@@ -125,7 +125,7 @@ needs the screwdriver at home. Kuiz's card in the battle shows the four stats li
 crystals (`GameState.add_crystals`) and XP (`CompanionState.add_xp`), saves, and returns
 `{stars, coins, xp, first, replay, cleared}`. **A run is won only when Kuiz survives with at least one
 star** (70 % right). Anything else is a **defeat**, with the same ending either way: the DEFEATED
-banner, Kuiz falls, the defeat pay below, nothing cleared, and Try Again / Exit / Review answers. The
+banner, Kuiz falls and its HP bar drops to 0, the defeat pay below, nothing cleared, and Try Again / Exit / Review answers. The
 result says why: "Kuiz is down!" (out of HP) or "Not enough to win" ("Only 9/20 correct: you need 70 %
 to win.").
 
@@ -209,9 +209,17 @@ with its id.
 |---|---|
 | Not play-tested | Review panel layout and the defeat fall are unseen; the review panel may be tight on small phones |
 | Rewritten items | An Identification rewritten as Essay is graded by key ideas taken from its answer, which is coarse |
-| Foe look | Houses, Gyms and the Champion share `robot_1.glb` / `robot_2.glb`; only size and counters differ |
+| Foe look | Houses (and a gym with no `boss`, i.e. GymSlot3) draw a random robot from `robot_1`–`robot_5` |
 | House doors | The map's houses have no door animation (one merged `Door` mesh); a dark doorway panel stands in for it |
 | Server grading untested live | `/v1/grade` was checked against a stubbed model only; no real Gemma grade has been run yet (`backend/evals/`). When the free allowance is spent, grading is offline |
+
+## Foes
+
+`ArenaStage.setup(big_foe, boss)` puts the foe on `%FoeSpot`. A Gym or the Champion fights its slot's
+own leader (`GymSlot.boss`, handed over in `SessionManager.battle_boss`): the blue gym the blue boss,
+the orange gym the yellow boss, the red Champion gym the red boss. Everything else picks one of the five
+robots in `foe_scenes` at random. The foe attacks with any clip whose name ends in `attack_clip`
+(`Attack`, `EyeBeam_Attack`, …), picked at random each strike, so a boss mixes its two moves.
 
 ## Entrance
 

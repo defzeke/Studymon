@@ -61,7 +61,7 @@ res://
 │   ├── fonts/            JosefinSans-Regular.ttf, JosefinSans-Bold.ttf
 │   ├── materials/        ink_outline.tres (Kuiz's and the foes' inverted-hull outline)
 │   ├── models/           kuiz.glb; map.glb + map_0.png; boy_explorer.glb, explorer_girl.glb (+ textures);
-│   │                     robot_1.glb, robot_2.glb (battle foes)
+│   │                     robot_1–5.glb (random battle foes), blue_/yellow_/red_boss.glb (gym leaders)
 │   ├── theme/            app_theme.tres (the one shared Theme)
 │   └── sprites/          boot/, effects/, props/, rooms/, battle/, ui/
 ├── scripts/

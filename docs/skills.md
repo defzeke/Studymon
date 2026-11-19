@@ -181,13 +181,14 @@ All companion tuning is in `scripts/autoload/companion_state.gd`:
 
 ## Change the pet or foe models
 
-Kuiz is `assets/models/kuiz.glb`; the arena foes are the scenes in `ArenaStage.foe_scenes`
-(`battle.tscn`).
+Kuiz is `assets/models/kuiz.glb`; the arena's random foes are the scenes in `ArenaStage.foe_scenes`
+(`battle.tscn`), and each gym's leader is its `GymSlot.boss` (`region_map.tscn`).
 
 1. Drop the re-exported `.glb` over the old one and let the editor re-import it (never hand-write
    `.import` files).
 2. `ArenaStage` fits any model to `pet_height` / `foe_height` on its pad, so size does not matter;
-   clip names must still match `idle_clip`, `attack_clip`, `defeat_clip` and the `pet_*_clip` exports.
+   clip names must still match `idle_clip` and `defeat_clip`, a foe's attacks must end in `attack_clip`
+   (`Attack`, `FrostNova_Attack`, …), and Kuiz's must match the `pet_*_clip` exports.
 3. Add the file to the asset inventory in [`ui-and-assets.md`](ui-and-assets.md).
 
 ## Add or tune a food, costume, Sky Jump zone or season

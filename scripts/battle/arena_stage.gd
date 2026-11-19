@@ -63,7 +63,12 @@ extends SubViewportContainer
 @export var foe_hurt_clip: StringName = &""
 
 ## Foes with sounds, by the name of the glb's root node: the voice fires them on its clips.
-const FOE_VOICES := {"BrokenBot": preload("res://scripts/battle/broken_bot_voice.gd")}
+const FOE_VOICE := preload("res://scripts/battle/foe_voice.gd")
+const FOE_VOICES := {
+	"BrokenBot": preload("res://scripts/battle/broken_bot_voice.gd"),
+	"CrackedSentinel": FOE_VOICE, "ScrapUnit": FOE_VOICE, "PorcelainAndroid": FOE_VOICE,
+	"Frostbreaker": FOE_VOICE, "InfernoBreaker": FOE_VOICE, "Voltbreaker": FOE_VOICE,
+}
 const INK_OUTLINE: StandardMaterial3D = preload("res://assets/materials/ink_outline.tres")
 const Player := preload("res://scripts/overworld/player.gd")
 
@@ -90,20 +95,27 @@ var _pet: AnimationPlayer
 var _foe: AnimationPlayer
 var _pet_model: Node3D
 var _foe_model: Node3D
+# The foe's attack clips: the robots and bosses name theirs "<Move>_Attack", and a boss has two.
+var _foe_attacks: Array[StringName] = []
 ## The explorer on stage during the intro.
 var trainer: Node3D
 ## True from play_intro() until the bots have settled.
 var intro_running := false
 
-## `big_foe` (gym boss, Champion) makes the opponent larger.
-func setup(big_foe: bool) -> void:
+## `big_foe` (gym boss, Champion) makes the opponent larger; `boss` is the gym's own leader, else a
+## random robot from `foe_scenes`.
+func setup(big_foe: bool, boss: PackedScene = null) -> void:
 	_pet_model = _add_model(pet_scene, pet_spot, pet_height, Vector3(0, -pet_sink_ratio * pet_height, 0))
 	_dress(_pet_model, 0.0)
 	_pet = _idle(_pet_model)
-	if not foe_scenes.is_empty():
-		_foe_model = _add_model(foe_scenes.pick_random(), foe_spot, foe_height * (big_foe_scale if big_foe else 1.0), Vector3.ZERO)
+	if boss != null or not foe_scenes.is_empty():
+		_foe_model = _add_model(boss if boss != null else foe_scenes.pick_random(), foe_spot, foe_height * (big_foe_scale if big_foe else 1.0), Vector3.ZERO)
 		_dress(_foe_model, foe_outline)
 		_foe = _idle(_foe_model)
+		if _foe != null:
+			for clip in _foe.get_animation_list():
+				if clip.ends_with(attack_clip):
+					_foe_attacks.append(StringName(clip))
 		for root_name: String in FOE_VOICES:
 			if _foe_model.find_child(root_name, true, false) != null:
 				var voice: Node = FOE_VOICES[root_name].new()
@@ -162,7 +174,7 @@ func play_intro(explorer_id: String) -> void:
 	get_tree().create_timer(intro_foe_time * 0.4).timeout.connect(func() -> void:
 		foe_dust.restart()
 		foe_landed.emit()
-		_play(_foe, attack_clip, true))
+		_play(_foe, _foe_attack(), true))
 	await f.finished
 	intro_running = false
 	start_hover()
@@ -200,11 +212,11 @@ func _trainer_leaves(anim: AnimationPlayer) -> void:
 	trainer = null
 
 func enemy_attack() -> void:
-	_play(_foe, attack_clip, true)
+	_play(_foe, _foe_attack(), true)
 
 ## The foe charges Kuiz, hits it, and trots home. Emits strike_hit on impact, strike_finished at the end.
 func enemy_strike() -> void:
-	await _strike(_foe_model, _pet_model, _foe, attack_clip, true)
+	await _strike(_foe_model, _pet_model, _foe, _foe_attack(), true)
 
 ## Kuiz charges the foe, hits it, and floats home.
 func pet_strike() -> void:
@@ -239,6 +251,9 @@ func _strike(attacker: Node3D, target: Node3D, anim: AnimationPlayer, clip: Stri
 		wob.tween_property(target, "rotation:z", 0.0, 0.1)
 	await get_tree().create_timer(strike_recover_time).timeout
 	strike_finished.emit()
+
+func _foe_attack() -> StringName:
+	return _foe_attacks.pick_random() if not _foe_attacks.is_empty() else attack_clip
 
 func enemy_defeat() -> void:
 	_play(_foe, defeat_clip, false)

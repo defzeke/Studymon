@@ -24,6 +24,9 @@
 [ext_resource type="Texture2D" path="res://assets/sprites/ui/icon_charge.svg" id="22_energy"]
 [ext_resource type="Texture2D" path="res://assets/sprites/ui/stat_mood.svg" id="23_mood"]
 [ext_resource type="Texture2D" path="res://assets/sprites/ui/stat_health.svg" id="24_health"]
+[ext_resource type="PackedScene" uid="uid://bp2ltn8kp3x8f" path="res://assets/models/robot_3.glb" id="26_robot3"]
+[ext_resource type="PackedScene" uid="uid://un5xiylna1gp" path="res://assets/models/robot_4.glb" id="27_robot4"]
+[ext_resource type="PackedScene" uid="uid://cp8fmi87dqs1d" path="res://assets/models/robot_5.glb" id="28_robot5"]
 
 [sub_resource type="Gradient" id="Gradient_confetti"]
 colors = PackedColorArray(0.84, 0.66, 0.37, 1, 0.79, 0.44, 0.44, 1, 0.31, 0.56, 0.54, 1, 0.97, 0.96, 0.94, 1)
@@ -236,7 +239,7 @@ mouse_filter = 2
 stretch = true
 script = ExtResource("2")
 pet_scene = ExtResource("3_kuiz")
-foe_scenes = Array[PackedScene]([ExtResource("4_robot1"), ExtResource("5_robot2")])
+foe_scenes = Array[PackedScene]([ExtResource("4_robot1"), ExtResource("5_robot2"), ExtResource("26_robot3"), ExtResource("27_robot4"), ExtResource("28_robot5")])
 
 [node name="View" type="SubViewport" parent="Stage" unique_id=1125434779]
 own_world_3d = true

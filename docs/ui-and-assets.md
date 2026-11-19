@@ -337,7 +337,17 @@ there are no sound files for them:
   speaker is out), `Defeat` the power-down with crackles. The artifact's compressor evens the three
   out, so each is normalised to the same peak. `ArenaStage.FOE_VOICES` attaches it to a foe whose
   glb has a `BrokenBot` root node.
-- Kuiz has no voice in battle, and `robot_2.glb` has no sounds (no artifact for it yet).
+- **The other foes** (`battle/foe_voice.gd`, one script for `robot_3`–`robot_5` and the three
+  bosses): `ArenaStage.FOE_VOICES` attaches it by root node (`CrackedSentinel`, `ScrapUnit`,
+  `PorcelainAndroid`, `Frostbreaker`, `Voltbreaker`, `InfernoBreaker`), and it picks that foe's cues
+  from its `CUES` table. Cues sit where the clip's effects show: the Sentinel's beam charge and beam
+  (0.87 s), the Scrap Unit's rattle, throw and crash (1.87 s), the Android's EMP charge and pulse
+  (1.53 s); Frostbreaker's crystal burst (0.97 s) and shatter, its hammer throw, spin and catch;
+  Voltbreaker's charge crackle and thunder (1.33 s), its magnet hum and scrap barrage;
+  Infernobreaker's leap and slam (1.7 s), its fireball and explosion (1.8 s). Every `Defeat` has
+  its own fall: flicker, power-down, then a crash, porcelain or ice shatter, crumble or slam.
+  Each sound is normalised to the same peak; the cue volume sets the mix.
+- Kuiz has no voice in battle. `robot_2.glb` shares the `BrokenBot` root, so it gets the Broken Bot's voice.
 
 ### Home HUD
 
@@ -605,7 +615,7 @@ All of Studymon's audio is our own, composed and synthesised from scratch for it
 study-pet mood: bright marimba, ukulele and glockenspiel, music box and soft bells, with rounded
 cues and no harsh noise. The music and one-shots are WAVs rendered by a Python generator kept outside the repo
 (additive sine partials, wavetable pads, a Schroeder reverb, gentle `tanh` rounding); Kuiz's and
-the Broken Bot's sounds are synthesised in the game itself (§2 Model sounds).
+the foes' sounds are synthesised in the game itself (§2 Model sounds).
 
 `MusicManager` (autoload) owns two `AudioStreamPlayer`s:
 
@@ -618,17 +628,25 @@ the Broken Bot's sounds are synthesised in the game itself (§2 Model sounds).
   the map, the same crossfade to `music/overworld.wav`; `battle.gd` crossfades to `music/battle.wav`, and `session_list.gd`, `flashcards.gd` and `peek.tscn` call `play_main_room()` to
   fade back. Each track is written as a seamless loop (its note
   and reverb tails wrap onto its start) and is set to loop forward over its whole length at runtime.
-  - **Home Room** (34 s, 112 bpm, C major): a sunny, bouncy tune — a marimba melody over
-    ukulele strums on an island pattern (C · F · G · C, C · Am · F · G, F · G · C · G,
-    C · F · G · C), a plucky bass on roots and fifths, glockenspiel twinkles at phrase ends and
-    doubling the third phrase, and a soft kick, clap and shaker groove; only a light room reverb.
-  - **Loading** (38 s, 100 bpm, C major): rolling marimba arpeggios, a soft pad, a gentle
-    woodblock tick on the off-beats and a bell call every two bars.
-  - **Overworld** (46 s, 126 bpm, G major): a Pokémon-route-style walking theme — a soft pulse
-    lead (band-limited 25 % pulse with gentle vibrato) over off-beat ukulele chops and a bouncy
-    octave bass; A (G · D · Em · C · G · D · C · D), a bridge B (C · D · G · Em · C · D · Am · D)
-    with marimba broken chords, then A again doubled by glockenspiel; kick, clap and shaker with a
-    tom fill every 8 bars, light room reverb.
+  - Home Room, Loading and Overworld (v2) are played, not programmed: ukulele and bass are
+    plucked strings (Karplus-Strong), every hit is a fresh sound with its own velocity, notes sit a
+    few ms off the grid and the 8ths swing slightly, the harmony carries 7ths and passing chords,
+    sections drop parts out, and the bus has a slow tape wow, a soft room, gentle saturation, a warm
+    top and a faint hiss. 32 kHz mono, matched in loudness to the other tracks.
+  - **Home Room** (34 s, 112 bpm, C major, light swing): a sunny, bouncy marimba melody over
+    ukulele strums (Cmaj7 · Fmaj7 · G7 · Cadd9, C · Am7 · Dm7 · G7, Fmaj7 · G · Em7 · A7,
+    Dm7 · G7 · C · G7), a plucky bass with walking approach notes, glockenspiel twinkles at phrase
+    ends and doubling the third phrase, kick, clap and shaker with a tom fill every 8 bars; bars 13–14
+    thin out to stabs and kick.
+  - **Loading** (38 s, 100 bpm, C major): marimba arpeggios that change shape every two bars and
+    swell, a soft detuned pad, a long plucked bass note per bar, a bell call every two bars (a new
+    motif each time), a sparse kalimba answer in the second half and woodblock ticks that skip now
+    and then.
+  - **Overworld** (46 s, 126 bpm, G major): a route-style walking theme — a soft 25 % pulse lead
+    that scoops into notes, with vibrato that blooms late, over off-beat ukulele chops and a bouncy
+    octave bass; A (G · D · Em · C · G · D · Cadd9 · D), a bridge B (Cmaj7 · D · G · Em7 · Cmaj7 ·
+    D · Am7 · D7) with marimba broken chords, then A again doubled by glockenspiel; kick, clap and
+    shaker with a tom fill and a bass run-up every 8 bars.
 - `SfxPlayer` — single voice, so overlapping SFX cut each other off; `play_sfx_chain()` serialises a
   list with `await` and cancels itself if another chain starts (guarded by `_sfx_chain_id`).
   `play_sfx_layered()` plays on a throwaway player so battle cues overlap.
@@ -651,7 +669,7 @@ One-shots (`sfx/`, 22 050 Hz mono, each with a short soft reverb tail):
 | `sfx_charged` | two low, sleepy bells and a warm swell | right after `sfx_charge` |
 | `sfx_level_up` | a music-box run up C major into a bell chord over a low C, with glockenspiel sparkles (2.8 s) | the level-up party |
 
-Kuiz and the Broken Bot make their sounds in code on their own players (§2 Model sounds).
+Kuiz and every battle foe make their sounds in code on their own players (§2 Model sounds).
 
 ---
 
@@ -669,11 +687,11 @@ rasterises them sharp on high-density phones; the drawing itself is unchanged.
 | `sprites/battle/battle_backdrop.svg` | `battle.tscn` arena backdrop |
 | `materials/ink_outline.tres` | the ink outline (inverted hull, Deep Slate): `peek.gd`, `kuiz_follower.gd` and `arena_stage.gd` duplicate it per mesh at its width |
 | `data/foods/*.tres` (6), `data/costumes/*.tres` (11), `data/sky_zones/*.tres` (4), `data/seasons/*.tres` (4) | the data resources (`FoodItem`, `Costume`, `SkyZone`, `SeasonLook`): `home.gd` `foods`, `kuiz_look.gd` `costumes`, `sky_jump.gd` `zones`, `season.gd` looks |
-| `audio/music/home_room.wav` | `MusicManager`: home loop (our own; 34 s, upbeat C major, seamless) |
+| `audio/music/home_room.wav` | `MusicManager`: home loop (our own, v2; 34 s, upbeat C major, seamless) |
 | `audio/music/focus_twinkle.wav`, `focus_london_bridge.wav`, `focus_mary_lamb.wav`, `focus_frere_jacques.wav` | `MusicManager.play_focus()`: the reviewing shuffle. Traditional public-domain tunes, our own arrangement (music box, felt chords, bass, brushed beat, 72–78 bpm, 22 kHz mono), played once each, no loop |
 | `audio/music/battle.wav` | `MusicManager.play_battle()`: our own driving A-minor loop (132 bpm, 29 s, marimba, bass, soft lead, drums; 32 kHz mono, seamless) |
-| `audio/music/loading.wav` | `MusicManager.play_loading()`: splash/loading loop (our own; 38 s, seamless) |
-| `audio/music/overworld.wav` | `MusicManager.play_overworld()`: region map (and battle) loop (our own; 46 s, G major route theme, seamless) |
+| `audio/music/loading.wav` | `MusicManager.play_loading()`: splash/loading loop (our own, v2; 38 s, seamless) |
+| `audio/music/overworld.wav` | `MusicManager.play_overworld()`: region map loop (our own, v2; 46 s, G major route theme, seamless) |
 | `audio/sfx/sfx_charge.wav`, `sfx_charged.wav` | home's Charge button (our own) |
 | `fonts/JosefinSans-Regular.ttf` | theme default font |
 | `fonts/JosefinSans-Bold.ttf` | theme button font; `loading.tscn` title and tip labels |
@@ -687,7 +705,13 @@ rasterises them sharp on high-density phones; the drawing itself is unchanged.
 | `models/boy_explorer.glb`, `boy_explorer_basecolor_v2.jpg`, `boy_explorer_normal_v2.jpg` | `region_map.tscn` explorer, the boy (`Idle`, `Walk`, `Run`; `Celebrate` in the picker). `player.gd` turns his normal map off: it is noisy and blotched his jacket, so he shows base colour only |
 | `models/explorer_girl.glb`, `explorer_girl_basecolor.jpg`, `explorer_girl_normal.jpg` | `region_map.tscn` explorer, the girl (same clips and rig size as the boy) |
 | `models/robot_1.glb` | battle foe, the Broken Bot (`Idle`, `Attack`, `Defeat`); its sounds are made in code (`broken_bot_voice.gd`) |
-| `models/robot_2.glb` | battle foe (`Idle`, `Attack`, `Defeat`); silent |
+| `models/robot_2.glb` | battle foe (`Idle`, `Attack`, `Defeat`); same `BrokenBot` root, so the same voice |
+| `models/robot_3.glb` + `robot_3_*.png` | battle foe, the Cracked Sentinel (`Idle`, `EyeBeam_Attack`, `Defeat`, `Rebuild`); sounds in `foe_voice.gd` |
+| `models/robot_4.glb` + `robot_4_*.png` | battle foe, the Scrap Unit (`Idle`, `ScrapToss_Attack`, `Defeat`, `Rebuild`); sounds in `foe_voice.gd` |
+| `models/robot_5.glb` + `robot_5_*.png` | battle foe, the Porcelain Android (`Idle`, `EMP_Attack`, `Defeat`, `GetUp`); sounds in `foe_voice.gd` |
+| `models/blue_boss.glb` + `blue_boss_*.png` | leader of the blue gym (`GymSlot1.boss`), Frostbreaker (`FrostNova_Attack`, `BoomerangHammer_Attack`, `Defeat`, `Rise`); sounds in `foe_voice.gd` |
+| `models/yellow_boss.glb` + `yellow_boss_*.png` | leader of the orange gym (`GymSlot2.boss`), Voltbreaker (`ThunderStrike_Attack`, `ScrapBarrage_Attack`, `Defeat`, `Rise`); sounds in `foe_voice.gd` |
+| `models/red_boss.glb` + `red_boss_*.png` | the Champion (`ChampionSlot.boss`), Infernobreaker (`MeteorLeap_Attack`, `MagmaCannon_Attack`, `Defeat`, `Rise`); sounds in `foe_voice.gd` |
 | `models/kuiz.glb` | `peek.tscn` 3D Kuiz head; 21 clips (13 one-shots, `Celebrate`, `Learn_Something_New`, six `State_*` moods), face and props on blend shapes |
 | `sprites/boot/kuizmon_splash.png` | `splash.gd` 60-frame intro sheet (6 × 10 cells, 480 × 264) |
 | `sprites/rooms/study_room.svg` | settings and categorizer background (day); the tutorial's Study Room (temporary placeholder) |

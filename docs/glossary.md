@@ -58,7 +58,7 @@ Terms used throughout this repo, in the sense this repo means them.
 | **Explorer** | The player's walking character on the island (`boy_explorer.glb` or `explorer_girl.glb`), steered with the on-screen joystick at the bottom-left; the player picks one on the way into a world, or from the map, and each world keeps its own. |
 | **Gym** | A group of encounters for one question type (`identification`, `essay`, `multiple_choice`). Clearing every gym is the Champion prerequisite. |
 | **Trainer** | A single-question encounter on a gym's road, ordered Easy to Hard. Every trainer of a gym must be beaten before its boss opens. |
-| **Boss** | The gym's hardest question, fought after its trainers; winning it clears the gym. 150 HP and double XP. |
+| **Boss** | A gym's own leader in battle (`GymSlot.boss`): the blue boss in the blue gym, the yellow boss in the orange one, the red boss as the Champion. Houses fight a random robot instead. |
 | **Tier** | A question's `difficulty`: `easy`, `medium` or `hard`. It sets the enemy's HP, the counter damage, the XP and the grading thresholds in battle. |
 | **Distractors** | The wrong options of a Multiple Choice question (`distractors`, three strings); the correct option is its `answer`. |
 | **Champion** | The region finale: the Mastered questions (or every question when none is), Easy to Hard, back to back. |

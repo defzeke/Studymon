@@ -177,7 +177,7 @@ These live only in memory and are lost on quit or scene change:
 | `pending_questions`, `editing_topic_id` | `SessionManager` | Reopening a topic reloads from `session.topics`; unsaved edits are lost on app exit |
 | `current_topic_id` | `SessionManager` | After a restart, the overworld falls back to its preview questions unless a topic is re-opened |
 | `last_source_text` | `SessionManager` | Kept with the world it builds as `topics[].source_text` (for "More questions"); a photo reviewer has none |
-| Battle handoff (`battle_topic_id`, `battle_kind`, `battle_type`, `battle_house`, `battle_variant`, `battle_run`, `battle_explorer`) | `SessionManager` | Correct by design — a battle doesn't survive a restart |
+| Battle handoff (`battle_topic_id`, `battle_kind`, `battle_type`, `battle_house`, `battle_variant`, `battle_run`, `battle_explorer`, `battle_boss`) | `SessionManager` | Correct by design — a battle doesn't survive a restart |
 | Pomodoro (`_pomodoro_mode`, `_pomodoro_remaining`) | `CompanionState` | A running focus timer (started on the Study screen) is lost on quit |
 | Tap-cap counters (`_action_tap_counts`, `_last_hour_reset`) | `CompanionState` | Relaunching clears the hourly diminishing-returns counter — an easy exploit |
 | `GameState.player_name` | `GameState` | Set by the tutorial; saved as `player_name` (v7) |

@@ -376,6 +376,8 @@ func best_stars(kind: String, topic_id: String, run_key: String) -> int:
 var battle_topic_id: String = ""
 ## The explorer who walked in, for the battle's entrance.
 var battle_explorer := "boy"
+## The gym's own leader (GymSlot.boss), or null for a random robot.
+var battle_boss: PackedScene
 var battle_kind: String = ""
 var battle_type: String = ""
 ## The Challenge House being played ("" for a gym or the Champion) and its number on the map.

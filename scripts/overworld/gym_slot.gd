@@ -8,3 +8,5 @@ extends Node3D
 @export var entrance: Marker3D
 @export var door_open_clip: StringName
 @export var door_close_clip: StringName
+## The leader fought inside; empty sends a random robot.
+@export var boss: PackedScene

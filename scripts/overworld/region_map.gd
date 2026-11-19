@@ -588,6 +588,8 @@ func _on_encounter_cleared() -> void:
 		encounter_clear_btn.disabled = true
 		return
 	SessionManager.battle_explorer = player.explorer
+	var slot: GymSlot = champion_slot if kind == "champion" else (_slot_of(gym_type) if kind == "gym" else null)
+	SessionManager.battle_boss = slot.boss if slot != null else null
 	var entry := _pending_encounter
 	_show_encounter(false)
 	_pending_encounter = {}

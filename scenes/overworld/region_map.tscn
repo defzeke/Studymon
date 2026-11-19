@@ -27,6 +27,9 @@
 [ext_resource type="Resource" path="res://assets/data/seasons/autumn.tres" id="42_autumn"]
 [ext_resource type="Resource" path="res://assets/data/seasons/snowy.tres" id="43_snowy"]
 [ext_resource type="Resource" path="res://assets/data/seasons/rainy.tres" id="44_rainy"]
+[ext_resource type="PackedScene" uid="uid://bft8dwd6wdycc" path="res://assets/models/blue_boss.glb" id="45_blue_boss"]
+[ext_resource type="PackedScene" uid="uid://gn383a400gnq" path="res://assets/models/yellow_boss.glb" id="46_yellow_boss"]
+[ext_resource type="PackedScene" uid="uid://bsocc5xvu0f5d" path="res://assets/models/red_boss.glb" id="47_red_boss"]
 
 [sub_resource type="Environment" id="Environment_island"]
 background_mode = 1
@@ -225,6 +228,7 @@ script = ExtResource("7_slot")
 entrance = NodePath("Entrance")
 door_open_clip = &"Gym2_Door_Open"
 door_close_clip = &"Gym2_Door_Close"
+boss = ExtResource("45_blue_boss")
 
 [node name="Entrance" type="Marker3D" parent="GymSlot1" unique_id=1645667140]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13.54317, 0, 5.032681)
@@ -234,6 +238,7 @@ script = ExtResource("7_slot")
 entrance = NodePath("Entrance")
 door_open_clip = &"Gym3_Door_Open"
 door_close_clip = &"Gym3_Door_Close"
+boss = ExtResource("46_yellow_boss")
 
 [node name="Entrance" type="Marker3D" parent="GymSlot2" unique_id=785346184]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14.15683, 0, -5.717319)
@@ -250,6 +255,7 @@ script = ExtResource("7_slot")
 entrance = NodePath("Entrance")
 door_open_clip = &"Gym_Door_Open"
 door_close_clip = &"Gym_Door_Close"
+boss = ExtResource("47_red_boss")
 
 [node name="Entrance" type="Marker3D" parent="ChampionSlot" unique_id=1734539920]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.15608, 0, -6.842329)

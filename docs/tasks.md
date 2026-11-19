@@ -10,6 +10,14 @@ Last updated: 2026-11-12.
 
 ## In flight
 
+Uncommitted: **new foes, gym bosses, music v2.**
+- Houses fight a random robot from `robot_1`–`robot_5`; each gym fights its own boss (blue, yellow, red
+  Champion), with the foe's own attack clips ([`systems/battle.md`](systems/battle.md) §Foes).
+- Home Room, Loading and Overworld re-rendered to sound played rather than programmed
+  ([`ui-and-assets.md`](ui-and-assets.md) §4). Old renders are not kept in the repo.
+- A defeat now empties Kuiz's HP bar, also when the run ends below a star.
+- The new robots and the bosses have their own attack and defeat sounds (`foe_voice.gd`).
+
 Uncommitted: **care pacing and the level-up notice.**
 - Energy lasts an hour from full to low (25 %) on a new battery, faster on a worn one; below 25 % Kuiz
   cannot start a run or open flashcards until it charges ([`systems/companion-care.md`](systems/companion-care.md) §1).
