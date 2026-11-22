@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://c0538bh1e5cpl"
 path.s3tc="res://.godot/imported/boy_explorer_normal_v2.jpg-64c8c2d4905f607448db15111ad3fb87.s3tc.ctex"
+path.etc2="res://.godot/imported/boy_explorer_normal_v2.jpg-64c8c2d4905f607448db15111ad3fb87.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/models/boy_explorer_normal_v2.jpg"
-dest_files=["res://.godot/imported/boy_explorer_normal_v2.jpg-64c8c2d4905f607448db15111ad3fb87.s3tc.ctex"]
+dest_files=["res://.godot/imported/boy_explorer_normal_v2.jpg-64c8c2d4905f607448db15111ad3fb87.s3tc.ctex", "res://.godot/imported/boy_explorer_normal_v2.jpg-64c8c2d4905f607448db15111ad3fb87.etc2.ctex"]
 
 [params]
 

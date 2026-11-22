@@ -244,10 +244,61 @@ matters: the editor and the headless gates never touch the plugin.
    - Play in airplane mode and check it syncs later.
    - "Delete my data" removes the cloud copy.
 
+## Build a tester APK
+
+A debug APK to sideload on testers' phones, from the `Android Tester` preset in `export_presets.cfg`.
+It is set up for this:
+- **Format and build:** APK, Gradle build, arm64-v8a only.
+- **App:** package `com.studymon.app`, Internet permission.
+- **Play Games off:** the custom feature `no_play_games` keeps `CloudSave` from starting the Play
+  Games SDK. The plugin still needs a Game ID to build, so the preset holds the placeholder
+  `0000000000`.
+
+**One-time setup on a PC:**
+1. **JDK 17**, for example Temurin 17. Editor Settings → Export → Android → **Java SDK Path**.
+2. **Android SDK:** the command-line tools in `%LOCALAPPDATA%\Android\Sdk\cmdline-tools\latest`.
+   Accept the licences with `sdkmanager --licenses`, then install:
+   ```
+   sdkmanager --sdk_root=<sdk> "platform-tools" "build-tools;35.0.1" "platforms;android-35" "cmake;3.10.2.4988404" "ndk;28.1.13356709"
+   ```
+   Then set Editor Settings → **Android SDK Path**.
+3. **The 4.7.2 export templates:** Editor → Manage Export Templates. Only the `android_*` files are
+   needed.
+4. **A debug keystore** at Editor Settings → `export/android/debug_keystore`. If it is missing,
+   create one:
+   ```
+   keytool -genkeypair -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+   ```
+
+**Each build:**
+1. Raise `version/code` in the preset by 1, or phones refuse the update.
+2. Set `Api.RELEASE_URL` to the deployed server for working AI. Without it the APK plays on the mock
+   ([§Use the real study server](#use-the-real-study-server)).
+3. Export with Project → Export → Android Tester → Export Project (Export With Debug on), or headless:
+   ```powershell
+   & $GODOT --headless --path . --install-android-build-template --export-debug "Android Tester" build/studymon-tester.apk
+   ```
+   `build/` and `android/build/` are gitignored. Android needs ETC2/ASTC textures
+   (`rendering/textures/vram_compression/import_etc2_astc`, on).
+
+**Testers:**
+- **Installing:** they allow "Install unknown apps" for their browser or file app. If Play Protect
+  warns, they tap **More details → Install anyway**.
+- **Saves:** they live on the phone only. Uninstalling deletes progress; installing a newer APK over
+  the old one keeps it.
+- **The Gold shop:** a debug build has the free test top-up.
+- **When the real Game ID exists:** put it in `godot_play_game_services/game_id`, remove
+  `no_play_games`, and add the testers' Google accounts as Play Games testers. They then sign in
+  automatically at launch, and their saves sync ([§Export for Android with Play Games](#export-for-android-with-play-games)).
+
 ## Use the real study server
 
-The editor, the headless gates and debug exports run on the mock (`Api.MOCK` is
-`OS.is_debug_build() and not DEV_USES_SERVER`); an exported **release** build always uses the server.
+Which server a build talks to (`api.gd`):
+- **The editor and the headless gates** use `DEV_URL`, the local server, while `DEV_USES_SERVER` is
+  true. Otherwise they use the mock.
+- **Every exported build**, debug or release, uses `RELEASE_URL`, because `127.0.0.1` on a phone is
+  the phone itself.
+- **A debug APK exported before `RELEASE_URL` is set** plays on the mock, so testers can still play.
 
 1. **Credentials (free):** a Cloudflare account; copy its Account ID into `AI_BASE_URL` and create
    an API token with the *Workers AI* permission for `AI_API_KEY`, in `backend/.env` (copied from

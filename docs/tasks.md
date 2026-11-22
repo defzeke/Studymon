@@ -10,7 +10,16 @@ Last updated: 2026-11-22.
 
 ## In flight
 
-Uncommitted: **Gold through RevenueCat, and the 2026-11-22 check.**
+Uncommitted: **a tester APK** (2026-11-22).
+- `export_presets.cfg` has an `Android Tester` preset: debug APK, `com.studymon.app`, arm64, and Play
+  Games off with the `no_play_games` feature ([`skills.md`](skills.md) §Build a tester APK).
+- Exported builds, debug ones too, use `Api.RELEASE_URL`. A debug APK plays on the mock until it is
+  set, since `127.0.0.1` on a phone is the phone.
+- `import_etc2_astc` is on: Android needs ETC2/ASTC textures.
+- Built on this PC with JDK 17, the Android SDK and the 4.7.2 templates. Not yet opened on a phone.
+- Next: deploy the server (next-steps 1.1 and 1.5), set `RELEASE_URL`, and rebuild.
+
+Committed in `2b24136`: **Gold through RevenueCat, and the 2026-11-22 check.**
 - The `Store` autoload sells the four Gold packs through the vendored Godotx RevenueCat plugin (v2.6.0,
   MIT): Google's payment sheet, a receipt check on RevenueCat, the Gold saved at once, the store's own
   prices on the buttons ([`systems/monetization.md`](systems/monetization.md) §Buying Gold). It is not
@@ -25,7 +34,7 @@ Uncommitted: **Gold through RevenueCat, and the 2026-11-22 check.**
   RevenueCat, an Android export and a phone.
 - Found: the new foe models' import errors (#25) and the purchase gaps (#24).
 
-Uncommitted: **real-life stat clock and World Builder inputs** (2026-11-22).
+Committed in `2b24136`: **real-life stat clock and World Builder inputs** (2026-11-22).
 - The stats fall from full to low in real-life times: hunger 4 h, focus 3 h, mood 6 h, energy 8 h,
   health 24 h (were 15 to 60 min), also while the game is closed.
 - Charging is like a phone's: 0 to 80 % in 45 min, then to full in 25 more, with no drain on the

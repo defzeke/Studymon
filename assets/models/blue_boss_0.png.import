@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://xd8a6wxo3pi0"
 path.s3tc="res://.godot/imported/blue_boss_0.png-f8e645f9d4cdcfb4ce456b45ea5cdd08.s3tc.ctex"
+path.etc2="res://.godot/imported/blue_boss_0.png-f8e645f9d4cdcfb4ce456b45ea5cdd08.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/models/blue_boss_0.png"
-dest_files=["res://.godot/imported/blue_boss_0.png-f8e645f9d4cdcfb4ce456b45ea5cdd08.s3tc.ctex"]
+dest_files=["res://.godot/imported/blue_boss_0.png-f8e645f9d4cdcfb4ce456b45ea5cdd08.s3tc.ctex", "res://.godot/imported/blue_boss_0.png-f8e645f9d4cdcfb4ce456b45ea5cdd08.etc2.ctex"]
 
 [params]
 

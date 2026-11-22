@@ -13,7 +13,8 @@ questions and answer keys live only in the player's save file ([`data-model.md`]
 - **Hosting:** Render's free web service (`render.yaml`, §4)
 - **Consumers:** `SessionManager` (extraction), `battle.gd` (grading)
 
-Status: **the editor and debug builds run on mocks; release builds use the server.** The backend is
+Status: **the editor uses the local server (or the mock); every exported build, a debug tester APK
+too, uses `RELEASE_URL`, and a debug APK falls back to the mock until it is set.** The backend is
 checked with unit tests against a stubbed model. It has **not yet been run against Gemma**: that
 needs a Cloudflare account ([`launch-plan.md`](launch-plan.md) §5).
 
@@ -23,10 +24,10 @@ needs a Cloudflare account ([`launch-plan.md`](launch-plan.md) §5).
 
 ```gdscript
 const RELEASE_URL := ""                     # the deployed HTTPS server; set before exporting
-const DEV_USES_SERVER := false               # true: the editor talks to DEV_URL instead of the mock
+const DEV_USES_SERVER := true                # false: debug builds play on the mock
 const DEV_URL := "http://127.0.0.1:8000"     # not localhost: it can resolve to IPv6, which uvicorn ignores
-var MOCK := OS.is_debug_build() and not DEV_USES_SERVER
-var BASE_URL := DEV_URL if OS.is_debug_build() else RELEASE_URL
+var BASE_URL := DEV_URL if OS.has_feature("editor") else RELEASE_URL   # exports never use DEV_URL
+var MOCK := OS.is_debug_build() and (not DEV_USES_SERVER or BASE_URL == "")
 const EXTRACT_TIMEOUT := 240.0               # a whole bank, plus the free host's ~1 min wake-up
 const GRADE_TIMEOUT := 75.0
 

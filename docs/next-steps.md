@@ -215,7 +215,8 @@ In `scripts/autoload/api.gd`, set:
 const RELEASE_URL := "https://<name>.onrender.com"
 ```
 
-Only release exports use it. The editor and debug builds stay on the mock.
+Every exported build uses it: a debug tester APK as well as a release. The editor keeps using the
+local server or the mock ([`skills.md`](skills.md) §*Use the real study server*).
 
 ### 1.7 Put the policy pages online
 
