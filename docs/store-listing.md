@@ -70,8 +70,14 @@ Data types (all **collected, not shared, optional**, purpose **App functionality
 | Files and docs | Yes | a reviewer PDF, Word or PowerPoint file, read once |
 | App activity → **Other user-generated content** | No, because reports are logged | pasted reviewer text, typed battle answers, the text of reported questions and feedback |
 
-Not collected: location, personal info (name, email, IDs), financial info, contacts, messages,
-health, audio, web history, device IDs, crash logs and diagnostics.
+Once RevenueCat is live, add **Financial info → Purchase history**: collected, not shared
+(RevenueCat is a service provider acting for us), required for buyers only, purpose **App
+functionality**. It holds the product, price, order number and date, keyed by RevenueCat's anonymous
+app user id ([`systems/monetization.md`](systems/monetization.md) §Buying Gold).
+
+Not collected: location, personal info (name, email, IDs), other financial info (card details stay
+with Google Play), contacts, messages, health, audio, web history, device IDs, crash logs and
+diagnostics.
 
 **Re-check when filling in the form:**
 - IP addresses are in the host's logs and in the day's in-memory limits. They are not used for
@@ -101,7 +107,7 @@ health, audio, web history, device IDs, crash logs and diagnostics.
 | Sexuality, profanity, drugs, alcohol, tobacco, gambling, horror | No |
 | Users interact or share content with each other | **No**: nothing a player makes reaches another player |
 | Shares the user's location | No |
-| Digital purchases | No while the Gold shop is debug-only; Yes once Play Billing ships ([`systems/monetization.md`](systems/monetization.md)) |
+| Digital purchases | **Yes** once RevenueCat is live: Gold packs, PHP 49–499 ("Contains in-app purchases" on the listing). No until then ([`systems/monetization.md`](systems/monetization.md)) |
 | Unrestricted internet access | No (only the study server) |
 
 ---

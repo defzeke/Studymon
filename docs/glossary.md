@@ -12,10 +12,11 @@ Terms used throughout this repo, in the sense this repo means them.
 | **Outfit** | What Kuiz wears from the Playroom closet, `GameState.outfit`: one costume per slot (head, face, body), each a sticker on its head. |
 | **Battery health** | `CompanionState.battery_health`: the battery's capacity, like a phone's. Charging wears it, a worn battery drains energy faster, and a new one (30 crystals, the check-up tablet) restores 100 %. |
 | **Crystals** | Home's currency, `GameState.crystals`, shown top right with the logo's forehead gem. Saved; battles, the study goal, level-ups and minigames earn it; food, costumes, world slots and a new battery spends it. It cannot be bought with money; Gold trades for it. |
-| **Gold** | The premium currency, `GameState.gold`, topped up for pesos in the shop behind the crystal pill and spent on crystals or premium costumes. Debug builds only until Play Billing is wired ([`systems/monetization.md`](systems/monetization.md)). |
+| **Gold** | The premium currency, `GameState.gold`, topped up for pesos in the shop behind the crystal pill and spent on crystals or premium costumes. Sold through RevenueCat (`Store`); debug builds only until its key is set ([`systems/monetization.md`](systems/monetization.md)). |
+| **RevenueCat** | The purchase service behind Gold: Google Play Billing with a receipt check on its servers, through the Godotx RevenueCat plugin and the `Store` autoload. Free up to USD 2,500 of tracked revenue a month. |
 | **Title** | Kuiz's school rank for its level band (`CompanionState.rank()`, `assets/data/ranks.tres`): Kindergarten at Level 1, a new one every 10 levels, Einstein from 100. |
 | **Care tap** | One care action (feed, pet, play, fix, clean). Grants XP, nudges one stat, and is subject to hourly diminishing returns. |
-| **Hunger / Energy / Mood / Health** | The four 0–100 stats on home's HUD gauges. Each falls from full to low (25 %) in a set time (`FULL_TO_LOW_MIN`): hunger 15 min, mood 20, energy and health 60. Focus (30 min) is also 0–100 but only flashcards use it. |
+| **Hunger / Energy / Mood / Health** | The four 0–100 stats on home's HUD gauges. Each falls from full to low (25 %) in a set real-life time (`FULL_TO_LOW_MIN`): hunger 4 h, mood 6 h, energy 8 h, health 24 h. Focus (3 h) is also 0–100 but only flashcards use it. Charging fills energy in about 70 min. |
 | **XP curve** | `CompanionState.xp_to_reach(lv)`: 20 XP for Level 2, then 5 more per level (Level 5 at 110, Level 6 at 150); no cap. |
 | **Pomodoro** | The 25-minute focus / 5-minute rest timer. Missing the rest costs energy and mood; finishing it grants a small bonus. |
 | **Decay** | The per-second stat drain in `CompanionState._process`. It runs on every screen because the autoload is always alive. |

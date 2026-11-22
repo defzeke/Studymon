@@ -22,7 +22,7 @@ Made by the maintainer:
 | Platforms | **Android first** (decided 2026-11-08); iOS later |
 | Every tool free | (decided 2026-11-08) The one accepted cost is the Google Play registration ($25 once) |
 | Login | **No accounts of our own.** Saves sync to the player's **Google Play Games Saved Games** (their Google Drive app folder). Decided 2026-11-08, replacing "device only" from 2026-10-29. *Built, not yet tested on a phone* (`CloudSave`, [`data-model.md`](data-model.md) §8). Settings keeps Export / Import save and "Delete my data". **Planned (decided 2026-11-09):** Google Play Games sign-in becomes **required** to play, and the study server identifies each player from a Play Games server auth code, with AI limits per player ([`next-steps.md`](next-steps.md) Phase 2) |
-| Purchases | **v1: free launch** (decided 2026-10-29): the placeholder Crystal Shop was removed; in-app purchases come in a later update. Gold, a peso top-up currency, is built and debug-only (2026-11-12, [`systems/monetization.md`](systems/monetization.md)) |
+| Purchases | **Gold packs through RevenueCat** (decided 2026-11-22, replacing the 2026-10-29 free launch): four consumable Gold packs bought with Google Play Billing through RevenueCat (free up to USD 2,500 a month of tracked revenue), which checks every receipt. *Built, not live*: it needs the Play Console products and the RevenueCat key ([`systems/monetization.md`](systems/monetization.md) §Buying Gold) |
 | AI model | **Gemma 4 26B on Cloudflare Workers AI** (decided 2026-11-08), free up to 10,000 neurons a day, for questions and grading; offline fallbacks when it is spent ([`api-backend.md`](api-backend.md) §3) |
 | Hosting | **Render's free web service** (decided 2026-11-08, `render.yaml`): no card, sleeps after 15 idle minutes |
 
@@ -69,7 +69,7 @@ Ranked by leverage for a store launch:
 | Apple | Guideline 5.1.2(i) (Nov 2025): disclose **what** personal data goes to third-party AI, **to whom**, and get permission first | A consent screen before the first AI call that names the AI provider and what is sent (reviewer text or PDF, essay answers). Store consent per profile, show it again from Settings, and make sure App Review can see it |
 | Apple | Account deletion must be possible in the app (5.1.1(v)) | **Not applicable**: there are no accounts. Settings' "Delete my data" erases the local save; the server stores nothing |
 | Apple | Sign in with Apple is expected when other social logins are offered (4.8) | **Not applicable**: there is no login |
-| Apple | Digital goods use In-App Purchase (3.1.1); App Review needs a way in | No real-money purchases (crystals are earned in play). No login, so no demo account: the review notes include a sample reviewer to paste |
+| Apple | Digital goods use In-App Purchase (3.1.1); App Review needs a way in | Not yet (Android first). On iOS, Gold would use In-App Purchase through the same RevenueCat project. No login, so no demo account: the review notes include a sample reviewer to paste |
 | Google | Generative-AI policy: an in-app way to report or flag offensive AI content without leaving the app | A Report button on generated questions and on essay feedback, sent to `POST /v1/reports` (done) |
 | Google | Data safety form; account-deletion URL plus in-app deletion | No accounts: declare that nothing is stored server-side and that "Delete my data" erases the local save |
 | Google | New personal developer accounts: a closed test with at least 12 testers opted in for 14 days before production (organisation accounts are reportedly exempt) | Put a minimal build into closed testing early; recruit 15–20 testers to absorb dropouts |
@@ -134,8 +134,8 @@ and 5.3:
 
 ## 7. Later (not Phase 5)
 
-Purchases (`godot-iap` or a similar plugin with server receipt validation and RevenueCat-style
-entitlements), restore purchases, sharing topics between students, Endless Marathon, Subway Sprint
+iOS purchases (the RevenueCat plugin ships an iOS build too; Gold on Android is built, see §1),
+sharing topics between students, Endless Marathon, Subway Sprint
 ([`systems/gameplay-structure.md`](systems/gameplay-structure.md) "Future").
 
 ## 8. Risks

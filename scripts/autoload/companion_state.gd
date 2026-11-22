@@ -18,9 +18,9 @@ const LEVEL_CRYSTALS := 25
 ## Kuiz's school title per band of levels, Kindergarten to Einstein.
 const RANKS: RankLadder = preload("res://assets/data/ranks.tres")
 const STAT_MAX := 100.0
-# Minutes each stat takes to fall from full to low (LOW_STAT, where Kuiz shows it); energy's is on a
-# new battery, sooner on a worn one (battery_drain()).
-const FULL_TO_LOW_MIN := {"energy": 60.0, "hunger": 15.0, "mood": 20.0, "focus": 30.0, "health": 60.0}
+# Minutes each stat takes to fall from full to low (LOW_STAT) on a real-life clock; energy's is on a new
+# battery, sooner on a worn one (battery_drain()). Contract: docs/systems/companion-care.md §1.
+const FULL_TO_LOW_MIN := {"energy": 480.0, "hunger": 240.0, "mood": 360.0, "focus": 180.0, "health": 1440.0}
 const LOW_STAT := 25.0
 # The clock decay announces itself this often (issue #13); care actions announce at once.
 const DECAY_EMIT_SEC := 0.2
@@ -35,9 +35,12 @@ const PLAY_MOOD := 8.0
 # A finished minigame round: a real treat, worth about three ball throws, and a little tiring.
 const GAME_MOOD := 25.0
 const GAME_ENERGY := 3.0
-# On the island Kuiz's mood climbs (net about +4 a minute against its decay).
+# On the island Kuiz's mood climbs about 7 a minute.
 const EXPLORE_MOOD_PER_SEC := 0.125
-const CHARGE_PER_SEC := 6.0
+# Charging is like a phone's: fast to CHARGE_KNEE, then a slower top-off (about 70 min from empty).
+const CHARGE_KNEE := 80.0
+const CHARGE_TO_KNEE_MIN := 45.0
+const TOP_OFF_MIN := 25.0
 # Dirt comes only from play (fast throws, minigame rounds: soil()); the towel scrubs it off.
 const CLEAN_MOOD := 5.0
 # Battery health wears like a phone's: every point of energy charged costs BATTERY_WEAR health, and
@@ -115,10 +118,24 @@ func _process(delta: float) -> void:
 
 func _decay(delta: float) -> void:
 	for stat: String in FULL_TO_LOW_MIN:
-		var rate: float = (STAT_MAX - LOW_STAT) / (FULL_TO_LOW_MIN[stat] * 60.0)
-		if stat == "energy":
-			rate *= battery_drain()
-		set(stat, maxf(0.0, float(get(stat)) - rate * delta))
+		# On the charger energy does not drain, like a plugged-in phone.
+		if not (stat == "energy" and charging):
+			set(stat, maxf(0.0, float(get(stat)) - drain_per_sec(stat) * delta))
+
+## How fast `stat` falls by the clock, in points a second.
+func drain_per_sec(stat: String) -> float:
+	var rate: float = (STAT_MAX - LOW_STAT) / (FULL_TO_LOW_MIN[stat] * 60.0)
+	return rate * battery_drain() if stat == "energy" else rate
+
+## Seconds until `stat` falls to low by the clock alone; 0 when it already is.
+func seconds_to_low(stat: String) -> float:
+	return maxf(0.0, float(get(stat)) - LOW_STAT) / drain_per_sec(stat)
+
+## Seconds the charger needs to fill energy.
+func seconds_to_full() -> float:
+	var fast := CHARGE_KNEE / (CHARGE_TO_KNEE_MIN * 60.0)
+	var slow := (STAT_MAX - CHARGE_KNEE) / (TOP_OFF_MIN * 60.0)
+	return maxf(0.0, CHARGE_KNEE - energy) / fast + (STAT_MAX - maxf(energy, CHARGE_KNEE)) / slow
 
 ## Time the game was closed or in the background still counts: the stats decay as if it had run, and
 ## Kuiz left on the charger charges instead.
@@ -232,10 +249,17 @@ func soil(amount: float) -> void:
 	dirt = minf(STAT_MAX, dirt + amount)
 
 ## Home's Charge toggle: energy refills while Kuiz sleeps on the charger, wearing the battery.
+## A long `delta` (time away) crosses CHARGE_KNEE correctly.
 func recharge(delta: float) -> void:
-	var gained := minf(STAT_MAX - energy, CHARGE_PER_SEC * delta)
-	energy += gained
-	battery_health = maxf(0.0, battery_health - gained * BATTERY_WEAR)
+	var before := energy
+	var fast := CHARGE_KNEE / (CHARGE_TO_KNEE_MIN * 60.0)
+	if energy < CHARGE_KNEE:
+		var used := minf(delta, (CHARGE_KNEE - energy) / fast)
+		energy += fast * used
+		delta -= used
+	if delta > 0.0:
+		energy = minf(STAT_MAX, energy + (STAT_MAX - CHARGE_KNEE) / (TOP_OFF_MIN * 60.0) * delta)
+	battery_health = maxf(0.0, battery_health - (energy - before) * BATTERY_WEAR)
 
 ## Battle readiness: each care stat has one job in a run. Contract: docs/systems/battle.md §Stats.
 ## Readiness (all four home stats) sets Kuiz's battle HP.

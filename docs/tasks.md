@@ -6,11 +6,40 @@ Where the work stands. Short on purpose — this is a **register**, not a backlo
 > doc that owns it, and **those docs win** if the two disagree. See [`rules.md`](rules.md) §2. Do not
 > let a second status list grow here.
 
-Last updated: 2026-11-12.
+Last updated: 2026-11-22.
 
 ## In flight
 
-Uncommitted: **new foes, gym bosses, music v2.**
+Uncommitted: **Gold through RevenueCat, and the 2026-11-22 check.**
+- The `Store` autoload sells the four Gold packs through the vendored Godotx RevenueCat plugin (v2.6.0,
+  MIT): Google's payment sheet, a receipt check on RevenueCat, the Gold saved at once, the store's own
+  prices on the buttons ([`systems/monetization.md`](systems/monetization.md) §Buying Gold). It is not
+  live until step 3.2 below. Without it the debug test top-up and the hidden release shop are unchanged.
+- The policy pages and the store answers name RevenueCat and in-app purchases.
+- `project.godot` back to `"4.7"`: it had been opened in a Godot 4.6 editor, which also stripped keys
+  from 8 model imports.
+- Checked headless: the import, all 7 gates, the shop and level-up scenes, `pytest backend/tests`
+  (29 passed) and the links. A scripted Store check covered the mock top-up, a simulated success,
+  cancel and error, a stray result, and store prices. Also windowed: boot to home, a battle and the
+  island, with no runtime errors. A real purchase is not tested: it needs the Play Console,
+  RevenueCat, an Android export and a phone.
+- Found: the new foe models' import errors (#25) and the purchase gaps (#24).
+
+Uncommitted: **real-life stat clock and World Builder inputs** (2026-11-22).
+- The stats fall from full to low in real-life times: hunger 4 h, focus 3 h, mood 6 h, energy 8 h,
+  health 24 h (were 15 to 60 min), also while the game is closed.
+- Charging is like a phone's: 0 to 80 % in 45 min, then to full in 25 more, with no drain on the
+  charger ([`systems/companion-care.md`](systems/companion-care.md) §2).
+- Turning Charge on toasts "Full in N min", and full plays the chime and "Kuiz is fully charged!".
+- A tapped stat gauge's card says when the stat runs low, or when the charger fills it.
+- Food prices were kept, so food is now a small share of income ([`systems/monetization.md`](systems/monetization.md)).
+- The World Builder: a new world's name field starts empty, and a saved name is selected on tap.
+  Every input hides its hint while focused. A picked file names an unnamed world, and Extract with
+  no name focuses the field.
+- Checked headless: all 7 gates, plus scripted checks of the charge curve, the decay times and the
+  World Builder inputs. Not tapped through on a phone.
+
+Committed in `d17d7ee`: **new foes, gym bosses, music v2.**
 - Houses fight a random robot from `robot_1`–`robot_5`; each gym fights its own boss (blue, yellow, red
   Champion), with the foe's own attack clips ([`systems/battle.md`](systems/battle.md) §Foes).
 - Home Room, Loading and Overworld re-rendered to sound played rather than programmed
@@ -18,7 +47,7 @@ Uncommitted: **new foes, gym bosses, music v2.**
 - A defeat now empties Kuiz's HP bar, also when the run ends below a star.
 - The new robots and the bosses have their own attack and defeat sounds (`foe_voice.gd`).
 
-Uncommitted: **care pacing and the level-up notice.**
+Committed in `e65b2ba`: **care pacing and the level-up notice.**
 - Energy lasts an hour from full to low (25 %) on a new battery, faster on a worn one; below 25 % Kuiz
   cannot start a run or open flashcards until it charges ([`systems/companion-care.md`](systems/companion-care.md) §1).
 - Dirt no longer builds with time or meals: only ball throws and minigames soil Kuiz.
@@ -37,7 +66,7 @@ Uncommitted: **care pacing and the level-up notice.**
 - The level-up party (`LevelUpModal`): jingle, confetti, Kuiz celebrating. Kuiz's school title per 10
   levels, Kindergarten to Einstein (100+), on the level pill.
 - Gold, a peso top-up currency traded for crystals: the shop behind the crystal pill, **debug builds
-  only**. Next: Play Billing and server receipt checks ([`systems/monetization.md`](systems/monetization.md)).
+  only** then. RevenueCat now sells it (above).
 - The fridge's rows are cards: name, effect, stock, and a crystal Buy button.
 - The closet: six more crystal costumes and six Gold-only ones (two per slot), in a scrolling grid. The
   level pill's title in mixed case so it clears the stats; a "+" on the crystal pill (debug builds).
@@ -125,13 +154,14 @@ Tick each step here when it is done.
 | Step | Item |
 |---|---|
 | 3.1 | The Android export: Gradle, `.aab`, the Game ID, user-data backup on, the keystore kept out of git |
-| 3.2 | A real app icon and the adaptive icon (needs art) |
-| 3.3 | Internal testing on a phone: cloud saves, the sign-in gate, the file picker (#23), the AI loop against Render, the offline fallbacks |
-| 3.4 | The closed test: 12 or more testers for 14 days. **Recruit them during Phase 1** |
-| 3.5 | The store listing from [`store-listing.md`](store-listing.md), then production with a staged rollout |
+| 3.2 | Gold through RevenueCat: the Play Console products, a RevenueCat project and its `goog_` key in `Store.ANDROID_KEY` ([`systems/monetization.md`](systems/monetization.md) §Buying Gold) |
+| 3.3 | A real app icon and the adaptive icon (needs art) |
+| 3.4 | Internal testing on a phone: cloud saves, the sign-in gate, the file picker (#23), the AI loop against Render, the offline fallbacks, a test purchase of each Gold pack |
+| 3.5 | The closed test: 12 or more testers for 14 days. **Recruit them during Phase 1** |
+| 3.6 | The store listing from [`store-listing.md`](store-listing.md), then production with a staged rollout |
 
 **Later (not blocking):** iOS (macOS, $99 a year), study reminders (a local-notifications plugin),
-Play Integrity, Sentry, purchases.
+Play Integrity, Sentry, iOS purchases.
 
 Hygiene: #22, find why the headless boot chain fails its threaded loads.
 

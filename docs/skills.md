@@ -167,7 +167,8 @@ All companion tuning is in `scripts/autoload/companion_state.gd`:
 |---|---|---|
 | `FIRST_LEVEL_XP` / `LEVEL_XP_STEP` | `20` / `5` | XP for Lv2, then 5 more per level (`xp_to_reach()`: Lv5 at 110); no cap |
 | `DAILY_CAP_BASE_XP` | `10` | Same-action taps per hour before diminishing returns |
-| `FULL_TO_LOW_MIN` | energy 60, hunger 15, mood 20, focus 30, health 60 | Minutes from full to low (25 %); energy's × `battery_drain()` |
+| `FULL_TO_LOW_MIN` | energy 480, hunger 240, mood 360, focus 180, health 1440 | Minutes from full to low (25 %); energy's × `battery_drain()` |
+| `CHARGE_KNEE`, `CHARGE_TO_KNEE_MIN`, `TOP_OFF_MIN` | 80, 45, 25 | Charging: empty to 80 % in 45 min, then to full in 25 min more |
 | `TIRED_ENERGY` | `25` | Below it Kuiz cannot start a run or flashcards |
 | `POMODORO_FOCUS_SEC` / `REST_SEC` | `1500` / `300` | Focus and rest lengths |
 | `care()` | `feed +2`, `pet +1`, `play +2` | XP per tap; also ±8 to a stat |
@@ -228,6 +229,10 @@ matters: the editor and the headless gates never touch the plugin.
    - Check that Project Settings → Plugins has **GodotPlayGameServices** enabled.
    - Project → Export → Add Android, then turn on **Use Gradle Build**.
    - Set `godot_play_game_services/game_id` to the Game ID.
+   - Check that **Godotx RevenueCat** is enabled under Plugins, and that the preset's
+     `revenue_cat/enable_revenue_cat` is on (the default). The export adds the RevenueCat SDK from
+     Maven and `android/revenue_cat/*.aar`. Setting it live is in
+     [`systems/monetization.md`](systems/monetization.md) §*Buying Gold*.
    - Turn on **User Data Backup** (Android's own backup is a second safety net).
    - Set the release keystore. Keep the keystore file out of git: Godot keeps its passwords in
      `.godot/export_credentials.cfg`.

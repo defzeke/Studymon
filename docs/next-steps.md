@@ -348,22 +348,32 @@ player on Render.
 
    Check that `export_presets.cfg` holds no passwords before committing it. Godot keeps those in
    `.godot/export_credentials.cfg`, which is ignored.
-2. **The app icon.** A 512 × 512 icon and the adaptive icon. The game still has Godot's default
+2. **Gold purchases through RevenueCat.** The code is built (`Store`, 2026-11-22). Follow
+   [`systems/monetization.md`](systems/monetization.md) §*Buying Gold*, "To go live":
+   - the four in-app products in the Play Console;
+   - a RevenueCat project with the Play service-account JSON, and the products set to Consumable;
+   - the public `goog_` key in `Store.ANDROID_KEY`;
+   - a license tester buying each pack on internal testing.
+
+   Once Phase 2's sign-in exists, also call the plugin's `login(player_id)`, so purchases follow the
+   player.
+3. **The app icon.** A 512 × 512 icon and the adaptive icon. The game still has Godot's default
    `icon.svg`, so this needs art ([`store-listing.md`](store-listing.md) §6).
-3. **Internal testing on a phone.** Upload to the internal track and check:
+4. **Internal testing on a phone.** Upload to the internal track and check:
    - the cloud-save checklist in [`skills.md`](skills.md);
    - the sign-in gate on a fresh install;
    - the file picker with a PDF, a photo and a .docx, plus Export and Import (issue #23 in
      [`known-issues.md`](known-issues.md));
    - the whole AI loop against Render;
-   - the offline fallbacks.
+   - the offline fallbacks;
+   - a test purchase of each Gold pack, a cancel, and one with the network off.
 
    Fix what breaks, and record it in `known-issues.md`.
-4. **The closed test.** At least 12 testers stay opted in for 14 days; Google requires this for new
+5. **The closed test.** At least 12 testers stay opted in for 14 days; Google requires this for new
    personal developer accounts. **Start recruiting during Phase 1.** It is the longest wait.
-5. **The store listing.** Use [`store-listing.md`](store-listing.md): the Data safety and content
+6. **The store listing.** Use [`store-listing.md`](store-listing.md): the Data safety and content
    rating answers, the text, the review notes, the graphics and the screenshots.
-6. **Production** with a staged rollout. Then update [`tasks.md`](tasks.md) and
+7. **Production** with a staged rollout. Then update [`tasks.md`](tasks.md) and
    [`launch-plan.md`](launch-plan.md).
 
 iOS comes later. It needs macOS for the export and an Apple Developer account at $99 a year
