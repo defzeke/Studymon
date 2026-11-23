@@ -6,18 +6,19 @@ Where the work stands. Short on purpose — this is a **register**, not a backlo
 > doc that owns it, and **those docs win** if the two disagree. See [`rules.md`](rules.md) §2. Do not
 > let a second status list grow here.
 
-Last updated: 2026-11-22.
+Last updated: 2026-11-24.
 
 ## In flight
 
-Uncommitted: **a tester APK** (2026-11-22).
+On the `apk-test` branch: **a tester APK** (2026-11-22, hand-over 2026-11-24).
 - `export_presets.cfg` has an `Android Tester` preset: debug APK, `com.studymon.app`, arm64, and Play
   Games off with the `no_play_games` feature ([`skills.md`](skills.md) §Build a tester APK).
 - Exported builds, debug ones too, use `Api.RELEASE_URL`. A debug APK plays on the mock until it is
   set, since `127.0.0.1` on a phone is the phone.
 - `import_etc2_astc` is on: Android needs ETC2/ASTC textures.
 - Built on this PC with JDK 17, the Android SDK and the 4.7.2 templates. Not yet opened on a phone.
-- Next: deploy the server (next-steps 1.1 and 1.5), set `RELEASE_URL`, and rebuild.
+- Next, for the coworker: [`next-steps.md`](next-steps.md) §*Start here: a tester APK with working AI*:
+  a provider key, the server on Render, `RELEASE_URL`, and a rebuild on a set-up PC.
 
 Committed in `2b24136`: **Gold through RevenueCat, and the 2026-11-22 check.**
 - The `Store` autoload sells the four Gold packs through the vendored Godotx RevenueCat plugin (v2.6.0,

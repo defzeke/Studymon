@@ -254,10 +254,18 @@ It is set up for this:
   Games SDK. The plugin still needs a Game ID to build, so the preset holds the placeholder
   `0000000000`.
 
-**One-time setup on a PC:**
-1. **JDK 17**, for example Temurin 17. Editor Settings → Export → Android → **Java SDK Path**.
-2. **Android SDK:** the command-line tools in `%LOCALAPPDATA%\Android\Sdk\cmdline-tools\latest`.
-   Accept the licences with `sdkmanager --licenses`, then install:
+**Use Godot 4.7.2.** The export templates must match the editor's exact version, and a 4.6 editor
+rewrites this project's `.import` files and `project.godot`. Close every other Godot editor that has
+the project open before exporting: they share the `.godot/` cache.
+
+**One-time setup on a PC** (about 6 GB of downloads):
+1. **JDK 17:** the Temurin 17 JDK from [adoptium.net](https://adoptium.net/temurin/releases/?version=17).
+   The `.zip` needs no admin rights. Then set Editor Settings → Export → Android → **Java SDK Path**.
+2. **Android SDK:** the "command line tools only" for Windows from
+   [developer.android.com/studio](https://developer.android.com/studio#command-tools). Unzip them so
+   that `sdkmanager.bat` is in `%LOCALAPPDATA%\Android\Sdk\cmdline-tools\latest\bin`. Android Studio
+   works too, but is larger. Accept the licences with `sdkmanager --licenses`, answering `y` to each.
+   From Git Bash: `yes | sdkmanager.bat --sdk_root=<sdk> --licenses`. Then install:
    ```
    sdkmanager --sdk_root=<sdk> "platform-tools" "build-tools;35.0.1" "platforms;android-35" "cmake;3.10.2.4988404" "ndk;28.1.13356709"
    ```
@@ -278,8 +286,19 @@ It is set up for this:
    ```powershell
    & $GODOT --headless --path . --install-android-build-template --export-debug "Android Tester" build/studymon-tester.apk
    ```
-   `build/` and `android/build/` are gitignored. Android needs ETC2/ASTC textures
-   (`rendering/textures/vram_compression/import_etc2_astc`, on).
+   - `build/` and `android/build/` are gitignored. Android needs ETC2/ASTC textures
+     (`rendering/textures/vram_compression/import_etc2_astc`, on).
+   - The first Gradle build downloads its own tools and takes 5–15 minutes; later ones are faster.
+     The APK is about 175 MB.
+   - A headless export can look stuck after `[ DONE ] export` while Gradle's background helper keeps
+     running. The APK is already written. `android\build\gradlew.bat --stop` ends the helper.
+4. Check the APK before sending it, with the build tools from the SDK:
+   ```bash
+   "$LOCALAPPDATA/Android/Sdk/build-tools/35.0.1/aapt2.exe" dump badging build/studymon-tester.apk | grep -E "^package|uses-permission"
+   ```
+   The output should show `com.studymon.app`, the new version code, and `android.permission.INTERNET`.
+5. Share the APK by Google Drive or a similar link. Chat apps often refuse or compress a file this
+   size.
 
 **Testers:**
 - **Installing:** they allow "Install unknown apps" for their browser or file app. If Play Protect
@@ -290,6 +309,95 @@ It is set up for this:
 - **When the real Game ID exists:** put it in `godot_play_game_services/game_id`, remove
   `no_play_games`, and add the testers' Google accounts as Play Games testers. They then sign in
   automatically at launch, and their saves sync ([§Export for Android with Play Games](#export-for-android-with-play-games)).
+
+## Connect the tester APK to the AI
+
+The APK never talks to the AI model directly. It talks to **our study server** (`backend/`). The
+server holds the AI key and calls Gemma 4 for questions and grading. So connecting the APK means:
+1. Choose an AI provider and get its key.
+2. Put the server online.
+3. Put the server's address in `Api.RELEASE_URL`.
+4. Rebuild the APK.
+
+Every step is free. **Ask the coworker first:** the backend is theirs, and a Render service or key may
+already exist ([`next-steps.md`](next-steps.md) 1.1–1.6).
+
+```
+tester's phone ──HTTPS──> study server on Render ──key──> Gemma 4 (Cloudflare, or Google for testing)
+   (APK)                   (backend/, RELEASE_URL)
+```
+
+### 1. The AI provider: pick one
+
+Both run the same Gemma 4 model. Only the server's environment variables differ
+([`api-backend.md`](api-backend.md) §3).
+
+| | **A. Cloudflare Workers AI** (the release choice) | **B. Google AI Studio** (what the coworker tested, 2026-11-09) |
+|---|---|---|
+| Use it for | testers **and** release | a quick **internal** test round only |
+| Free allowance | 10,000 neurons a day for everyone: about 20 reviewers and 200 graded answers | Google's own rate limits (a 429 sends the game offline) |
+| Terms | fine for a 13+ app (confirm in [`tasks.md`](tasks.md), decision 2) | **not for the public game**: Gemini API terms forbid apps likely used by under-18s, and free-tier inputs may be used for training. Testers must be adults on the team, using no private material |
+| Get a key | [dash.cloudflare.com](https://dash.cloudflare.com): copy the **Account ID**. Then **My Profile → API Tokens → Create Token**, use the **Workers AI** template, and copy the token | [aistudio.google.com](https://aistudio.google.com) → **Get API key** → create and copy it |
+
+### 2. Put the server online (Render, free)
+
+1. Go to [dashboard.render.com](https://dashboard.render.com), sign in with GitHub, choose
+   **New → Blueprint**, pick `defzeke/Studymon` and the `dev` branch. It reads `render.yaml`.
+2. Fill in the environment variables for the provider you picked:
+
+   | Variable | A. Cloudflare | B. Google |
+   |---|---|---|
+   | `AI_BASE_URL` (secret) | `https://api.cloudflare.com/client/v4/accounts/<Account ID>/ai/v1` | `https://generativelanguage.googleapis.com/v1beta/openai/` |
+   | `AI_API_KEY` (secret) | the Workers AI token | the AI Studio key |
+   | `EXTRACT_MODEL`, `GRADE_MODEL` | `@cf/google/gemma-4-26b-a4b-it` (the Blueprint default) | `gemma-4-26b-a4b-it` |
+   | `NEURONS_PER_M_IN`, `NEURONS_PER_M_OUT` | leave unset | add both, as `0` (Google counts no neurons) |
+   | `AI_JSON_SCHEMA` | leave unset | add, as `0` (otherwise Google stops Gemma after one question) |
+
+   Switching provider later only means changing these variables and redeploying. The APK stays
+   the same.
+3. **Deploy.** Then open `https://<name>.onrender.com/health` in a browser. It must show
+   `{"ok": true}`. The free service sleeps after 15 quiet minutes, and the first request after that
+   takes about a minute. The game wakes it early (`wake_server()`).
+4. **Check that the AI answers**, not just the server. From Git Bash:
+   ```bash
+   curl -s -X POST https://<name>.onrender.com/v1/extract -H "Content-Type: application/json" -d '{"job_id":"t1","topic_name":"Test","text":"Photosynthesis is the process plants use to turn sunlight, water and carbon dioxide into glucose and oxygen. It happens in the chloroplasts, which contain chlorophyll, the green pigment that absorbs light. The light reactions make ATP and NADPH, and the Calvin cycle uses them to build sugar."}'
+   ```
+   - **Working:** `"status":"completed"` with a list of `questions`.
+   - **Broken:** `"offline": true`, or an error. Open the service's **Logs** on Render: a 401 or
+     403 there means the key or the Account ID is wrong.
+   - This call counts toward the day's limits; **Manual Deploy → Restart service** clears them.
+5. Run the per-player limit check in [`next-steps.md`](next-steps.md) 1.5, step 5.
+
+### 3. Point the APK at the server and rebuild
+
+1. In `scripts/autoload/api.gd`, set `const RELEASE_URL := "https://<name>.onrender.com"`. It must
+   be `https://` with no trailing `/`, because Android refuses plain `http`.
+2. Raise `version/code` in `export_presets.cfg` by 1.
+3. Rebuild ([§Build a tester APK](#build-a-tester-apk)). Every exported build uses `RELEASE_URL`,
+   debug ones too, so the APK leaves the mock.
+4. Testers install the new APK over the old one, which keeps their progress.
+
+### 4. Check it on a phone
+
+1. Open the game, then **Worlds → New World**.
+2. Paste a few paragraphs of notes, or pick a PDF, and tap **Extract questions with AI**.
+3. Tap **I agree** on the AI consent. The game calls the server only after consent.
+4. The first call can take about a minute while Render wakes. The questions arrive without the note
+   "Kuiz wrote N simpler question(s) on this phone instead".
+5. Play a run with an Essay, and check that the feedback comes from the server.
+
+**If it doesn't work:**
+
+| Symptom | Cause |
+|---|---|
+| Simple questions, and picking a file says "…need the study server. This build has none yet" | `RELEASE_URL` is empty in this APK: set it and rebuild |
+| "No connection to the study server." | `/health` is not answering, the URL is wrong or not `https`, or Render is still waking (try again in a minute) |
+| "The study server returned an error (5xx)." | the server is up but crashed on the request: check Render's **Logs** |
+| "You've reached today's AI limit." | the server allows **5 reviewers a day per network address** (`DAILY_LIMITS` in `backend/main.py`). Testers on the same Wi-Fi share one address. Restarting the Render service clears the counts |
+| "Kuiz wrote N simpler question(s) on this phone instead" | the AI call failed or the free allowance is spent. Render's **Logs** tab shows why (a wrong key, 401/403, Google 429/500) |
+
+The game never holds the AI key: it lives only in Render's environment variables. Never put it in
+`api.gd`, the APK or git.
 
 ## Use the real study server
 

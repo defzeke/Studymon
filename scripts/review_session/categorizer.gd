@@ -99,7 +99,7 @@ func _on_file_selected(path: String) -> void:
 		if kind == "":
 			status_label.text = "Can't read this file as text. Use a PDF, photo, Word or PowerPoint file, or paste the text."
 		elif Api.MOCK:
-			status_label.text = "PDF, photo, Word and PowerPoint files need the study server. This build uses the offline mock (Api.DEV_USES_SERVER is off)."
+			status_label.text = "PDF, photo, Word and PowerPoint files need the study server. This build has none yet: paste the text instead."
 		elif bytes.size() > cap:
 			status_label.text = "That file is over %d MB. Use a smaller one or paste the text instead." % (cap >> 20)
 		else:

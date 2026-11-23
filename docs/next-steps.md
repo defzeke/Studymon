@@ -32,6 +32,34 @@ You will need [uv](https://docs.astral.sh/uv/), which installs Python for you, a
 
 ---
 
+## Start here: a tester APK with working AI (requested 2026-11-24)
+
+The team wants an APK for testers **now**, before Phase 2 (sign-in) and the Play Store. It needs
+part of Phase 1: the server online with a real AI key. Everything for it is on the **`apk-test`**
+branch:
+- `export_presets.cfg` has an **Android Tester** preset.
+- `api.gd` makes every exported build use `RELEASE_URL`.
+- The `no_play_games` switch keeps Play Games off until there is a real Game ID.
+
+A first APK was built and checked on 2026-11-22 without a server, so it plays on the offline mock.
+It has not been opened on a phone yet.
+
+| # | Do | How | Done when |
+|---|---|---|---|
+| 1 | Get an AI key: **Cloudflare** (the release choice), or **Google AI Studio** for an internal round with adult testers only | [`skills.md`](skills.md) §*Connect the tester APK to the AI*, part 1 | you have the key (and the Cloudflare Account ID) |
+| 2 | Put the server on Render with that key | the same section, part 2 (this page's 1.5 has the detail) | `/health` shows `{"ok": true}` and the `curl` test returns `questions` |
+| 3 | Set `Api.RELEASE_URL` to the Render address, and raise `version/code` in `export_presets.cfg` | part 3 | committed on `apk-test` |
+| 4 | Set up a PC for Android builds once: JDK 17, Android SDK, the 4.7.2 export templates, a debug keystore | [`skills.md`](skills.md) §*Build a tester APK* | Godot's Android export shows no missing-SDK errors |
+| 5 | Build `build/studymon-tester.apk` | the same section, *Each build* | `aapt2` shows `com.studymon.app` and the new version code |
+| 6 | Open it on one phone before sharing it | §*Connect the tester APK to the AI*, part 4 | a reviewer gives AI questions and an essay is graded |
+| 7 | Share it, with the tester notes | §*Build a tester APK*, *Testers* | testers have installed it |
+
+Then tick 1.1, 1.5 and 1.6 in [`tasks.md`](tasks.md). The rest of Phase 1, Phase 2 and Phase 3 follow
+as written below. When the Play Console exists, put the real Game ID in the preset and remove
+`no_play_games`, so testers sign in automatically.
+
+---
+
 ## Phase 1 — Integrate the AI into the game
 
 ### 1.1 Cloudflare account and Workers AI token
@@ -216,7 +244,9 @@ const RELEASE_URL := "https://<name>.onrender.com"
 ```
 
 Every exported build uses it: a debug tester APK as well as a release. The editor keeps using the
-local server or the mock ([`skills.md`](skills.md) §*Use the real study server*).
+local server or the mock ([`skills.md`](skills.md) §*Use the real study server*). The whole path for
+a tester APK, including the Google AI Studio option for internal tests, is in [`skills.md`](skills.md)
+§*Connect the tester APK to the AI*.
 
 ### 1.7 Put the policy pages online
 
