@@ -105,7 +105,7 @@ Tick each step here when it is done.
 |---|---|
 | 1.1 | A Cloudflare account, Account ID and Workers AI token; read Cloudflare's terms for a 13+ app (decision 2 below) |
 | 1.2 | Run the server locally against Gemma 4 |
-| 1.3 | Run `backend/evals/`, tune the prompts, and record the measured neurons in [`api-backend.md`](api-backend.md) §3 and in `LIKELY_NEURONS` |
+| 1.3 | Run `backend/evals/`, tune the prompts, and record the measured neurons in [`api-backend.md`](api-backend.md) §3 and in `LIKELY_NEURONS`. Done on Google 2026-11-24 (good questions 66 → 89 %); one run on Cloudflare still to do, for its latency and JSON behaviour |
 | 1.4 | Play the integration in the editor (`DEV_USES_SERVER`): consent, every upload type, More questions, grading, Report, the offline fallbacks |
 | 1.5 | Deploy `backend/` on Render (Blueprint from `render.yaml`) and pass the `X-Forwarded-For` limit test |
 | 1.6 | Set `Api.RELEASE_URL` |

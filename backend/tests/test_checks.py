@@ -259,7 +259,8 @@ def test_chat_drops_response_format_when_refused(monkeypatch):
     r = ai.grade_essay({"question": "Q", "rubric": [{"point": "p", "keywords": [], "weight": 1}],
                         "model_answer": "", "source": ""}, "an answer")
     assert r["score"] == 0.0 and "response_format" in fake.calls[0] and "response_format" not in fake.calls[1]
-    assert ai._schema_mode is False
+    # One refusal does not switch the schema off for every later call.
+    assert ai._schema_mode is True
 
 
 def test_chat_turns_a_rate_limit_into_a_readable_error(monkeypatch):
@@ -373,11 +374,86 @@ def test_long_reviewer_goes_in_parts_and_a_failed_part_is_skipped(monkeypatch):
     assert "".join(parts).count("Answer:") == 40
     calls = []
 
-    def fake(content, existing, types):
-        calls.append(content[0]["text"])
+    def fake(content, existing, types, most, deadline):
+        calls.append((content[0]["text"], most))
         if "Part 1 of" in content[0]["text"]:
             raise ai.AIError("Could not reach the AI service.")
+        if "Part 2 of" in content[0]["text"] and most > 20:
+            raise ai.TooLong("cut off")
         return {"questions": [q()]}
     monkeypatch.setattr(ai, "_ask_questions", fake)
     assert len(ai.generate_questions(text)["questions"]) == len(parts) - 1
-    assert len(calls) == len(parts) + 1  # the failed part was asked twice
+    # A failed part is not asked again; a cut-off part is asked again for half as many.
+    per_part = -(-ai.MAX_QUESTIONS // len(parts))
+    assert [m for t, m in calls if "Part 2 of" in t] == [per_part, per_part // 2]
+    assert len(calls) == len(parts) + 1
+
+
+def test_a_huge_reviewer_goes_in_at_most_max_parts_and_nothing_is_lost():
+    text = "\n\n".join("Paragraph %d. " % i + "word " * 200 for i in range(200))
+    parts = ai.text_chunks(text)
+    assert len(parts) == ai.MAX_PARTS
+    assert "".join(parts).count("Paragraph") == 200
+
+
+def test_extract_budget_counts_every_part_and_a_rejected_file_costs_no_limit(monkeypatch):
+    from fastapi.testclient import TestClient
+    main._used.clear()
+    main._spent.clear()
+    monkeypatch.setitem(main.DAILY_LIMITS, "extract", 1)
+    c = TestClient(main.app)
+    bad = c.post("/v1/extract", json={"job_id": "b", "topic_name": "x", "file_base64": _b64(b"not a pdf"), "file_type": "pdf"})
+    assert bad.json()["status"] == "failed" and bad.status_code == 200
+    long = "\n\n".join("Paragraph %d. " % i + "word " * 200 for i in range(60))
+    assert len(ai.text_chunks(long)) == ai.MAX_PARTS
+    # Room for one part but not six: offline, without calling the model.
+    monkeypatch.setattr(ai, "generate_questions", lambda *a, **k: (_ for _ in ()).throw(AssertionError("no model call")))
+    main.spend(main.DAILY_NEURONS - main.LIKELY_NEURONS["extract"])
+    r = c.post("/v1/extract", json={"job_id": "l", "topic_name": "x", "text": long}).json()
+    assert r["result"]["offline"] is True
+    main._spent.clear()
+
+
+def test_new_checks_tier_near_copy_distractors_and_rewordings():
+    mc = q(type="multiple_choice", text="Where does respiration release energy?", answer="mitochondria", accepted=[],
+           difficulty="trivial", source="Cellular respiration releases that energy in the mitochondria")
+    near = dict(mc, distractors=["the mitochondria", "chloroplast", "nucleus", "ribosome"])
+    out = ai.check_questions([near], REVIEWER)
+    assert out[0]["distractors"] == ["chloroplast", "nucleus", "ribosome"] and out[0]["difficulty"] == "medium"
+    long = dict(mc, distractors=["it is released in the green chloroplast", "in the cell nucleus of plants",
+                                 "it is in the small ribosomes"], difficulty="hard")
+    assert ai.check_questions([long], REVIEWER)[0]["confidence"] == 0.85
+    reworded = q(text="Which organelle is it that holds chlorophyll?")
+    france = q(text="Which organelle holds the chlorophyll pigment?", answer="chlorophyll holder")
+    assert len(ai.check_questions([q(), reworded], REVIEWER)) == 1
+    assert len(ai.check_questions([q(), dict(france, answer="plastid")], REVIEWER)) == 2
+
+
+def test_chat_stops_at_its_deadline_without_calling(monkeypatch):
+    import time
+    import pytest
+    fake = _fake_client(monkeypatch, [])
+    with pytest.raises(ai.AIError, match="too long"):
+        ai._chat("m", "s", [], {}, 10, deadline=time.monotonic() + 1)
+    assert fake.calls == []
+
+
+def test_chat_asks_again_after_a_busy_service(monkeypatch):
+    import httpx
+    import openai
+    busy = openai.InternalServerError("busy", response=httpx.Response(503, request=httpx.Request("POST", "http://x")), body=None)
+    monkeypatch.setattr(ai.time, "sleep", lambda s: None)
+    fake = _fake_client(monkeypatch, [busy, busy, _Reply('{"correct": false, "feedback": "No"}')])
+    assert ai.grade_identification({"question": "Q", "expected": "x", "accepted": [], "source": ""}, "y")["score"] == 0.0
+    assert len(fake.calls) == 3
+    _fake_client(monkeypatch, [busy] * (ai.MAX_RETRIES + 1))
+    import pytest
+    with pytest.raises(ai.AIError, match="503"):
+        ai.grade_identification({"question": "Q", "expected": "x", "accepted": [], "source": ""}, "y")
+
+
+def test_number_options_are_not_near_copies_and_an_ellipsis_source_is_grounded():
+    reviewer = "Perpendicular lines have slopes whose product is −1. Parallel lines have equal slopes."
+    mc = q(type="multiple_choice", text="What is the product of the slopes of perpendicular lines?", answer="−1",
+           accepted=[], distractors=["1", "0", "2"], source="Perpendicular lines... product is −1.")
+    assert ai.check_questions([mc], reviewer)[0]["distractors"] == ["1", "0", "2"]

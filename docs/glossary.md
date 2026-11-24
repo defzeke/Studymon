@@ -34,7 +34,8 @@ Terms used throughout this repo, in the sense this repo means them.
 | **Study server** | `backend/`: the stateless gateway between the game and the AI model (Gemma 4 on Cloudflare Workers AI). It holds the API key, meters the free daily allowance (the **neuron budget**) and stores nothing. |
 | **Answer key** | What a question is checked against, written with the question and saved on the device: `answer`, `accepted`, `distractors`, `rubric`. See [`data-model.md`](data-model.md) §2. |
 | **Accepted answers** | `accepted`: other answers an Identification counts as exact (synonyms, abbreviations, spellings). Editable as "Also accept" in the categorizer. |
-| **Rubric** | An essay's marking guide: 3–5 `{point, keywords, weight}`. The server's score is the weight of the points the answer covers, with quoted evidence. |
+| **Rubric** | An essay's marking guide: 3–5 `{point, keywords, weight}`; each point states a fact the answer must make. The server's score is the weight of the points the answer covers, with quoted evidence. |
+| **Question label** | A person's verdict on one generated question in `backend/evals/question_labels.json`: answer key correct, question unambiguous, options or rubric fair. The eval run reports the share of labelled questions that are good ([`api-backend.md`](api-backend.md) §4). |
 | **World slot** | Room for one saved world: 3 free, 300 crystals each after that, kept for good (`GameState.world_slots`). |
 | **Study streak** | Days in a row the daily study goal was met (one finished run or 10 flashcards); pays 15 crystals a day. |
 | **Export / Import save** | Settings' copy of `studymon_save.json` to a file the player picks, and back: the only way to move a save, since there are no accounts. |

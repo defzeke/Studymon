@@ -78,7 +78,7 @@ Generation rules for the extractor and the AI:
 - Every question is grounded in `source`; no outside trivia.
 - Easy recalls a term or definition. Medium explains or distinguishes. Hard applies, compares or synthesises.
 - Per gym aim for at least 3 Easy, 3 Medium and 1 Hard. A short reviewer gets fewer tiers, never an empty gym.
-- MC: one correct option and three wrong options of the same kind (an age gets other ages, a name other names), from the reviewer when it has enough, otherwise invented and clearly wrong to someone who studied it; never a near-copy of the answer; each under about 40 characters. The server lowers the confidence of a question whose options mix numbers and words.
+- MC: one correct option and three wrong options of the same kind (an age gets other ages, a name other names), from the reviewer when it has enough, otherwise invented and clearly wrong to someone who studied it; never a near-copy of the answer; each under about 40 characters. The server drops a wrong option that contains the answer or sits inside it, and lowers the confidence of a question whose options mix numbers and words or whose answer is far longer or shorter than its wrong options.
 - Identification: the question must not contain its answer; `accepted` lists genuine equivalents only.
 - Essay: a 3–5 point `rubric` (point, 2–4 keywords, weight) and a `model_answer`; its points are the `key_concepts`.
 - Count: a quiz-style reviewer gets one question per quiz item. Notes get about one question per 100 words, at least 3 per type, at most 30 per part of about 6,000 characters. The bank holds at most 100.

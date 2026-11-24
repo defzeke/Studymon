@@ -1,0 +1,1154 @@
+{
+ "q_23055ecfd7": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": null,
+  "note": ""
+ },
+ "q_151c8f68c8": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": null,
+  "note": ""
+ },
+ "q_cb12fb692b": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": null,
+  "note": ""
+ },
+ "q_2c52607270": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": true,
+  "note": ""
+ },
+ "q_34c56273b6": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": true,
+  "note": ""
+ },
+ "q_188650ee17": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": true,
+  "note": ""
+ },
+ "q_49769db416": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": true,
+  "note": ""
+ },
+ "q_24f0c48729": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": false,
+  "note": "rubric points are labels, not facts"
+ },
+ "q_ca9e713971": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": false,
+  "note": "rubric points are labels, not facts"
+ },
+ "q_e8fbd96ec3": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": null,
+  "note": ""
+ },
+ "q_b37498a426": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": null,
+  "note": ""
+ },
+ "q_9275087c05": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": null,
+  "note": ""
+ },
+ "q_f15a812373": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": true,
+  "note": ""
+ },
+ "q_fd8dfaf43b": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": true,
+  "note": ""
+ },
+ "q_e9bbe950a1": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": true,
+  "note": ""
+ },
+ "q_b490c28aa3": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": false,
+  "note": "rubric points are labels, not facts"
+ },
+ "q_db70b6f9e7": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": false,
+  "note": "rubric points are labels, not facts"
+ },
+ "q_4c70a7cf3c": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": true,
+  "note": "rubric names the parts, misses cellulose"
+ },
+ "q_111e4bf339": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": null,
+  "note": ""
+ },
+ "q_ca72c3aff3": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": null,
+  "note": ""
+ },
+ "q_1efc991252": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": null,
+  "note": ""
+ },
+ "q_cbd8bb3f19": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": null,
+  "note": ""
+ },
+ "q_0c97862d8f": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": null,
+  "note": ""
+ },
+ "q_080219c683": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": true,
+  "note": ""
+ },
+ "q_a3bd21be65": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": true,
+  "note": ""
+ },
+ "q_23e07262de": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": true,
+  "note": ""
+ },
+ "q_3c49623147": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": true,
+  "note": ""
+ },
+ "q_f8d947649d": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": true,
+  "note": ""
+ },
+ "q_dba6ee0aee": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": true,
+  "note": ""
+ },
+ "q_42ad21b6d0": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": true,
+  "note": ""
+ },
+ "q_652b2822a1": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": false,
+  "note": "rubric points are labels, not facts"
+ },
+ "q_d17d7ac2b5": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": false,
+  "note": "rubric points are labels, not facts"
+ },
+ "q_d7cb1e6333": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": null,
+  "note": "tagged easy, is medium"
+ },
+ "q_5f270455dc": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": null,
+  "note": ""
+ },
+ "q_5bdc45e1e8": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": null,
+  "note": ""
+ },
+ "q_e45527d78c": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": true,
+  "note": ""
+ },
+ "q_d38656e171": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": true,
+  "note": ""
+ },
+ "q_3400462101": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": false,
+  "note": "rubric points are labels, not facts"
+ },
+ "q_4a56e4b249": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": false,
+  "note": "rubric points are labels, not facts"
+ },
+ "q_435711a9b7": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": false,
+  "note": "rubric points are labels, not facts"
+ },
+ "q_63d7baeb06": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": null,
+  "note": ""
+ },
+ "q_33ca2c7b21": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": null,
+  "note": ""
+ },
+ "q_3295a9a977": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": null,
+  "note": ""
+ },
+ "q_4c0408e8f3": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": false,
+  "note": "'Spanish authorities' is not a person"
+ },
+ "q_09943a2d26": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": true,
+  "note": ""
+ },
+ "q_bac69e7948": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": true,
+  "note": ""
+ },
+ "q_bdcfc8cdcc": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": false,
+  "note": "rubric points are labels, not facts"
+ },
+ "q_0917343214": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": false,
+  "note": "rubric points are labels, not facts"
+ },
+ "q_287effe2a3": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": false,
+  "note": "rubric points are labels, not facts"
+ },
+ "q_cb2028a757": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": null,
+  "note": ""
+ },
+ "q_9a4b36e5a1": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": null,
+  "note": ""
+ },
+ "q_b2cb27e1ab": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": true,
+  "note": ""
+ },
+ "q_d90a6d5976": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": true,
+  "note": ""
+ },
+ "q_1aafd46641": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": false,
+  "note": "options are array traits, not disadvantages; answer echoes the question"
+ },
+ "q_ba5c960d36": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": false,
+  "note": "rubric points are labels, not facts"
+ },
+ "q_915b4f5eaa": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": false,
+  "note": "rubric points are labels, not facts"
+ },
+ "q_e91cbcfe42": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": false,
+  "note": "rubric points are labels, not facts"
+ },
+ "q_9d780b7c0a": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": null,
+  "note": ""
+ },
+ "q_11e2d6243c": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": null,
+  "note": ""
+ },
+ "q_cbfc0180e0": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": null,
+  "note": ""
+ },
+ "q_b4bb6b223c": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": false,
+  "note": "a wrong option starts 'An inclined plane…'"
+ },
+ "q_7fe08617ad": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": true,
+  "note": ""
+ },
+ "q_8093931b59": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": true,
+  "note": ""
+ },
+ "q_4a764d207c": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": false,
+  "note": "rubric points are labels, not facts"
+ },
+ "q_922daf1ff5": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": false,
+  "note": "rubric points are labels, not facts"
+ },
+ "q_61fbfd5285": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": false,
+  "note": "rubric points are labels, not facts"
+ },
+ "q_b2879f21db": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": null,
+  "note": ""
+ },
+ "q_dd14ca24fd": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": null,
+  "note": ""
+ },
+ "q_876493ded3": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": null,
+  "note": ""
+ },
+ "q_3a08964e41": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": true,
+  "note": ""
+ },
+ "q_df7080922c": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": true,
+  "note": ""
+ },
+ "q_541db2b6fc": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": false,
+  "note": "'naganap' is not an aspect name"
+ },
+ "q_0f8bb5d2fa": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": false,
+  "note": "'ayun sa' misspelt; 'batang' is not a connector"
+ },
+ "q_8a50d44f40": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": null,
+  "note": ""
+ },
+ "q_8117acab8a": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": null,
+  "note": ""
+ },
+ "q_e8c989f2bc": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": true,
+  "note": ""
+ },
+ "q_2f44bd5ba4": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": true,
+  "note": ""
+ },
+ "q_db4d797355": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": true,
+  "note": ""
+ },
+ "q_7379e20ee1": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": false,
+  "note": "rubric points are labels, not facts"
+ },
+ "q_7bc2e9f008": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": false,
+  "note": "rubric points are labels, not facts"
+ },
+ "q_15e9b30aaa": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": true,
+  "note": ""
+ },
+ "q_b1f79d57f4": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": false,
+  "note": "rubric points are labels, not facts"
+ },
+ "q_60bf3e3ada": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": null,
+  "note": ""
+ },
+ "q_e0deaea636": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": null,
+  "note": ""
+ },
+ "q_055bad5903": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": null,
+  "note": ""
+ },
+ "q_35f20b7f86": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": true,
+  "note": ""
+ },
+ "q_f2b6f8ffaa": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": false,
+  "note": "'Market equilibrium', 'Price elasticity' are not outcomes"
+ },
+ "q_f7d0c79b13": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": true,
+  "note": ""
+ },
+ "q_5f8de420d6": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": false,
+  "note": "rubric points are labels, not facts"
+ },
+ "q_72676dbb8f": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": false,
+  "note": "rubric points are labels, not facts"
+ },
+ "q_1c332a33f8": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": false,
+  "note": "rubric points are labels, not facts"
+ },
+ "q_6afd89c2ea": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": false,
+  "note": "rubric points are labels, not facts"
+ },
+ "q_c84dff8d9a": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": false,
+  "note": "rubric points are labels, not facts"
+ },
+ "q_502ca3c6ae": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": false,
+  "note": "rubric points are labels, not facts"
+ },
+ "q_19d6a4b653": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": null,
+  "note": ""
+ },
+ "q_a63ca61bfd": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": null,
+  "note": ""
+ },
+ "q_52e3f90986": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": null,
+  "note": ""
+ },
+ "q_99d6aa7ad3": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": true,
+  "note": ""
+ },
+ "q_730434093c": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": true,
+  "note": ""
+ },
+ "q_8ecc9831cd": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": false,
+  "note": "'Zero roots' means the same as 'No real roots'"
+ },
+ "q_ebf3903e52": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": true,
+  "note": ""
+ },
+ "q_4de27b6a5d": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": true,
+  "note": ""
+ },
+ "q_2f95c65b7d": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": null,
+  "note": ""
+ },
+ "q_6360454ecd": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": null,
+  "note": ""
+ },
+ "q_c4e0dbf954": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": null,
+  "note": ""
+ },
+ "q_1e36f5afe5": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": null,
+  "note": ""
+ },
+ "q_29ebdffdf6": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": true,
+  "note": ""
+ },
+ "q_56f037c319": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": true,
+  "note": ""
+ },
+ "q_845d21810f": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": false,
+  "note": "'karaniwan' is not a kaantasan"
+ },
+ "q_7e14ef2a50": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": true,
+  "note": ""
+ },
+ "q_5b787268e1": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": null,
+  "note": ""
+ },
+ "q_1e62b14265": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": null,
+  "note": ""
+ },
+ "q_0aa079c878": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": true,
+  "note": ""
+ },
+ "q_63726aa2ca": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": true,
+  "note": ""
+ },
+ "q_cbb8eced11": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": true,
+  "note": ""
+ },
+ "q_36fb31be7e": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": true,
+  "note": ""
+ },
+ "q_eb7a749435": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": true,
+  "note": ""
+ },
+ "q_0805f68ab9": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": true,
+  "note": ""
+ },
+ "q_baae0336c2": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": null,
+  "note": ""
+ },
+ "q_c518afdf15": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": null,
+  "note": ""
+ },
+ "q_58ebeb6546": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": null,
+  "note": ""
+ },
+ "q_8cedbd6f8c": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": null,
+  "note": ""
+ },
+ "q_57a38b929a": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": null,
+  "note": ""
+ },
+ "q_92f78dc519": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": null,
+  "note": ""
+ },
+ "q_20982bc41f": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": true,
+  "note": ""
+ },
+ "q_1ca83ee2e9": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": true,
+  "note": ""
+ },
+ "q_a270747c1e": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": true,
+  "note": ""
+ },
+ "q_ba24abb736": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": true,
+  "note": ""
+ },
+ "q_71e359e2bc": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": true,
+  "note": ""
+ },
+ "q_5785902dd5": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": true,
+  "note": ""
+ },
+ "q_93da2bb54d": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": true,
+  "note": ""
+ },
+ "q_a309c492b7": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": true,
+  "note": ""
+ },
+ "q_310906bc7c": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": true,
+  "note": ""
+ },
+ "q_c6da7f323d": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": null,
+  "note": ""
+ },
+ "q_1d65da78ed": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": true,
+  "note": ""
+ },
+ "q_906e706b3d": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": true,
+  "note": ""
+ },
+ "q_7590c38356": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": true,
+  "note": ""
+ },
+ "q_27ae610b10": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": true,
+  "note": ""
+ },
+ "q_966c78ed06": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": null,
+  "note": ""
+ },
+ "q_db35c51add": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": null,
+  "note": ""
+ },
+ "q_a0c0961e77": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": true,
+  "note": ""
+ },
+ "q_a16faf15a5": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": true,
+  "note": ""
+ },
+ "q_7e8af1cb29": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": true,
+  "note": ""
+ },
+ "q_10f5ca0be0": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": true,
+  "note": ""
+ },
+ "q_c839669eb6": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": true,
+  "note": ""
+ },
+ "q_21bc3e5bbc": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": null,
+  "note": ""
+ },
+ "q_0e72c969d1": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": null,
+  "note": ""
+ },
+ "q_e06f512c7f": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": null,
+  "note": ""
+ },
+ "q_a691f88a64": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": false,
+  "note": "lithosphere/asthenosphere are not crust types"
+ },
+ "q_59c400b72d": {
+  "correct": true,
+  "ambiguous": true,
+  "fair": true,
+  "note": "P-waves are body waves too"
+ },
+ "q_787b8b20d1": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": true,
+  "note": ""
+ },
+ "q_028496fb2b": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": true,
+  "note": ""
+ },
+ "q_7bb13a8856": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": true,
+  "note": ""
+ },
+ "q_6bd63e0254": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": true,
+  "note": ""
+ },
+ "q_2642966a43": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": null,
+  "note": ""
+ },
+ "q_559b9da467": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": null,
+  "note": ""
+ },
+ "q_62174821c4": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": null,
+  "note": ""
+ },
+ "q_10977f70b0": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": null,
+  "note": ""
+ },
+ "q_33851599a9": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": null,
+  "note": ""
+ },
+ "q_b69f3fdd8e": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": null,
+  "note": ""
+ },
+ "q_61e140efbb": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": true,
+  "note": ""
+ },
+ "q_99e9c75735": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": true,
+  "note": ""
+ },
+ "q_250986fcf3": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": true,
+  "note": ""
+ },
+ "q_82aeff1be4": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": false,
+  "note": "'Elasticity' is not an outcome"
+ },
+ "q_5893e6214f": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": false,
+  "note": "'Close substitutes' is not a good"
+ },
+ "q_8719ce2f3f": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": true,
+  "note": ""
+ },
+ "q_91b00253d7": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": true,
+  "note": ""
+ },
+ "q_d51ecbcb71": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": true,
+  "note": ""
+ },
+ "q_62c8600272": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": null,
+  "note": ""
+ },
+ "q_e3ee15d512": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": null,
+  "note": ""
+ },
+ "q_6d1f34949f": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": null,
+  "note": ""
+ },
+ "q_32a9597cdd": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": false,
+  "note": "'Spanish authorities' is not a person"
+ },
+ "q_4409df3294": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": true,
+  "note": ""
+ },
+ "q_7f7201e0aa": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": true,
+  "note": ""
+ },
+ "q_638f7e0af4": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": true,
+  "note": ""
+ },
+ "q_9dc6a6c397": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": true,
+  "note": ""
+ },
+ "q_5bae53d58c": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": null,
+  "note": ""
+ },
+ "q_f35576c1b5": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": null,
+  "note": ""
+ },
+ "q_1a9bf2fa27": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": null,
+  "note": ""
+ },
+ "q_15472ac6f4": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": true,
+  "note": ""
+ },
+ "q_8bce858cf5": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": true,
+  "note": ""
+ },
+ "q_d87474c204": {
+  "correct": true,
+  "ambiguous": true,
+  "fair": true,
+  "note": "infinite loop / runtime error also describe it"
+ },
+ "q_6a83d0ce6c": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": true,
+  "note": ""
+ },
+ "q_34f18346e7": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": true,
+  "note": ""
+ },
+ "q_efaedf072b": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": null,
+  "note": ""
+ },
+ "q_3deb45d53f": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": null,
+  "note": ""
+ },
+ "q_c14938b2c1": {
+  "correct": true,
+  "ambiguous": true,
+  "fair": null,
+  "note": "a phrase, not a term to type"
+ },
+ "q_29a00afc93": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": true,
+  "note": ""
+ },
+ "q_e57bda23eb": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": true,
+  "note": ""
+ },
+ "q_e321d4a512": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": true,
+  "note": ""
+ },
+ "q_a01622a8d5": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": true,
+  "note": ""
+ },
+ "q_b3a564b914": {
+  "correct": true,
+  "ambiguous": false,
+  "fair": true,
+  "note": ""
+ }
+}

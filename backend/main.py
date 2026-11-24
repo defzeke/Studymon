@@ -38,7 +38,9 @@ DAILY_TOTAL = 20_000
 # when what it is likely to cost still fits. The count lives in memory, so a restart clears it; the
 # Workers Free plan itself cannot bill past its allowance either way.
 DAILY_NEURONS = float(os.environ.get("DAILY_NEURONS", "9000"))
-LIKELY_NEURONS = {"extract": 400.0, "grade": 30.0}
+# Per model call, rounded up from the 2026-11-24 eval run (an extract part 63-85, a grade about 5; token
+# counts on Google priced at Cloudflare's rates). An extract makes one call per part (ai.text_chunks).
+LIKELY_NEURONS = {"extract": 100.0, "grade": 10.0}
 
 app = FastAPI(title="Studymon API")
 log = logging.getLogger("studymon")
@@ -59,9 +61,9 @@ def spend(neurons: float) -> None:
         _spent[day] = _spent.get(day, 0.0) + neurons
 
 
-def budget_fits(route: str) -> bool:
+def budget_fits(route: str, calls: int = 1) -> bool:
     with _spent_lock:
-        return _spent.get(_today(), 0.0) + LIKELY_NEURONS[route] <= DAILY_NEURONS
+        return _spent.get(_today(), 0.0) + calls * LIKELY_NEURONS[route] <= DAILY_NEURONS
 
 
 ai.spend = spend
@@ -152,8 +154,6 @@ def _offline(job_id: str, name: str, reviewer_text: str, why: str):
 
 @app.post("/v1/extract")
 def extract(req: ExtractRequest, request: Request):
-    if limited := over_limit(request, "extract", req.job_id):
-        return limited
     text, images = req.text, []
     if req.file_base64:
         try:
@@ -187,7 +187,11 @@ def extract(req: ExtractRequest, request: Request):
             return _failed(req.job_id, "That file type is not supported.")
     elif len(req.text.strip()) < MIN_CHARS:
         return _failed(req.job_id, "Too short: add more material.")
-    if not budget_fits("extract"):
+    # Counted only now: a file turned away above costs the player nothing of today's limit.
+    if limited := over_limit(request, "extract", req.job_id):
+        return limited
+    text = text[:MAX_CHARS]
+    if not budget_fits("extract", len(ai.text_chunks(text)) if text else 1):
         return _offline(req.job_id, req.topic_name, text, "The AI has used today's free allowance. Try again tomorrow.")
     try:
         raw = ai.generate_questions(text, images, req.existing, req.types).get("questions", [])

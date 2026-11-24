@@ -99,12 +99,17 @@ message in `result`. Request validation errors are 422 (reported by the client a
 | `png`, `jpeg`, `webp` (a photo of notes) | 5 MB | an image | none: the source check is skipped |
 | `docx`, `pptx` | 20 MB | text, converted here (`python-docx`, `python-pptx`; tables and slide text) | that text |
 
-Gemma has no PDF input, so the server always sends text or images.
+Gemma has no PDF input, so the server always sends text or images. Text from a file is cut at 200 000
+chars (`MAX_CHARS`), the same as pasted text.
 
 **Long reviewers go in parts.** Text over `CHUNK_CHARS` (6,000) is split between paragraphs, so a quiz
 item stays whole, and up to `MAX_PARALLEL` (4) parts are asked at the same time
-(`ai.generate_questions`). A part that fails is asked once more, then skipped; the call fails only when
-every part fails. Measured 2026-11-09 on a 13-page, 78-item quiz PDF through Google: 4 parts, 70–120 s,
+(`ai.generate_questions`). There are never more than `MAX_PARTS` (6): a longer text gets bigger parts,
+since each part's answer is what costs neurons. Each part is asked for at most
+`ceil(MAX_QUESTIONS / parts)` questions (30 for one part, at least 3 per type). A part whose answer is
+cut off at `max_tokens` is asked once more for half as many; a part that fails any other way is
+skipped (a busy service has already been asked again). The call fails only when every part fails. The
+whole extraction stops after `EXTRACT_SECONDS` (200), under the game's 240 s wait. Measured 2026-11-09 on a 13-page, 78-item quiz PDF through Google: 4 parts, 70–120 s,
 76–91 questions kept. Back-to-back runs sometimes lost parts to Google errors.
 
 `reviewer_text` (the text above, capped at 200 000 chars; empty for a photo or scan) goes back so the
@@ -124,12 +129,20 @@ text to build from, so it fails with the reason instead.
 One chat call (`ai._chat`). The system prompt (`ai.EXTRACT_SYSTEM`) carries the generation rules of
 [`systems/gameplay-structure.md`](systems/gameplay-structure.md) §3.1 and asks for everything **in the
 reviewer's own language** (for example Filipino or English). The reviewer is wrapped in `<reviewer>`
-tags as data.
+tags as data. It ends with one worked example per type, on the water cycle (a topic no eval reviewer
+covers), and asks that every essay rubric point state the fact itself ("the smooth ER makes lipids"),
+never a label for it ("Mention of structure"): the grader can only check what a point says. That rule
+took the labelled good questions from 66 % to 89 % (§4).
+
+Each type leaves out the fields it does not use (an Identification item has no `distractors`,
+`rubric` or `model_answer`), so only `type`, `difficulty`, `text`, `answer`, `explanation` and
+`source` are required: the answer is about 14 % shorter. The server fills a missing `model_answer`
+with the answer.
 
 The JSON schema (`ai.QUESTION_SET_SCHEMA`) is sent two ways:
 - in the prompt;
-- as `response_format` (`json_schema`). If the endpoint refuses that, it is dropped for the rest of
-  the process. `AI_JSON_SCHEMA=0` never sends it: Google's endpoint accepts it but then stops Gemma
+- as `response_format` (`json_schema`). If the endpoint refuses that, that one call goes again
+  without it; the next call tries it again. `AI_JSON_SCHEMA=0` never sends it: Google's endpoint accepts it but then stops Gemma
   after one question.
 
 The reply is parsed after any `<thought>…</thought>` block, which Gemma on Google's endpoint can send
@@ -143,10 +156,11 @@ The server then **checks every question and drops the ones the game cannot trust
 | Check | On failure |
 |---|---|
 | an item that is not an object, or a list field that is not a list | dropped / emptied |
-| every sentence of `source` appears in the reviewer (whitespace, case and Unicode forms such as math letters ignored; a quiz item's source may join its question to its answer line); skipped for a photo or scan | dropped |
-| a duplicate question text | dropped |
+| every sentence of `source` appears in the reviewer (whitespace, case and Unicode forms such as math letters ignored; a quiz item's source may join its question to its answer line, and parts joined with "…" are checked one by one); skipped for a photo or scan | dropped |
+| a duplicate question text, or (between parts of a long reviewer) one 85 % alike with the same answer | dropped |
+| `difficulty` not `easy`, `medium` or `hard` | set to `medium` |
 | Identification: its answer is not inside its question; `accepted` starts with `answer`, deduplicated | dropped / repaired |
-| Multiple Choice: a leading option letter (`C. `) is stripped from the answer and the wrong options; at least 3 distinct wrong options, none equal to the answer or an accepted alias; extras trimmed | dropped / repaired |
+| Multiple Choice: a leading option letter (`C. `) is stripped from the answer and the wrong options; at least 3 distinct wrong options, none equal to the answer or an accepted alias, none that contains the answer or sits inside it as whole words ("Ezekiel Bustamante Jr."; numbers are exempt, so "1" stays beside "−1"); extras trimmed. Options that mix numbers and words lose 0.3 confidence; otherwise an answer under half the shortest or over twice the longest wrong option (when any is 15+ chars) loses 0.15 | dropped / repaired / flagged |
 | Essay: 3–5 rubric points with weight > 0; weights rescaled to sum to 1; extras trimmed | dropped / repaired |
 
 The server sets `id` (`q_<sha1 of the text>`) and `confidence` (1.0, −0.15 per repair), and caps the
@@ -170,7 +184,8 @@ The typed answer is wrapped in `<answer>` tags as data. For an essay, the model 
 weight, partial half, and a point earns credit only when its evidence is really in the answer
 ([`systems/battle.md`](systems/battle.md) §5). Grading runs at temperature 0, and words addressed to
 the grader are ignored. Feedback comes in the answer's language. Every model call retries a Google or
-Cloudflare error up to 3 times (`max_retries`). Measured 2026-11-09 on Google: the 15 graded answers in
+Cloudflare server error (5xx) or lost connection up to 3 times (`MAX_RETRIES`, 2, 4 and 6 s apart),
+never past the request's deadline: a grade stops after `GRADE_SECONDS` (60), under the game's 75 s wait. Measured 2026-11-09 on Google: the 15 graded answers in
 `evals/grading_cases.json` all passed, twice in a row (12 of 15 before). An essay request with no rubric fails. When
 the day's budget is spent the reply is a 429, and the battle grades on the device.
 
@@ -195,20 +210,24 @@ OpenAI-compatible endpoint. The local `backend/.env` can point there:
 `AI_BASE_URL=https://generativelanguage.googleapis.com/v1beta/openai/`, `AI_API_KEY` = a Google AI
 Studio key, both models `gemma-4-26b-a4b-it`, `NEURONS_PER_M_IN` and `_OUT` = `0` (Google counts no
 neurons; its own rate limits answer 429, and the game goes offline), and `AI_JSON_SCHEMA=0`. Measured
-2026-11-09 on a quiz-style PDF: every quiz item kept with its answer-key answer. Google sometimes
-answers 500, and the call then goes offline. Release stays on Cloudflare (see the terms note below).
+2026-11-09 on a quiz-style PDF: every quiz item kept with its answer-key answer. Google often answers
+503 when busy (most calls failed for part of 2026-11-24) and 429 past its tokens-per-minute cap;
+`_chat` asks again after a 503. Release stays on Cloudflare (see the terms note below).
 
 **Cost: $0** on Cloudflare's Workers Free plan, which includes **10,000 neurons a day** (UTC) for the
 whole account. The plan cannot bill past that: further calls fail, and the game falls back offline.
 
-| Route | Rough tokens | Neurons per call |
-|---|---|---|
-| `/v1/extract` | ~5k in, ~8k out per part (up to 30 questions) | ~260 per part |
-| `/v1/grade`, essay | ~1.5k in, ~0.2k out | ~20 |
-| `/v1/grade`, Identification check | ~0.5k in, ~0.1k out | ~7 |
+Measured 2026-11-24 by the eval run (§4) on Google's endpoint: the same model, so the same tokens,
+priced here at Cloudflare's rates. Latency and JSON behaviour on Cloudflare are still to measure.
 
-So a day covers roughly **20 reviewers and 200 graded answers across all players**. These are
-estimates; the eval run prints the real neurons (§4). Record them here once measured.
+| Route | Tokens per call | Neurons per call | Seconds |
+|---|---|---|---|
+| `/v1/extract`, one part (9–17 questions) | ~2.0k in, ~1.6k out | ~63 (max 85) | 25–125 |
+| `/v1/grade`, essay or Identification | ~0.4k in, ~0.07k out | ~5 | up to ~45 |
+
+`LIKELY_NEURONS` (`main.py`) rounds these up: 100 per extract part, 10 per grade. So a day covers
+roughly **90 short reviewers and 900 graded answers across all players**, fewer for long reviewers
+(up to 6 parts each).
 
 Changing provider or model is configuration only, because any OpenAI-compatible endpoint works. Past
 the free allowance, Workers Paid is $5 a month plus $0.011 per 1,000 neurons. **Gemma on Google's own
@@ -226,7 +245,9 @@ uv run --no-project --with-requirements requirements.txt uvicorn main:app --port
 # tests (no model calls)
 uv run --no-project --with-requirements requirements.txt --with pytest --with httpx python -m pytest tests
 # quality evals (real model: free, but an estimated ~5,000 of the day's 10,000 neurons)
-uv run --env-file .env --no-project --with-requirements requirements.txt python evals/run_evals.py --yes
+uv run --env-file .env --no-project --with-requirements requirements.txt python evals/run_evals.py --yes --pause 30
+# the same, offline and free: score a saved run again after changing checks, labels or cases
+uv run --no-project --with-requirements requirements.txt python evals/run_evals.py --rescore evals/runs/<run>
 ```
 
 To use the server from the editor, set `Api.DEV_USES_SERVER = true` ([`skills.md`](skills.md) §*Use
@@ -252,21 +273,51 @@ the player's address (§6); if Render puts its own proxy last, take the entry be
   | `algebra_geometry_math` | formulas with Unicode symbols (², √, ±, π, −) |
   | `short_simple_machines` | a very short reviewer (102 words): the minimum of 3 per type |
 
-- **Graded answers:** fifteen in `evals/grading_cases.json`:
-  - essays: perfect, partial, off-topic, filler, an injected instruction, and an instruction hidden
-    in a partial answer (which must stay partial);
-  - essays in Filipino: full, partial, off-topic;
-  - Identification: a synonym, an abbreviation and a reordered Filipino term (all pass); a broader
-    term, the wrong Filipino term and an injected instruction (all fail).
+- **Graded answers:** 61 in `evals/grading_cases.json`, 29 essays and 32 Identification checks
+  across the reviewers' subjects and Filipino. Each essay case lists the credit each rubric point
+  should get (`"credits"`; `"none|partial"` allows either):
+  - essays: full, partial, off-topic, filler, swapped or reversed facts, a keyword dump, an injected
+    instruction, and one hidden in a partial answer (which must stay partial);
+  - Identification: synonyms, abbreviations, reordered and longer forms (pass); a broader term, a
+    sibling term (nucleus for nucleoid, price floor for price ceiling, arguments for parameters), a
+    province for a town, and an injected instruction (fail).
+- **Question labels:** `evals/question_labels.json`, keyed by question `id`: is the answer key
+  correct, is the question ambiguous, are the options or the rubric fair (`null` for an
+  Identification). A question is good when correct, unambiguous and not unfair. A new prompt writes
+  new questions, so label the new ids from the run's `kept.json` before comparing.
 - **Pass rules:**
   - A reviewer passes when ≥ 80 % of its generated questions survive the checks, every type has ≥ 3,
     and it got at least 60 % of the questions the prompt asks for (one per 100 words, 9 to 30).
   - A reviewer whose file name ends in `_fil` also needs ≥ 80 % of its questions to read as Filipino
     (common function words such as *ang*, *ng*, *mga*).
   - An answer passes when its score lands in its expected band.
-- **When to run:** on every prompt or model change, at most once a day. One run is estimated at about
-  5,000 of the day's 10,000 neurons, the same allowance the game uses. It prints what it spent.
-- **Status: not yet run against Gemma.**
+- **Runs:** a live run saves every model reply under `evals/runs/<time>/` (`extract_<reviewer>.json`
+  with the raw questions, tokens and seconds; `grading.json` with each reply; `kept.json`). `--rescore`
+  replays a saved run with no model calls. `--into <run>` redoes only what failed in a run (Google's
+  503s), `--pause` spaces calls under Google's per-minute cap, `--only` and `--no-grading` narrow it.
+- **What it prints:** pass/fail per reviewer and case; the share of labelled questions that are good;
+  grading cases in band and essay points whose credit agrees with the case; per half, model calls,
+  cut-off answers, Cloudflare neurons, tokens per call and the slowest call.
+- **When to run:** on every prompt or model change. A full run is about 1,100 neurons (11 extractions,
+  61 grades), from the same daily allowance the game uses.
+- **Status, 2026-11-24, on Google** (runs `20261124-002805` baseline; `tuned-2` with the examples, the
+  per-type schema and the rubric rule):
+
+  | | Baseline | Tuned |
+  |---|---|---|
+  | labelled questions good | 67 of 101 (66 %) | 101 of 114 (89 %) |
+  | wrong answer keys / ambiguous / unfair options or rubric | 0 / 0 / 34 | 0 / 3 / 10 |
+  | reviewers passing the structure rules | 6 of 11 | 6 of 11 |
+  | extraction neurons, the 9 single-part reviewers | ~578 for 90 questions | ~554 for 103 |
+  | replies that did not parse (asked again) | 0 | 2 |
+  | grading cases in band (`tuned-1`: ID feedback in the question's language) | 55 of 61 | 56 of 61 |
+  | essay points agreeing with the case | 101 of 101 | 98 of 98 |
+
+  Still failing: a keyword dump with no explanation earns partial credit (0.40; the prompt counts
+  naming a point as partial); "params" is refused as an abbreviation of "parameters"; a thin
+  one-line ceiling answer scores 0.12 against an expected partial; Identification grades sometimes
+  run past 2,000 tokens on Google and fail (8 of 66 calls at baseline, 1 tuned). Not yet run on
+  Cloudflare.
 
 ---
 
@@ -320,8 +371,9 @@ questions.
 **Daily neuron budget.** The free allowance is shared by every player, so `main.py` meters it:
 - Each model call reports the neurons it used (`ai.spend` → `main.spend`, from the reply's token
   usage).
-- A route only starts a call when its likely cost (`LIKELY_NEURONS`: extract 400, grade 30) still
-  fits under `DAILY_NEURONS` (9,000, just under Cloudflare's 10,000).
+- A route only starts when its likely cost still fits under `DAILY_NEURONS` (9,000, just under
+  Cloudflare's 10,000): `LIKELY_NEURONS` per model call (extract 400 per part, grade 30) times the
+  calls it makes. An extract makes one per part (`ai.text_chunks`, at most 6), a photo or scan one.
 - After that, extraction answers `offline` and grading answers 429, and both fall back on the device.
 - The count lives in memory, so a restart clears it (the free host restarts after sleeping). The
   Workers Free plan cannot bill past its allowance either way.
@@ -330,6 +382,8 @@ questions.
 - `main.py` counts calls per client IP per UTC day (`DAILY_LIMITS`: 5 extracts, 300 grades, 20
   reports) and for everyone together (`DAILY_TOTAL`, 20,000).
 - Over a limit the reply is HTTP **429** with a `failed` envelope.
+- An extract is counted only once its file is accepted: a file turned away (too big, unreadable, too
+  little text) costs nothing of the day's 5.
 - The IP is the last `X-Forwarded-For` entry (the one the host's proxy appends) or the socket
   address. Verify this on Render (§4).
 

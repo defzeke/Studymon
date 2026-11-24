@@ -103,8 +103,11 @@ share the same allowance.
 
 ```bash
 cd backend
-uv run --env-file .env --no-project --with-requirements requirements.txt python evals/run_evals.py --yes
+uv run --env-file .env --no-project --with-requirements requirements.txt python evals/run_evals.py --yes --pause 30
 ```
+
+The run is saved under `evals/runs/<time>/`. `--rescore evals/runs/<time>` scores it again for free;
+`--yes --into evals/runs/<time>` redoes only what failed in it.
 
 **Reading the output:**
 - Each reviewer line says PASS or FAIL. A reviewer passes when:
@@ -112,8 +115,11 @@ uv run --env-file .env --no-project --with-requirements requirements.txt python 
   - every type (identification, essay, multiple_choice) has ≥ 3;
   - it got enough questions for its length;
   - for the `_fil` reviewer, the questions are in Filipino.
-- Each grading line says PASS when the score lands in the expected band.
-- The last lines give the neurons **per model call** for extraction and for grading.
+- `quality:` is the share of **labelled** questions that are good. Label the run's new question ids
+  from its `kept.json` into `evals/question_labels.json` first (api-backend.md §4).
+- Each grading line says PASS when the score lands in the expected band; the summary also gives how
+  many essay rubric points got the credit the case expects.
+- The last lines give the Cloudflare neurons **per model call** for extraction and for grading.
 
 **When something fails:**
 - The prompts are the constants at the top of `backend/ai.py`: `EXTRACT_SYSTEM`, `GRADE_ID_SYSTEM`
@@ -121,16 +127,16 @@ uv run --env-file .env --no-project --with-requirements requirements.txt python 
 - Don't loosen the checks in `check_questions()` to make a run pass. They protect players from
   questions their reviewer doesn't support.
 - `MAX_QUESTIONS` is 100 so a long quiz keeps every item, and a long reviewer goes in parts of
-  `CHUNK_CHARS`. Each part costs a call: measure the neurons per part on Cloudflare and lower the cap
-  or raise `CHUNK_CHARS` if a day's budget runs out too fast.
+  `CHUNK_CHARS`, never more than `MAX_PARTS` (6). Each part costs a call: lower `MAX_PARTS` if a
+  day's budget runs out too fast.
 
 **Record the results:**
 - In [`api-backend.md`](api-backend.md) §3, replace the estimated neurons per call with the measured
   ones.
 - In `backend/main.py`, set `LIKELY_NEURONS` to the measured figures, rounded up. The server uses
   them to decide whether a call still fits in the day's budget.
-- In [`api-backend.md`](api-backend.md) §4, change "Status: not yet run against Gemma" to the date
-  and the result.
+- In [`api-backend.md`](api-backend.md) §4, update the status table with the date and the result.
+  Done on Google on 2026-11-24; still to do once on Cloudflare.
 
 **Done when** every line passes, or the remaining failures are written down with a reason the team
 agrees to.
