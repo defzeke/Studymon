@@ -295,7 +295,7 @@ arrives:
 
 | Room | Action | Kuiz |
 |---|---|---|
-| Study Room | **Charge** (`ui/icon_charge.svg`, a toggle; the bolt pulses while on) turns the lights off: the 3D lights and ambient drop to 30 %, the night art and a dark veil fade in, and the charge sounds play. Energy refills 6 / s while it is on. Arrows, Play and Settings are disabled until it is pressed again | `State_Charging` (loops; its bolt and gem glow in the dark), then `Wake_Up` when the lights come back on |
+| Study Room | **Charge** (`ui/icon_charge.svg`, a toggle; the bolt pulses while on) turns the lights off: the 3D lights and ambient drop to 30 %, the night art and a dark veil fade in, and `sfx_charge` plays and a toast says when Kuiz will be full. Energy charges like a phone, about 70 min from empty to full ([`systems/companion-care.md`](systems/companion-care.md) §2), and `sfx_charged` with "Kuiz is fully charged!" marks full. Arrows, Play and Settings are disabled until it is pressed again | `State_Charging` (loops; its bolt and gem glow in the dark), then `Wake_Up` when the lights come back on |
 | Study Room | **Play**, captioned Study (`ui/icon_book.svg`), opens the Worlds hub, `session_list.tscn` | — |
 | Study Room | **Focus** (`ui/icon_timer.svg`) opens the focus timer's setup; its caption shows the time left while one runs ([`systems/companion-care.md`](systems/companion-care.md) §6) | — |
 | Maintenance Bay | **Check-up** (`props/tablet.svg`) opens the tablet: Battery health (`battery_health`, the battery's capacity like a phone's, not its charge; the Energy gauge shows the charge), Frame (health), Clean (100 − dirt) and Fuel (hunger) bars, off-white when fine, amber below half, coral below a quarter, and a hint naming the most urgent fix. **New battery** (30 crystals) puts battery health back to 100 % (`replace_battery()`); without enough crystals a toast says to win minigames, and at 100 % it is greyed out | `Celebrate` on a new battery |
@@ -365,13 +365,14 @@ soft drop shadow, like the props.
   amber), **Energy** (the charge bolt, teal), **Mood** (`ui/stat_mood.svg`, lavender), **Health**
   (`ui/stat_health.svg`, coral). Below 25 % the ring turns coral and pulses. They follow
   `CompanionState.stats_changed`. Tapping one shows a card below it (`StatInfo`, like the level
-  card): its name, its value out of 100 (live) and where to raise it ("Charge Kuiz in the Study
+  card): its name, its value out of 100 (live), when it runs low (`StatTime`: "Low in 3 h 20 min", "Needs
+  care now", or "Full in 38 min" for energy on the charger) and where to raise it ("Charge Kuiz in the Study
   Room"); one card shows at a time, and it fades after 3 s or on a second tap; stats and their sources are in
   [`companion-care.md`](systems/companion-care.md) §1.
 - **Crystals** (top right): the currency, `GameState.crystals`, with the forehead gem from the
   logo (`ui/crystal.svg`), saved (v8). Minigame rounds earn it (Kuiz Keeper 1 per goal, Sky Jump
   1 per 50 m); food, costumes, world slots and a new battery spend it. In a debug build a teal "+"
-  badge (`%Plus`) sits at its end and a tap opens the Gold shop (`TopUp`, see Pop-ups); release builds hide it until Play Billing is wired
+  badge (`%Plus`) sits at its end and a tap opens the Gold shop (`TopUp`, see Pop-ups); release builds hide it until RevenueCat is live (`Store.is_live()`)
   ([`systems/monetization.md`](systems/monetization.md)).
 
 ### Kuiz's look (`kuiz_look.gd`)
@@ -520,12 +521,15 @@ because hiding it would resize `CardArea` mid-slide.
 
 Titled "World Builder", on the Study Room art under a Muted Teal veil (`Veil`, 0.9 alpha) so text stays readable.
 Inside `Margin` → `Content`: `TopBar` (`BackButton`, `Title`), a `SourceCard` panel ("1 · Your reviewer":
-`TopicName` `LineEdit`, `FileButton` which shows the picked file name (`clip_text`, ellipsis overrun, so a
+`TopicName` `LineEdit` (empty for a new world, its hint "World name (e.g. Biology 101)"; a saved name is
+selected on tap, `select_all_on_focus`; a picked file names an unnamed world), `FileButton` which shows the picked file name (`clip_text`, ellipsis overrun, so a
 long name never widens the card), `PasteArea`, `SanityLabel`,
 `TypesHeader`, `TypesRow` (an `HFlowContainer` of three `CardCheck` boxes, all ticked by default:
 `%TypeMultipleChoice`, `%TypeIdentification`, `%TypeEssay`), `StudyButton`, `StatusLabel`, `LoadingBar`), then `QuestionsBlock` ("2 · Questions": `Scroll` → `QuestionsBox`
 with one row per question, the hidden `RowTemplate`, `AddQuestionButton`), `PlayButton` and `BackButton`. `FileDialog` is the native
 OS dialog (`use_native_dialog`) where the platform has one; the weekly-limit notice is a `ConfirmModal`.
+Every input here (the name, the paste box and the question rows' fields) hides its grey hint while it has
+focus (`_blank_on_focus()`), so a tapped field is blank to type in; the hint comes back if it is left empty.
 
 Each question row is a copy of `RowTemplate` (laid out in the scene; `_make_question_row` fills it
 and finds its parts by name): `Pad/Box` → `Header` (`Index`, `Confidence`, `Delete`), `Prompt`
@@ -592,7 +596,7 @@ the row hides them for the preview run. `region_map.tscn` has a full-screen off-
 
 **Level-up party** (`level_up_modal.tscn`, `LevelUpModal.open(host, from_level, level)`): home (on the Home layer, with Kuiz playing `Celebrate`), battle and flashcards open it on `CompanionState.leveled_up`. The screen dims lightly (0.45) so Kuiz shows below; `sfx_level_up` plays; the card springs in (elastic, 0.6 s) in the top 58 % of the screen: "LEVEL UP!" in amber with a slate outline, a teal badge ringed in amber with the old level, Kuiz's title on a lavender pill, "New title unlocked!" when the band changed, and "+N crystals". At 0.45 s, as the bell chord lands, the number ticks to the new level, the badge pops and then breathes, and `Burst` throws confetti out of it while `Rain` drifts down from the top (both `CPUParticles2D`, palette colours, fading out). **Yay!** or Esc closes it.
 
-**Gold shop** (`top_up.tscn`, `TopUp.open(host)`, debug builds only): the Gold and crystal balances, "Top up Gold" rows (copies of `%PackTemplate`: coin, amount, a "PHP N" button that asks to confirm a free test top-up) with the test-mode note, "Trade Gold for crystals" rows (copies of `%BundleTemplate`, the Gold price on the button, disabled without enough), and Close; a tap outside closes it too. Contract: [`systems/monetization.md`](systems/monetization.md).
+**Gold shop** (`top_up.tscn`, `TopUp.open(host)`; debug builds, or release once RevenueCat is live): the Gold and crystal balances, "Top up Gold" rows (copies of `%PackTemplate`: coin, amount, and a Buy button with the store's price, or "PHP N" until it answers. Live, it opens Google's payment sheet and waits while a purchase is open; otherwise it asks to confirm a free test top-up), the test-mode note (`%Note`, hidden when live), "Trade Gold for crystals" rows (copies of `%BundleTemplate`, the Gold price on the button, disabled without enough), and Close; a tap outside closes it too. Contract: [`systems/monetization.md`](systems/monetization.md).
 
 **Confirm / notice:**
 
@@ -666,7 +670,7 @@ One-shots (`sfx/`, 22 050 Hz mono, each with a short soft reverb tail):
 | `sfx_win` | a music-box arpeggio into a bell chord with sparkles | winning a battle |
 | `sfx_lose` | a gentle falling music-box line over a soft pad | losing a battle |
 | `sfx_charge` | a soft rising hum and a bell | Study Room lights off (Charge) |
-| `sfx_charged` | two low, sleepy bells and a warm swell | right after `sfx_charge` |
+| `sfx_charged` | two low, sleepy bells and a warm swell | Kuiz reaches full charge |
 | `sfx_level_up` | a music-box run up C major into a bell chord over a low C, with glockenspiel sparkles (2.8 s) | the level-up party |
 
 Kuiz and every battle foe make their sounds in code on their own players (§2 Model sounds).

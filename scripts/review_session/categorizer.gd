@@ -36,8 +36,10 @@ var _file_type := ""
 
 func _ready() -> void:
 	theme = load("res://assets/theme/app_theme.tres") as Theme
-	var saved_name := SessionManager.world_name(SessionManager.editing_topic_id)
-	topic_name_field.text = saved_name if saved_name != "" else "My New World"
+	# A saved world's name is selected on tap (select_all_on_focus), so typing replaces it.
+	topic_name_field.text = SessionManager.world_name(SessionManager.editing_topic_id)
+	_blank_on_focus(topic_name_field)
+	_blank_on_focus(paste_area)
 	file_btn.pressed.connect(_on_pick_file)
 	file_dialog.file_selected.connect(_on_file_selected)
 	study_btn.pressed.connect(_on_study)
@@ -61,6 +63,16 @@ func _ready() -> void:
 	_update_play_enabled()
 	_refresh_more()
 
+# The grey hint in an input disappears while it has focus, so a tapped field is blank to type in, and
+# comes back if it is left empty.
+func _blank_on_focus(field: Control) -> void:
+	field.focus_entered.connect(func() -> void:
+		field.set_meta("hint", field.get("placeholder_text"))
+		field.set("placeholder_text", ""))
+	field.focus_exited.connect(func() -> void:
+		if field.has_meta("hint"):
+			field.set("placeholder_text", field.get_meta("hint")))
+
 # "More questions" shows for a saved world that kept its reviewer text.
 func _refresh_more() -> void:
 	more_btn.visible = SessionManager.is_saved_world(SessionManager.editing_topic_id) and SessionManager.last_source_text.strip_edges() != ""
@@ -70,6 +82,9 @@ func _on_pick_file() -> void:
 
 func _on_file_selected(path: String) -> void:
 	file_btn.text = path.get_file()
+	# An unnamed world takes the file's name ("biology_reviewer.pdf" → "biology reviewer").
+	if topic_name_field.text.strip_edges() == "":
+		topic_name_field.text = path.get_file().get_basename().replace("_", " ").replace("-", " ").strip_edges().left(40)
 	var f := FileAccess.open(path, FileAccess.READ)
 	if f == null:
 		status_label.text = "Can't open file: " + path
@@ -84,7 +99,7 @@ func _on_file_selected(path: String) -> void:
 		if kind == "":
 			status_label.text = "Can't read this file as text. Use a PDF, photo, Word or PowerPoint file, or paste the text."
 		elif Api.MOCK:
-			status_label.text = "PDF, photo, Word and PowerPoint files need the study server. This build uses the offline mock (Api.DEV_USES_SERVER is off)."
+			status_label.text = "PDF, photo, Word and PowerPoint files need the study server. This build has none yet: paste the text instead."
 		elif bytes.size() > cap:
 			status_label.text = "That file is over %d MB. Use a smaller one or paste the text instead." % (cap >> 20)
 		else:
@@ -126,6 +141,7 @@ func _on_study() -> void:
 	var topic_name := topic_name_field.text.strip_edges()
 	if topic_name == "":
 		status_label.text = "Give your world a name first."
+		topic_name_field.grab_focus()
 		return
 	var source_text := paste_area.text
 	var v := SessionManager.validate_source_text(source_text)
@@ -296,6 +312,8 @@ func _make_question_row(q: Dictionary, idx: int) -> Control:
 			wrong_field.visible = true
 			wrong_field.text = str(wrong[n]) if n < wrong.size() else ""
 			wrong_field.text_changed.connect(_on_distractor_changed.bind(idx, n))
+	for field in [text_edit, ans_field, box.get_node("Accepted"), box.get_node("Wrong1"), box.get_node("Wrong2"), box.get_node("Wrong3")]:
+		_blank_on_focus(field)
 
 	return panel
 

@@ -32,6 +32,34 @@ You will need [uv](https://docs.astral.sh/uv/), which installs Python for you, a
 
 ---
 
+## Start here: a tester APK with working AI (requested 2026-11-24)
+
+The team wants an APK for testers **now**, before Phase 2 (sign-in) and the Play Store. It needs
+part of Phase 1: the server online with a real AI key. Everything for it is on the **`apk-test`**
+branch:
+- `export_presets.cfg` has an **Android Tester** preset.
+- `api.gd` makes every exported build use `RELEASE_URL`.
+- The `no_play_games` switch keeps Play Games off until there is a real Game ID.
+
+A first APK was built and checked on 2026-11-22 without a server, so it plays on the offline mock.
+It has not been opened on a phone yet.
+
+| # | Do | How | Done when |
+|---|---|---|---|
+| 1 | Get an AI key: **Cloudflare** (the release choice), or **Google AI Studio** for an internal round with adult testers only | [`skills.md`](skills.md) §*Connect the tester APK to the AI*, part 1 | you have the key (and the Cloudflare Account ID) |
+| 2 | Put the server on Render with that key | the same section, part 2 (this page's 1.5 has the detail) | `/health` shows `{"ok": true}` and the `curl` test returns `questions` |
+| 3 | Set `Api.RELEASE_URL` to the Render address, and raise `version/code` in `export_presets.cfg` | part 3 | committed on `apk-test` |
+| 4 | Set up a PC for Android builds once: JDK 17, Android SDK, the 4.7.2 export templates, a debug keystore | [`skills.md`](skills.md) §*Build a tester APK* | Godot's Android export shows no missing-SDK errors |
+| 5 | Build `build/studymon-tester.apk` | the same section, *Each build* | `aapt2` shows `com.studymon.app` and the new version code |
+| 6 | Open it on one phone before sharing it | §*Connect the tester APK to the AI*, part 4 | a reviewer gives AI questions and an essay is graded |
+| 7 | Share it, with the tester notes | §*Build a tester APK*, *Testers* | testers have installed it |
+
+Then tick 1.1, 1.5 and 1.6 in [`tasks.md`](tasks.md). The rest of Phase 1, Phase 2 and Phase 3 follow
+as written below. When the Play Console exists, put the real Game ID in the preset and remove
+`no_play_games`, so testers sign in automatically.
+
+---
+
 ## Phase 1 — Integrate the AI into the game
 
 ### 1.1 Cloudflare account and Workers AI token
@@ -221,7 +249,10 @@ In `scripts/autoload/api.gd`, set:
 const RELEASE_URL := "https://<name>.onrender.com"
 ```
 
-Only release exports use it. The editor and debug builds stay on the mock.
+Every exported build uses it: a debug tester APK as well as a release. The editor keeps using the
+local server or the mock ([`skills.md`](skills.md) §*Use the real study server*). The whole path for
+a tester APK, including the Google AI Studio option for internal tests, is in [`skills.md`](skills.md)
+§*Connect the tester APK to the AI*.
 
 ### 1.7 Put the policy pages online
 
@@ -354,22 +385,32 @@ player on Render.
 
    Check that `export_presets.cfg` holds no passwords before committing it. Godot keeps those in
    `.godot/export_credentials.cfg`, which is ignored.
-2. **The app icon.** A 512 × 512 icon and the adaptive icon. The game still has Godot's default
+2. **Gold purchases through RevenueCat.** The code is built (`Store`, 2026-11-22). Follow
+   [`systems/monetization.md`](systems/monetization.md) §*Buying Gold*, "To go live":
+   - the four in-app products in the Play Console;
+   - a RevenueCat project with the Play service-account JSON, and the products set to Consumable;
+   - the public `goog_` key in `Store.ANDROID_KEY`;
+   - a license tester buying each pack on internal testing.
+
+   Once Phase 2's sign-in exists, also call the plugin's `login(player_id)`, so purchases follow the
+   player.
+3. **The app icon.** A 512 × 512 icon and the adaptive icon. The game still has Godot's default
    `icon.svg`, so this needs art ([`store-listing.md`](store-listing.md) §6).
-3. **Internal testing on a phone.** Upload to the internal track and check:
+4. **Internal testing on a phone.** Upload to the internal track and check:
    - the cloud-save checklist in [`skills.md`](skills.md);
    - the sign-in gate on a fresh install;
    - the file picker with a PDF, a photo and a .docx, plus Export and Import (issue #23 in
      [`known-issues.md`](known-issues.md));
    - the whole AI loop against Render;
-   - the offline fallbacks.
+   - the offline fallbacks;
+   - a test purchase of each Gold pack, a cancel, and one with the network off.
 
    Fix what breaks, and record it in `known-issues.md`.
-4. **The closed test.** At least 12 testers stay opted in for 14 days; Google requires this for new
+5. **The closed test.** At least 12 testers stay opted in for 14 days; Google requires this for new
    personal developer accounts. **Start recruiting during Phase 1.** It is the longest wait.
-5. **The store listing.** Use [`store-listing.md`](store-listing.md): the Data safety and content
+6. **The store listing.** Use [`store-listing.md`](store-listing.md): the Data safety and content
    rating answers, the text, the review notes, the graphics and the screenshots.
-6. **Production** with a staged rollout. Then update [`tasks.md`](tasks.md) and
+7. **Production** with a staged rollout. Then update [`tasks.md`](tasks.md) and
    [`launch-plan.md`](launch-plan.md).
 
 iOS comes later. It needs macOS for the export and an Apple Developer account at $99 a year

@@ -25,6 +25,7 @@ SessionManager="*res://scripts/autoload/session_manager.gd"
 MusicManager="*res://scripts/autoload/music_manager.gd"
 GodotPlayGameServices="*uid://b51ln7826yf4a"
 CloudSave="*res://scenes/autoload/cloud_save.tscn"
+Store="*res://scripts/autoload/store.gd"
 
 [display]
 
@@ -36,7 +37,7 @@ window/handheld/orientation=1
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/GodotPlayGameServices/plugin.cfg")
+enabled=PackedStringArray("res://addons/GodotPlayGameServices/plugin.cfg", "res://addons/godotx_revenue_cat/plugin.cfg")
 
 [gui]
 
@@ -50,4 +51,5 @@ theme/custom="res://assets/theme/app_theme.tres"
 
 rendering_device/driver.windows="d3d12"
 renderer/rendering_method="mobile"
+textures/vram_compression/import_etc2_astc=true
 anti_aliasing/quality/msaa_3d=2

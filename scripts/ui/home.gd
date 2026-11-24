@@ -151,6 +151,8 @@ var _ball_resting := true
 var _ball_returning := false
 var _surprised_at := -10.0
 var _charge_pulse: Tween
+# Energy was full on the last frame of charging, so "fully charged" plays once.
+var _was_full := false
 var _game: CanvasLayer
 var _mood_wait := 0.0
 var _awake_until := -100.0
@@ -376,10 +378,27 @@ func _on_gauge_input(event: InputEvent, stat: String) -> void:
 	%StatHint.text = STAT_HINTS[stat]
 	_refresh_stats()
 	%StatValue.text = "%d / %d" % [roundi(CompanionState.get(stat)), CompanionState.STAT_MAX]
+	%StatTime.text = _stat_time(stat)
 	stat_info.reset_size()
 	var under: Rect2 = gauges[stat].get_global_rect()
 	stat_info.position.x = clampf(under.get_center().x - stat_info.size.x / 2.0, 16.0, _view().x - stat_info.size.x - 16.0)
 	_toggle_info(stat_info, stat)
+
+# When the stat next needs care, or when the charger fills it.
+func _stat_time(stat: String) -> String:
+	if stat == "energy" and charge_btn.button_pressed:
+		var left := CompanionState.seconds_to_full()
+		return "Fully charged" if left < 30.0 else "Full in " + _duration(left)
+	var low := CompanionState.seconds_to_low(stat)
+	return "Needs care now" if low <= 0.0 else "Low in " + _duration(low)
+
+# "45 min" or "3 h 20 min", rounded up to the minute.
+static func _duration(sec: float) -> String:
+	var m := maxi(1, ceili(sec / 60.0))
+	var h := floori(m / 60.0)
+	if h == 0:
+		return "%d min" % m
+	return "%d h" % h if m % 60 == 0 else "%d h %d min" % [h, m % 60]
 
 func _tapped(event: InputEvent) -> bool:
 	return event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT
@@ -499,8 +518,10 @@ func _on_charge(charging: bool, sound := true) -> void:
 	charge_btn.scale = Vector2.ONE
 	if charging:
 		peek.act("State_Charging")
+		_was_full = CompanionState.energy >= CompanionState.STAT_MAX
 		if sound:
-			MusicManager.play_sfx_chain([CHARGE_SFX, CHARGED_SFX])
+			MusicManager.play_sfx(CHARGE_SFX)
+			_toast("Fully charged already." if _was_full else "Charging. Full in %s." % _duration(CompanionState.seconds_to_full()))
 		# A bare icon has no lit state, so the bolt pulses while Kuiz charges.
 		_charge_pulse = create_tween().set_loops()
 		_charge_pulse.tween_property(charge_btn, "scale", Vector2.ONE * 1.12, 0.5).set_trans(Tween.TRANS_SINE)
@@ -825,6 +846,11 @@ func _process(delta: float) -> void:
 	next_btn.position.x = sign_rect.end.x + 6.0
 	if charge_btn.button_pressed:
 		CompanionState.recharge(delta)
+		var full := CompanionState.energy >= CompanionState.STAT_MAX
+		if full and not _was_full:
+			MusicManager.play_sfx(CHARGED_SFX)
+			_toast("Kuiz is fully charged!")
+		_was_full = full
 	_pet()
 	if check_panel.visible:
 		_refresh_checkup()

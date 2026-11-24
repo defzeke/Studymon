@@ -24,6 +24,8 @@ Severity: **P0** blocks the core loop · **P1** blocks a feature or silently cor
 | 21 | ~~Theme and scene colours predate the canonical palette~~ — migrated | — |
 | 22 | Headless boot chain fails its threaded loads | **P3** |
 | 23 | Native file picker paths unverified on Android / iOS | **P1** |
+| 24 | Gold purchases: save-held balance, interrupted purchases | **P2** |
+| 25 | Six new foe models log ~5,900 import errors | **P3** |
 
 ---
 
@@ -175,6 +177,35 @@ a save.
 
 **Fix:** try a PDF, a photo and a .docx, plus Export and Import, on a real Android phone and iPhone
 early. If the path cannot be opened, add a picker plugin that copies the file into `user://` first.
+
+---
+
+## 24. Gold purchases: save-held balance, interrupted purchases (P2)
+
+`Store` adds a paid pack's Gold to the save once RevenueCat reports the purchase
+([`systems/monetization.md`](systems/monetization.md) §Buying Gold).
+
+**Impact:**
+- Gold lives in the local and cloud save, so an edited save can grant Gold, as it can grant crystals.
+- If the app dies between Google's payment sheet and `purchase_result`, the player paid but got no
+  Gold. RevenueCat's dashboard still has the order, so support can refund it or grant the Gold by hand.
+
+**Fix (when it matters):** keep the Gold balance on RevenueCat (its virtual currencies) or on the
+study server after Play Games sign-in, and re-grant unclaimed transactions at boot.
+
+---
+
+## 25. Six new foe models log ~5,900 import errors (P3)
+
+Importing `robot_3`–`robot_5` and the three bosses (`d17d7ee`) prints "Basis [0, 0, 0] must be
+normalized in order to be casted to a Quaternion" about 5,900 times. Some animation keyframes scale a
+bone to zero, and Godot cannot turn a zero scale into a rotation. It happens only at import. Windowed
+battles with these foes ran with no runtime errors (2026-11-22).
+
+**Impact:** a flood of noise on every reimport, which hides real import errors. A part scaled to zero
+may also pop instead of shrinking.
+
+**Fix:** in Blender, key those bones at a tiny scale (0.001) instead of 0, and re-export.
 
 ---
 

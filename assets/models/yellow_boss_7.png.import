@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://wqeniw0d33t3"
 path.s3tc="res://.godot/imported/yellow_boss_7.png-3b540e4ae6e39af4422c00e52f0b6ae2.s3tc.ctex"
+path.etc2="res://.godot/imported/yellow_boss_7.png-3b540e4ae6e39af4422c00e52f0b6ae2.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/models/yellow_boss_7.png"
-dest_files=["res://.godot/imported/yellow_boss_7.png-3b540e4ae6e39af4422c00e52f0b6ae2.s3tc.ctex"]
+dest_files=["res://.godot/imported/yellow_boss_7.png-3b540e4ae6e39af4422c00e52f0b6ae2.s3tc.ctex", "res://.godot/imported/yellow_boss_7.png-3b540e4ae6e39af4422c00e52f0b6ae2.etc2.ctex"]
 
 [params]
 

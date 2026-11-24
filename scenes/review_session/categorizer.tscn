@@ -91,6 +91,7 @@ unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 52)
 layout_mode = 2
 placeholder_text = "World name (e.g. Biology 101)"
+select_all_on_focus = true
 
 [node name="FileButton" type="Button" parent="Margin/Content/SourceCard/Source" unique_id=400211232]
 unique_name_in_owner = true

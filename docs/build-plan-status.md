@@ -27,7 +27,7 @@ fixed-length runs: a Challenge House and a Gym per question type, then the Champ
 | **7** | Battle per question type, one judging pipeline | **Implemented (mock)** | `battle.gd`: Identification, Essay and Multiple Choice, per-tier HP/counter/thresholds |
 | **8** | Mastery states + 7-day decay + Champion recap | **Implemented** | `session_manager.gd`; Champion falls back to every question |
 | **9** | Polish: insights, juice, accessibility, pacing | **Partial** | particles/shake/hit-stop/colourblind badges and the large-text toggle done; the never-shown insight lines were removed (save v16) |
-| **10** | Monetization quota + stretch | **Partial (mock)** | the client-side quota was removed; free launch; crystals buy world slots, food and costumes; no real-money shop; no deck sharing |
+| **10** | Monetization quota + stretch | **Partial (mock)** | the client-side quota was removed; crystals buy world slots, food and costumes; Gold packs through RevenueCat (built 2026-11-22, not live); no deck sharing |
 
 ---
 
@@ -138,7 +138,8 @@ onboarding pacing verification on device, and any accessibility options beyond t
 
 Removed: the free-tier PDF (3/week) and grading (10/week) quotas, the premium flag, the quota
 labels and the "Weekly limit reached" pop-up (`MonetizationState`). Every AI use is unlimited. The
-placeholder Crystal Shop was removed for the free launch.
+placeholder Crystal Shop was removed for the free launch. Gold packs for real money came back through
+RevenueCat on 2026-11-22 (`Store`, [`systems/monetization.md`](systems/monetization.md) §Buying Gold); not live yet.
 
 Done: an in-game crystal economy (world slots, food, costumes, battery; earned from runs, level-ups,
 minigames and the study goal), [`systems/monetization.md`](systems/monetization.md).

@@ -8,12 +8,16 @@ signal job_status(job_id: String, status: String, progress: float, result: Varia
 
 ## The deployed study server. Must be HTTPS: Android and iOS refuse plain http. Set before exporting.
 const RELEASE_URL := ""
-## true to try the local study server from the editor or a debug export instead of the mock.
+## true: debug builds use a study server (the local one in the editor, RELEASE_URL when exported);
+## false: they play on the mock.
 const DEV_USES_SERVER := true
 # 127.0.0.1, not localhost: localhost can resolve to IPv6 first, which uvicorn does not listen on.
 const DEV_URL := "http://127.0.0.1:8000"
-var MOCK := OS.is_debug_build() and not DEV_USES_SERVER
-var BASE_URL := DEV_URL if OS.is_debug_build() else RELEASE_URL
+## The editor talks to the local server; every exported build (a tester's debug APK too) to RELEASE_URL.
+var BASE_URL := DEV_URL if OS.has_feature("editor") else RELEASE_URL
+## A debug build with no server to reach (DEV_USES_SERVER off, or an APK before RELEASE_URL is set)
+## plays on the offline stand-in.
+var MOCK := OS.is_debug_build() and (not DEV_USES_SERVER or BASE_URL == "")
 # Seconds before a request counts as failed: generating a whole question bank takes the longest.
 # The free host sleeps when idle and takes about a minute to wake (wake_server() starts that early).
 const EXTRACT_TIMEOUT := 240.0
@@ -22,7 +26,7 @@ const GRADE_TIMEOUT := 75.0
 var _job_seq := 0
 
 func _ready() -> void:
-	if not MOCK and not BASE_URL.begins_with("https://") and not OS.is_debug_build():
+	if not MOCK and not BASE_URL.begins_with("https://") and not OS.has_feature("editor"):
 		push_error("Api: RELEASE_URL must be the deployed HTTPS study server; every AI request will fail.")
 
 ## A job id no other request shares, so each screen only takes its own results (rules §5, issue #9).

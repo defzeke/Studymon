@@ -1936,6 +1936,14 @@ theme_override_fonts/font = ExtResource("9_bold")
 theme_override_font_sizes/font_size = 22
 text = "80 / 100"
 
+[node name="StatTime" type="Label" parent="Home/StatInfo/Box"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.1608, 0.2196, 0.2275, 1)
+theme_override_fonts/font = ExtResource("9_bold")
+theme_override_font_sizes/font_size = 17
+text = "Low in 3 h 20 min"
+
 [node name="StatHint" type="Label" parent="Home/StatInfo/Box"]
 unique_name_in_owner = true
 layout_mode = 2

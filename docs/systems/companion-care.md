@@ -17,20 +17,21 @@ care stats into battle (see [`battle.md`](battle.md) §3).
 
 | Stat | Start | Range | Decay | Grown by |
 |---|---|---|---|---|
-| `hunger` | 80.0 | 0–100 | **full to low in 15 min** | `feed` +8 – 40 by food (`FoodItem.hunger`, `assets/data/foods/`) |
-| `energy` | 80.0 | 0–100 | **full to low in 60 min** on a new battery, × battery wear (`battery_drain()`: 1 + (100 − battery health) / 50, so ×2 at 50 % (30 min), ×3 at 0 % (20 min)) | charging +6 / s (`recharge()`), rest complete +6, `play` −2, `game` −3, skip focus −3, missed rest −5 |
-| `mood` | 75.0 | 0–100 | **full to low in 20 min** | `pet` +8, `play` +8, `game` +25, a flashcard rated +1.5 (Easy) or +0.3, exploring the island +0.125 / s (`explore()`), rest complete +6, skip focus −2, missed rest −3 |
-| `health` | 100.0 | 0–100 | **full to low in 60 min** | `fix` +25 |
+| `hunger` | 80.0 | 0–100 | **full to low in 4 h** (240 min) | `feed` +8 – 40 by food (`FoodItem.hunger`, `assets/data/foods/`) |
+| `energy` | 80.0 | 0–100 | **full to low in 8 h** (480 min) on a new battery, × battery wear (`battery_drain()`: 1 + (100 − battery health) / 50, so ×2 at 50 % (4 h), ×3 at 0 % (2 h 40 min)) | charging, about 70 min from empty to full (`recharge()`, §Charging below), rest complete +6, `play` −2, `game` −3, skip focus −3, missed rest −5 |
+| `mood` | 75.0 | 0–100 | **full to low in 6 h** (360 min) | `pet` +8, `play` +8, `game` +25, a flashcard rated +1.5 (Easy) or +0.3, exploring the island +0.125 / s (`explore()`), rest complete +6, skip focus −2, missed rest −3 |
+| `health` | 100.0 | 0–100 | **full to low in 24 h** (1,440 min) | `fix` +25 |
 | `battery_health` | 100.0 | 0–100 | **−0.02 per energy point charged** (a full 0→100 charge costs 2 %) | a new battery (`replace_battery()`, 30 crystals) back to 100 |
 | `dirt` | 0.0 | 0–100 | **none with time**: only play soils Kuiz (`soil()`) | fast throws +1.5, minigame rounds +4; the towel scrubs it off (`scrub()`) |
-| `focus` | 70.0 | 0–100 | **full to low in 30 min** | flashcards +2 per card; not on the home HUD |
+| `focus` | 70.0 | 0–100 | **full to low in 3 h** (180 min) | flashcards +2 per card; not on the home HUD |
 | `level` | 1 | 1 and up, no cap | — | XP thresholds (§3) |
 | `xp` | 0 | unbounded | — | care taps + battle rewards |
 
 Decay is applied in `_process`, i.e. it runs whenever the game is running, on every screen. Each
 stat falls at a steady rate set by `FULL_TO_LOW_MIN`, the minutes it takes from full to low
-(`LOW_STAT`, 25 %, where Kuiz shows it): hunger 15, mood 20, focus 30, energy and health 60. Energy's
-rate is multiplied by `battery_drain()`. From low to empty takes a third as long again.
+(`LOW_STAT`, 25 %, where Kuiz shows it), on a real-life clock (decided 2026-11-22): hunger 240 (a meal
+lasts about 4 hours), mood 360, focus 180, energy 480 (a charge lasts a school day) and health 1,440
+(a tune-up a day). Energy's rate is multiplied by `battery_drain()`. From low to empty takes a third as long again.
 
 **Time away counts.** The stats keep falling while the game is closed or in the background:
 `pass_time(seconds)` runs the same decay for the time since `saved_at` when the save loads, and for the
@@ -62,7 +63,19 @@ so stats bottom out cleanly at zero.
 | `"fix"` | `health += 25` | 2 | home: a finished screwdriver tune-up |
 | `"clean"` | `mood += 5` | 2 | home: the towel got Kuiz spotless (the scrubbing itself lowers `dirt`) |
 
-Energy has no tap: `recharge(delta)` adds 6 / s while home's Charge toggle is on. Home asks for a save after
+**Charging.** Energy has no tap. It charges like a phone while home's Charge toggle is on
+(`recharge(delta)`):
+- Fast from empty to `CHARGE_KNEE` (80) in `CHARGE_TO_KNEE_MIN` (45 min).
+- Then a slower top-off to full in `TOP_OFF_MIN` (25 min more), about 70 minutes from empty to full.
+- A long `delta` (time away) crosses the 80 % knee correctly.
+- Energy does not drain while Kuiz charges, like a plugged-in phone. `seconds_to_full()` gives the
+  time left, and `seconds_to_low(stat)` uses the same rates as the decay.
+- Turning Charge on plays `sfx_charge` and toasts "Charging. Full in 52 min." Reaching full plays
+  `sfx_charged` and toasts "Kuiz is fully charged!" once.
+- The stat card (a tap on a gauge) shows when the stat runs low ("Low in 3 h 20 min", or "Needs care
+  now"), and for energy on the charger when it will be full.
+
+Home asks for a save after
 each care action (`SaveManager.save_progress()`, debounced to at most one write every 5 s,
 [`data-model.md`](../data-model.md) §7).
 

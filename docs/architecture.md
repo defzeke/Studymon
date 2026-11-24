@@ -65,8 +65,8 @@ res://
 │   ├── theme/            app_theme.tres (the one shared Theme)
 │   └── sprites/          boot/, effects/, props/, rooms/, battle/, ui/
 ├── scripts/
-│   ├── autoload/         our 6 script autoloads: save_manager.gd, game_state.gd, api.gd,
-│   │                     companion_state.gd, session_manager.gd, music_manager.gd; and
+│   ├── autoload/         our 7 script autoloads: save_manager.gd, game_state.gd, api.gd,
+│   │                     companion_state.gd, session_manager.gd, music_manager.gd, store.gd; and
 │   │                     cloud_save.gd (the CloudSave autoload scene's script)
 │   ├── audio/            synth.gd, clip_voice.gd (model sounds made in code)
 │   ├── battle/           battle.gd, arena_stage.gd, broken_bot_voice.gd
@@ -82,6 +82,8 @@ res://
 │       └── widgets/      confirm_modal.gd (ConfirmModal), stat_gauge.gd, music_toggle.gd
 ├── addons/GodotPlayGameServices/   the Google Play Games plugin (v3.4.0, MIT; Android .aar files and its
 │                                  GDScript clients), used for cloud saves
+├── addons/godotx_revenue_cat/      the RevenueCat plugin's export plugin (v2.6.0, MIT); it adds the SDK to the Gradle build
+├── android/revenue_cat/            its Android .aar files (the rest of android/ is the build template, not in git)
 ├── scenes/
 │   ├── autoload/         cloud_save (the CloudSave autoload: the plugin's SignIn, Snapshots, Players nodes)
 │   ├── battle/           battle
@@ -118,6 +120,7 @@ Declared in this order (Godot instantiates top-down, so earlier autoloads are `_
 | 6 | `MusicManager` | `scripts/autoload/music_manager.gd` | every music track (boot, home, focus lullabies, map, battle), one-shot SFX |
 | 7 | `GodotPlayGameServices` | `addons/GodotPlayGameServices/scripts/autoloads/godot_play_game_services.gd` | the Play Games plugin's entry point (third-party, MIT, v3.4.0); only `CloudSave` uses it |
 | 8 | `CloudSave` | `scenes/autoload/cloud_save.tscn` (`scripts/autoload/cloud_save.gd`) | the save's copy in the player's Google Play Games Saved Games; Android only ([`data-model.md`](data-model.md) §8) |
+| 9 | `Store` | `scripts/autoload/store.gd` | Gold packs sold through RevenueCat (`GodotxRevenueCat` plugin); Android with a key only, else the debug test top-up ([`systems/monetization.md`](systems/monetization.md)) |
 
 ```text
                         ┌──────────────┐

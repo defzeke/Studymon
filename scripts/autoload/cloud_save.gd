@@ -38,7 +38,10 @@ var _deleting := false
 
 # Before the client nodes' _ready, which connect to the plugin only if it is initialised.
 func _enter_tree() -> void:
-	_active = OS.get_name() == "Android" and Engine.has_singleton("GodotPlayGameServices") \
+	# A tester build exported without a real Game ID carries the "no_play_games" feature, and never
+	# starts the Play Games SDK (docs/skills.md §Build a tester APK).
+	_active = OS.get_name() == "Android" and not OS.has_feature("no_play_games") \
+		and Engine.has_singleton("GodotPlayGameServices") \
 		and GodotPlayGameServices.initialize() == GodotPlayGameServices.PlayGamesPluginError.OK
 
 func _ready() -> void:

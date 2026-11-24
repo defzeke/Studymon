@@ -13,10 +13,10 @@ const SCENE := "res://scenes/ui/widgets/top_up.tscn"
 @onready var _card: PanelContainer = %Card
 var _closing := false
 
-# shortcut: only debug builds have the shop, and their top-ups add Gold without payment; wire Google Play Billing (docs/systems/monetization.md) before release
-## Release builds hide the shop: a purchase screen that cannot pay is a store rejection.
+## The shop shows when real purchases work (Store), or in a debug build with the free test top-up. A
+## release build without them hides it: a purchase screen that cannot pay is a store rejection.
 static func available() -> bool:
-	return OS.is_debug_build()
+	return Store.is_live() or OS.is_debug_build()
 
 ## Shows the shop over `host` (a screen's top layer).
 static func open(host: Node) -> Control:
@@ -29,9 +29,8 @@ func _ready() -> void:
 		var row := %PackTemplate.duplicate() as PanelContainer
 		row.show()
 		(row.get_node("Row/Amount") as Label).text = "%d Gold" % pack.gold
-		var buy := row.get_node("Row/Buy") as Button
-		buy.text = "PHP %d" % pack.pesos
-		buy.pressed.connect(_ask_top_up.bind(pack))
+		row.set_meta("pack", pack)
+		(row.get_node("Row/Buy") as Button).pressed.connect(_ask_top_up.bind(pack))
 		%Packs.add_child(row)
 	for bundle in bundles:
 		var row := %BundleTemplate.duplicate() as PanelContainer
@@ -48,6 +47,10 @@ func _ready() -> void:
 			_close())
 	GameState.gold_changed.connect(_refresh.unbind(1))
 	GameState.crystals_changed.connect(_refresh.unbind(1))
+	Store.prices_changed.connect(_refresh)
+	Store.purchase_finished.connect(_on_purchase_finished)
+	Store.fetch_prices(packs)
+	%Note.visible = not Store.is_live()
 	_refresh()
 	%Close.grab_focus()
 	_card.modulate.a = 0.0
@@ -60,13 +63,25 @@ func _refresh() -> void:
 	for row in %Bundles.get_children():
 		if row.has_meta("bundle"):
 			(row.get_node("Row/Buy") as Button).disabled = GameState.gold < (row.get_meta("bundle") as CrystalBundle).gold
+	for row in %Packs.get_children():
+		if row.has_meta("pack"):
+			var pack := row.get_meta("pack") as GoldPack
+			var buy := row.get_node("Row/Buy") as Button
+			buy.text = Store.prices.get(pack.product_id, "PHP %d" % pack.pesos)
+			buy.disabled = Store.pending != null
 
+# Live, Google's own payment sheet confirms; the free test top-up asks here first.
 func _ask_top_up(pack: GoldPack) -> void:
-	ConfirmModal.open(self, "Test top-up", "Add %d Gold for PHP %d? This is a test: no money is charged." % [pack.gold, pack.pesos], "Add Gold", _top_up.bind(pack), false, "Cancel")
+	if Store.is_live():
+		Store.buy(pack)
+		_refresh()
+	else:
+		ConfirmModal.open(self, "Test top-up", "Add %d Gold for PHP %d? This is a test: no money is charged." % [pack.gold, pack.pesos], "Add Gold", Store.buy.bind(pack), false, "Cancel")
 
-func _top_up(pack: GoldPack) -> void:
-	GameState.add_gold(pack.gold)
-	SaveManager.save_progress()
+func _on_purchase_finished(_ok: bool, message: String) -> void:
+	_refresh()
+	if message != "":
+		ConfirmModal.open(self, "Top-up", message, "OK", Callable(), false, "")
 
 func _exchange(bundle: CrystalBundle) -> void:
 	if GameState.buy_crystals(bundle):
