@@ -1,0 +1,8 @@
+# What `gcloud run deploy --source backend` uploads. The key lives in Secret Manager, never in the upload.
+.gcloudignore
+.env
+.env.*
+__pycache__/
+.pytest_cache/
+tests/
+evals/

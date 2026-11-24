@@ -94,6 +94,7 @@ Terms used throughout this repo, in the sense this repo means them.
 | **`user://`** | Godot's per-project writable directory. The save is `user://studymon_save.json`. |
 | **`MOCK`** | `Api.MOCK`: true in the editor and debug builds (unless `DEV_USES_SERVER`), false in release builds. When true, every API call is served by canned or locally computed data. |
 | **Job envelope** | The mock's async response shape: `{job_id, status, progress, result}`, broadcast on `Api.job_status`. |
+| **Express mode key** | A Vertex AI API key (`AQ.…`) that calls Gemini without a service account. It works only on Gemini's own `generateContent`, so the server sends it through `ai._vertex_chat` ([`api-backend.md`](api-backend.md) §3). |
 | **`job_status`** | The global signal every async result travels on. Handlers match a `job_id`; `"grade"` is currently a magic id (issue #9). |
 | **Rig** | `CompanionRig`, the skeletal `Skeleton2D` pet. Hidden in favour of `bot_sprite`, and the source of the `det == 0` warnings. |
 | **Scene smoke test** | A headless run of one scene with `--quit-after N`; catches parse errors that `--import` misses. |

@@ -10,7 +10,8 @@ questions and answer keys live only in the player's save file ([`data-model.md`]
   calls, answer-key checks, essay score), `backend/tests/`, `backend/evals/`
 - **Model:** **Gemma 4 26B on Cloudflare Workers AI** (`@cf/google/gemma-4-26b-a4b-it`), free up to
   10,000 neurons a day, behind any OpenAI-compatible endpoint (§3)
-- **Hosting:** Render's free web service (`render.yaml`, §4)
+- **Hosting:** Google Cloud Run from `backend/Dockerfile`, with the Gemini key as a Cloud Run secret
+  (§4); Render's free web service (`render.yaml`) still works for the Cloudflare setup
 - **Consumers:** `SessionManager` (extraction), `battle.gd` (grading)
 
 Status: **the editor uses the local server (or the mock); every exported build, a debug tester APK
@@ -206,6 +207,24 @@ the day's budget is spent the reply is a 429, and the battle grades on the devic
 | `NEURONS_PER_M_IN`, `NEURONS_PER_M_OUT` | 9,091 and 27,273 (Cloudflare's price for that model, in neurons per million tokens) |
 | `AI_JSON_SCHEMA` | `1`: send the schema as `response_format` too (§2) |
 
+**Gemini on Cloud Run.** The deployed server can call Gemini with either kind of Google key, set by
+the same variables, and `NEURONS_PER_M_IN` and `_OUT` = `0` turn the neuron meter off (nothing is
+counted, so `budget_fits` always passes; Google's own quota answers 429 instead):
+
+| Key | `AI_BASE_URL` | Model (cheap example) | How it is called |
+|---|---|---|---|
+| Google AI Studio (`AIza…`) | `https://generativelanguage.googleapis.com/v1beta/openai/` | `gemini-3.1-flash-lite` | the OpenAI client, key as `Bearer` (config only) |
+| Vertex AI express mode (`AQ.…`) | `https://aiplatform.googleapis.com/v1/publishers/google/models` | `gemini-2.5-flash-lite` | `ai._vertex_chat`: Gemini's own `:generateContent`, key in `x-goog-api-key` |
+
+Vertex's OpenAI-compatible endpoint takes only OAuth tokens, not an express key, so an `AI_BASE_URL`
+ending in `/publishers/google/models` sends each call through `_vertex_chat`. It turns the chat
+messages into `contents` (images as `inlineData`), the schema into `responseJsonSchema`, and the
+reply back into the chat shape (`MAX_TOKENS` → `length`, thought parts dropped). The openai client
+still sends it, so errors and retries are unchanged; a 400 while the schema is on retries once
+without it. Express mode serves only the models in its own list (the 2.5 Flash-Lite there is the
+cheapest), at 10 requests a minute for 2.5 models: a 6-part extract can meet that, and `_chat`
+then reports Google's 429. Neither path has been run against a real key yet.
+
 **Google, for development.** The same Gemma 4 runs on Google's Gemini API through its
 OpenAI-compatible endpoint. The local `backend/.env` can point there:
 `AI_BASE_URL=https://generativelanguage.googleapis.com/v1beta/openai/`, `AI_API_KEY` = a Google AI
@@ -254,7 +273,43 @@ uv run --no-project --with-requirements requirements.txt python evals/run_evals.
 To use the server from the editor, set `Api.DEV_USES_SERVER = true` ([`skills.md`](skills.md) §*Use
 the real study server*).
 
-**Deploy:** `render.yaml` (repo root) is a Render Blueprint for a **free web service** built from
+**Deploy on Cloud Run** (the mentor's setup; the key stays a Cloud Run secret and never reaches the
+app). Run these in [Cloud Shell](https://shell.cloud.google.com), which has `gcloud` and `git`, from a
+clone of the repo. `gcloud run deploy --source` builds `backend/Dockerfile` with Cloud Build;
+`backend/.gcloudignore` keeps any `.env` out of the upload.
+
+```bash
+PROJECT=<project-id>; REGION=asia-southeast1; SERVICE=studymon-api
+gcloud config set project $PROJECT
+# 1. APIs (add aiplatform.googleapis.com for a Vertex express key)
+gcloud services enable run.googleapis.com cloudbuild.googleapis.com artifactregistry.googleapis.com   secretmanager.googleapis.com billingbudgets.googleapis.com
+# 2. The key, as a secret. Make a NEW key first (see "Rotate" below); read -s keeps it out of history.
+read -rs KEY && printf '%s' "$KEY" | gcloud secrets create gemini-api-key --data-file=- && unset KEY
+NUM=$(gcloud projects describe $PROJECT --format='value(projectNumber)')
+gcloud secrets add-iam-policy-binding gemini-api-key   --member=serviceAccount:$NUM-compute@developer.gserviceaccount.com --role=roles/secretmanager.secretAccessor
+# 3. Deploy. One instance: the per-IP limits live in memory (§6). 600 s is above the game's 240 s wait.
+gcloud run deploy $SERVICE --source backend --region $REGION --allow-unauthenticated   --timeout 600 --max-instances 1 --memory 1Gi   --set-secrets AI_API_KEY=gemini-api-key:latest   --set-env-vars AI_BASE_URL=https://generativelanguage.googleapis.com/v1beta/openai/,EXTRACT_MODEL=gemini-3.1-flash-lite,GRADE_MODEL=gemini-3.1-flash-lite,NEURONS_PER_M_IN=0,NEURONS_PER_M_OUT=0
+# for a Vertex express key instead: AI_BASE_URL=https://aiplatform.googleapis.com/v1/publishers/google/models
+#   and both models gemini-2.5-flash-lite
+URL=$(gcloud run services describe $SERVICE --region $REGION --format='value(status.url)')
+curl $URL/health                       # -> {"ok": true}
+# 4. Budget alert (it warns by email; it does not stop spending)
+gcloud billing budgets create --billing-account=$(gcloud billing projects describe $PROJECT   --format='value(billingAccountName.basename())') --display-name="studymon" --budget-amount=10USD   --threshold-rule=percent=0.5 --threshold-rule=percent=0.9 --threshold-rule=percent=1.0
+```
+
+- **Rotate the key that was shared in chat.** Treat it as public: delete it where it was made (Google
+  AI Studio → API keys, or the express-mode key page in the Cloud console), make a new one, and give
+  only the new one to step 2. To rotate later: `read -rs KEY && printf '%s' "$KEY" | gcloud secrets
+  versions add gemini-api-key --data-file=-`, then `gcloud run services update $SERVICE --region
+  $REGION --update-labels rotated=$(date +%s)` so a new revision reads `latest`.
+- **Then the game:** set `const RELEASE_URL := "<the $URL above>"` (`https://studymon-api-….run.app`)
+  in `scripts/autoload/api.gd` and export again (§1). No server sleeps on Cloud Run, but a cold
+  start still takes seconds; `Api.wake_server()` covers it.
+- Run the `X-Forwarded-For` limit test from [`next-steps.md`](next-steps.md) §1.5 step 5 against
+  `$URL`; `gcloud run services update $SERVICE --region $REGION --update-labels reset=$(date +%s)`
+  restarts it to clear the counts afterwards.
+
+**Deploy on Render** (the Cloudflare setup): `render.yaml` (repo root) is a Render Blueprint for a **free web service** built from
 `backend/`. Put `AI_BASE_URL` and `AI_API_KEY` in the Render dashboard as secret environment
 variables, then set `Api.RELEASE_URL` to its `https://…onrender.com` address. The free service sleeps
 after 15 idle minutes and takes about a minute to wake: `Api.wake_server()` and the longer timeouts
@@ -386,7 +441,9 @@ questions.
 - An extract is counted only once its file is accepted: a file turned away (too big, unreadable, too
   little text) costs nothing of the day's 5.
 - The IP is the last `X-Forwarded-For` entry (the one the host's proxy appends) or the socket
-  address. Verify this on Render (§4).
+  address. Verify this on the host (§4).
+- The counts live in memory, per instance: a second instance would double every limit. Deploy with
+  one instance (`--max-instances 1` on Cloud Run, §4).
 
 ### `POST /v1/reports`: flag AI content
 
@@ -409,7 +466,9 @@ Step by step in [`next-steps.md`](next-steps.md) Phase 1:
 2. A local run against the real model.
 3. The eval run, prompt tuning, and the measured neurons recorded here (§3).
 4. The integration played in the editor.
-5. The Render deploy and the `X-Forwarded-For` limit test (§6).
+5. The deploy (Cloud Run, §4) and the `X-Forwarded-For` limit test (§6).
+   On Gemini, `GameState.AI_CONSENT_TEXT` and `site/privacy.html` must stop naming Cloudflare, and
+   the terms note in §3 needs a fresh check for the key type used.
 6. `RELEASE_URL` in `api.gd`.
 7. The policy pages, and their URLs in `settings.gd`.
 

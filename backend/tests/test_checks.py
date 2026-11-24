@@ -457,3 +457,39 @@ def test_number_options_are_not_near_copies_and_an_ellipsis_source_is_grounded()
     mc = q(type="multiple_choice", text="What is the product of the slopes of perpendicular lines?", answer="−1",
            accepted=[], distractors=["1", "0", "2"], source="Perpendicular lines... product is −1.")
     assert ai.check_questions([mc], reviewer)[0]["distractors"] == ["1", "0", "2"]
+
+
+def test_vertex_express_call_goes_to_generate_content(monkeypatch):
+    import httpx
+    import openai
+    from types import SimpleNamespace as NS
+    calls = []
+    refused = openai.BadRequestError("Invalid JSON payload", response=httpx.Response(
+        400, request=httpx.Request("POST", "http://x")), body=None)
+    replies = [refused, {"candidates": [{"finishReason": "STOP", "content": {"parts": [
+        {"text": "thinking", "thought": True}, {"text": '{"correct": true, "feedback": "Yes"}'}]}}],
+        "usageMetadata": {"promptTokenCount": 10, "candidatesTokenCount": 5}}]
+
+    def post(url, cast_to, body, options):
+        calls.append((url, body, options))
+        r = replies.pop(0)
+        if isinstance(r, Exception):
+            raise r
+        return r
+    monkeypatch.setattr(ai, "client", NS(post=post))
+    monkeypatch.setattr(ai, "_VERTEX", True)
+    monkeypatch.setattr(ai, "_schema_mode", True)
+    monkeypatch.setattr(ai, "AI_BASE_URL", "https://aiplatform.googleapis.com/v1/publishers/google/models/")
+    monkeypatch.setattr(ai, "AI_API_KEY", "test-key")
+    r = ai.grade_identification({"question": "Q", "expected": "chloroplast", "accepted": [], "source": ""}, "chloroplasts")
+    assert r == {"score": 1.0, "feedback": "Yes"}
+    url, body, options = calls[-1]
+    assert url == "https://aiplatform.googleapis.com/v1/publishers/google/models/%s:generateContent" % ai.GRADE_MODEL
+    assert options["headers"]["x-goog-api-key"] == "test-key" and isinstance(options["headers"]["Authorization"], openai.Omit)
+    assert "responseJsonSchema" in calls[0][1]["generationConfig"] and "responseJsonSchema" not in body["generationConfig"]
+    assert body["contents"][0]["role"] == "user" and body["systemInstruction"]["parts"][0]["text"]
+    replies.append({"candidates": [{"finishReason": "MAX_TOKENS", "content": {"parts": [{"text": "{"}]}}]})
+    reply = ai._vertex_chat("m", [{"role": "system", "content": "s"}, {"role": "user", "content": [
+        {"type": "image_url", "image_url": {"url": "data:image/png;base64,QUJD"}}]}], 10, 0.0, 5)
+    assert reply.choices[0].finish_reason == "length" and reply.usage.prompt_tokens == 0
+    assert calls[-1][1]["contents"][0]["parts"] == [{"inlineData": {"mimeType": "image/png", "data": "QUJD"}}]

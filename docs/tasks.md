@@ -146,7 +146,7 @@ Tick each step here when it is done.
 | 1.2 | Run the server locally against Gemma 4 |
 | 1.3 | Run `backend/evals/`, tune the prompts, and record the measured neurons in [`api-backend.md`](api-backend.md) §3 and in `LIKELY_NEURONS`. Done on Google 2026-11-24 (good questions 66 → 89 %); one run on Cloudflare still to do, for its latency and JSON behaviour |
 | 1.4 | Play the integration in the editor (`DEV_USES_SERVER`): consent, every upload type, More questions, grading, Report, the offline fallbacks |
-| 1.5 | Deploy `backend/` on Render (Blueprint from `render.yaml`) and pass the `X-Forwarded-For` limit test |
+| 1.5 | Deploy `backend/` (Cloud Run with a Gemini key, [`api-backend.md`](api-backend.md) §4, or Render from `render.yaml`) and pass the `X-Forwarded-For` limit test |
 | 1.6 | Set `Api.RELEASE_URL` |
 | 1.7 | Turn GitHub Pages on, publish `site/`, and set the three policy URLs in `settings.gd` |
 

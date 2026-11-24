@@ -36,8 +36,12 @@ uv run --no-project --with-requirements requirements.txt --with pytest --with ht
 uv run --env-file .env --no-project --with-requirements requirements.txt python evals/run_evals.py --yes   # real model: free, an estimated ~5,000 of the day's 10,000 neurons
 ```
 
-## Deploy (free)
-`render.yaml` at the repo root is a Render Blueprint for a free web service from this folder. Add
+## Deploy
+**Google Cloud Run** (`Dockerfile`, listens on `$PORT`): the Gemini key is a Cloud Run secret,
+one instance because the per-IP limits live in memory. The exact `gcloud` steps, the two Google key
+types and the `RELEASE_URL` change are in [`../docs/api-backend.md`](../docs/api-backend.md) §4.
+
+**Render (free, Cloudflare):** `render.yaml` at the repo root is a Render Blueprint for a free web service from this folder. Add
 `AI_BASE_URL` and `AI_API_KEY` as secret environment variables in the Render dashboard, then set
 `Api.RELEASE_URL` to the service's `https://…onrender.com` address. The free service sleeps after 15
 idle minutes; the game wakes it with `GET /health` before it needs it.

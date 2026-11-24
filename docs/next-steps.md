@@ -198,6 +198,9 @@ Write any bug you find in [`known-issues.md`](known-issues.md), with the steps t
 
 ### 1.5 Deploy the server on Render
 
+Gemini on Google Cloud Run instead (the mentor's setup): the `gcloud` steps are in
+[`api-backend.md`](api-backend.md) §4; step 5 below (the limit test) applies there too.
+
 1. In the [Render dashboard](https://dashboard.render.com): **New → Blueprint**. Connect the GitHub
    repo and pick `render.yaml`, which holds every setting below. Blueprints redeploy on each push to
    the chosen branch.
@@ -248,6 +251,9 @@ In `scripts/autoload/api.gd`, set:
 ```gdscript
 const RELEASE_URL := "https://<name>.onrender.com"
 ```
+
+On Cloud Run it is the `https://…run.app` address `gcloud run services describe` prints
+([`api-backend.md`](api-backend.md) §4).
 
 Every exported build uses it: a debug tester APK as well as a release. The editor keeps using the
 local server or the mock ([`skills.md`](skills.md) §*Use the real study server*). The whole path for

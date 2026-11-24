@@ -13,6 +13,7 @@ import re
 import time
 import unicodedata
 from concurrent.futures import ThreadPoolExecutor
+from types import SimpleNamespace
 from typing import Callable
 
 import docx
@@ -21,7 +22,8 @@ import pptx
 import pypdf
 
 # Contract: docs/api-backend.md §3.
-# Cloudflare: https://api.cloudflare.com/client/v4/accounts/<id>/ai/v1, Google: https://generativelanguage.googleapis.com/v1beta/openai/
+# Cloudflare: https://api.cloudflare.com/client/v4/accounts/<id>/ai/v1, Google: https://generativelanguage.googleapis.com/v1beta/openai/,
+# Vertex AI express mode: https://aiplatform.googleapis.com/v1/publishers/google/models
 AI_BASE_URL = os.environ.get("AI_BASE_URL", "")
 AI_API_KEY = os.environ.get("AI_API_KEY", "")
 EXTRACT_MODEL = os.environ.get("EXTRACT_MODEL", "@cf/google/gemma-4-26b-a4b-it")
@@ -54,6 +56,8 @@ spend: Callable[[float], None] = lambda neurons: None
 # Send the schema as `response_format` too. A call the endpoint refuses it on goes again without it,
 # that call only. AI_JSON_SCHEMA=0 leaves it off: Google's endpoint accepts it but cuts Gemma's list to one.
 _schema_mode = os.environ.get("AI_JSON_SCHEMA", "1") != "0"
+# An express-mode key is refused by Vertex's OpenAI endpoint (OAuth only), so those calls go to generateContent.
+_VERTEX = AI_BASE_URL.rstrip("/").endswith("/publishers/google/models")
 
 _STR_LIST = {"type": "array", "items": {"type": "string"}}
 
@@ -335,6 +339,34 @@ def neurons(prompt_tokens: int, completion_tokens: int) -> float:
     return (prompt_tokens * NEURONS_PER_M_IN + completion_tokens * NEURONS_PER_M_OUT) / 1_000_000
 
 
+def _vertex_chat(model: str, messages: list, max_tokens: int, temperature: float, timeout: float,
+                 response_format: dict | None = None) -> SimpleNamespace:
+    """client.chat.completions.create for a Vertex AI express-mode key: the same call and reply shape,
+    sent to Gemini's own generateContent. Its errors are the openai ones, so _chat handles them alike."""
+    contents = []
+    for m in messages[1:]:
+        parts = [{"text": m["content"]}] if isinstance(m["content"], str) else [
+            {"text": p["text"]} if p["type"] == "text"
+            else {"inlineData": dict(zip(("mimeType", "data"), p["image_url"]["url"][5:].split(";base64,", 1)))}
+            for p in m["content"]]
+        contents.append({"role": "model" if m["role"] == "assistant" else "user", "parts": parts})
+    config: dict = {"maxOutputTokens": max_tokens, "temperature": temperature}
+    if response_format:
+        config |= {"responseMimeType": "application/json", "responseJsonSchema": response_format["json_schema"]["schema"]}
+    data = client.post("%s/%s:generateContent" % (AI_BASE_URL.rstrip("/"), model), cast_to=object, body={
+        "systemInstruction": {"parts": [{"text": messages[0]["content"]}]}, "contents": contents,
+        "generationConfig": config},
+        options={"timeout": timeout, "headers": {"Authorization": openai.Omit(), "x-goog-api-key": AI_API_KEY}})
+    candidate = (data.get("candidates") or [{}])[0]
+    text = "".join(p.get("text", "") for p in candidate.get("content", {}).get("parts", []) if not p.get("thought"))
+    usage = data.get("usageMetadata", {})
+    return SimpleNamespace(
+        choices=[SimpleNamespace(finish_reason="length" if candidate.get("finishReason") == "MAX_TOKENS" else "stop",
+                                 message=SimpleNamespace(content=text))],
+        usage=SimpleNamespace(prompt_tokens=usage.get("promptTokenCount", 0),
+                              completion_tokens=usage.get("candidatesTokenCount", 0)))
+
+
 def _chat(model: str, system: str, content: list, schema: dict, max_tokens: int, temperature: float = 0.4,
           deadline: float = 0.0) -> dict:
     """One chat call that must return a JSON object matching `schema`. The schema is in the prompt
@@ -358,9 +390,9 @@ def _chat(model: str, system: str, content: list, schema: dict, max_tokens: int,
             kwargs["response_format"] = {"type": "json_schema",
                                          "json_schema": {"name": "result", "schema": schema, "strict": True}}
         try:
-            reply = client.chat.completions.create(**kwargs)
+            reply = (_vertex_chat if _VERTEX else client.chat.completions.create)(**kwargs)
         except openai.BadRequestError as e:
-            if schema_mode and "response_format" in str(e):
+            if schema_mode and ("response_format" in str(e) or _VERTEX):
                 schema_mode = False
                 continue
             raise AIError("The AI service could not read this request.") from e
